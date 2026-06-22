@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LDAWIF — AI-Enabled Fire-Control</title>
+<style>
+  /* ============================================================
+     LDAWIF — AI-enabled tactical fire-control console
+     Single self-contained file. No external assets.
+     ============================================================ */
+
+  :root {
+    /* palette — midnight / blue-cyan tactical display */
+    --ground:   #070B14;   /* deep navy-black */
+    --ground-2: #0B1220;   /* raised panel */
+    --ground-3: #101A2E;   /* card */
+    --line:     #1E2C44;   /* hairlines / inactive connectors */
+    --line-2:   #2A3C5C;
+    --text:     #E7EDF7;
+    --text-dim: #8696B0;
+    --text-mut: #56657F;
+
+    --accent:   #35DEFF;   /* cyan  — data link / sense (signature)  */
+    --accent-d: #0E7C9E;
+    --amber:    #FFB13C;   /* amber — effectors / act                */
+    --green:    #34E0A1;   /* green — asset defended / human (semantic) */
+    --red:      #FF5D6E;   /* red   — source defeated (semantic)     */
+    --ai:       #8C7CFF;   /* violet — AI cognition / learning loop  */
+
+    --font-disp: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+    --rad: 10px;
+    --maxw: 1180px;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 700px at 78% -8%, rgba(53,222,255,0.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 6%, rgba(140,124,255,0.07), transparent 55%),
+      var(--ground);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* subtle tactical grid atmosphere (restrained) */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(53,222,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(53,222,255,0.035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(120% 90% at 50% 0%, #000 35%, transparent 78%);
+    -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 35%, transparent 78%);
+  }
+
+  .shell { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- console header bar ---------- */
+  .topbar {
+    position: relative; z-index: 2;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(11,18,32,0.9), rgba(7,11,20,0.4));
+    backdrop-filter: blur(6px);
+  }
+  .topbar .row {
+    max-width: var(--maxw); margin: 0 auto; padding: 11px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .brand-mini { display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .brand-mini .glyph { color: var(--accent); font-size: 14px; }
+  .brand-mini b { font-weight: 700; letter-spacing: 0.2em; }
+  .topbar .stats { display: flex; align-items: center; gap: 22px; }
+  .topbar .stat b { color: var(--text); font-weight: 600; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid rgba(52,224,161,0.4); color: var(--green);
+    background: rgba(52,224,161,0.07); font-size: 11px;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  @media (max-width: 720px) { .topbar .stats .stat.hide-sm { display: none; } }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 64px 0 52px; }
+  .hero .grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 48px; align-items: center; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 22px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .eyebrow .sep { color: var(--text-mut); }
+  .wordmark {
+    font-family: var(--font-disp); font-weight: 800;
+    font-size: clamp(60px, 12.5vw, 162px); line-height: 0.84; letter-spacing: -0.045em;
+    margin: 0 0 24px; color: var(--text);
+    background: linear-gradient(180deg, #FFFFFF 0%, #BBD7F2 58%, #6FA8CF 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 60px rgba(53,222,255,0.18);
+  }
+  .thesis { font-size: clamp(17px, 2.1vw, 21px); line-height: 1.55; color: var(--text-dim); max-width: 40ch; margin: 0 0 32px; }
+  .thesis b { color: var(--text); font-weight: 600; }
+  .thesis .key { color: var(--accent); font-weight: 600; }
+  .thesis .aiword { color: var(--ai); font-weight: 600; }
+
+  .cta-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--font-mono); font-size: 13.5px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: #04222C;
+    background: linear-gradient(180deg, #6BEBFF, var(--accent));
+    border: 1px solid #8CF0FF; padding: 14px 24px; border-radius: 8px; cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(53,222,255,0.25), 0 10px 30px -8px rgba(53,222,255,0.55);
+    transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(53,222,255,0.4), 0 14px 36px -8px rgba(53,222,255,0.7); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { cursor: default; filter: saturate(0.5) brightness(0.8); transform: none; box-shadow: none; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .cta-note {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--text-mut);
+  }
+  .readout {
+    margin-top: 26px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.1em;
+    color: var(--text-dim); display: flex; align-items: center; gap: 10px; min-height: 20px;
+  }
+  .readout .rdot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-mut); transition: background 0.3s, box-shadow 0.3s; }
+  .readout.live .rdot { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  .readout .label { color: var(--text-mut); }
+  .readout .val { color: var(--accent); }
+
+  /* radar scope */
+  .scope-wrap { display: flex; justify-content: center; }
+  .scope {
+    position: relative; width: min(380px, 86%); aspect-ratio: 1 / 1; border-radius: 50%;
+    border: 1px solid var(--line-2);
+    background:
+      radial-gradient(circle at 50% 50%, rgba(53,222,255,0.07), rgba(7,11,20,0.0) 62%),
+      radial-gradient(circle at 50% 50%, rgba(11,18,32,0.7), rgba(7,11,20,0.9));
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 0 0 6px rgba(53,222,255,0.04), 0 0 80px -20px rgba(53,222,255,0.4);
+    overflow: hidden;
+  }
+  .scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .scope .tag {
+    position: absolute; bottom: 12px; left: 0; right: 0; text-align: center;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.22em;
+    color: var(--text-mut); text-transform: uppercase;
+  }
+
+  /* ---------- section frame ---------- */
+  .section { padding: 18px 0 76px; }
+  .section-head { margin-bottom: 12px; }
+  .section-title {
+    font-family: var(--font-disp); font-weight: 800; font-size: clamp(30px, 5vw, 52px);
+    letter-spacing: 0.02em; margin: 0 0 14px;
+  }
+  .section-title .accent { color: var(--ai); }
+  .section-intro { color: var(--text-dim); max-width: 66ch; margin: 0 0 8px; font-size: 16.5px; }
+
+  /* ---------- kill chain diagram ---------- */
+  .board {
+    position: relative; margin-top: 30px; padding: 30px 28px 40px;
+    border: 1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(16,26,46,0.5), rgba(11,18,32,0.25));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .board-label {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.26em;
+    text-transform: uppercase; color: var(--text-mut); margin-bottom: 18px;
+  }
+
+  .diagram { position: relative; }
+  svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible; }
+
+  .caps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; position: relative; z-index: 2; }
+  .cap {
+    border: 1px solid var(--line-2); border-radius: var(--rad);
+    background: linear-gradient(180deg, rgba(16,26,46,0.95), rgba(11,18,32,0.95));
+    padding: 14px 16px; text-align: center;
+  }
+  .cap .k {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 6px; opacity: 0.8;
+  }
+  .cap .n { font-weight: 600; font-size: 15px; color: var(--text); line-height: 1.2; }
+
+  .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; position: relative; z-index: 2; margin-top: 104px; }
+  .stage {
+    border: 1px solid var(--line-2); border-radius: var(--rad);
+    background: linear-gradient(180deg, rgba(16,26,46,0.98), rgba(10,16,28,0.98));
+    padding: 18px 18px 18px; position: relative;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+  }
+  .stage .num {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-mut); margin-bottom: 10px; display: block;
+  }
+  .stage .num b { color: var(--accent); font-weight: 600; }
+  .stage h3 { font-family: var(--font-disp); font-weight: 800; font-size: 27px; letter-spacing: -0.01em; margin: 0 0 8px; color: var(--text); }
+  .stage .desc { color: var(--text-dim); font-size: 13.5px; margin: 0 0 12px; }
+  .stage .meta {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em;
+    color: var(--text-mut); border-top: 1px solid var(--line); padding-top: 10px;
+  }
+  .stage .ai-tag {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em;
+    color: var(--ai); margin-top: 9px; display: flex; align-items: flex-start; gap: 6px; line-height: 1.45;
+  }
+  .stage .ai-tag .b { color: var(--ai); flex: none; }
+  /* active (engaged) stage */
+  .stage.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(53,222,255,0.4), 0 0 30px -4px rgba(53,222,255,0.5); transform: translateY(-3px); }
+  .stage.act-hot.active { border-color: var(--amber); box-shadow: 0 0 0 1px rgba(255,177,60,0.45), 0 0 32px -4px rgba(255,177,60,0.55); }
+  .stage.act-hot.active h3, .stage.act-hot.active .num b { color: var(--amber); }
+
+  /* human on the loop gate */
+  .gate {
+    position: absolute; z-index: 3; transform: translate(-50%, -50%);
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+    border: 1px solid rgba(52,224,161,0.45); background: rgba(8,16,14,0.92); color: var(--green);
+    white-space: nowrap; transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  .gate svg { width: 13px; height: 13px; }
+  .gate.approve { border-color: var(--green); box-shadow: 0 0 22px -4px var(--green); }
+  .gate .state { color: var(--text-mut); }
+  .gate.approve .state { color: var(--green); }
+
+  /* outcomes */
+  .outcomes { display: flex; justify-content: center; gap: clamp(40px, 12vw, 150px); margin-top: 120px; position: relative; z-index: 2; }
+  .outcome {
+    min-width: 220px; text-align: center; border: 1px solid var(--line-2); border-radius: var(--rad);
+    background: rgba(11,18,32,0.96); padding: 16px 20px; opacity: 0.55;
+    transition: opacity 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+  .outcome .t { font-weight: 700; font-size: 16px; letter-spacing: 0.01em; }
+  .outcome .s { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em; color: var(--text-mut); margin-top: 4px; text-transform: uppercase; }
+  .outcome.defended.lit { opacity: 1; border-color: var(--green); box-shadow: 0 0 26px -6px var(--green); }
+  .outcome.defended.lit .t { color: var(--green); }
+  .outcome.defeated.lit { opacity: 1; border-color: var(--red); box-shadow: 0 0 26px -6px var(--red); }
+  .outcome.defeated.lit .t { color: var(--red); }
+
+  /* learning loop label */
+  .loop-label {
+    position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); bottom: -6px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ai); background: var(--ground); padding: 4px 14px; border-radius: 999px;
+    border: 1px solid rgba(140,124,255,0.4);
+  }
+
+  /* svg connector styling */
+  .link .base { fill: none; stroke: var(--line-2); stroke-width: 1.4; }
+  .link.fb .base { stroke: rgba(140,124,255,0.45); stroke-dasharray: 5 6; }
+  .link .pulse {
+    fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round;
+    stroke-dasharray: 8 100; stroke-dashoffset: 108; opacity: 0; filter: drop-shadow(0 0 6px var(--accent));
+  }
+  .link.act .pulse { stroke: var(--amber); filter: drop-shadow(0 0 6px var(--amber)); }
+  .link.fb .pulse  { stroke: var(--ai);    filter: drop-shadow(0 0 6px var(--ai)); }
+  .link.run .pulse { opacity: 1; animation: flow var(--dur, 1s) ease-in-out forwards; }
+  @keyframes flow { from { stroke-dashoffset: 108; } to { stroke-dashoffset: 0; } }
+
+  /* ---------- AI section ---------- */
+  .ai-grid { display: grid; grid-template-columns: 0.92fr 1.08fr; gap: 30px; align-items: stretch; margin-top: 30px; }
+
+  .console {
+    border: 1px solid var(--line-2); border-radius: 14px;
+    background: linear-gradient(180deg, rgba(20,18,40,0.6), rgba(11,12,28,0.5));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    padding: 20px 22px; display: flex; flex-direction: column;
+  }
+  .console-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  .console-title { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ai); display: flex; align-items: center; gap: 9px; }
+  .console-title .chip { width: 8px; height: 8px; border-radius: 2px; background: var(--ai); box-shadow: 0 0 8px var(--ai); }
+  .latency { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--text-dim); }
+  .latency b { color: var(--ai); }
+  .console-sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mut); margin: 0 0 16px; }
+
+  .coa { display: flex; flex-direction: column; gap: 11px; }
+  .coa-row {
+    display: grid; grid-template-columns: 1fr 96px 40px; align-items: center; gap: 12px;
+    opacity: 0.4; transition: opacity 0.35s ease;
+  }
+  .coa-row.shown { opacity: 1; }
+  .coa-row .label { font-size: 13.5px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .coa-row .label .ic { color: var(--text-mut); font-family: var(--font-mono); font-size: 12px; }
+  .coa-row.selected .label { color: var(--ai); font-weight: 600; }
+  .coa-row.selected .label .ic { color: var(--ai); }
+  .bar { height: 8px; border-radius: 4px; background: rgba(140,124,255,0.16); overflow: hidden; }
+  .bar .fill {
+    height: 100%; width: 0; border-radius: 4px;
+    background: linear-gradient(90deg, #6E5DF0, #B7AEFF);
+    box-shadow: 0 0 8px rgba(140,124,255,0.5);
+    transition: width 0.7s cubic-bezier(.2,.7,.2,1);
+  }
+  .coa-row .pk { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); text-align: right; }
+  .coa-row.selected .pk { color: var(--ai); }
+  .coa-status {
+    margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-mut); display: flex; align-items: center; gap: 9px; min-height: 18px;
+  }
+  .coa-status.approved { color: var(--green); }
+  .coa-status .check { opacity: 0; transition: opacity 0.3s; }
+  .coa-status.approved .check { opacity: 1; }
+
+  .ai-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .ai-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    background: linear-gradient(180deg, rgba(16,26,46,0.5), rgba(11,18,32,0.3));
+    padding: 18px 18px 18px; position: relative; overflow: hidden;
+  }
+  .ai-card::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; background: var(--ai); opacity: 0.65; border-radius: 2px; }
+  .ai-card .stagetag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ai); margin-bottom: 8px; }
+  .ai-card h4 { margin: 0 0 7px; font-size: 16px; font-weight: 700; letter-spacing: 0.005em; color: var(--text); line-height: 1.25; }
+  .ai-card p { margin: 0; font-size: 13.5px; color: var(--text-dim); line-height: 1.5; }
+
+  /* ---------- legend ---------- */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 26px; align-items: center; margin-top: 24px;
+    padding-top: 18px; border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .legend .item { display: inline-flex; align-items: center; gap: 9px; }
+  .legend .sw { width: 26px; height: 0; border-top: 2.5px solid; border-radius: 2px; }
+  .sw.data { border-color: var(--accent); }
+  .sw.eff { border-color: var(--amber); }
+  .sw.ai { border-color: var(--ai); }
+  .sw.fb { border-color: var(--ai); border-top-style: dashed; }
+  .sw.hol { border-color: var(--green); border-top-style: dashed; }
+
+  /* ---------- footer ---------- */
+  .foot {
+    border-top: 1px solid var(--line); padding: 24px 0 40px;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mut);
+  }
+  .foot .row { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 980px) { .ai-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) {
+    .hero .grid { grid-template-columns: 1fr; gap: 36px; }
+    .scope-wrap { order: -1; }
+    .scope { width: min(320px, 80%); }
+  }
+  @media (max-width: 820px) {
+    svg.links { display: none; }
+    .caps { grid-template-columns: 1fr 1fr; }
+    .pipeline { grid-template-columns: 1fr; margin-top: 34px; gap: 14px; }
+    .pipeline .stage:not(:last-child)::after { content: "▼"; color: var(--accent); opacity: 0.6; font-size: 12px; text-align: center; margin: -2px 0 -8px; }
+    .gate { position: static !important; transform: none; align-self: center; margin: 14px auto 2px; }
+    .outcomes { flex-direction: column; align-items: stretch; gap: 14px; margin-top: 30px; }
+    .loop-label { position: static; transform: none; display: inline-flex; margin: 24px auto 0; }
+    .diagram { display: flex; flex-direction: column; }
+  }
+  @media (max-width: 600px) { .ai-cards { grid-template-columns: 1fr; } }
+  @media (max-width: 540px) {
+    .shell, .topbar .row, .foot .row { padding-left: 18px; padding-right: 18px; }
+    .caps { grid-template-columns: 1fr; }
+    .topbar .row { flex-wrap: wrap; gap: 8px 18px; }
+  }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .link.run .pulse { animation: none; opacity: 1; stroke-dashoffset: 0; stroke-dasharray: none; }
+    .btn, .stage, .bar .fill, .coa-row { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- console header -->
+  <header class="topbar">
+    <div class="row">
+      <div class="brand-mini">
+        <span class="glyph">◈</span>
+        <b>LDAWIF</b>
+        <span style="color:var(--text-mut)">// AI-ENABLED FIRE-CONTROL</span>
+      </div>
+      <div class="stats">
+        <span class="stat hide-sm">TRACKS <b id="trk">03</b></span>
+        <span class="stat hide-sm">UTC <b id="clock">--:--:--</b></span>
+        <span class="pill"><span class="dot"></span> <span id="sysstate">NOMINAL</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="shell">
+      <div class="grid">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            Layered defense <span class="sep">·</span> Autonomous warfare <span class="sep">·</span> Integrated fires
+          </p>
+          <h1 class="wordmark">LDAWIF</h1>
+          <p class="thesis">
+            One kill chain that <b>sees, decides, and acts</b> as a single system. An
+            <span class="aiword">AI decision core</span> fuses every sensor, ranks the options in
+            milliseconds, and keeps the defended asset alive while defeating the
+            <span class="key">source</span> of the attack.
+          </p>
+          <div class="cta-row">
+            <button class="btn" id="run" type="button">Run engagement</button>
+            <span class="cta-note">AI at machine speed · human on the loop</span>
+          </div>
+          <div class="readout" id="readout" aria-live="polite">
+            <span class="rdot"></span>
+            <span class="label">STATUS</span>
+            <span class="val" id="phase">STANDBY</span>
+          </div>
+        </div>
+        <div class="scope-wrap">
+          <div class="scope">
+            <canvas id="radar"></canvas>
+            <span class="tag">AI fusion · 360° volume search</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- kill chain -->
+  <section class="section">
+    <div class="shell">
+      <div class="section-head">
+        <h2 class="section-title">The kill chain</h2>
+        <p class="section-intro">
+          Four capabilities feed one chain. A track moves through sense, decide, and act; assessment
+          closes the loop. AI runs underneath every stage, and the same pass defends the asset and defeats the threat.
+        </p>
+      </div>
+
+      <div class="board">
+        <div class="board-label">Integrated capabilities</div>
+
+        <div class="diagram" id="diagram">
+          <svg class="links" id="links" aria-hidden="true"></svg>
+
+          <!-- capability sources -->
+          <div class="caps">
+            <div class="cap" data-node="cap-ld"><span class="k">Sensors</span><span class="n">Layered defense</span></div>
+            <div class="cap" data-node="cap-cuas"><span class="k">Sensors</span><span class="n">Counter-UAS</span></div>
+            <div class="cap" data-node="cap-ra"><span class="k">Effectors</span><span class="n">Robotic &amp; autonomous</span></div>
+            <div class="cap" data-node="cap-if"><span class="k">Effectors</span><span class="n">Integrated fires</span></div>
+          </div>
+
+          <!-- human on the loop gate (positioned by JS over the decide->act link) -->
+          <div class="gate" id="gate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/>
+            </svg>
+            Human on the loop <span class="state" id="gatestate">· monitoring</span>
+          </div>
+
+          <!-- pipeline -->
+          <div class="pipeline">
+            <div class="stage" data-node="st-sense" data-stage="sense">
+              <span class="num"><b>01</b> · Find · Fix · Track</span>
+              <h3>Sense</h3>
+              <p class="desc">Detect, classify, and track every contact in the volume.</p>
+              <div class="meta">radar · RF · EO/IR · passive</div>
+              <div class="ai-tag"><span class="b">◆ AI</span><span>multi-sensor fusion · automatic target recognition</span></div>
+            </div>
+            <div class="stage" data-node="st-decide" data-stage="decide">
+              <span class="num"><b>02</b> · Target</span>
+              <h3>Decide</h3>
+              <p class="desc">Fuse the picture, pair weapon to target, commit.</p>
+              <div class="meta">weapon–target pairing</div>
+              <div class="ai-tag"><span class="b">◆ AI</span><span>courses of action generated &amp; ranked by Pk</span></div>
+            </div>
+            <div class="stage act-hot" data-node="st-act" data-stage="act">
+              <span class="num"><b>03</b> · Engage</span>
+              <h3>Act</h3>
+              <p class="desc">Engage the threat with the best available effector.</p>
+              <div class="meta">kinetic · EW · directed energy</div>
+              <div class="ai-tag"><span class="b">◆ AI</span><span>autonomous effector select · deconfliction</span></div>
+            </div>
+            <div class="stage" data-node="st-assess" data-stage="assess">
+              <span class="num"><b>04</b> · Assess</span>
+              <h3>Assess</h3>
+              <p class="desc">Confirm the effect and decide whether to re-engage.</p>
+              <div class="meta">battle damage check</div>
+              <div class="ai-tag"><span class="b">◆ AI</span><span>ML damage assessment · learns each pass</span></div>
+            </div>
+          </div>
+
+          <!-- outcomes -->
+          <div class="outcomes">
+            <div class="outcome defended" data-node="out-def"><div class="t">Asset defended</div><div class="s">the asset survives</div></div>
+            <div class="outcome defeated" data-node="out-kill"><div class="t">Source defeated</div><div class="s">the threat is removed</div></div>
+          </div>
+
+          <div class="loop-label">learning loop · re-engage</div>
+        </div>
+
+        <!-- legend -->
+        <div class="legend">
+          <span class="item"><span class="sw data"></span> data link</span>
+          <span class="item"><span class="sw eff"></span> effectors / engagement</span>
+          <span class="item"><span class="sw ai"></span> AI decision core</span>
+          <span class="item"><span class="sw fb"></span> learning loop</span>
+          <span class="item"><span class="sw hol"></span> human on the loop</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI section -->
+  <section class="section">
+    <div class="shell">
+      <div class="section-head">
+        <h2 class="section-title">Where <span class="accent">AI</span> moves the chain</h2>
+        <p class="section-intro">
+          The same engagement, seen from the decision core. AI fuses the picture, generates and ranks
+          courses of action faster than an operator can read them, and hands a short, defensible
+          recommendation to the human who stays on the loop.
+        </p>
+      </div>
+
+      <div class="ai-grid">
+        <!-- live decision-support console -->
+        <div class="console" aria-label="AI decision support">
+          <div class="console-head">
+            <span class="console-title"><span class="chip"></span> AI decision support</span>
+            <span class="latency">decision <b id="latency">0.18s</b></span>
+          </div>
+          <p class="console-sub">weapon–target pairing · ranked by probability of kill</p>
+          <div class="coa">
+            <div class="coa-row" data-pk="94">
+              <span class="label"><span class="ic">A1</span> Directed energy (HEL)</span>
+              <span class="bar"><span class="fill"></span></span>
+              <span class="pk">0.94</span>
+            </div>
+            <div class="coa-row" data-pk="88">
+              <span class="label"><span class="ic">A2</span> Kinetic interceptor</span>
+              <span class="bar"><span class="fill"></span></span>
+              <span class="pk">0.88</span>
+            </div>
+            <div class="coa-row" data-pk="62">
+              <span class="label"><span class="ic">A3</span> Electronic attack (jam)</span>
+              <span class="bar"><span class="fill"></span></span>
+              <span class="pk">0.62</span>
+            </div>
+          </div>
+          <div class="coa-status" id="coastatus">
+            <span class="check">✓</span><span id="coatext">awaiting track</span>
+          </div>
+        </div>
+
+        <!-- how AI adds value -->
+        <div class="ai-cards">
+          <div class="ai-card">
+            <div class="stagetag">01 · Sense</div>
+            <h4>Multi-sensor fusion &amp; ATR</h4>
+            <p>Fuses radar, RF, and EO/IR into one track picture and classifies contacts automatically — sorting real threats from clutter across thousands of tracks at once.</p>
+          </div>
+          <div class="ai-card">
+            <div class="stagetag">02 · Decide</div>
+            <h4>Decision support at machine speed</h4>
+            <p>Generates and ranks courses of action in milliseconds, pairing the right effector to each target so the operator chooses rather than calculates.</p>
+          </div>
+          <div class="ai-card">
+            <div class="stagetag">03 · Act</div>
+            <h4>Autonomous engagement, human on the loop</h4>
+            <p>Coordinates and deconflicts effectors at machine speed while a person keeps authority to approve, hold, or abort any shot.</p>
+          </div>
+          <div class="ai-card">
+            <div class="stagetag">04 · Assess</div>
+            <h4>Predictive analytics &amp; learning</h4>
+            <p>Forecasts threat behavior, scores each engagement, and feeds the result back so the chain gets sharper with every pass.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="row">
+      <span>LDAWIF · sense → decide → act → assess</span>
+      <span>AI decision core · human on the loop · single pass</span>
+    </div>
+  </footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ============================ live clock ============================ */
+  var clockEl = document.getElementById("clock");
+  function tick() {
+    var d = new Date();
+    function p(n) { return String(n).padStart(2, "0"); }
+    clockEl.textContent = p(d.getUTCHours()) + ":" + p(d.getUTCMinutes()) + ":" + p(d.getUTCSeconds());
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ============================ radar scope ============================ */
+  var canvas = document.getElementById("radar");
+  var ctx = canvas.getContext("2d");
+  var blips = [
+    { a: 0.7, r: 0.55, seen: 0 },
+    { a: 2.4, r: 0.78, seen: 0 },
+    { a: 4.6, r: 0.38, seen: 0 }
+  ];
+  var sweep = -Math.PI / 2;
+  var size = 0, cx = 0, cy = 0, R = 0, dpr = 1;
+
+  function sizeRadar() {
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    size = rect.width;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = size / 2; cy = size / 2; R = size / 2 - 4;
+  }
+
+  function drawRadar() {
+    if (!size) { sizeRadar(); }
+    ctx.clearRect(0, 0, size, size);
+
+    // range rings
+    ctx.strokeStyle = "rgba(53,222,255,0.16)";
+    ctx.lineWidth = 1;
+    for (var i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * i / 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // crosshairs
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+    ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+    ctx.strokeStyle = "rgba(53,222,255,0.10)";
+    ctx.stroke();
+
+    // sweep wedge (radial gradient trail)
+    var span = 0.55;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, sweep - span, sweep);
+    ctx.closePath();
+    var lg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    lg.addColorStop(0, "rgba(53,222,255,0.28)");
+    lg.addColorStop(1, "rgba(53,222,255,0.0)");
+    ctx.fillStyle = lg;
+    ctx.fill();
+    ctx.restore();
+
+    // sweep line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sweep) * R, cy + Math.sin(sweep) * R);
+    ctx.strokeStyle = "rgba(53,222,255,0.7)";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // blips — light up as the sweep passes, then fade
+    for (var b = 0; b < blips.length; b++) {
+      var bl = blips[b];
+      var da = Math.abs(((sweep - bl.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      if (da > Math.PI - 0.12) { bl.seen = 1; }
+      bl.seen *= 0.985;
+      if (bl.seen < 0.02) continue;
+      var bx = cx + Math.cos(bl.a) * R * bl.r;
+      var by = cy + Math.sin(bl.a) * R * bl.r;
+      ctx.beginPath();
+      ctx.arc(bx, by, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,177,60," + bl.seen + ")";
+      ctx.shadowColor = "rgba(255,177,60,0.9)";
+      ctx.shadowBlur = 10 * bl.seen;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    sweep += 0.016;
+    if (sweep > Math.PI * 1.5) sweep -= Math.PI * 2;
+  }
+
+  function radarLoop() { drawRadar(); requestAnimationFrame(radarLoop); }
+  sizeRadar();
+  if (reduceMotion) { drawRadar(); } else { requestAnimationFrame(radarLoop); }
+
+  /* ===================== kill-chain connectors ===================== */
+  var diagram = document.getElementById("diagram");
+  var svg = document.getElementById("links");
+  var gate = document.getElementById("gate");
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  function center(node) {
+    var el = diagram.querySelector('[data-node="' + node + '"]');
+    var box = diagram.getBoundingClientRect();
+    var r = el.getBoundingClientRect();
+    return {
+      cx: r.left - box.left + r.width / 2,
+      top: r.top - box.top,
+      bottom: r.top - box.top + r.height,
+      left: r.left - box.left,
+      right: r.left - box.left + r.width,
+      midY: r.top - box.top + r.height / 2
+    };
+  }
+
+  var linkDefs = [];
+
+  function buildLinks() {
+    if (window.innerWidth <= 820) { svg.innerHTML = ""; return; }
+
+    var box = diagram.getBoundingClientRect();
+    svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    svg.innerHTML = "";
+    linkDefs = [];
+
+    var ld = center("cap-ld"), cuas = center("cap-cuas"),
+        ra = center("cap-ra"), iff = center("cap-if"),
+        se = center("st-sense"), de = center("st-decide"),
+        ac = center("st-act"), as = center("st-assess"),
+        def = center("out-def"), kill = center("out-kill");
+
+    var busTop = ld.bottom + (se.top - ld.bottom) * 0.55;
+    var busBot = Math.max(def.bottom, kill.bottom) + 46;
+
+    function elbow(x1, y1, x2, y2, midY) {
+      return "M" + x1 + "," + y1 + " L" + x1 + "," + midY + " L" + x2 + "," + midY + " L" + x2 + "," + y2;
+    }
+
+    // sensors -> Sense
+    linkDefs.push({ id: "f-ld",   kind: "",    d: elbow(ld.cx, ld.bottom, se.cx - 14, se.top, busTop) });
+    linkDefs.push({ id: "f-cuas", kind: "",    d: elbow(cuas.cx, cuas.bottom, se.cx + 14, se.top, busTop) });
+    // effectors -> Act
+    linkDefs.push({ id: "f-ra",   kind: "act", d: elbow(ra.cx, ra.bottom, ac.cx - 14, ac.top, busTop) });
+    linkDefs.push({ id: "f-if",   kind: "act", d: elbow(iff.cx, iff.bottom, ac.cx + 14, ac.top, busTop) });
+    // pipeline
+    linkDefs.push({ id: "p-sd", kind: "", d: "M" + se.right + "," + se.midY + " L" + de.left + "," + de.midY });
+    linkDefs.push({ id: "p-da", kind: "", d: "M" + de.right + "," + de.midY + " L" + ac.left + "," + ac.midY });
+    linkDefs.push({ id: "p-aa", kind: "", d: "M" + ac.right + "," + ac.midY + " L" + as.left + "," + as.midY });
+    // act -> outcomes
+    var brBus = ac.bottom + (def.top - ac.bottom) * 0.55;
+    linkDefs.push({ id: "b-def",  kind: "act", d: elbow(ac.cx, ac.bottom, def.cx, def.top, brBus) });
+    linkDefs.push({ id: "b-kill", kind: "act", d: elbow(ac.cx, ac.bottom, kill.cx, kill.top, brBus) });
+    // assess -> learning loop -> sense
+    linkDefs.push({ id: "fb", kind: "fb",
+      d: "M" + as.cx + "," + as.bottom + " L" + as.cx + "," + busBot +
+         " L" + se.cx + "," + busBot + " L" + se.cx + "," + se.bottom });
+
+    linkDefs.forEach(function (def2) {
+      var g = document.createElementNS(SVGNS, "g");
+      g.setAttribute("class", "link" + (def2.kind ? " " + def2.kind : ""));
+      g.dataset.id = def2.id;
+      var base = document.createElementNS(SVGNS, "path");
+      base.setAttribute("class", "base");
+      base.setAttribute("d", def2.d);
+      var pulse = document.createElementNS(SVGNS, "path");
+      pulse.setAttribute("class", "pulse");
+      pulse.setAttribute("d", def2.d);
+      pulse.setAttribute("pathLength", "100");
+      g.appendChild(base);
+      g.appendChild(pulse);
+      svg.appendChild(g);
+    });
+
+    // place the human-on-the-loop gate just above the decide -> act boundary
+    gate.style.left = ((de.right + ac.left) / 2) + "px";
+    gate.style.top = (de.top - 16) + "px";
+  }
+
+  function getLink(id) { return svg.querySelector('[data-id="' + id + '"]'); }
+  function pulseLink(id, dur) {
+    var g = getLink(id);
+    if (!g) return;
+    g.classList.remove("run");
+    void g.offsetWidth;
+    g.style.setProperty("--dur", (dur || 1) + "s");
+    g.classList.add("run");
+  }
+
+  /* ===================== AI decision-support console ===================== */
+  var coaRows = Array.prototype.slice.call(document.querySelectorAll(".coa-row"));
+  var coaStatus = document.getElementById("coastatus");
+  var coaText = document.getElementById("coatext");
+  var latencyEl = document.getElementById("latency");
+  var latTimer = null;
+
+  function fillBars(on) {
+    coaRows.forEach(function (row) {
+      var fill = row.querySelector(".fill");
+      fill.style.width = on ? (row.getAttribute("data-pk") + "%") : "0%";
+    });
+  }
+  function consoleResolved() {
+    if (latTimer) { clearInterval(latTimer); latTimer = null; }
+    coaRows.forEach(function (row, i) { row.classList.add("shown"); row.classList.toggle("selected", i === 0); });
+    fillBars(true);
+    latencyEl.textContent = "0.18s";
+    coaStatus.classList.add("approved");
+    coaText.textContent = "human on the loop — approved";
+  }
+  function consoleReset() {
+    if (latTimer) { clearInterval(latTimer); latTimer = null; }
+    coaRows.forEach(function (row) { row.classList.remove("shown", "selected"); });
+    fillBars(false);
+    coaStatus.classList.remove("approved");
+    coaText.textContent = "awaiting track";
+    latencyEl.textContent = "—";
+  }
+  function consoleRun() {
+    consoleReset();
+    coaText.textContent = "generating courses of action…";
+    // count the latency up to its settled value
+    var t = 0; latTimer = setInterval(function () {
+      t += 0.02; if (t >= 0.18) { t = 0.18; clearInterval(latTimer); latTimer = null; }
+      latencyEl.textContent = t.toFixed(2) + "s";
+    }, 40);
+    // stagger candidate rows in + animate confidence bars
+    coaRows.forEach(function (row, i) {
+      setTimeout(function () { row.classList.add("shown"); row.querySelector(".fill").style.width = row.getAttribute("data-pk") + "%"; }, i * 180);
+    });
+  }
+
+  /* ===================== engagement timeline ===================== */
+  var btn = document.getElementById("run");
+  var phaseEl = document.getElementById("phase");
+  var readout = document.getElementById("readout");
+  var gatestate = document.getElementById("gatestate");
+  var sysstate = document.getElementById("sysstate");
+  var stages = {
+    sense:  diagram.querySelector('[data-stage="sense"]'),
+    decide: diagram.querySelector('[data-stage="decide"]'),
+    act:    diagram.querySelector('[data-stage="act"]'),
+    assess: diagram.querySelector('[data-stage="assess"]')
+  };
+  var outDef = diagram.querySelector('[data-node="out-def"]');
+  var outKill = diagram.querySelector('[data-node="out-kill"]');
+  var timers = [];
+  var running = false;
+
+  function clearAll() {
+    timers.forEach(clearTimeout); timers = [];
+    Object.keys(stages).forEach(function (k) { stages[k].classList.remove("active"); });
+    outDef.classList.remove("lit"); outKill.classList.remove("lit");
+    gate.classList.remove("approve"); gatestate.textContent = "· monitoring";
+  }
+  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
+  function setPhase(txt) { phaseEl.textContent = txt; }
+
+  // calm end-state: chain idle, but the achieved outcome stays lit
+  function restingState() {
+    Object.keys(stages).forEach(function (k) { stages[k].classList.remove("active"); });
+    gate.classList.remove("approve"); gatestate.textContent = "· monitoring";
+    outDef.classList.add("lit"); outKill.classList.add("lit");
+    consoleResolved();
+  }
+
+  function finish() {
+    running = false;
+    btn.disabled = false;
+    btn.textContent = "Run engagement";
+    readout.classList.remove("live");
+    sysstate.textContent = "NOMINAL";
+    setPhase("STANDBY");
+    timers.forEach(clearTimeout); timers = [];
+    restingState();
+  }
+
+  function runEngagement() {
+    if (running) return;
+    running = true;
+    clearAll();
+    btn.disabled = true;
+    btn.textContent = "Engaging…";
+    readout.classList.add("live");
+    sysstate.textContent = "ENGAGED";
+
+    if (reduceMotion) {
+      Object.keys(stages).forEach(function (k) { stages[k].classList.add("active"); });
+      gate.classList.add("approve"); gatestate.textContent = "· approved";
+      outDef.classList.add("lit"); outKill.classList.add("lit");
+      consoleResolved();
+      setPhase("ASSET SAFE · SOURCE DOWN");
+      at(900, finish);
+      return;
+    }
+
+    // SENSE — fuse and detect
+    at(0, function () {
+      setPhase("DETECT · CLASSIFY");
+      stages.sense.classList.add("active");
+      pulseLink("f-ld", 0.9); pulseLink("f-cuas", 0.9);
+    });
+    // DECIDE — AI generates and ranks courses of action
+    at(850, function () {
+      setPhase("FUSE · RANK COA");
+      stages.decide.classList.add("active");
+      pulseLink("p-sd", 0.8);
+      consoleRun();
+    });
+    // human approves the recommended pairing
+    at(1500, function () {
+      setPhase("WEAPON–TARGET PAIRING");
+      gate.classList.add("approve"); gatestate.textContent = "· approved";
+      coaRows[0].classList.add("selected");
+    });
+    at(1800, function () {
+      coaStatus.classList.add("approved");
+      coaText.textContent = "human on the loop — approved";
+    });
+    at(1900, function () { setPhase("COMMIT"); pulseLink("p-da", 0.8); });
+    // ACT — autonomous effector select + engage
+    at(2550, function () {
+      setPhase("ENGAGE");
+      stages.act.classList.add("active");
+      pulseLink("f-ra", 0.9); pulseLink("f-if", 0.9);
+      pulseLink("b-def", 1.0); pulseLink("b-kill", 1.0);
+    });
+    at(3300, function () { outDef.classList.add("lit"); outKill.classList.add("lit"); });
+    // ASSESS — ML battle damage
+    at(3600, function () { setPhase("BATTLE DAMAGE CHECK"); stages.assess.classList.add("active"); pulseLink("p-aa", 0.8); });
+    // learning loop
+    at(4350, function () { setPhase("ASSET SAFE · SOURCE DOWN · LEARNING"); pulseLink("fb", 1.4); });
+    at(6000, finish);
+  }
+
+  btn.addEventListener("click", runEngagement);
+
+  /* ===================== layout / resize ===================== */
+  var rt;
+  function relayout() { sizeRadar(); buildLinks(); }
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(relayout, 150); });
+
+  window.addEventListener("load", function () {
+    buildLinks();
+    restingState();
+    if (!reduceMotion) { setTimeout(runEngagement, 1100); }
+  });
+
+  // initial pass in case load already fired
+  buildLinks();
+  restingState();
+})();
+</script>
+</body>
+</html>
