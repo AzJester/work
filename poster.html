@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>LDAWIF poster</title>
+<style>
+  /* Source for poster.png — a 1200x630 clickable preview card. */
+  :root {
+    --ground:#070B14; --text:#E7EDF7; --dim:#8696B0; --mut:#56657F;
+    --accent:#35DEFF; --amber:#FFB13C; --green:#34E0A1; --red:#FF5D6E; --ai:#8C7CFF;
+    --disp:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:1200px; height:630px; overflow:hidden; }
+  body {
+    font-family:var(--disp); color:var(--text); position:relative;
+    background:
+      radial-gradient(900px 560px at 84% 12%, rgba(53,222,255,0.14), transparent 60%),
+      radial-gradient(700px 480px at 6% 100%, rgba(140,124,255,0.10), transparent 60%),
+      var(--ground);
+  }
+  .grid {
+    position:absolute; inset:0; opacity:0.9;
+    background-image:
+      linear-gradient(rgba(53,222,255,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(53,222,255,0.045) 1px, transparent 1px);
+    background-size:48px 48px;
+    -webkit-mask-image:radial-gradient(120% 100% at 30% 0%, #000 40%, transparent 80%);
+    mask-image:radial-gradient(120% 100% at 30% 0%, #000 40%, transparent 80%);
+  }
+  .wrap { position:relative; height:100%; padding:62px 70px; display:flex; flex-direction:column; }
+
+  .eyebrow {
+    font-family:var(--mono); font-size:17px; letter-spacing:0.30em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:18px;
+  }
+  .eyebrow .sep { color:var(--mut); }
+  .wordmark {
+    font-weight:800; font-size:168px; line-height:0.82; letter-spacing:-0.045em;
+    background:linear-gradient(180deg,#FFFFFF 0%, #BBD7F2 56%, #6FA8CF 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 40px rgba(53,222,255,0.18));
+  }
+  .tag { font-size:25px; color:var(--dim); margin-top:18px; max-width:760px; line-height:1.4; }
+  .tag b { color:var(--text); font-weight:600; } .tag .ai { color:var(--ai); font-weight:600; }
+
+  .chain { display:flex; align-items:center; gap:12px; margin-top:auto; }
+  .node {
+    font-family:var(--mono); font-size:15px; letter-spacing:0.10em; text-transform:uppercase;
+    padding:11px 16px; border:1px solid var(--mut); border-radius:8px; color:var(--text);
+    background:rgba(16,26,46,0.7);
+  }
+  .node.s { border-color:rgba(53,222,255,0.55); color:#CFEFFA; }
+  .node.a { border-color:rgba(255,177,60,0.55); color:#FFE2B0; }
+  .arrow { color:var(--accent); font-size:18px; }
+
+  .cta {
+    position:absolute; right:70px; bottom:62px;
+    font-family:var(--mono); font-size:18px; font-weight:600; letter-spacing:0.10em; text-transform:uppercase;
+    color:#04222C; background:linear-gradient(180deg,#6BEBFF,var(--accent));
+    padding:15px 26px; border-radius:10px;
+    box-shadow:0 0 0 1px rgba(53,222,255,0.3), 0 14px 40px -10px rgba(53,222,255,0.7);
+    display:flex; align-items:center; gap:11px;
+  }
+  .url {
+    position:absolute; left:70px; bottom:30px;
+    font-family:var(--mono); font-size:13px; letter-spacing:0.14em; color:var(--mut); text-transform:uppercase;
+  }
+
+  /* static radar scope, top-right */
+  .scope {
+    position:absolute; top:54px; right:64px; width:300px; height:300px; border-radius:50%;
+    border:1px solid rgba(53,222,255,0.30);
+    background:radial-gradient(circle at 50% 50%, rgba(53,222,255,0.06), transparent 62%);
+    box-shadow:0 0 80px -24px rgba(53,222,255,0.6);
+    overflow:hidden;
+  }
+  .scope .ring { position:absolute; border:1px solid rgba(53,222,255,0.16); border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); }
+  .scope .r1 { width:33%; height:33%; } .scope .r2 { width:66%; height:66%; } .scope .r3 { width:99%; height:99%; }
+  .scope .cross { position:absolute; background:rgba(53,222,255,0.12); }
+  .scope .cx { top:50%; left:0; right:0; height:1px; } .scope .cy { left:50%; top:0; bottom:0; width:1px; }
+  .scope .sweep {
+    position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from -35deg, rgba(53,222,255,0.34), transparent 28%);
+  }
+  .scope .blip { position:absolute; width:9px; height:9px; border-radius:50%; background:var(--amber); box-shadow:0 0 12px var(--amber); }
+  .scope .b1 { top:38%; left:62%; } .scope .b2 { top:64%; left:43%; }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="scope">
+    <div class="sweep"></div>
+    <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+    <div class="cross cx"></div><div class="cross cy"></div>
+    <div class="blip b1"></div><div class="blip b2"></div>
+  </div>
+  <div class="wrap">
+    <div class="eyebrow">Layered defense <span class="sep">·</span> Autonomous warfare <span class="sep">·</span> Integrated fires</div>
+    <div class="wordmark">LDAWIF</div>
+    <div class="tag">One <span class="ai">AI-enabled</span> kill chain that <b>sees, decides, and acts</b> as a single system.</div>
+    <div class="chain">
+      <span class="node s">01 Sense</span><span class="arrow">→</span>
+      <span class="node">02 Decide</span><span class="arrow">→</span>
+      <span class="node a">03 Act</span><span class="arrow">→</span>
+      <span class="node">04 Assess</span>
+    </div>
+  </div>
+  <div class="cta">▶ Run the live engagement</div>
+  <div class="url">azjester.github.io/work</div>
+</body>
+</html>
