@@ -3,241 +3,205 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LDAWIF — AI-Enabled Fire-Control</title>
-<meta name="description" content="One AI-enabled kill chain — sense, decide, act, assess. Keeps the defended asset alive while defeating the source of the attack." />
+<title>LDAWIF — All-Domain Kill Web</title>
+<meta name="description" content="An all-domain, AI-enabled kill web: layered defenses run F2T2EA at machine speed — any sensor cues the best shooter, a human holds release authority." />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="LDAWIF — AI-Enabled Fire-Control" />
-<meta property="og:description" content="Layered Defense · Autonomous Warfare · Integrated Fires. One AI decision core, one kill chain." />
+<meta property="og:title" content="LDAWIF — All-Domain Kill Web" />
+<meta property="og:description" content="Layered defense · F2T2EA · CJADC2. Any sensor, best shooter — AI fuses the picture, a human holds release authority." />
 <meta property="og:url" content="https://azjester.github.io/work/" />
 <meta property="og:image" content="https://azjester.github.io/work/poster.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://azjester.github.io/work/poster.png" />
 <style>
   /* ============================================================
-     LDAWIF — compact fire-control widget, sized for a web part.
-     Single self-contained file. No external assets. No long scroll.
+     LDAWIF — all-domain kill web / layered-defense scope.
+     F2T2EA spine, CJADC2 AI fusion, human release authority.
+     Single self-contained file. No external assets.
      ============================================================ */
   :root {
-    --ground:#070B14; --ground-2:#0B1220; --line:#1E2C44; --line-2:#2A3C5C;
-    --text:#E7EDF7; --dim:#8696B0; --mut:#56657F;
-    --accent:#35DEFF; --amber:#FFB13C; --green:#34E0A1; --red:#FF5D6E; --ai:#8C7CFF;
+    --ground:#070B14; --ground-2:#0B1220; --panel:#0C1424; --line:#1B2842; --line-2:#293B5A;
+    --text:#E7EDF7; --dim:#8595AF; --mut:#54637C;
+    --cyan:#35DEFF;   /* sensing / data link  */
+    --amber:#FFB13C;  /* effectors / engage   */
+    --green:#34E0A1;  /* friendly / defended  */
+    --red:#FF5D6E;    /* threat / hostile     */
+    --ai:#9C8CFF;     /* AI / CJADC2 fusion   */
     --disp:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
   }
   * { box-sizing:border-box; }
-  html, body { height:100%; margin:0; }
+  html, body { margin:0; min-height:100%; }
   body {
-    font-family:var(--disp); color:var(--text); font-size:15px; line-height:1.5;
+    font-family:var(--disp); color:var(--text); font-size:15px; line-height:1.45;
     background:
-      radial-gradient(900px 500px at 85% -10%, rgba(53,222,255,0.10), transparent 60%),
-      radial-gradient(700px 460px at 0% 110%, rgba(140,124,255,0.08), transparent 60%),
+      radial-gradient(1000px 560px at 82% -12%, rgba(53,222,255,0.10), transparent 60%),
+      radial-gradient(760px 480px at 4% 112%, rgba(156,140,255,0.08), transparent 60%),
       var(--ground);
     -webkit-font-smoothing:antialiased;
-    display:flex;
   }
-  body::before {
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background-image:
-      linear-gradient(rgba(53,222,255,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(53,222,255,0.035) 1px, transparent 1px);
-    background-size:42px 42px;
-    -webkit-mask-image:radial-gradient(120% 100% at 50% 0%, #000 40%, transparent 80%);
-    mask-image:radial-gradient(120% 100% at 50% 0%, #000 40%, transparent 80%);
-  }
+  .app { max-width:1200px; margin:0 auto; padding:18px clamp(14px,2.4vw,28px) 26px; display:flex; flex-direction:column; gap:13px; }
 
-  .app {
-    position:relative; z-index:1; width:100%; max-width:1180px; margin:auto;
-    padding:20px clamp(16px,3vw,30px); display:flex; flex-direction:column; gap:14px;
-  }
-
-  /* ---- header ---- */
+  /* header */
   .bar { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
   .brand { display:flex; align-items:baseline; gap:10px; }
-  .brand .glyph { color:var(--accent); font-size:16px; }
-  .brand b { font-size:26px; font-weight:800; letter-spacing:0.06em;
+  .brand .glyph { color:var(--cyan); font-size:15px; }
+  .brand b { font-size:24px; font-weight:800; letter-spacing:0.05em;
     background:linear-gradient(180deg,#FFFFFF,#9FC6E6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
-  .brand .sub { font-family:var(--mono); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--mut); }
-  .ctrls { display:flex; align-items:center; gap:14px; }
-  .pill { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; letter-spacing:0.12em;
-    text-transform:uppercase; color:var(--green); border:1px solid rgba(52,224,161,0.4); background:rgba(52,224,161,0.07);
-    padding:4px 10px; border-radius:999px; }
+  .brand .sub { font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); }
+  .ctrls { display:flex; align-items:center; gap:12px; }
+  .pill { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--green); border:1px solid rgba(52,224,161,0.4); background:rgba(52,224,161,0.07); padding:4px 10px; border-radius:999px; }
   .pill i { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); }
-  .btn { font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase;
-    color:#04222C; background:linear-gradient(180deg,#6BEBFF,var(--accent)); border:1px solid #8CF0FF;
-    padding:9px 16px; border-radius:7px; cursor:pointer; white-space:nowrap;
+  .pill.alert { color:var(--red); border-color:rgba(255,93,110,0.5); background:rgba(255,93,110,0.08); }
+  .pill.alert i { background:var(--red); box-shadow:0 0 8px var(--red); }
+  .btn { font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:0.13em; text-transform:uppercase;
+    color:#04222C; background:linear-gradient(180deg,#6BEBFF,var(--cyan)); border:1px solid #8CF0FF; padding:9px 16px; border-radius:7px; cursor:pointer; white-space:nowrap;
     box-shadow:0 6px 20px -8px rgba(53,222,255,0.7); transition:transform .12s, box-shadow .2s, filter .2s; }
   .btn:hover { transform:translateY(-1px); }
   .btn:disabled { filter:saturate(.5) brightness(.8); cursor:default; transform:none; box-shadow:none; }
-  .btn:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  .btn:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
 
-  .lede { margin:0; color:var(--dim); font-size:14.5px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:baseline; }
-  .lede .txt { max-width:74ch; }
-  .lede b { color:var(--text); font-weight:600; } .lede .ai { color:var(--ai); font-weight:600; }
-  .lede .stat { font-family:var(--mono); font-size:11.5px; letter-spacing:0.08em; color:var(--mut); white-space:nowrap; }
-  .lede .stat .ph { color:var(--accent); }
+  .lede { margin:0; color:var(--dim); font-size:14px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:baseline; }
+  .lede .txt { max-width:80ch; }
+  .lede b { color:var(--text); font-weight:600; } .lede .ai { color:var(--ai); font-weight:600; } .lede .cy { color:var(--cyan); font-weight:600; }
+  .lede .stat { font-family:var(--mono); font-size:11px; letter-spacing:0.07em; color:var(--mut); white-space:nowrap; }
+  .lede .stat .ph { color:var(--cyan); }
   .lede.live .stat .ph { color:var(--amber); }
 
-  /* ---- capability inputs ---- */
-  .inputs { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .inp { border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:rgba(11,18,32,0.4);
-    display:flex; align-items:baseline; gap:10px; }
-  .inp .t { font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; white-space:nowrap; }
-  .inp.s .t { color:var(--accent); } .inp.e .t { color:var(--amber); }
-  .inp .c { font-size:12.5px; color:var(--dim); }
+  /* main grid */
+  .main { display:grid; grid-template-columns:minmax(420px,1.15fr) 1fr; gap:16px; align-items:stretch; }
 
-  /* ---- human on the loop ---- */
-  .gate-row { display:flex; justify-content:center; }
-  .gate { display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px;
-    letter-spacing:0.1em; text-transform:uppercase; color:var(--green); padding:5px 13px; border-radius:999px;
-    border:1px solid rgba(52,224,161,0.4); background:rgba(8,16,14,0.7); transition:box-shadow .3s, border-color .3s; }
-  .gate svg { width:12px; height:12px; }
-  .gate .st { color:var(--mut); }
-  .gate.approve { border-color:var(--green); box-shadow:0 0 18px -4px var(--green); }
-  .gate.approve .st { color:var(--green); }
+  .scope-wrap { position:relative; border:1px solid var(--line); border-radius:14px; background:
+      radial-gradient(circle at 50% 46%, rgba(53,222,255,0.05), transparent 60%), var(--ground-2);
+    overflow:hidden; }
+  .scope-wrap canvas { display:block; width:100%; height:auto; }
+  .scope-tag { position:absolute; top:11px; left:13px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--mut); }
+  .scope-tag b { color:var(--cyan); font-weight:600; }
+  .scope-rng { position:absolute; top:11px; right:13px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; color:var(--mut); }
 
-  /* ---- the kill chain ---- */
-  .chain { position:relative; display:flex; align-items:stretch; gap:8px; }
-  .sweep { position:absolute; top:0; bottom:0; width:80px; left:-92px; pointer-events:none; opacity:0; z-index:3; border-radius:40px;
-    background:linear-gradient(90deg, transparent, rgba(53,222,255,0.16), rgba(53,222,255,0.34), transparent); filter:blur(2px); }
-  .chain.run .sweep { animation:sweep 3.2s ease-in-out forwards; }
-  @keyframes sweep { 0%{left:-92px;opacity:0} 9%{opacity:1} 90%{opacity:1} 100%{left:100%;opacity:0} }
+  .side { display:flex; flex-direction:column; gap:12px; }
+  .panel { border:1px solid var(--line-2); border-radius:12px; background:linear-gradient(180deg, rgba(12,20,36,0.7), rgba(10,16,28,0.55)); padding:13px 15px; }
+  .panel h4 { margin:0 0 10px; font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--cyan);
+    display:flex; align-items:center; justify-content:space-between; }
+  .panel h4 .r { color:var(--mut); }
 
-  .stage { flex:1 1 0; min-width:0; border:1px solid var(--line-2); border-radius:10px; padding:12px 13px 13px;
-    background:linear-gradient(180deg, rgba(16,26,46,0.96), rgba(10,16,28,0.96));
-    transition:border-color .35s, box-shadow .35s, transform .35s; }
-  .stage .num { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); }
-  .stage .num b { color:var(--accent); font-weight:600; }
-  .stage h3 { margin:5px 0 4px; font-size:21px; font-weight:800; letter-spacing:-0.01em; }
-  .stage .desc { font-family:var(--mono); font-size:11px; letter-spacing:0.03em; color:var(--dim); }
-  .stage .ai { margin-top:9px; padding-top:8px; border-top:1px dashed rgba(140,124,255,0.3);
-    font-family:var(--mono); font-size:10.5px; letter-spacing:0.02em; color:var(--ai); }
-  .stage.active { border-color:var(--accent); box-shadow:0 0 0 1px rgba(53,222,255,0.4), 0 0 24px -6px rgba(53,222,255,0.55); transform:translateY(-2px); }
-  .stage.s-act.active { border-color:var(--amber); box-shadow:0 0 0 1px rgba(255,177,60,0.45), 0 0 24px -6px rgba(255,177,60,0.55); }
-  .stage.s-act.active h3, .stage.s-act.active .num b { color:var(--amber); }
-  .sep { align-self:center; color:var(--line-2); font-size:16px; transition:color .3s, text-shadow .3s; }
-  .sep.lit { color:var(--accent); text-shadow:0 0 10px var(--accent); }
+  /* track block */
+  .trk { display:grid; grid-template-columns:auto 1fr auto 1fr; gap:7px 12px; font-family:var(--mono); font-size:12px; }
+  .trk .k { color:var(--mut); letter-spacing:0.06em; }
+  .trk .v { color:var(--text); text-align:right; }
+  .trk .v.hostile { color:var(--red); font-weight:600; }
+  .trk .v.pending { color:var(--amber); }
+  .trk .v.cy { color:var(--cyan); }
 
-  /* ---- footer: AI support + outcomes ---- */
-  .footer { display:grid; grid-template-columns:1.15fr 0.85fr; gap:14px; align-items:stretch; }
-  .panel { border:1px solid var(--line-2); border-radius:10px; padding:13px 15px; }
-  .ai-panel { background:linear-gradient(180deg, rgba(20,18,40,0.5), rgba(11,12,28,0.45)); display:flex; flex-direction:column; }
-  .ai-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .ai-head .t { font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--ai);
-    display:flex; align-items:center; gap:8px; }
-  .ai-head .t i { width:8px; height:8px; border-radius:2px; background:var(--ai); box-shadow:0 0 8px var(--ai); }
-  .lat { font-family:var(--mono); font-size:11px; color:var(--dim); } .lat b { color:var(--ai); }
-  .coa { display:flex; flex-direction:column; gap:7px; margin-top:11px; }
-  .row { display:grid; grid-template-columns:1fr 70px 34px; align-items:center; gap:10px; opacity:.4; transition:opacity .3s; }
-  .row.shown { opacity:1; }
-  .row .lab { font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .row .lab i { font-family:var(--mono); color:var(--mut); font-style:normal; font-size:11px; margin-right:6px; }
-  .row.sel .lab, .row.sel .lab i, .row.sel .pk { color:var(--ai); font-weight:600; }
-  .bar2 { height:7px; border-radius:4px; background:rgba(140,124,255,0.16); overflow:hidden; }
-  .bar2 .f { height:100%; width:0; border-radius:4px; background:linear-gradient(90deg,#6E5DF0,#B7AEFF); box-shadow:0 0 7px rgba(140,124,255,0.5); transition:width .6s cubic-bezier(.2,.7,.2,1); }
-  .row .pk { font-family:var(--mono); font-size:12px; color:var(--dim); text-align:right; }
-  .ai-foot { margin-top:auto; padding-top:11px; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
-    color:var(--mut); display:flex; align-items:center; gap:8px; }
-  .ai-foot.ok { color:var(--green); }
+  /* authority */
+  .auth { display:flex; flex-direction:column; gap:9px; }
+  .auth .row { display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:var(--mono); font-size:11.5px; letter-spacing:0.05em; }
+  .auth .row .k { color:var(--mut); text-transform:uppercase; }
+  .auth .row .v { color:var(--text); }
+  .auth .gate { display:inline-flex; align-items:center; gap:7px; padding:4px 10px; border-radius:999px; border:1px solid var(--line-2); color:var(--mut); }
+  .auth .gate.ok { border-color:var(--green); color:var(--green); box-shadow:0 0 14px -5px var(--green); }
+  .auth .gate svg { width:12px; height:12px; }
+  .auth .weap.free { color:var(--amber); }
+  .bda { margin-top:2px; font-family:var(--mono); font-size:11.5px; letter-spacing:0.04em; color:var(--dim); min-height:17px; }
+  .bda b { color:var(--green); } .bda.leak b { color:var(--amber); } .bda.kill b { color:var(--red); }
 
-  .out-panel { display:flex; flex-direction:column; gap:9px; justify-content:center; background:rgba(11,18,32,0.4); }
-  .chip { border:1px solid var(--line-2); border-radius:8px; padding:9px 13px; opacity:.55;
-    transition:opacity .4s, border-color .4s, box-shadow .4s; display:flex; align-items:baseline; gap:9px; }
-  .chip .t { font-weight:700; font-size:14px; } .chip .s { font-family:var(--mono); font-size:10.5px; text-transform:uppercase; color:var(--mut); }
-  .chip.def.lit { opacity:1; border-color:var(--green); box-shadow:0 0 20px -8px var(--green); }
-  .chip.def.lit .t { color:var(--green); }
-  .chip.kill.lit { opacity:1; border-color:var(--red); box-shadow:0 0 20px -8px var(--red); }
-  .chip.kill.lit .t { color:var(--red); }
-  .loop { font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ai);
-    text-align:center; transition:text-shadow .3s; } .loop.pulse { text-shadow:0 0 12px var(--ai); }
+  /* F2T2EA rail */
+  .rail { display:grid; grid-template-columns:repeat(6,1fr); gap:9px; }
+  .step { border:1px solid var(--line-2); border-radius:10px; background:linear-gradient(180deg, rgba(16,26,46,0.9), rgba(10,16,28,0.92)); padding:10px 11px; transition:border-color .3s, box-shadow .3s, transform .3s; }
+  .step .n { font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--mut); }
+  .step .n b { color:var(--cyan); font-weight:600; }
+  .step h5 { margin:3px 0 5px; font-size:15px; font-weight:800; letter-spacing:0.01em; }
+  .step .task { font-family:var(--mono); font-size:10px; letter-spacing:0.01em; color:var(--dim); line-height:1.4; }
+  .step .aitag { margin-top:8px; padding-top:7px; border-top:1px dashed rgba(156,140,255,0.3); font-family:var(--mono); font-size:9.5px; color:var(--ai); line-height:1.35; }
+  .step.active { border-color:var(--cyan); box-shadow:0 0 0 1px rgba(53,222,255,0.35), 0 0 22px -7px rgba(53,222,255,0.6); transform:translateY(-2px); }
+  .step.active h5, .step.active .n b { color:var(--cyan); }
+  .step.done { border-color:rgba(52,224,161,0.4); }
+  .step.done h5 { color:var(--green); }
 
-  /* ---- legend ---- */
-  .legend { display:flex; flex-wrap:wrap; gap:6px 20px; align-items:center; font-family:var(--mono);
-    font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--dim);
-    border-top:1px solid var(--line); padding-top:11px; }
+  /* legend */
+  .legend { display:flex; flex-wrap:wrap; gap:7px 22px; align-items:center; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:0.05em; text-transform:uppercase; color:var(--dim); border-top:1px solid var(--line); padding-top:11px; }
   .legend .i { display:inline-flex; align-items:center; gap:8px; }
-  .legend .sw { width:22px; border-top:2.5px solid; } .sw.d{border-color:var(--accent)} .sw.e{border-color:var(--amber)}
-  .sw.a{border-color:var(--ai)} .sw.l{border-color:var(--ai);border-top-style:dashed} .sw.h{border-color:var(--green);border-top-style:dashed}
+  .legend .d { width:11px; height:11px; border-radius:50%; }
+  .d.sen{background:var(--cyan)} .d.eff{background:var(--amber)} .d.thr{background:var(--red)} .d.ast{background:var(--green)} .d.ai{background:var(--ai)}
 
-  /* ---- responsive ---- */
-  @media (max-width:760px) {
-    .chain { flex-wrap:wrap; }
-    .stage { flex:1 1 44%; }
-    .sep { display:none; }
-    .inputs, .footer { grid-template-columns:1fr; }
+  @media (max-width:880px) {
+    .main { grid-template-columns:1fr; }
+    .rail { grid-template-columns:repeat(3,1fr); }
   }
-  @media (max-width:460px) { .stage { flex:1 1 100%; } .brand b { font-size:22px; } }
+  @media (max-width:520px) { .rail { grid-template-columns:repeat(2,1fr); } .trk { grid-template-columns:auto 1fr; } }
 
-  @media (prefers-reduced-motion: reduce) {
-    .chain.run .sweep { animation:none; opacity:0; }
-    .btn, .stage, .bar2 .f { transition:none; }
-  }
+  @media (prefers-reduced-motion: reduce) { .btn,.step { transition:none; } }
 </style>
 </head>
 <body>
   <div class="app">
 
     <div class="bar">
-      <div class="brand"><span class="glyph">◈</span><b>LDAWIF</b><span class="sub">AI-enabled fire-control</span></div>
+      <div class="brand"><span class="glyph">◈</span><b>LDAWIF</b><span class="sub">all-domain kill web</span></div>
       <div class="ctrls">
-        <span class="pill"><i></i><span id="sys">NOMINAL</span></span>
+        <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
         <button class="btn" id="run" type="button">Run engagement</button>
       </div>
     </div>
 
     <p class="lede">
-      <span class="txt">One <span class="ai">AI decision core</span>, one kill chain — <b>sense, decide, act, assess</b>. Keep the asset alive, defeat the source.</span>
-      <span class="stat">STATUS · <span class="ph" id="phase">STANDBY</span></span>
+      <span class="txt">An all-domain <span class="cy">kill web</span>: any sensor cues the best shooter. <b>F2T2EA</b> runs at machine speed while an <span class="ai">AI / CJADC2 core</span> fuses the picture — a human holds release authority.</span>
+      <span class="stat">STATE · <span class="ph" id="phase">READY</span></span>
     </p>
 
-    <div class="inputs">
-      <div class="inp s"><span class="t">Sensors → Sense</span><span class="c">Layered defense · Counter-UAS</span></div>
-      <div class="inp e"><span class="t">Effectors → Act</span><span class="c">Robotic &amp; autonomous · Integrated fires</span></div>
-    </div>
-
-    <div class="gate-row">
-      <span class="gate" id="gate">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>
-        Human on the loop <span class="st" id="gst">· monitoring</span>
-      </span>
-    </div>
-
-    <div class="chain" id="chain">
-      <div class="sweep"></div>
-      <div class="stage s-sense"><div class="num"><b>01</b> Find·Fix·Track</div><h3>Sense</h3><div class="desc">Detect · classify · track</div><div class="ai">◆ fusion · ATR</div></div>
-      <span class="sep">→</span>
-      <div class="stage s-decide"><div class="num"><b>02</b> Target</div><h3>Decide</h3><div class="desc">Fuse · pair · commit</div><div class="ai">◆ rank COA by Pk</div></div>
-      <span class="sep">→</span>
-      <div class="stage s-act"><div class="num"><b>03</b> Engage</div><h3>Act</h3><div class="desc">Engage the threat</div><div class="ai">◆ auto effector select</div></div>
-      <span class="sep">→</span>
-      <div class="stage s-assess"><div class="num"><b>04</b> Assess</div><h3>Assess</h3><div class="desc">Confirm · re-engage</div><div class="ai">◆ ML BDA · learns</div></div>
-    </div>
-
-    <div class="footer">
-      <div class="panel ai-panel">
-        <div class="ai-head">
-          <span class="t"><i></i> AI decision support</span>
-          <span class="lat">decision <b id="lat">0.18s</b></span>
-        </div>
-        <div class="coa">
-          <div class="row" data-pk="94"><span class="lab"><i>A1</i>Directed energy (HEL)</span><span class="bar2"><span class="f"></span></span><span class="pk">0.94</span></div>
-          <div class="row" data-pk="88"><span class="lab"><i>A2</i>Kinetic interceptor</span><span class="bar2"><span class="f"></span></span><span class="pk">0.88</span></div>
-          <div class="row" data-pk="62"><span class="lab"><i>A3</i>Electronic attack</span><span class="bar2"><span class="f"></span></span><span class="pk">0.62</span></div>
-        </div>
-        <div class="ai-foot" id="coastatus"><span id="coatext">awaiting track</span></div>
+    <div class="main">
+      <div class="scope-wrap">
+        <canvas id="scope" width="600" height="600"></canvas>
+        <div class="scope-tag"><b>LAYERED DEFENSE</b> · plan view</div>
+        <div class="scope-rng" id="rngScale">RANGE 120 km</div>
       </div>
-      <div class="panel out-panel">
-        <div class="chip def" id="outdef"><span class="t">Asset defended</span><span class="s">asset survives</span></div>
-        <div class="chip kill" id="outkill"><span class="t">Source defeated</span><span class="s">threat removed</span></div>
-        <div class="loop" id="loop">↺ learning loop · re-engage</div>
+
+      <div class="side">
+        <div class="panel">
+          <h4>Threat track <span class="r" id="trkState">— no track —</span></h4>
+          <div class="trk">
+            <span class="k">TRK</span><span class="v cy" id="vId">———</span>
+            <span class="k">AFFIL</span><span class="v" id="vAffil">—</span>
+            <span class="k">CLASS</span><span class="v" id="vClass">—</span>
+            <span class="k">BRG</span><span class="v" id="vBrg">—</span>
+            <span class="k">RNG</span><span class="v" id="vRng">—</span>
+            <span class="k">SPD</span><span class="v" id="vSpd">—</span>
+            <span class="k">SHOOTER</span><span class="v" id="vShooter">—</span>
+            <span class="k">Pk</span><span class="v" id="vPk">—</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h4>Command &amp; authority <span class="r">CJADC2</span></h4>
+          <div class="auth">
+            <div class="row"><span class="k">Sensor → shooter</span><span class="v" id="vWeb">any sensor · best shooter</span></div>
+            <div class="row"><span class="k">Weapons posture</span><span class="v weap" id="vWeap">TIGHT</span></div>
+            <div class="row"><span class="k">Release authority</span>
+              <span class="gate" id="gate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg><span id="vAuth">human on the loop</span></span>
+            </div>
+            <div class="bda" id="bda">Standing by — defended asset secure.</div>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <div class="rail">
+      <div class="step" data-step="find"><div class="n"><b>01</b> F2T2EA</div><h5>Find</h5><div class="task">Detect contact across all domains</div><div class="aitag">◆ AI: multi-INT fusion · ATR · auto-cue</div></div>
+      <div class="step" data-step="fix"><div class="n"><b>02</b> F2T2EA</div><h5>Fix</h5><div class="task">Precise geoloc, correlate sensors</div><div class="aitag">◆ AI: multi-sensor correlation · de-dup</div></div>
+      <div class="step" data-step="track"><div class="n"><b>03</b> F2T2EA</div><h5>Track</h5><div class="task">Maintain custody, combat ID</div><div class="aitag">◆ AI: multi-target track · ID · intent</div></div>
+      <div class="step" data-step="target"><div class="n"><b>04</b> F2T2EA</div><h5>Target</h5><div class="task">WTP · ROE / CDE · consent</div><div class="aitag">◆ AI: COA + best-shooter · ROE check</div></div>
+      <div class="step" data-step="engage"><div class="n"><b>05</b> F2T2EA</div><h5>Engage</h5><div class="task">Commit best effector, in depth</div><div class="aitag">◆ AI: fire-control · deconfliction</div></div>
+      <div class="step" data-step="assess"><div class="n"><b>06</b> F2T2EA</div><h5>Assess</h5><div class="task">BDA · re-engage leakers</div><div class="aitag">◆ AI: auto-BDA · leaker detect · learn</div></div>
     </div>
 
     <div class="legend">
-      <span class="i"><span class="sw d"></span> data link</span>
-      <span class="i"><span class="sw e"></span> effectors</span>
-      <span class="i"><span class="sw a"></span> AI decision core</span>
-      <span class="i"><span class="sw l"></span> learning loop</span>
-      <span class="i"><span class="sw h"></span> human on the loop</span>
+      <span class="i"><span class="d sen"></span> all-domain sensor</span>
+      <span class="i"><span class="d ai"></span> AI / CJADC2 fusion</span>
+      <span class="i"><span class="d eff"></span> effector / intercept</span>
+      <span class="i"><span class="d thr"></span> hostile track</span>
+      <span class="i"><span class="d ast"></span> defended asset</span>
     </div>
 
   </div>
@@ -247,95 +211,374 @@
   "use strict";
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  var DEG = Math.PI / 180;
+  var canvas = document.getElementById("scope");
+  var ctx = canvas.getContext("2d");
+
+  // ---- DOM ----
   var btn = document.getElementById("run");
-  var phase = document.getElementById("phase");
-  var lede = document.querySelector(".lede");
-  var sys = document.getElementById("sys");
-  var chain = document.getElementById("chain");
-  var gate = document.getElementById("gate");
-  var gst = document.getElementById("gst");
-  var loop = document.getElementById("loop");
-  var st = {
-    sense: document.querySelector(".s-sense"),
-    decide: document.querySelector(".s-decide"),
-    act: document.querySelector(".s-act"),
-    assess: document.querySelector(".s-assess")
+  var phaseEl = document.getElementById("phase");
+  var ledeEl = document.querySelector(".lede");
+  var sys = document.getElementById("sys"), sysPill = document.getElementById("sysPill");
+  var rngScale = document.getElementById("rngScale");
+  var els = {
+    state: document.getElementById("trkState"),
+    id: document.getElementById("vId"), affil: document.getElementById("vAffil"),
+    cls: document.getElementById("vClass"), brg: document.getElementById("vBrg"),
+    rng: document.getElementById("vRng"), spd: document.getElementById("vSpd"),
+    shooter: document.getElementById("vShooter"), pk: document.getElementById("vPk"),
+    weap: document.getElementById("vWeap"), auth: document.getElementById("vAuth"),
+    gate: document.getElementById("gate"), bda: document.getElementById("bda")
   };
-  var seps = Array.prototype.slice.call(document.querySelectorAll(".sep"));
-  var rows = Array.prototype.slice.call(document.querySelectorAll(".row"));
-  var lat = document.getElementById("lat");
-  var coaStatus = document.getElementById("coastatus");
-  var coaText = document.getElementById("coatext");
-  var outDef = document.getElementById("outdef");
-  var outKill = document.getElementById("outkill");
+  var steps = {};
+  Array.prototype.forEach.call(document.querySelectorAll(".step"), function (s) { steps[s.getAttribute("data-step")] = s; });
+  var STEP_ORDER = ["find", "fix", "track", "target", "engage", "assess"];
 
-  var timers = [], latT = null, running = false;
-  function at(ms, fn) { timers.push(setTimeout(fn, ms)); }
-  function clearTimers() { timers.forEach(clearTimeout); timers = []; if (latT) { clearInterval(latT); latT = null; } }
-  function bars(on) { rows.forEach(function (r) { r.querySelector(".f").style.width = on ? (r.getAttribute("data-pk") + "%") : "0%"; }); }
+  // ---- geometry / nodes ----
+  var W = 600, cx = 300, cy = 300, maxR = 230, dpr = 1;
+  var RANGE_KM = 120;
+  var rDetect, rArea, rPoint;
+  var nodes = [
+    { key:"space",  label:"SPACE",       sub:"OPIR · missile warning", brg:0,   role:"sensor" },
+    { key:"air",    label:"AIR",         sub:"AEW&C · interceptor",    brg:62,  role:"both"   },
+    { key:"sea",    label:"MARITIME",    sub:"Aegis · SPY",            brg:130, role:"both"   },
+    { key:"ground", label:"GROUND",      sub:"AESA · SHORAD / HEL",    brg:208, role:"both"   },
+    { key:"cyber",  label:"CYBER/SIGINT",sub:"passive RF",             brg:300, role:"sensor" }
+  ];
+  function nodeMap(k){ for (var i=0;i<nodes.length;i++) if (nodes[i].key===k) return nodes[i]; }
+  function polar(brg, r){ var a = (brg - 90) * DEG; return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }; }
 
-  function aiResolved() {
-    if (latT) { clearInterval(latT); latT = null; }
-    rows.forEach(function (r, i) { r.classList.add("shown"); r.classList.toggle("sel", i === 0); });
-    bars(true); lat.textContent = "0.18s";
-    coaStatus.classList.add("ok"); coaText.textContent = "human on the loop — approved ✓";
-  }
-  function aiReset() {
-    if (latT) { clearInterval(latT); latT = null; }
-    rows.forEach(function (r) { r.classList.remove("shown", "sel"); });
-    bars(false); coaStatus.classList.remove("ok"); coaText.textContent = "awaiting track"; lat.textContent = "—";
-  }
-  function aiRun() {
-    aiReset(); coaText.textContent = "generating courses of action…";
-    var t = 0; latT = setInterval(function () { t += 0.02; if (t >= 0.18) { t = 0.18; clearInterval(latT); latT = null; } lat.textContent = t.toFixed(2) + "s"; }, 40);
-    rows.forEach(function (r, i) { at(i * 160, function () { r.classList.add("shown"); r.querySelector(".f").style.width = r.getAttribute("data-pk") + "%"; }); });
+  function sizeCanvas() {
+    var w = canvas.clientWidth || 600;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = w; canvas.width = w * dpr; canvas.height = w * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = w / 2; cy = w / 2; maxR = w / 2 - 64;
+    rDetect = maxR; rArea = maxR * 0.66; rPoint = maxR * 0.33;
+    for (var i = 0; i < nodes.length; i++) { var pos = polar(nodes[i].brg, maxR + 30); nodes[i].x = pos.x; nodes[i].y = pos.y; }
   }
 
-  function resting() {
-    Object.keys(st).forEach(function (k) { st[k].classList.remove("active"); });
-    seps.forEach(function (s) { s.classList.remove("lit"); });
-    gate.classList.remove("approve"); gst.textContent = "· monitoring";
-    loop.classList.remove("pulse");
-    outDef.classList.add("lit"); outKill.classList.add("lit");
-    aiResolved();
+  // ---- engagement state ----
+  var THREAT_BRG = 47, INBOUND = 9.5; // seconds edge->point ring
+  var state, sweep = 0, lastT = 0, bursts = [], shots = [], activeSensors = {}, mesh = null;
+
+  function reset() {
+    state = {
+      running:false, t:0, threat:null, phase:null, killed:false, finishAt:0,
+      flags:{}, shooterKey:null
+    };
+    bursts = []; shots = []; activeSensors = {}; mesh = null;
+    STEP_ORDER.forEach(function(k){ steps[k].classList.remove("active","done"); });
+    els.state.textContent = "— no track —";
+    setTxt(els.id,"———"); setV(els.affil,"—",""); setTxt(els.cls,"—"); setTxt(els.brg,"—");
+    setTxt(els.rng,"—"); setTxt(els.spd,"—"); setTxt(els.shooter,"—"); setTxt(els.pk,"—");
+    els.weap.textContent = "TIGHT"; els.weap.classList.remove("free");
+    els.auth.textContent = "human on the loop"; els.gate.classList.remove("ok");
+    els.bda.textContent = "Standing by — defended asset secure."; els.bda.className = "bda";
+    phaseEl.textContent = "READY"; ledeEl.classList.remove("live");
+    sys.textContent = "DEFENDED · NOMINAL"; sysPill.classList.remove("alert");
+  }
+  function setTxt(el,t){ el.textContent = t; }
+  function setV(el,t,cls){ el.textContent = t; el.className = "v" + (cls?(" "+cls):""); }
+  function phase(p, label){ phaseEl.textContent = label; if (!state.phase || STEP_ORDER.indexOf(p) > STEP_ORDER.indexOf(state.phase)) state.phase = p;
+    STEP_ORDER.forEach(function(k){
+      var i = STEP_ORDER.indexOf(k), cur = STEP_ORDER.indexOf(p);
+      steps[k].classList.toggle("active", i===cur);
+      steps[k].classList.toggle("done", i<cur);
+    });
+  }
+  function once(flag, fn){ if (!state.flags[flag]) { state.flags[flag] = true; fn(); } }
+
+  function threatRadius(p){ return maxR * (1.08 - 1.08 * p); }
+  function threatKm(p){ return Math.max(0, RANGE_KM * (threatRadius(p) / maxR)); }
+
+  function run() {
+    if (state.running) return;
+    reset();
+    state.running = true; state.threat = { p:0, alive:true };
+    btn.disabled = true; btn.textContent = "Engaging…";
+    ledeEl.classList.add("live"); sys.textContent = "ENGAGEMENT IN PROGRESS"; sysPill.classList.add("alert");
+    if (reduce) { resolveStatic(); }
+  }
+
+  // discrete events driven by threat progress p
+  function logic(dt) {
+    if (!state.running || !state.threat) return;
+    state.t += dt;
+    var th = state.threat;
+    if (th.alive) th.p = Math.min(1, th.p + dt / INBOUND);
+    var p = th.p, r = threatRadius(p);
+
+    // live track readouts
+    if (p > 0.02) {
+      setTxt(els.brg, String(THREAT_BRG).padStart(3,"0") + "°T");
+      setTxt(els.rng, threatKm(p).toFixed(0) + " km");
+      setTxt(els.spd, "230 m/s");
+    }
+
+    if (p >= 0.05) once("findGo", function () {
+      phase("find","DETECT · ALL-DOMAIN"); els.state.textContent = "ACQUIRING";
+      setTxt(els.id,"TK-0473"); setV(els.affil,"PENDING","pending"); setTxt(els.cls,"UNKNOWN");
+      activeSensors.space = activeSensors.cyber = 1; bursts.push(ping(polar(THREAT_BRG, r)));
+      els.bda.textContent = "New contact — all-domain sensors cueing."; els.bda.className="bda";
+    });
+    if (p >= 0.15) once("fixGo", function () {
+      phase("fix","FIX · CORRELATE"); els.state.textContent = "FIX";
+      activeSensors.air = activeSensors.space = activeSensors.cyber = 1;
+      setV(els.affil,"ASSUMED HOSTILE","pending");
+      els.bda.textContent = "Multi-sensor correlation — single integrated track.";
+    });
+    if (p >= 0.25) once("trackGo", function () {
+      phase("track","TRACK · COMBAT ID"); els.state.textContent = "CUSTODY";
+      activeSensors.ground = activeSensors.sea = 1;
+      setV(els.affil,"HOSTILE","hostile"); setTxt(els.cls,"AIR — HOSTILE");
+    });
+    if (p >= 0.33) once("targetGo", function () {
+      phase("target","TARGET · WTP · CONSENT"); els.state.textContent = "TARGETING";
+      state.shooterKey = "air";
+      setV(els.shooter,"AIR — interceptor","cy");
+      els.weap.textContent = "FREE"; els.weap.classList.add("free");
+      els.auth.textContent = "consent granted"; els.gate.classList.add("ok");
+      els.bda.textContent = "AI pairs best shooter · ROE/CDE checked · operator consents.";
+      mesh = { from:["space","air","ground"], to:"air", t:0 };
+    });
+    // ENGAGE — area defense interceptor (kinetic) at the area ring
+    if (p >= 0.38) once("engageArea", function () {
+      phase("engage","ENGAGE · AREA"); els.state.textContent = "ENGAGED";
+      var n = nodeMap("air"); shots.push({ kind:"kin", x:n.x, y:n.y, color:"#FFB13C", t:0, hit:false, result:"leak" });
+      setTxt(els.pk,"0.62");
+    });
+    // point defense HEL at the inner ring
+    if (p >= 0.66) once("engagePoint", function () {
+      phase("engage","ENGAGE · POINT · HEL"); state.shooterKey="ground";
+      setV(els.shooter,"GROUND — HEL (point)","cy");
+      mesh = { from:["ground","sea"], to:"ground", t:0 };
+      var n = nodeMap("ground"); shots.push({ kind:"hel", x:n.x, y:n.y, color:"#FF6A3D", t:0, dwell:0, hit:false, result:"kill" });
+      setTxt(els.pk,"0.95");
+    });
+
+    // resolve shots
+    for (var i=0;i<shots.length;i++){ stepShot(shots[i], dt, th, r); }
+
+    // finish
+    if (state.killed && !state.finishAt) state.finishAt = state.t + 1.8;
+    if (state.finishAt && state.t >= state.finishAt) finish();
+  }
+
+  function stepShot(s, dt, th, r) {
+    if (s.done) return;
+    var tp = polar(THREAT_BRG, r); // current threat position
+    if (s.kind === "kin") {
+      var dx = tp.x - s.x, dy = tp.y - s.y, d = Math.hypot(dx,dy);
+      var spd = 520 * dt;
+      if (d <= spd + 6) { s.x = tp.x; s.y = tp.y; detonate(s, th, tp); }
+      else { s.x += dx/d*spd; s.y += dy/d*spd; }
+    } else if (s.kind === "hel") {
+      s.dwell += dt; s.tx = tp.x; s.ty = tp.y;
+      if (s.dwell >= 0.55) detonate(s, th, tp);
+    }
+  }
+  function detonate(s, th, tp) {
+    s.done = true;
+    if (s.result === "kill") {
+      bursts.push(burst(tp, 46, "#FF6A3D")); th.alive = false; state.killed = true;
+      phase("assess","SPLASH · ASSET SAFE"); els.state.textContent = "DESTROYED";
+      setV(els.affil,"DESTROYED","hostile"); setTxt(els.pk,"0.95");
+      els.bda.innerHTML = "<b>BDA: DESTROYED</b> — Pk 0.95 · asset defended · cue logged for learning.";
+      els.bda.className = "bda kill";
+      sys.textContent = "THREAT DEFEATED · ASSET SAFE"; sysPill.classList.remove("alert");
+    } else { // leaker
+      bursts.push(burst(tp, 30, "#FFB13C"));
+      phase("assess","ASSESS · LEAKER"); els.state.textContent = "LEAKER";
+      els.bda.innerHTML = "<b>BDA: LEAKER</b> — soft-kill incomplete · AI re-engages in depth.";
+      els.bda.className = "bda leak";
+    }
   }
 
   function finish() {
-    running = false; clearTimers();
+    state.running = false; state.threat = null;
     btn.disabled = false; btn.textContent = "Run engagement";
-    sys.textContent = "NOMINAL"; lede.classList.remove("live"); phase.textContent = "STANDBY";
-    chain.classList.remove("run");
-    resting();
+    ledeEl.classList.remove("live"); phaseEl.textContent = "DEFENDED";
+    STEP_ORDER.forEach(function(k){ steps[k].classList.remove("active"); steps[k].classList.add("done"); });
+    sys.textContent = "DEFENDED · NOMINAL"; sysPill.classList.remove("alert");
   }
 
-  function run() {
-    if (running) return;
-    running = true; clearTimers();
-    Object.keys(st).forEach(function (k) { st[k].classList.remove("active"); });
-    seps.forEach(function (s) { s.classList.remove("lit"); });
-    outDef.classList.remove("lit"); outKill.classList.remove("lit");
-    gate.classList.remove("approve"); gst.textContent = "· monitoring"; loop.classList.remove("pulse");
-    btn.disabled = true; btn.textContent = "Engaging…";
-    sys.textContent = "ENGAGED"; lede.classList.add("live");
-
-    if (reduce) { phase.textContent = "ASSET SAFE · SOURCE DOWN"; resting(); at(900, finish); return; }
-
-    chain.classList.remove("run"); void chain.offsetWidth; chain.classList.add("run");
-    phase.textContent = "DETECT · CLASSIFY";
-    at(0,   function () { st.sense.classList.add("active"); });
-    at(780, function () { st.decide.classList.add("active"); seps[0].classList.add("lit"); phase.textContent = "FUSE · RANK COA"; aiRun(); });
-    at(1500,function () { gate.classList.add("approve"); gst.textContent = "· approved"; rows[0].classList.add("sel"); phase.textContent = "WEAPON–TARGET PAIRING"; });
-    at(1800,function () { coaStatus.classList.add("ok"); coaText.textContent = "human on the loop — approved ✓"; });
-    at(2050,function () { st.act.classList.add("active"); seps[1].classList.add("lit"); phase.textContent = "ENGAGE"; });
-    at(2450,function () { outDef.classList.add("lit"); outKill.classList.add("lit"); });
-    at(2900,function () { st.assess.classList.add("active"); seps[2].classList.add("lit"); phase.textContent = "BATTLE DAMAGE CHECK"; });
-    at(3500,function () { loop.classList.add("pulse"); phase.textContent = "ASSET SAFE · SOURCE DOWN · LEARNING"; });
-    at(4500, finish);
+  function resolveStatic() {
+    // reduced-motion: present the resolved end-state, no animation
+    state.threat = { p:0.66, alive:false }; state.killed = true;
+    setTxt(els.id,"TK-0473"); setV(els.affil,"DESTROYED","hostile"); setTxt(els.cls,"AIR — HOSTILE");
+    setTxt(els.brg,"047°T"); setTxt(els.rng,"40 km"); setTxt(els.spd,"230 m/s");
+    setV(els.shooter,"GROUND — HEL (point)","cy"); setTxt(els.pk,"0.95");
+    els.weap.textContent="FREE"; els.weap.classList.add("free");
+    els.auth.textContent="consent granted"; els.gate.classList.add("ok");
+    els.bda.innerHTML="<b>BDA: DESTROYED</b> — asset defended."; els.bda.className="bda kill";
+    STEP_ORDER.forEach(function(k){ steps[k].classList.add("done"); });
+    phaseEl.textContent="DEFENDED"; ledeEl.classList.remove("live");
+    sys.textContent="THREAT DEFEATED · ASSET SAFE"; sysPill.classList.remove("alert");
+    activeSensors = {space:1,air:1,ground:1,sea:1};
+    bursts.push(burst(polar(THREAT_BRG, threatRadius(0.66)), 40, "#FF6A3D"));
+    drawScene(0); btn.disabled=false; btn.textContent="Run engagement";
   }
 
+  function ping(pt){ return { x:pt.x, y:pt.y, t:0, max:26, color:"rgba(53,222,255,0.8)", ping:true }; }
+  function burst(pt, max, color){ return { x:pt.x, y:pt.y, t:0, max:max, color:color }; }
+
+  // ---- drawing ----
+  function drawScene(dt) {
+    ctx.clearRect(0,0,W,W);
+    drawGrid();
+    drawRings();
+    drawMesh(dt);
+    drawNodes();
+    drawAsset();
+    drawShots();
+    drawThreat();
+    drawBursts(dt);
+    drawSweep(dt);
+  }
+
+  function drawGrid() {
+    ctx.save();
+    ctx.strokeStyle = "rgba(53,222,255,0.08)"; ctx.lineWidth = 1;
+    for (var b=0;b<360;b+=30){ var p=polar(b,maxR); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y); ctx.stroke(); }
+    ctx.restore();
+  }
+  function ring(r, color, w){ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle=color; ctx.lineWidth=w||1; ctx.stroke(); }
+  function drawRings() {
+    // shaded annuli for the layers
+    band(rArea, rDetect, "rgba(53,222,255,0.045)");
+    band(rPoint, rArea, "rgba(255,177,60,0.05)");
+    band(0, rPoint, "rgba(255,93,110,0.05)");
+    ring(rDetect, "rgba(53,222,255,0.5)", 1.4);
+    ring(rArea, "rgba(255,177,60,0.5)", 1.4);
+    ring(rPoint, "rgba(255,93,110,0.55)", 1.4);
+    label("DETECT", rDetect, "rgba(53,222,255,0.7)");
+    label("AREA DEFENSE", rArea, "rgba(255,177,60,0.75)");
+    label("POINT", rPoint, "rgba(255,93,110,0.8)");
+  }
+  function band(r0,r1,fill){ ctx.beginPath(); ctx.arc(cx,cy,r1,0,Math.PI*2); ctx.arc(cx,cy,r0,0,Math.PI*2,true); ctx.fillStyle=fill; ctx.fill("evenodd"); }
+  function label(txt, r, color){ ctx.save(); ctx.font="600 9px "+monoStack(); ctx.fillStyle=color; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(txt, cx, cy - r + 9); ctx.restore(); }
+  function monoStack(){ return 'ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace'; }
+
+  function drawNodes() {
+    for (var i=0;i<nodes.length;i++){
+      var n = nodes[i]; var pos = polar(n.brg, maxR + 30); n.x = pos.x; n.y = pos.y;
+      var on = activeSensors[n.key];
+      var col = on ? "#35DEFF" : "#3A4D6E";
+      // connector tick from ring to node
+      var inn = polar(n.brg, maxR);
+      ctx.strokeStyle = on ? "rgba(53,222,255,0.5)" : "rgba(41,59,90,0.6)"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(inn.x,inn.y); ctx.lineTo(pos.x,pos.y); ctx.stroke();
+      // node dot
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,4.5,0,Math.PI*2); ctx.fillStyle=col;
+      if (on){ ctx.shadowColor="#35DEFF"; ctx.shadowBlur=10; } ctx.fill(); ctx.shadowBlur=0;
+      // label
+      ctx.save(); ctx.font="700 10px "+monoStack(); ctx.fillStyle = on ? "#CFEFFA" : "#6E7E98";
+      ctx.textBaseline="middle";
+      var left = pos.x < cx;
+      ctx.textAlign = left ? "right" : "left";
+      var lx = pos.x + (left ? -9 : 9);
+      ctx.fillText(n.label, clampX(lx, ctx.textAlign), pos.y - 5);
+      ctx.font="400 8.5px "+monoStack(); ctx.fillStyle = "#54637C";
+      ctx.fillText(n.sub, clampX(lx, ctx.textAlign), pos.y + 6);
+      ctx.restore();
+    }
+  }
+  function clampX(x, align){ var m=4; if (align==="right") return Math.max(x, m+40); if (align==="left") return Math.min(x, W-m-40); return x; }
+
+  function drawAsset() {
+    // CJADC2 / AI hub ring
+    var pulse = 0.5 + 0.5*Math.sin(performance.now()/600);
+    ctx.beginPath(); ctx.arc(cx,cy,15+pulse*3,0,Math.PI*2);
+    ctx.strokeStyle="rgba(156,140,255,"+(0.35+pulse*0.3)+")"; ctx.lineWidth=1.4; ctx.stroke();
+    // asset diamond
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.PI/4);
+    ctx.fillStyle="#34E0A1"; ctx.shadowColor="#34E0A1"; ctx.shadowBlur=12;
+    ctx.fillRect(-7,-7,14,14); ctx.restore(); ctx.shadowBlur=0;
+    ctx.font="700 9px "+monoStack(); ctx.fillStyle="#9FF0CF"; ctx.textAlign="center"; ctx.textBaseline="top";
+    ctx.fillText("ASSET", cx, cy+14);
+  }
+
+  function drawMesh(dt) {
+    if (!mesh) return;
+    mesh.t += dt;
+    var hub = { x:cx, y:cy };
+    var pulse = (Math.sin(performance.now()/200)+1)/2;
+    ctx.save(); ctx.strokeStyle = "rgba(156,140,255,"+(0.35+pulse*0.4)+")"; ctx.lineWidth=1.3; ctx.setLineDash([4,4]);
+    mesh.from.forEach(function(k){ var n=nodeMap(k); if(!n) return; ctx.beginPath(); ctx.moveTo(n.x,n.y); ctx.lineTo(hub.x,hub.y); ctx.stroke(); });
+    var sh = nodeMap(mesh.to); if (sh){ ctx.beginPath(); ctx.moveTo(hub.x,hub.y); ctx.lineTo(sh.x,sh.y); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function drawThreat() {
+    var th = state && state.threat; if (!th) return;
+    var r = threatRadius(th.p); var pos = polar(THREAT_BRG, r);
+    // trail
+    ctx.save();
+    for (var i=1;i<=6;i++){ var rr=threatRadius(Math.max(0,th.p - i*0.02)); var tp=polar(THREAT_BRG, rr);
+      ctx.beginPath(); ctx.arc(tp.x,tp.y,2,0,Math.PI*2); ctx.fillStyle="rgba(255,93,110,"+(0.18-i*0.025)+")"; ctx.fill(); }
+    ctx.restore();
+    if (!th.alive) return;
+    // hostile symbol (red, rotated square) + leader toward center
+    ctx.save(); ctx.translate(pos.x,pos.y);
+    var lead = polar(THREAT_BRG, r-22);
+    ctx.strokeStyle="rgba(255,93,110,0.7)"; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(lead.x-pos.x, lead.y-pos.y); ctx.stroke();
+    ctx.rotate(Math.PI/4);
+    ctx.strokeStyle="#FF5D6E"; ctx.fillStyle="rgba(255,93,110,0.25)"; ctx.lineWidth=2;
+    ctx.shadowColor="#FF5D6E"; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.rect(-6,-6,12,12); ctx.fill(); ctx.stroke();
+    ctx.restore(); ctx.shadowBlur=0;
+  }
+
+  function drawShots() {
+    for (var i=0;i<shots.length;i++){ var s=shots[i]; if (s.done) continue;
+      if (s.kind==="kin"){
+        ctx.beginPath(); ctx.arc(s.x,s.y,3,0,Math.PI*2); ctx.fillStyle=s.color;
+        ctx.shadowColor=s.color; ctx.shadowBlur=10; ctx.fill(); ctx.shadowBlur=0;
+      } else if (s.kind==="hel" && s.tx!=null){
+        ctx.save(); ctx.strokeStyle="rgba(255,106,61,0.9)"; ctx.lineWidth=2.4; ctx.shadowColor="#FF6A3D"; ctx.shadowBlur=12;
+        ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(s.tx,s.ty); ctx.stroke(); ctx.restore(); ctx.shadowBlur=0;
+      }
+    }
+  }
+
+  function drawBursts(dt) {
+    for (var i=bursts.length-1;i>=0;i--){ var b=bursts[i]; b.t += dt;
+      var k = b.t / 0.6; if (k>=1){ bursts.splice(i,1); continue; }
+      ctx.beginPath(); ctx.arc(b.x,b.y, b.max*k, 0, Math.PI*2);
+      ctx.globalAlpha = 1-k; ctx.lineWidth = b.ping?1.5:2.4; ctx.strokeStyle = b.color; ctx.stroke(); ctx.globalAlpha=1;
+    }
+  }
+
+  function drawSweep(dt) {
+    if (reduce) return;
+    sweep += dt * 0.5; if (sweep > Math.PI*2) sweep -= Math.PI*2;
+    ctx.save();
+    var span = 0.5;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,maxR, sweep-span, sweep); ctx.closePath();
+    var lg = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+    lg.addColorStop(0,"rgba(53,222,255,0.10)"); lg.addColorStop(1,"rgba(53,222,255,0)");
+    ctx.fillStyle=lg; ctx.fill();
+    ctx.restore();
+  }
+
+  // ---- loop ----
+  function frame(now) {
+    var dt = Math.min(0.05, (now - lastT) / 1000) || 0; lastT = now;
+    if (!reduce) { logic(dt); drawScene(dt); }
+    requestAnimationFrame(frame);
+  }
+
+  function init() {
+    sizeCanvas(); reset();
+    if (reduce) { resolveStatic(); }
+    else { lastT = performance.now(); requestAnimationFrame(frame); setTimeout(run, 900); }
+  }
+  var rt; window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ sizeCanvas(); if (reduce) drawScene(0); }, 150); });
   btn.addEventListener("click", run);
-  resting();
-  if (!reduce) { setTimeout(run, 800); }
+  init();
 })();
 </script>
 </body>
