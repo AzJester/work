@@ -1,31 +1,41 @@
 # work
 My Work Repository
 
-## LDAWIF — AI-Enabled Fire-Control (`index.html`)
+## LDAWIF — All-Domain Kill Web (`index.html`)
 
-A single, self-contained **compact widget** for the LDAWIF concept (Layered Defense ·
-Autonomous Warfare · Integrated Fires), sized to drop into a SharePoint web part — not a
-long scrolling page. Header, capability inputs, the animated kill chain
-(**Sense → Decide → Act → Assess**), an AI decision-support panel that ranks
-weapon–target pairings by probability of kill, a human-on-the-loop gate, and the two
-outcomes all sit in one ~600px view.
+A single, self-contained tactical console for the LDAWIF concept (Layered Defense ·
+Autonomous Warfare · Integrated Fires), built as a warfighter would picture it: a
+**layered-defense scope** with concentric engagement rings around a defended asset,
+all-domain sensor/shooter nodes (space, air, maritime, ground, cyber) meshed by an
+**AI / CJADC2 core** — *any sensor, best shooter*.
+
+Run the engagement and a hostile track is carried through **F2T2EA**
+(Find · Fix · Track · Target · Engage · Assess) at machine speed: AI fuses the picture
+and pairs the best shooter, a human grants release authority, area defense engages, a
+**leaker** is re-engaged in depth by point-defense (HEL), and battle-damage assessment
+closes the loop and feeds the learning cycle.
 
 - **One file, zero external dependencies.** No CDNs, no web fonts, no network calls — so
   it loads in locked-down tenants and works offline.
-- **System fonts only.** At web-part / desktop widths it's a single ~600px-tall tile; in
-  a narrow column the chain wraps to a 2×2 grid. Respects `prefers-reduced-motion`.
+- **System fonts only**, canvas-rendered scope, responsive (the side panels and F2T2EA
+  rail stack below the scope on narrow columns). Respects `prefers-reduced-motion` — it
+  resolves to a static "threat defeated" picture instead of animating.
 - The engagement plays once on load and replays from the **Run engagement** button.
+- Reflects real doctrine: F2T2EA / sensor-to-shooter, the kill web, layered defense in
+  depth, ROE/CDE and weapon-target pairing, and a human holding release authority over
+  the use of force (AI assists and accelerates; it does not pull the trigger).
 
 ## Put it in a SharePoint web part (recommended)
 
 Use the **Embed** web part and point it at the hosted page:
 
 ```html
-<iframe src="https://azjester.github.io/work/" width="100%" height="640" style="border:0"></iframe>
+<iframe src="https://azjester.github.io/work/" width="100%" height="960" style="border:0"></iframe>
 ```
 
-At a full-width or one-column section that fills the web part at ~600px tall. In a
-narrower (two-column) section the chain wraps and gets taller — bump `height` to ~900.
+At a full-width or one-column section that fills the web part at ~940px tall. In a
+narrower (two-column) section the scope and panels stack and it gets taller — bump
+`height` to ~1500.
 
 If the Embed web part says the domain isn't allowed, ask your SharePoint admin to add
 `azjester.github.io` to the embed allow-list (*Site Settings → HTML Field Security*, or
