@@ -1,85 +1,60 @@
 # work
 My Work Repository
 
-## LDAWIF — All-Domain Kill Web (`index.html`)
+## LDAWIF — All-Domain Kill Web
 
-A single, self-contained tactical console for the LDAWIF concept (Layered Defense ·
-Autonomous Warfare · Integrated Fires), built as a warfighter would picture it: a
-**layered-defense scope** with concentric engagement rings around a defended asset,
-all-domain sensor/shooter nodes (space, air, maritime, ground, cyber) meshed by an
-**AI / CJADC2 core** — *any sensor, best shooter*.
+A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·
+Autonomous Warfare · Integrated Fires), **deployed straight from this repo via GitHub
+Pages**. It's a destination page — open or share the link, nothing to embed:
 
-Run the engagement and a hostile track is carried through **F2T2EA**
-(Find · Fix · Track · Target · Engage · Assess) at machine speed: AI fuses the picture
-and pairs the best shooter, a human grants release authority, area defense engages, a
-**leaker** is re-engaged in depth by point-defense (HEL), and battle-damage assessment
-closes the loop and feeds the learning cycle.
+### → https://azjester.github.io/work/
 
-- **One file, zero external dependencies.** No CDNs, no web fonts, no network calls — so
-  it loads in locked-down tenants and works offline.
-- **System fonts only**, canvas-rendered scope, responsive (the side panels and F2T2EA
-  rail stack below the scope on narrow columns). Respects `prefers-reduced-motion` — it
-  resolves to a static "threat defeated" picture instead of animating.
-- The engagement plays once on load and replays from the **Run engagement** button.
-- Reflects real doctrine: F2T2EA / sensor-to-shooter, the kill web, layered defense in
-  depth, ROE/CDE and weapon-target pairing, and a human holding release authority over
-  the use of force (AI assists and accelerates; it does not pull the trigger).
+## What it shows
 
-## Put it in a SharePoint web part (recommended)
+A tactical **layered-defense scope** drawn as a warfighter would picture it: concentric
+engagement rings (surveillance 120 km → area defense 80 km → point 40 km) around a
+defended asset, all-domain sensor/shooter nodes (space, air, maritime, ground, cyber)
+meshed by an **AI / CJADC2 core** — *any sensor, best shooter*.
 
-Use the **Embed** web part and point it at the hosted page:
+Run the engagement and a **multi-axis raid** (AIR, UAS, ASCM, AIR) comes inbound. Each
+track is carried through **F2T2EA** (Find · Fix · Track · Target · Engage · Assess) at
+machine speed:
 
-```html
-<iframe src="https://azjester.github.io/work/" width="100%" height="960" style="border:0"></iframe>
-```
+- AI fuses all-domain sensors into one track picture and runs combat ID
+- AI pairs the **best shooter per threat** across domains (Air SAM, Ground SAM, Maritime
+  SM) and checks ROE/CDE; a **human grants release authority**
+- effectors engage in depth; a **leaker** (the ASCM) is re-engaged by point-defense HEL
+- battle-damage assessment confirms the raid defeated and feeds the learning loop
 
-At a full-width or one-column section that fills the web part at ~940px tall. In a
-narrower (two-column) section the scope and panels stack and it gets taller — bump
-`height` to ~1500.
+A live **track table**, a command & authority panel, and the six-step F2T2EA rail update
+as the engagement runs. A friendly CAP track is held but never engaged — combat-ID
+discrimination in action.
 
-If the Embed web part says the domain isn't allowed, ask your SharePoint admin to add
-`azjester.github.io` to the embed allow-list (*Site Settings → HTML Field Security*, or
-the tenant embed setting).
+## How it's deployed
 
-> Prefer to keep it fully inside your tenant? Upload `index.html` to a document library
-> and embed that file's URL instead — same iframe, no GitHub hosting needed.
+- `.github/workflows/pages.yml` publishes the repo to GitHub Pages on every push to
+  `main`. The repo is public and Pages is enabled, so the live URL above stays current.
+- **To update it:** edit `index.html`, commit, and push to `main` — the workflow
+  redeploys automatically (about a minute). Check **Actions → Deploy to GitHub Pages**
+  for the green run.
 
-## Hosting it on GitHub Pages
+## Build notes
 
-`.github/workflows/pages.yml` publishes the repo to GitHub Pages on every push to `main`.
-The live URL is:
+One file, **zero external dependencies** (no CDNs, no web fonts, no network calls).
+System fonts only; the scope is canvas-rendered. Responsive — the side panels and
+F2T2EA rail stack below the scope on narrow screens, and sensor labels are placed so
+nothing clips at any width. Respects `prefers-reduced-motion` (resolves to a static
+"raid defeated" picture instead of animating).
 
-```
-https://azjester.github.io/work/
-```
+The track IDs, classes, Pk values, and timings are illustrative for the demo — not real
+system performance. By doctrine, AI assists and accelerates the kill chain; a human
+retains release authority over the use of force.
 
-**This repo is currently private**, and GitHub Pages can't serve a private repo to
-SharePoint viewers (they'd hit a GitHub login wall). To go live:
-
-1. **Make the repo public** — *Settings → General → Danger Zone → Change visibility →
-   Make public*. (This can't be done from the API; it's an owner-only setting.)
-2. **Enable Pages** — *Settings → Pages → Build and deployment → Source: GitHub Actions.*
-3. **Re-run the deploy** — *Actions → Deploy to GitHub Pages → Re-run jobs* (or just push
-   any commit). Confirm it finishes green; the page is then live at the URL above.
-
-> Making the repo public exposes all of its contents. This is a generic concept page with
-> no sensitive data; if anything here shouldn't be public, host it on Azure Static Web
-> Apps / an internal static host (or inside SharePoint) instead, and swap the URLs.
-
-## Optional: a clickable image that opens the page
-
-If you'd rather show a banner that opens the widget in a new tab:
-
-- **No-code — Image web part:** **+ → Image**, upload `poster.png`, then set its **Link**
-  to `https://azjester.github.io/work/`.
-- **HTML — Embed web part:** paste `embed-snippet.html` (a ready-made `<a><img></a>`).
-
-## What's in this folder
+## Files
 
 | File | Purpose |
 |------|---------|
-| `index.html` | The compact, self-contained LDAWIF widget. Fills a web part; no external deps; respects `prefers-reduced-motion`. |
-| `poster.png` | 1200×630 banner image, for the optional clickable-image setup. |
-| `poster.html` | Source used to render `poster.png`. |
-| `embed-snippet.html` | Ready-to-paste clickable `<a><img></a>` for the Embed web part. |
-| `.github/workflows/pages.yml` | Publishes the page to GitHub Pages on push to `main`. |
+| `index.html` | The standalone LDAWIF site (the whole app). |
+| `poster.png` / `poster.html` | A 1200×630 banner image and its source (for link previews / social cards). |
+| `.github/workflows/pages.yml` | Publishes the site to GitHub Pages on push to `main`. |
+| `embed-snippet.html` | Optional `<a><img></a>` if you ever want to link to the site from elsewhere. |
