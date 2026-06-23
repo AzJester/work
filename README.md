@@ -78,8 +78,11 @@ them and run KPIs**, use the cloud-backed version:
   for a clean paste into email. The Anthropic call runs server-side in a Supabase **Edge
   Function** (`weekly-summary`) so the API key never reaches the browser.
   - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
-    (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
-    `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
+    (Edge Functions → Secrets). It uses your Anthropic API credits.
+  - **Models:** the weekly summary runs on **Opus 4.8** (`claude-opus-4-8`) for a more
+    polished exec narrative — override with an `ANTHROPIC_SUMMARY_MODEL` secret. The
+    high-volume note extractors (`extract-tasks`, `task-actions`) run on **Sonnet 4.6**
+    (`claude-sonnet-4-6`) for speed/cost — override with `ANTHROPIC_MODEL`.
 - **📝 Import notes (AI note taker → tasks)** — paste the summary or transcript from any AI
   note taker (Plaud, Soundcore, Otter, Fireflies, Zoom/Teams/Meet AI, …) and Claude extracts the action
   items as draft tasks — with project, priority, due date, a context note, and checkable
