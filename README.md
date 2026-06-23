@@ -30,6 +30,20 @@ A live **track table**, a command & authority panel, and the six-step F2T2EA rai
 as the engagement runs. A friendly CAP track is held but never engaged — combat-ID
 discrimination in action.
 
+## Drive it
+
+- **Scenario picker** — *Single*, *Raid*, *Swarm*, or *Mixed* (TBM, sea-skimming cruise,
+  UAS, and air, each routed to a class-appropriate layer). Pause/replay any run.
+- **Break the kill web** — click any sensor or shooter on the scope to take it
+  **offline**; the AI re-routes to the best *remaining* shooter and keeps fighting.
+- **Jam comms** — contest the datalink; edge nodes keep engaging **autonomously**
+  (mission command). A jamming track also degrades a radar mid-fight while fusion holds
+  custody from the other domains.
+- **Narration** — a running plain-English caption explains each phase and event, so it
+  briefs itself to non-experts.
+- **Deep-link a scenario** — `…/work/?scenario=swarm` (or `single` / `raid` / `mixed`)
+  opens straight into that run.
+
 ## How it's deployed
 
 - `.github/workflows/pages.yml` publishes the repo to GitHub Pages on every push to
