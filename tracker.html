@@ -554,7 +554,10 @@
     <section class="view" id="v-kudos" hidden>
       <div class="htoolbar" style="justify-content:space-between">
         <p class="hint" style="margin:0">Log praise &amp; recognition — it’s tracked here and appears on your shared dashboard.</p>
-        <button class="btn" id="addKudos" type="button">+ Add kudos</button>
+        <div class="htoolbar" style="gap:8px">
+          <button class="btn ghost sm" id="kudosCsv" type="button">⬇ CSV</button>
+          <button class="btn" id="addKudos" type="button">+ Add kudos</button>
+        </div>
       </div>
       <div id="kudosBody"></div>
     </section>
@@ -1285,6 +1288,23 @@ function exportCompletedCSV(){
   }));
   downloadCSV("completed-tasks-"+todayIso()+".csv", out);
 }
+async function exportKudosCSV(btn){
+  const orig = btn ? btn.textContent : null; if (btn){ btn.disabled = true; btn.textContent = "Preparing…"; }
+  let rows = kudosList;
+  if (!rows) {
+    const { data, error } = await sb.from("kudos")
+      .select("kudos_date,source,title,details")
+      .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+    if (error){ if (btn){ btn.disabled=false; btn.textContent=orig; } alert("Kudos CSV export failed: " + error.message); return; }
+    rows = data || [];
+  }
+  if (btn){ btn.disabled = false; btn.textContent = orig; }
+  const header = ["Date","From / source","For","Details"];
+  const out = [header].concat((rows||[]).map(k => [
+    k.kudos_date||"", k.source||"", k.title||"", htmlToText(k.details).replace(/\r?\n+/g," / ")
+  ]));
+  downloadCSV("kudos-"+todayIso()+".csv", out);
+}
 
 // ============ TABS ============
 const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"],
@@ -1309,6 +1329,7 @@ $("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
 let kudosList = null;
 const kudosTimers = {};
 $("addKudos").addEventListener("click", addKudos);
+$("kudosCsv").addEventListener("click", function(){ exportKudosCSV(this); });
 async function loadKudos(){
   const body = $("kudosBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading kudos…</div>';

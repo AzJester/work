@@ -63,7 +63,8 @@ them and run KPIs**, use the cloud-backed version:
 - Same **Copy / Markdown / Print-PDF** exports for the week, plus **⬇ Download all as CSV**
   (full history) on the History tab.
 - **Kudos** tab — log praise & recognition (date, source, what it was for, and the quote);
-  it's tracked here and shown on your shared dashboard for leadership.
+  it's tracked here and shown on your shared dashboard for leadership. **⬇ CSV** exports all
+  kudos (date, source, for, details) for your records.
 - **Undo deletes** — deleting a task, action item, week, or kudos shows an **Undo** toast so a
   wrong delete is one click to restore.
 - **Rich text & links** — the **Comments & updates** and **Kudos details** fields are
