@@ -28,13 +28,31 @@
     -webkit-font-smoothing:antialiased; }
   .app { max-width:1240px; margin:0 auto; padding:18px clamp(14px,2.4vw,28px) 28px; display:flex; flex-direction:column; gap:13px; }
 
-  .bar { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
-  .brand { display:flex; align-items:baseline; gap:10px; }
+  .bar { display:flex; align-items:center; gap:12px 16px; flex-wrap:wrap; }
+  .brand { display:flex; align-items:baseline; gap:10px; flex:0 0 auto; }
   .brand .glyph { color:var(--cyan); font-size:15px; }
   .brand b { font-size:24px; font-weight:800; letter-spacing:0.05em;
     background:linear-gradient(180deg,#FFFFFF,#9FC6E6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
   .brand .sub { font-family:var(--mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); }
-  .ctrls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .ctrls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1 1 360px; }
+  .ctrls .actions { margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .vrule { width:1px; align-self:stretch; min-height:22px; background:var(--line-2); }
+  /* utilities overflow menu */
+  .more { position:relative; }
+  .more-menu { position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:206px;
+    display:flex; flex-direction:column; gap:2px; padding:6px; border:1px solid var(--line-2); border-radius:10px;
+    background:linear-gradient(180deg, rgba(16,26,46,0.98), rgba(10,16,28,0.98)); box-shadow:0 18px 50px -18px #000; }
+  .more-menu[hidden] { display:none; }
+  .more-menu .mi { display:flex; align-items:center; gap:8px; width:100%; justify-content:flex-start; text-align:left;
+    font-family:var(--mono); font-size:11.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--dim);
+    background:transparent; border:0; border-radius:6px; padding:9px 11px; cursor:pointer; white-space:nowrap; }
+  .more-menu .mi:hover { background:rgba(53,222,255,0.10); color:var(--text); }
+  .more-menu .mi.on { color:var(--cyan); }
+  .more-menu .mi:disabled { color:var(--mut); cursor:default; }
+  .more-menu .mi:disabled:hover { background:transparent; }
+  .more-menu .mi:focus-visible { outline:2px solid var(--cyan); outline-offset:-2px; }
+  /* status readouts (not controls) */
+  .statusbar { display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap; margin:-3px 0 1px; }
   .dtg { font-family:var(--mono); font-size:11.5px; letter-spacing:0.08em; color:var(--dim); }
   .seg { display:inline-flex; border:1px solid var(--line-2); border-radius:8px; overflow:hidden; }
   .seg button { font-family:var(--mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--dim);
@@ -169,6 +187,16 @@
   .gloss-list dd { margin:0; font-size:12.5px; color:var(--dim); line-height:1.45; }
   .gloss-foot { margin:14px 0 0; padding-top:11px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11.5px; color:var(--mut); line-height:1.6; }
 
+  /* glossary trigger lives in the footer (reference material, not a top control) */
+  .doctrine .gloss-link { display:inline-flex; align-items:center; gap:7px; margin-top:6px;
+    font-family:var(--mono); font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--cyan);
+    background:transparent; border:1px solid var(--line-2); border-radius:7px; padding:8px 12px; cursor:pointer; }
+  .doctrine .gloss-link:hover { border-color:var(--cyan); color:var(--text); }
+  .doctrine .gloss-link:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+
+  /* sticky mobile primary action (hidden on desktop) */
+  .mobile-run { display:none; }
+
   /* bigger touch targets / cleaner controls on phones */
   @media (max-width:600px) {
     .ctrls { gap:8px; row-gap:9px; }
@@ -176,6 +204,14 @@
     .seg button { padding:11px 13px; font-size:11.5px; }
     .tour .t-btn { padding:9px 14px; }
     .gloss-list { grid-template-columns:1fr; gap:2px 0; } .gloss-list dt { margin-top:9px; }
+    .more-menu .mi { padding:12px 12px; font-size:12px; }
+    .ctrls .actions { width:100%; }
+    .vrule { display:none; }
+    .app { padding-bottom:88px; }
+    .mobile-run { display:block; position:fixed; left:0; right:0; bottom:0; z-index:55;
+      padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+      background:linear-gradient(180deg, rgba(7,11,20,0), rgba(7,11,20,0.92) 32%, var(--ground)); }
+    .mobile-run .btn { width:100%; padding:15px; font-size:13px; }
   }
 </style>
 </head>
@@ -185,27 +221,37 @@
     <div class="bar">
       <div class="brand"><span class="glyph">◈</span><b>LDAWIF</b><span class="sub">all-domain kill web</span></div>
       <div class="ctrls">
-        <span class="dtg" id="dtg">------Z</span>
         <div class="seg" id="seg" role="group" aria-label="Scenario">
           <button type="button" data-scn="single">Single</button>
           <button type="button" data-scn="raid" class="on">Raid</button>
           <button type="button" data-scn="swarm">Swarm</button>
           <button type="button" data-scn="mixed">Mixed</button>
         </div>
-        <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
-        <button class="btn ghost" id="comms" type="button">Jam comms</button>
-        <button class="btn ghost" id="snd" type="button" aria-pressed="false" title="Sound cues (off by default)">Sound</button>
-        <button class="btn ghost" id="gloss" type="button" aria-haspopup="dialog" title="Glossary of terms &amp; symbols">? Glossary</button>
-        <button class="btn ghost" id="tour" type="button" title="Guided walkthrough of every capability">Tour ▸</button>
-        <div class="seg" id="speedSeg" role="group" aria-label="Playback speed" title="Playback speed">
-          <button type="button" data-spd="0.5">0.5×</button>
-          <button type="button" data-spd="1" class="on">1×</button>
-          <button type="button" data-spd="2">2×</button>
+        <span class="vrule" aria-hidden="true"></span>
+        <div class="more" id="moreWrap">
+          <button class="btn ghost" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" title="More tools">More ▾</button>
+          <div class="more-menu" id="moreMenu" role="menu" aria-label="More tools" hidden>
+            <button class="mi" id="comms" type="button" role="menuitem">Jam comms</button>
+            <button class="mi" id="snd" type="button" role="menuitem" aria-pressed="false">Sound cues</button>
+            <button class="mi" id="tour" type="button" role="menuitem">Guided tour ▸</button>
+            <button class="mi" id="aar" type="button" role="menuitem" disabled>Download AAR ↓</button>
+          </div>
         </div>
-        <button class="btn ghost" id="pause" type="button">Pause</button>
-        <button class="btn ghost" id="aar" type="button" disabled title="Download after-action report (PNG)">AAR ↓</button>
-        <button class="btn" id="run" type="button">Run engagement</button>
+        <div class="actions">
+          <div class="seg" id="speedSeg" role="group" aria-label="Playback speed" title="Playback speed">
+            <button type="button" data-spd="0.5">0.5×</button>
+            <button type="button" data-spd="1" class="on">1×</button>
+            <button type="button" data-spd="2">2×</button>
+          </div>
+          <button class="btn ghost" id="pause" type="button">Pause</button>
+          <button class="btn" id="run" type="button">Run engagement</button>
+        </div>
       </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="dtg" id="dtg">------Z</span>
+      <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
     </div>
 
     <p class="lede">
@@ -292,6 +338,7 @@
           <li><b>DoDD 3000.09</b> — Autonomy in Weapon Systems: appropriate human judgment over the use of force. AI assists and accelerates; a human holds release authority.</li>
           <li><b>MIL-STD-2525</b> — common warfighting symbology (affiliation frames + class amplifiers used on the scope).</li>
         </ul>
+        <button class="gloss-link" id="gloss" type="button" aria-haspopup="dialog">? Open glossary — terms &amp; symbols</button>
       </div>
       <div class="dcol">
         <h5>Methodology</h5>
@@ -305,6 +352,10 @@
       </div>
     </footer>
 
+  </div>
+
+  <div class="mobile-run" id="mobileRun">
+    <button class="btn" id="mRun" type="button">▶ Run engagement</button>
   </div>
 
   <div class="gloss-wrap" id="glossary" hidden>
@@ -821,7 +872,7 @@
   }
 
   function frame(now){ var dt=Math.min(0.05,(now-lastT)/1000)||0; lastT=now; var sdt=dt*speed;
-    if (!reduce && !document.hidden){ logic(sdt); drawScene(sdt); } requestAnimationFrame(frame); }
+    if (!reduce && !document.hidden){ logic(sdt); drawScene(sdt); } syncMobileRun(); requestAnimationFrame(frame); }
 
   // controls
   Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){ b.addEventListener("click", function(){
@@ -950,7 +1001,7 @@
     speed=parseFloat(b.getAttribute("data-spd"));
     Array.prototype.forEach.call(speedSeg.querySelectorAll("button"), function(x){ x.classList.toggle("on", x===b); }); }); });
 
-  // ---- glossary dialog ----
+  // ---- glossary dialog (trigger lives in the footer) ----
   var glossBtn=document.getElementById("gloss"), glossary=document.getElementById("glossary"), glossClose=document.getElementById("glossClose");
   function openGloss(){ glossary.hidden=false; glossClose.focus(); }
   function closeGloss(){ glossary.hidden=true; glossBtn.focus(); }
@@ -958,9 +1009,24 @@
   glossClose.addEventListener("click", closeGloss);
   glossary.addEventListener("click", function(e){ if (e.target===glossary) closeGloss(); });
 
+  // ---- "More" utilities menu (sound · jam · tour · AAR) ----
+  var moreWrap=document.getElementById("moreWrap"), moreBtn=document.getElementById("moreBtn"), moreMenu=document.getElementById("moreMenu");
+  function openMore(){ moreMenu.hidden=false; moreBtn.setAttribute("aria-expanded","true"); }
+  function closeMore(){ moreMenu.hidden=true; moreBtn.setAttribute("aria-expanded","false"); }
+  moreBtn.addEventListener("click", function(e){ e.stopPropagation(); moreMenu.hidden?openMore():closeMore(); });
+  document.addEventListener("click", function(e){ if (moreWrap && !moreWrap.contains(e.target)) closeMore(); });
+  Array.prototype.forEach.call(moreMenu.querySelectorAll(".mi"), function(b){ b.addEventListener("click", function(){ setTimeout(closeMore,0); }); });
+
+  // ---- sticky mobile primary action (mirrors space-bar: run, or pause/resume while live) ----
+  var mRun=document.getElementById("mRun"), _mLbl="";
+  function syncMobileRun(){ if (!mRun) return;
+    var l=(state&&state.running) ? (paused?"▶ Resume":"⏸ Pause") : "▶ Run engagement";
+    if (l!==_mLbl){ _mLbl=l; mRun.textContent=l; } }
+  mRun.addEventListener("click", function(){ if (state&&state.running) pauseBtn.click(); else run(); });
+
   // ---- keyboard shortcuts (when not typing in a control) ----
   document.addEventListener("keydown", function(e){
-    if (e.key==="Escape" && !glossary.hidden){ closeGloss(); return; }
+    if (e.key==="Escape"){ if (!glossary.hidden){ closeGloss(); return; } if (!moreMenu.hidden){ closeMore(); return; } }
     var tag=(e.target&&e.target.tagName)||""; if (/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(tag)) return;
     var k=e.key.toLowerCase();
     if (e.key===" "||k==="k"){ e.preventDefault(); if (state&&state.running) pauseBtn.click(); else run(); }
