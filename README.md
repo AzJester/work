@@ -68,6 +68,13 @@ them and run KPIs**, use the cloud-backed version:
   formatted editors: select text for **Bold / Italic / bullet list / Link** (Ctrl/Cmd+K),
   and pasted URLs auto-link. Stored HTML is sanitized (allowlist) so the public shared
   dashboard stays safe.
+- **✨ AI weekly summary** — a **Draft summary** button turns the week's tasks, blockers, and
+  kudos into a polished executive narrative (Accomplishments · Risks & blockers · Next week)
+  you can edit and copy. The Anthropic call runs server-side in a Supabase **Edge Function**
+  (`weekly-summary`) so the API key never reaches the browser.
+  - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
+    (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
+    `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose).
