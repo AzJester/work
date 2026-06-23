@@ -73,6 +73,18 @@
   .chip.s-blocked { color:var(--red); background:var(--red-bg); } .chip.s-done { color:var(--slate); background:var(--slate-bg); }
   .prog-cell { font-family:var(--mono); font-size:12px; color:var(--ink-2); white-space:nowrap; }
   .col-pri { color:var(--ink-2); }
+  .t-main { font-weight:600; }
+  .t-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:3px; }
+  .tag-proj { font-size:11px; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; }
+  .tag-due { font-family:var(--mono); font-size:11px; color:var(--ink-2); background:#EEF2F8; border-radius:999px; padding:2px 8px; }
+  .tag-due.od { color:var(--red); background:var(--red-bg); }
+  .tag-date { font-family:var(--mono); font-size:11px; color:var(--mut); background:#F1F4F9; border-radius:999px; padding:2px 8px; }
+  .tag-date.done { color:var(--green); background:var(--green-bg); }
+  .t-note { color:var(--mut); font-size:12.5px; margin-top:4px; white-space:pre-line; }
+  .t-items { margin:6px 0 0; padding:0; list-style:none; }
+  .t-items li { font-size:12.5px; color:var(--ink-2); padding:1px 0; }
+  .t-items li.hdr { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); margin-bottom:2px; }
+  .t-items li.done { color:var(--mut); text-decoration:line-through; }
 
   @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
   @media print { @page { margin:14mm; } body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; } }
@@ -108,6 +120,28 @@ function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&am
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
 function statusChipCls(s){ return s==="On Track"?"s-ontrack":s==="At Risk"?"s-atrisk":s==="Blocked"?"s-blocked":"s-done"; }
+function todayIso(){ const d=new Date(); const p=n=>(n<10?"0":"")+n; return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function shortDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]); return d.toLocaleDateString(undefined,{ month:"short", day:"numeric" }); }
+function taskCell(t){
+  let html = '<div class="t-main">'+esc(t.task)+'</div>';
+  const tags = [];
+  if (t.project && String(t.project).trim()) tags.push('<span class="tag-proj">'+esc(t.project)+'</span>');
+  if (t.due_date) {
+    const od = t.due_date < todayIso() && t.status !== "Done";
+    tags.push('<span class="tag-due'+(od?' od':'')+'">due '+shortDate(t.due_date)+'</span>');
+  }
+  if (t.started_on) tags.push('<span class="tag-date">started '+shortDate(t.started_on)+'</span>');
+  if (t.completed_on) tags.push('<span class="tag-date done">completed '+shortDate(t.completed_on)+'</span>');
+  if (tags.length) html += '<div class="t-tags">'+tags.join("")+'</div>';
+  if (t.note && String(t.note).trim()) html += '<div class="t-note">'+esc(t.note)+'</div>';
+  const items = Array.isArray(t.items) ? t.items : [];
+  if (items.length) {
+    const done = items.filter(i=>i.done).length;
+    html += '<ul class="t-items"><li class="hdr">Action items · '+done+'/'+items.length+'</li>'
+      + items.map(it => '<li class="'+(it.done?"done":"")+'">'+(it.done?"☑":"☐")+' '+esc(it.text)+'</li>').join("") + '</ul>';
+  }
+  return html;
+}
 
 function showMessage(title, body){
   $("root").innerHTML = '<div class="muted-empty"><h2>'+esc(title)+'</h2><p>'+body+'</p></div>';
@@ -172,7 +206,7 @@ function reportBlock(r, open){
   const blk = tasks.filter(t=>t.status==="Blocked").length;
   const risk = tasks.filter(t=>t.status==="At Risk").length;
   const rows = tasks.length ? tasks.map(t =>
-    '<tr><td>'+esc(t.task)+(t.note? '<div style="color:var(--mut);font-size:12.5px;margin-top:2px">'+esc(t.note)+'</div>':'')+'</td>'
+    '<tr><td>'+taskCell(t)+'</td>'
     + '<td><span class="chip '+statusChipCls(t.status)+'">'+esc(t.status)+'</span></td>'
     + '<td class="col-pri">'+esc(t.priority)+'</td>'
     + '<td class="prog-cell">'+(+t.progress||0)+'%</td></tr>').join("")
