@@ -35,10 +35,16 @@ them and run KPIs**, use the cloud-backed version:
   - **Week navigation** — ◀ / ▶ / **This week** to jump between weeks.
   - **Carry forward** — a new week pre-fills with last week's unfinished tasks (Done items
     drop off); keep them or **Start blank**.
+  - **Collapsible task list** — each task collapses to a one-line summary (project · ☑
+    checklist count · due · latest note), so a week of tasks reads as a tidy scannable list;
+    click a task (the ▸ caret) to expand and edit, or **⊟ Collapse all / ⊞ Expand all**.
   - **Daily updates / comments** — a per-task notes box with **＋ today** to stamp a dated
-    line, so the week's progress builds up without overwriting earlier notes.
+    line, so the week's progress builds up without overwriting earlier notes. An **✎ Log
+    today** button stamps today's line into every task that hasn't been updated yet, and an
+    amber dot flags tasks **needing today's update** (green when done).
   - **Action items** — a checkable sub-list under each task; tick them off as you go
-    (a ☑ counter shows progress), and reorder them with **▲ / ▼**.
+    (a ☑ counter shows progress), reorder them with **▲ / ▼**, and press **Enter** to add the
+    next one. Date fields have **Today / +1 week** quick-buttons, and new rows auto-focus.
   - **Projects, due dates & sorting** — tag each task with a project/area and a due date
     (overdue ones flag red); sort the list **By status**, **By due date**, **By project /
     area**, or **Manual**. The chosen sort also drives the **Print / PDF**, **Copy as text**,

@@ -131,7 +131,30 @@
   table.tasks tbody td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
   table.tasks tbody tr:last-child td { border-bottom:0; }
   table.tasks tbody tr:not(.detail):hover td { background:var(--hover); }
-  .col-num { width:30px; color:var(--mut); font-family:var(--mono); font-size:12px; text-align:right; padding-top:13px !important; }
+  .col-num { width:46px; color:var(--mut); font-family:var(--mono); font-size:12px; padding-top:11px !important; }
+  .col-num-inner { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
+  .rowcaret { font-size:11px; line-height:1; color:var(--mut); background:transparent; border:0; cursor:pointer; padding:2px 1px; border-radius:4px; }
+  .rowcaret:hover { color:var(--accent); background:var(--hover); }
+  .rnum { font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
+  .updot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .updot.need { background:var(--amber); box-shadow:0 0 0 2px var(--amber-bg); }
+  .updot.ok { background:var(--green); }
+  .updot.none { background:transparent; }
+  tr.collapsed .updot.need { width:9px; height:9px; }
+  .row-sub { display:flex; flex-wrap:wrap; align-items:center; gap:6px 9px; padding:3px 8px 2px; font-size:12px; color:var(--mut); cursor:pointer; }
+  .row-sub > span { white-space:nowrap; }
+  .row-sub .rs-proj { color:var(--ink-2); font-weight:600; }
+  .row-sub .rs-chk { font-family:var(--mono); font-size:11px; }
+  .row-sub .rs-chk.all { color:var(--green); }
+  .row-sub .rs-due { font-family:var(--mono); font-size:11px; }
+  .row-sub .rs-due.od { color:var(--red); }
+  .row-sub .rs-note { color:var(--mut); font-style:italic; overflow:hidden; text-overflow:ellipsis; max-width:46ch; }
+  .row-sub .rs-empty { color:var(--line); font-style:italic; }
+  .dquick { display:inline-flex; gap:4px; margin-left:2px; }
+  .dqbtn { font-family:var(--disp); font-size:10.5px; font-weight:600; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:6px; padding:3px 7px; cursor:pointer; }
+  .dqbtn:hover { border-color:var(--accent); }
+  .todaylab { font-family:var(--mono); font-size:11px; color:var(--mut); margin-right:2px; }
+  #logToday.hot { color:var(--amber); border-color:#EFD9A0; background:var(--amber-bg); }
   .col-status { width:130px; } .col-pri { width:84px; } .col-prog { width:140px; } .col-act { width:96px; }
   .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; transition:border-color .12s, box-shadow .12s, background .12s; }
   .cell-input:hover { border-color:var(--line-2); }
@@ -174,9 +197,10 @@
   /* full-width detail area under each task */
   tr.detail td { padding-top:0; padding-bottom:16px; background:var(--input-bg); }
   .detail-wrap { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
-  .meta-col { flex:0 0 290px; display:flex; flex-direction:column; gap:7px; }
+  .meta-col { flex:0 0 320px; display:flex; flex-direction:column; gap:8px; }
+  .meta-col .dlab { flex-wrap:wrap; row-gap:4px; }
   .work-col { flex:1 1 340px; min-width:0; display:flex; flex-direction:column; gap:6px; }
-  .cmh, .ai-head { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); }
+  .cmh, .ai-head { font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-2); font-weight:600; }
   .ai-head { display:flex; align-items:center; gap:10px; margin-top:6px; }
   .work-col textarea.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:9px 11px; }
   .work-col textarea.note:hover { border-color:var(--line-2); }
@@ -339,7 +363,7 @@
   .richtext.empty::before { content:attr(data-ph); color:var(--mut); pointer-events:none; }
   .richtext a { color:var(--accent); text-decoration:underline; }
   .richtext ul, .richtext ol { margin:4px 0; padding-left:22px; }
-  .work-col .richtext.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:9px 11px; font-size:13.5px; line-height:1.45; }
+  .work-col .richtext.note { width:100%; min-height:76px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:10px 12px; font-size:13.5px; line-height:1.5; }
   .work-col .richtext.note:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .kcardk .richtext.kdetails { min-height:38px; }
   .rt-wrap { display:flex; flex-direction:column; gap:5px; }
@@ -385,6 +409,9 @@
   }
   @media print {
     @page { margin:14mm; }
+    /* collapsed tasks still print their full detail */
+    tr.detail[hidden] { display:table-row !important; }
+    tr.collapsed { break-inside:avoid; }
     /* always print light, even if dark mode is on */
     :root, :root[data-theme="dark"] {
       --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
@@ -393,7 +420,7 @@
       --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
     }
     body { background:#fff; }
-    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .cmove, .rt-bar, .fromnotes { display:none !important; }
+    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .cmove, .rt-bar, .fromnotes, .rowcaret, .updot, .dquick, .row-sub { display:none !important; }
     .cmh, .ai-head { color:#555 !important; }
     .view#v-history, .view#v-kpis, .view#v-completed, .view#v-kudos { display:none !important; }
     /* no borders/shadows around the page or table */
@@ -508,11 +535,14 @@
 
       <div class="actions">
         <button class="btn" id="add" type="button">+ Add task</button>
+        <button class="btn ghost" id="logToday" type="button" title="Stamp today's date into every task that has no update yet today">✎ Log today</button>
         <button class="btn ghost" id="importNotes" type="button" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
         <button class="btn ghost" id="save" type="button">Save to cloud</button>
         <button class="btn ghost" id="aiSummary" type="button" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
         <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
         <span class="spacer"></span>
+        <span class="todaylab" id="todaylab"></span>
+        <button class="btn ghost sm" id="collapseAll" type="button" title="Collapse or expand all tasks">⊟ Collapse all</button>
         <label class="sortlab">Sort
           <select id="sortMode">
             <option value="status">By status</option>
@@ -898,6 +928,8 @@ $("carryBlank").addEventListener("click", () => {
   setSave("", "New week — not saved yet");
 });
 $("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
+$("logToday").addEventListener("click", logTodayAll);
+$("collapseAll").addEventListener("click", toggleCollapseAll);
 
 function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
 function scheduleSave(){
@@ -1056,16 +1088,29 @@ function renderRows(){
   // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
   const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
   updateDoneToggle();
-  if (!visible.length) { renderEmptyWeek(rowsEl); return; }
+  if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
   visible.forEach((item, dispIdx) => {
     const row = item.row, i = item.idx;
     if (!Array.isArray(row.items)) row.items = [];
     let startedInput, completedInput, dueInput, counter, note;
 
     // ---------- main row: title + status / priority / progress / delete ----------
-    const tr = document.createElement("tr");
+    const open = rowOpen(row); row._open = open;
+    const tr = document.createElement("tr"); tr.className = open ? "" : "collapsed";
 
-    const tdNum = document.createElement("td"); tdNum.className = "col-num"; tdNum.textContent = dispIdx+1; tr.appendChild(tdNum);
+    const tdNum = document.createElement("td"); tdNum.className = "col-num";
+    const caret = document.createElement("button"); caret.type = "button"; caret.className = "rowcaret";
+    caret.textContent = open ? "▾" : "▸"; caret.title = open ? "Collapse task" : "Expand task";
+    caret.setAttribute("aria-label", caret.title);
+    caret.addEventListener("click", () => { row._open = !open; renderRows(); });
+    const rnum = document.createElement("span"); rnum.className = "rnum"; rnum.textContent = dispIdx+1;
+    const dot = document.createElement("span"); dot.className = "updot";
+    if (needsUpdate(row)) { dot.classList.add("need"); dot.title = "No update logged today"; }
+    else if (isActiveRow(row) && updatedToday(row)) { dot.classList.add("ok"); dot.title = "Updated today"; }
+    else { dot.classList.add("none"); }
+    const numInner = document.createElement("div"); numInner.className = "col-num-inner";
+    numInner.appendChild(caret); numInner.appendChild(rnum); numInner.appendChild(dot);
+    tdNum.appendChild(numInner); tr.appendChild(tdNum);
 
     const tdTask = document.createElement("td");
     const task = document.createElement("textarea");
@@ -1075,7 +1120,20 @@ function renderRows(){
       if (!row.started && task.value.trim()) { row.started = todayIso(); if (startedInput) startedInput.value = row.started; }
       scheduleSave();
     });
-    tdTask.appendChild(task); tr.appendChild(tdTask);
+    tdTask.appendChild(task);
+    // collapsed summary line (project · checklist · due · first note line) — click to expand
+    const sub = document.createElement("div"); sub.className = "row-sub"; sub.hidden = open;
+    const parts = [];
+    if (row.project && row.project.trim()) parts.push('<span class="rs-proj">'+escHtml(row.project.trim())+'</span>');
+    const subItems = normItems(row.items);
+    if (subItems.length) { const d = subItems.filter(x=>x.done).length; parts.push('<span class="rs-chk'+(d===subItems.length?' all':'')+'">☑ '+d+'/'+subItems.length+'</span>'); }
+    if (row.due) parts.push('<span class="rs-due'+(row.due<todayIso()&&row.status!=="Done"?' od':'')+'">'+shortDate(row.due)+'</span>');
+    const subNote = htmlToText(row.note).trim().split(/\r?\n/)[0];
+    if (subNote) parts.push('<span class="rs-note">'+escHtml(subNote.slice(0,90))+'</span>');
+    sub.innerHTML = parts.length ? parts.join("") : '<span class="rs-empty">No details yet — click to add</span>';
+    sub.addEventListener("click", () => { row._open = true; renderRows(); });
+    tdTask.appendChild(sub);
+    tr.appendChild(tdTask);
 
     const tdStatus = document.createElement("td"); tdStatus.className = "col-status";
     const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status);
@@ -1127,7 +1185,7 @@ function renderRows(){
     rowsEl.appendChild(tr);
 
     // ---------- detail row: project + dates (left) | comments + action items (fills the width) ----------
-    const dtr = document.createElement("tr"); dtr.className = "detail";
+    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open;
     const dspacer = document.createElement("td"); dspacer.className = "col-num"; dtr.appendChild(dspacer);
     const dtd = document.createElement("td"); dtd.colSpan = 5;
     const dwrap = document.createElement("div"); dwrap.className = "detail-wrap";
@@ -1147,10 +1205,18 @@ function renderRows(){
     completedInput = document.createElement("input");
     completedInput.className = "mini date"; completedInput.type = "date"; completedInput.title = "Date completed"; completedInput.value = row.completed || "";
     completedInput.addEventListener("change", () => { row.completed = completedInput.value; scheduleSave(); });
+    const setDue = (iso) => { dueInput.value = iso; row.due = iso; markOverdue(dueInput, row); if (sortMode==="due") renderRows(); scheduleSave(); };
+    const dueQuick = document.createElement("span"); dueQuick.className = "dquick";
+    dueQuick.appendChild(mkMini("Today", "Set due to today", () => setDue(todayIso())));
+    dueQuick.appendChild(mkMini("+1w", "Push due out one week", () => setDue(addDaysIso(row.due || todayIso(), 7))));
+    const startQuick = document.createElement("span"); startQuick.className = "dquick";
+    startQuick.appendChild(mkMini("Today", "Set start to today", () => { startedInput.value = todayIso(); row.started = todayIso(); scheduleSave(); }));
+    const doneQuick = document.createElement("span"); doneQuick.className = "dquick";
+    doneQuick.appendChild(mkMini("Today", "Set completed to today", () => { completedInput.value = todayIso(); row.completed = todayIso(); scheduleSave(); }));
     meta.appendChild(dateField("Area", proj));
-    meta.appendChild(dateField("Due", dueInput));
-    meta.appendChild(dateField("Start", startedInput));
-    meta.appendChild(dateField("Done", completedInput));
+    meta.appendChild(dateField("Due", dueInput, dueQuick));
+    meta.appendChild(dateField("Start", startedInput, startQuick));
+    meta.appendChild(dateField("Done", completedInput, doneQuick));
 
     // work column (comments + action items) — fills the remaining width
     const work = document.createElement("div"); work.className = "work-col";
@@ -1158,6 +1224,7 @@ function renderRows(){
     work.appendChild(cmh);
     const noteWrap = makeRich(row.note, "Comment, progress, blocker…", (html) => { row.note = html; scheduleSave(); });
     note = noteWrap.querySelector(".richtext"); note.classList.add("note");
+    if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "note") pendingFocusEl = note;
     work.appendChild(noteWrap);
     const logWrap = document.createElement("div"); logWrap.className = "logbtn";
     const logBtn = document.createElement("button"); logBtn.type = "button"; logBtn.className = "tlog"; logBtn.textContent = "＋ today";
@@ -1190,6 +1257,15 @@ function renderRows(){
       cb.addEventListener("change", () => { it.done = cb.checked; ci.classList.toggle("done", cb.checked); updateCounter(counter, row); scheduleSave(); });
       const tx = document.createElement("input"); tx.type = "text"; tx.value = it.text; tx.placeholder = "Action item";
       tx.addEventListener("input", () => { it.text = tx.value; scheduleSave(); });
+      tx.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          row.items.splice(k+1, 0, { text:"", done:false });
+          pendingFocus = { row, type:"item", k:k+1 };
+          updateCounter(counter, row); renderRows(); scheduleSave();
+        }
+      });
+      if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "item" && pendingFocus.k === k) pendingFocusEl = tx;
       const xb = document.createElement("button"); xb.type = "button"; xb.className = "cdel"; xb.textContent = "✕"; xb.title = "Remove action item";
       xb.addEventListener("click", () => {
         const removed = it, at = k;
@@ -1205,7 +1281,7 @@ function renderRows(){
       ci.appendChild(cb); ci.appendChild(tx); ci.appendChild(up); ci.appendChild(dn); ci.appendChild(xb); list.appendChild(ci);
     });
     const addBtn = document.createElement("button"); addBtn.type = "button"; addBtn.className = "addItem"; addBtn.textContent = "＋ action item";
-    addBtn.addEventListener("click", () => { row.items.push({ text:"", done:false }); updateCounter(counter, row); renderRows(); scheduleSave(); });
+    addBtn.addEventListener("click", () => { row.items.push({ text:"", done:false }); pendingFocus = { row, type:"item", k:row.items.length-1 }; updateCounter(counter, row); renderRows(); scheduleSave(); });
     list.appendChild(addBtn);
     work.appendChild(list);
 
@@ -1214,6 +1290,8 @@ function renderRows(){
 
     autosize(task);
   });
+  updateDailyBar();
+  flushPendingFocus();
 }
 function updateCounter(el, row){
   const items = Array.isArray(row.items) ? row.items : [];
@@ -1231,10 +1309,12 @@ function mkIbtn(label, title, fn){
   b.type = "button"; b.className = "ibtn"; b.textContent = label; b.title = title; b.setAttribute("aria-label", title);
   b.addEventListener("click", fn); return b;
 }
-function dateField(labelText, input){
+function dateField(labelText, input, extra){
   const w = document.createElement("label"); w.className = "dlab";
   const s = document.createElement("span"); s.className = "dl"; s.textContent = labelText;
-  w.appendChild(s); w.appendChild(input); return w;
+  w.appendChild(s); w.appendChild(input);
+  if (extra) w.appendChild(extra);
+  return w;
 }
 function moveRow(i, dir){
   const j = i + dir; if (j < 0 || j >= state.rows.length) return;
@@ -1244,6 +1324,60 @@ function moveItem(row, k, dir){
   const items = row.items; const j = k + dir;
   if (!Array.isArray(items) || j < 0 || j >= items.length) return;
   const t = items[k]; items[k] = items[j]; items[j] = t; renderRows(); scheduleSave();
+}
+
+// ----- daily-entry helpers: "updated today", collapse, focus-after-render -----
+let pendingFocus = null, pendingFocusEl = null;
+function todayStamp(){ return shortDate(todayIso()); }
+function isActiveRow(row){ return !!(row.task && row.task.trim()) && row.status !== "Done"; }
+function updatedToday(row){
+  if (row.completed === todayIso() || row.started === todayIso()) return true;
+  return (row.note || "").indexOf(todayStamp()) !== -1;
+}
+function needsUpdate(row){ return isActiveRow(row) && !updatedToday(row); }
+function rowOpen(row){ return (row._open !== undefined) ? row._open : !(row.task && row.task.trim()); }
+function stampTodayNote(row){
+  const stamp = todayStamp() + ": ";
+  const cur = richDisplay(row.note || "");           // normalize plain-or-HTML to safe HTML
+  const had = cur.trim() && cur.trim() !== "<br>";
+  row.note = escHtml(stamp) + (had ? "<br>" + cur : "");
+}
+function logTodayAll(){
+  const targets = state.rows.filter(needsUpdate);
+  if (!targets.length) { setSave("ok", "All caught up — every active task has today's update"); return; }
+  targets.forEach(r => { stampTodayNote(r); r._open = true; });
+  pendingFocus = { row: targets[0], type: "note" };
+  renderRows(); scheduleSave();
+  setSave("ok", "Stamped today’s line on " + targets.length + " task" + (targets.length===1?"":"s"));
+}
+function toggleCollapseAll(){
+  const anyOpen = state.rows.some(rowOpen);
+  state.rows.forEach(r => { r._open = !anyOpen; });
+  renderRows();
+}
+function updateDailyBar(){
+  const n = state.rows.filter(needsUpdate).length;
+  const lt = $("logToday");
+  if (lt) { lt.textContent = n ? ("✎ Log today (" + n + ")") : "✎ Log today"; lt.classList.toggle("hot", n>0); }
+  const ca = $("collapseAll");
+  if (ca) ca.textContent = state.rows.some(rowOpen) ? "⊟ Collapse all" : "⊞ Expand all";
+  const td = $("todaylab"); if (td) td.textContent = "Today · " + shortDate(todayIso());
+}
+function flushPendingFocus(){
+  if (!pendingFocusEl) { pendingFocus = null; return; }
+  const el = pendingFocusEl; pendingFocusEl = null; pendingFocus = null;
+  setTimeout(() => {
+    el.focus();
+    if (el.isContentEditable) {
+      const r = document.createRange(); r.selectNodeContents(el); r.collapse(true);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+  }, 0);
+}
+function mkMini(label, title, fn){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "dqbtn"; b.textContent = label; b.title = title;
+  b.addEventListener("click", fn); return b;
 }
 function updateDoneToggle(){
   const n = state.rows.filter(r => r.status === "Done").length;
