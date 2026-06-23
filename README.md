@@ -31,8 +31,22 @@ them and run KPIs**, use the cloud-backed version:
 
 - **Sign in** (email + password) and every week is saved to a **Supabase (Postgres)**
   database — not just this browser. Edits auto-save.
+- **Daily workflow** — built for entering work daily and updating it through the week:
+  - **Week navigation** — ◀ / ▶ / **This week** to jump between weeks.
+  - **Carry forward** — a new week pre-fills with last week's unfinished tasks (Done items
+    drop off); keep them or **Start blank**.
+  - **Daily updates / comments** — a per-task notes box with **＋ today** to stamp a dated
+    line, so the week's progress builds up without overwriting earlier notes.
+  - **Action items** — a checkable sub-list under each task; tick them off as you go
+    (a ☑ counter shows progress).
+  - **Projects, due dates & sorting** — tag each task with a project/area and a due date
+    (overdue ones flag red); sort the list **By status**, **By due date**, or **Manual**.
+  - **Start & completion dates** — auto-stamped (start when you first name a task, complete
+    when you mark it Done) and editable.
 - **History** tab — every past week, with at-a-glance counts; click **Open** to reload or
   re-export any week.
+- **Completed** tab — a searchable archive of every finished task across all weeks, with the
+  week, project, and start → completion dates (and how long it took).
 - **KPIs** tab — computed across all your weeks:
   - **Completion & throughput** — tasks done per week and % completion rate
   - **Blocked & at-risk trend** — stacked counts over time
