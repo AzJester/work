@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Weekly Status — Shared Dashboard</title>
+<title>Shane's Weekly Tracker — Shared Dashboard</title>
 <meta name="robots" content="noindex, nofollow" />
 <meta name="description" content="Read-only shared view of weekly task status: KPI trends (completion, blocked/at-risk, velocity, carryover) and each week's report." />
 <style>
@@ -82,7 +82,7 @@
 <div class="wrap">
   <header class="mast">
     <div>
-      <h1 id="title">Weekly Status</h1>
+      <h1 id="title">Shane's Weekly Tracker</h1>
       <div class="tag" id="subtitle">Shared dashboard</div>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
@@ -121,9 +121,9 @@ function showMessage(title, body){
   if (error) { showMessage("Couldn’t load", esc(error.message)); return; }
   if (!data) { showMessage("Link not valid", "This share link is unknown or has been revoked. Ask the owner for a fresh link."); return; }
 
-  const prep = data.prepared_by || "Weekly Status";
-  $("title").textContent = prep;
-  $("subtitle").textContent = "Weekly status · read-only shared dashboard";
+  const prep = (data.prepared_by || "").trim();
+  $("title").textContent = "Shane's Weekly Tracker";
+  $("subtitle").textContent = (prep ? prep + " · " : "") + "read-only shared dashboard";
   $("roPill").hidden = false; $("print").hidden = false;
   $("print").addEventListener("click", () => window.print());
 
