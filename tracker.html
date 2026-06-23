@@ -323,10 +323,16 @@
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 
-  .sharebar { background:var(--accent-soft); border:1px solid #D7D9FB; border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; box-shadow:var(--shadow-sm); }
-  .sharebar strong { font-size:13px; }
-  .sharebar input { flex:1 1 260px; font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px; }
-  .sharebar .note { width:100%; font-size:12px; color:var(--ink-2); margin:0; }
+  .sharebar { background:var(--accent-soft); border:1px solid #D7D9FB; border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; box-shadow:var(--shadow-sm); }
+  :root[data-theme="dark"] .sharebar { border-color:#3A3F66; }
+  .share-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .share-head strong { font-size:13px; }
+  .share-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .share-label { width:130px; font:inherit; font-size:12.5px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
+  .share-url { flex:1 1 240px; min-width:0; font:inherit; font-size:12px; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
+  .share-label:focus, .share-url:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .share-loading { font-size:12.5px; color:var(--ink-2); padding:6px 0; }
+  .sharebar .note { font-size:12px; color:var(--ink-2); margin:6px 0 0; }
   .sharebar[hidden] { display:none; }
 
   @media (max-width:760px) {
@@ -431,12 +437,14 @@
   <!-- ============ APP ============ -->
   <main id="app" hidden>
     <section class="sharebar" id="sharebar" hidden>
-      <strong>Read-only share link</strong>
-      <input id="shareUrl" type="text" readonly aria-label="Share link" />
-      <button class="btn ghost sm" id="shareCopy" type="button">Copy</button>
-      <button class="btn ghost sm danger" id="shareRevoke" type="button">Revoke &amp; regenerate</button>
-      <p class="note">Anyone with this link can view your KPIs and weekly reports — <b>read-only, no login</b>.
-        Forwarding the link grants access; <b>Revoke &amp; regenerate</b> invalidates it immediately.</p>
+      <div class="share-head">
+        <strong>Read-only share links</strong>
+        <button class="btn ghost sm" id="shareAdd" type="button">+ New link</button>
+      </div>
+      <div id="shareList"></div>
+      <p class="note">Each link opens a <b>read-only</b> dashboard — anyone with a link can view, no login.
+        Give a link a label (e.g., a person), <b>Copy</b> it, and <b>Revoke</b> any single link without
+        affecting the others.</p>
     </section>
 
     <div class="tabs" id="nav-tabs" role="tablist">
@@ -1553,43 +1561,53 @@ function stackedChart(labels, risk, blocked){
   return svgOpen() + axis(max) + bars + xLabels(labels) + '</svg>';
 }
 
-// ============ SHARE LINK ============
-async function activeShareToken(){
-  const { data, error } = await sb.from("shares").select("token")
-    .eq("revoked", false).order("created_at", { ascending:false }).limit(1);
-  if (error) throw error;
-  return (data && data.length) ? data[0].token : null;
-}
-async function ensureShareToken(){
-  let tok = await activeShareToken();
-  if (tok) return tok;
-  const { data, error } = await sb.from("shares").insert({ user_id: session.user.id }).select("token").single();
-  if (error) throw error;
-  return data.token;
-}
+// ============ SHARE LINKS (per recipient) ============
 function shareUrlFor(token){ return new URL("dashboard.html", location.href).href + "?s=" + token; }
-$("shareToggle").addEventListener("click", async () => {
+const shareTimers = {};
+$("shareToggle").addEventListener("click", () => {
   const bar = $("sharebar");
   if (!bar.hidden) { bar.hidden = true; return; }
-  bar.hidden = false; $("shareUrl").value = "Generating link…";
-  try { $("shareUrl").value = shareUrlFor(await ensureShareToken()); }
-  catch (e) { $("shareUrl").value = "Error: " + (e.message || e); }
+  bar.hidden = false; loadShares();
 });
-$("shareCopy").addEventListener("click", function(){
-  const inp = $("shareUrl"); inp.select(); const text = inp.value; const btn = this;
-  const done = () => { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
-  else { try { document.execCommand("copy"); done(); } catch(e){} }
+$("shareAdd").addEventListener("click", async () => {
+  const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "" }).select("token,label").single();
+  if (error) { alert("Could not create link: " + error.message); return; }
+  loadShares();
 });
-$("shareRevoke").addEventListener("click", async () => {
-  if (!confirm("Revoke the current link and generate a new one? The old link stops working immediately.")) return;
-  $("shareUrl").value = "Working…";
-  try {
-    const { error } = await sb.from("shares").update({ revoked:true }).eq("revoked", false);
-    if (error) throw error;
-    $("shareUrl").value = shareUrlFor(await ensureShareToken());
-  } catch (e) { $("shareUrl").value = "Error: " + (e.message || e); }
-});
+async function loadShares(){
+  const list = $("shareList");
+  list.innerHTML = '<div class="share-loading"><span class="spin"></span> Loading…</div>';
+  const { data, error } = await sb.from("shares").select("token,label,created_at")
+    .eq("revoked", false).order("created_at", { ascending:true });
+  if (error) { list.innerHTML = '<div class="share-loading">Error: '+esc(error.message)+'</div>'; return; }
+  if (!data || !data.length) { list.innerHTML = '<div class="share-loading">No links yet — click <b>+ New link</b> to create one.</div>'; return; }
+  list.innerHTML = "";
+  data.forEach(s => {
+    const row = document.createElement("div"); row.className = "share-row";
+    const label = document.createElement("input"); label.className = "share-label"; label.type = "text";
+    label.placeholder = "Label (e.g. CEO)"; label.value = s.label || "";
+    label.addEventListener("input", () => {
+      clearTimeout(shareTimers[s.token]);
+      shareTimers[s.token] = setTimeout(() => { sb.from("shares").update({ label: label.value }).eq("token", s.token); }, 600);
+    });
+    const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true; url.value = shareUrlFor(s.token);
+    const copy = document.createElement("button"); copy.type = "button"; copy.className = "btn ghost sm"; copy.textContent = "Copy";
+    copy.addEventListener("click", () => {
+      url.select();
+      const done = () => { copy.textContent = "Copied ✓"; setTimeout(() => copy.textContent = "Copy", 1100); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url.value).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
+      else { try { document.execCommand("copy"); done(); } catch(e){} }
+    });
+    const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "btn ghost sm danger"; revoke.textContent = "Revoke";
+    revoke.addEventListener("click", async () => {
+      if (!confirm("Revoke this link" + (s.label ? ' for “'+s.label+'”' : "") + "? It stops working immediately.")) return;
+      await sb.from("shares").update({ revoked: true }).eq("token", s.token);
+      loadShares();
+    });
+    row.appendChild(label); row.appendChild(url); row.appendChild(copy); row.appendChild(revoke);
+    list.appendChild(row);
+  });
+}
 
 // ============ THEME ============
 // ============ PRINT KUDOS TOGGLE ============

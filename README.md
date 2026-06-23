@@ -76,6 +76,10 @@ them and run KPIs**, use the cloud-backed version:
     (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
     `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
+- **Per-recipient share links** — create multiple labelled read-only links (one per person)
+  from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
+- **Exec summary header** — the shared dashboard opens with the latest week at a glance
+  (tasks · done % · at-risk · blocked · avg progress · weeks tracked).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose).
 
