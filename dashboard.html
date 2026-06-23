@@ -61,6 +61,16 @@
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent);
     border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; } @keyframes sp { to { transform:rotate(360deg); } }
 
+  /* exec summary header */
+  .execbar { display:flex; align-items:center; justify-content:space-between; gap:18px 24px; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; margin-bottom:18px; box-shadow:var(--shadow); }
+  .exec-k { font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); }
+  .exec-wk { font-size:18px; font-weight:800; letter-spacing:-0.01em; }
+  .exec-stats { display:flex; gap:22px; flex-wrap:wrap; }
+  .exec-s .exec-n { font-size:20px; font-weight:800; letter-spacing:-0.01em; }
+  .exec-s.g .exec-n { color:var(--green); } .exec-s.a .exec-n { color:var(--amber); } .exec-s.r .exec-n { color:var(--red); }
+  .exec-s .exec-sl { font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
+
   /* KPIs */
   .kgrid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
   .kcard { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
@@ -319,10 +329,27 @@ function render(data){
         '</div>').join("") + '</div>'
     : '';
 
+  // exec summary header — latest week at a glance
+  const lw = latest;
+  const lwRate = +lw.completion_rate || 0;
+  const execHtml =
+    '<div class="execbar">' +
+      '<div class="exec-l"><div class="exec-k">Latest · week ending</div><div class="exec-wk">'+(prettyDate(lw.week_ending)||lw.week_ending)+'</div></div>' +
+      '<div class="exec-stats">' +
+        execStat(lw.total_tasks, "tasks") +
+        execStat((lw.done||0)+' · '+lwRate+'%', "done", "g") +
+        (lw.at_risk ? execStat(lw.at_risk, "at risk", "a") : "") +
+        (lw.blocked ? execStat(lw.blocked, "blocked", "r") : "") +
+        execStat((lw.avg_progress||0)+'%', "avg progress") +
+        execStat(wk.length, "weeks tracked") +
+      '</div>' +
+    '</div>';
+
   const repHtml = '<h2 class="sec">Weekly reports</h2>' + reports.map((r,idx) => reportBlock(r, idx===0)).join("");
 
-  $("root").innerHTML = kpis + kudosHtml + repHtml;
+  $("root").innerHTML = execHtml + kpis + kudosHtml + repHtml;
 }
+function execStat(n, l, tone){ return '<div class="exec-s '+(tone||"")+'"><div class="exec-n">'+n+'</div><div class="exec-sl">'+l+'</div></div>'; }
 
 function reportBlock(r, open){
   const tasks = r.tasks || [];
