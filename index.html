@@ -72,13 +72,36 @@
   .narrate.safe { border-left-color:var(--green); } .narrate.safe .mk { color:var(--green); }
   .narrate b { color:var(--text); font-weight:600; }
 
+  .tour { display:flex; align-items:center; gap:12px; flex-wrap:wrap; border:1px solid rgba(156,140,255,0.5); border-radius:8px;
+    background:linear-gradient(180deg, rgba(28,24,54,0.8), rgba(16,16,34,0.7)); padding:10px 14px; }
+  .tour[hidden] { display:none; }
+  .tour .t-mk { font-family:var(--mono); font-size:11px; letter-spacing:0.12em; color:var(--ai); white-space:nowrap; }
+  .tour .t-txt { flex:1 1 240px; font-size:13.5px; color:var(--text); } .tour .t-txt b { color:var(--ai); }
+  .tour .t-step { font-family:var(--mono); font-size:11px; color:var(--mut); white-space:nowrap; }
+  .tour .t-btn { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
+    color:#100A24; background:var(--ai); border:1px solid var(--ai); border-radius:6px; padding:6px 12px; white-space:nowrap; }
+  .tour .t-btn.ghost { color:var(--ai); background:transparent; }
+  .tour .t-btn:focus-visible { outline:2px solid var(--ai); outline-offset:2px; }
+
+  .doctrine { display:grid; grid-template-columns:repeat(3,1fr); gap:18px 28px; margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+  .doctrine h5 { margin:0 0 7px; font-family:var(--mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--cyan); }
+  .doctrine ul { margin:0; padding-left:16px; } .doctrine li { font-size:12.5px; color:var(--dim); line-height:1.5; margin-bottom:5px; }
+  .doctrine p { margin:0 0 7px; font-size:12.5px; color:var(--dim); line-height:1.55; }
+  .doctrine b { color:var(--text); font-weight:600; }
+  .doctrine .note { color:var(--mut); font-size:11.5px; } .doctrine .note b { color:var(--amber); }
+  @media (max-width:780px) { .doctrine { grid-template-columns:1fr; } }
+
   .main { display:grid; grid-template-columns:minmax(440px,1.18fr) 1fr; gap:16px; align-items:stretch; }
   .scope-wrap { position:relative; border:1px solid var(--line); border-radius:14px;
     background:radial-gradient(circle at 50% 47%, rgba(53,222,255,0.05), transparent 60%), var(--ground-2); overflow:hidden; }
   .scope-wrap canvas { display:block; width:100%; height:auto; }
-  .scope-tag { position:absolute; top:11px; left:13px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); }
-  .scope-tag b { color:var(--cyan); font-weight:600; }
-  .scope-rng { position:absolute; top:11px; right:13px; font-family:var(--mono); font-size:10px; letter-spacing:0.06em; color:var(--mut); text-align:right; line-height:1.5; }
+  .scope-top { position:absolute; top:10px; left:13px; right:13px; display:flex; justify-content:space-between; gap:6px 16px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); pointer-events:none; }
+  .scope-top b { color:var(--cyan); font-weight:600; }
+  .scope-top .st-r { text-align:right; }
+  .scope-foot { position:absolute; left:13px; right:13px; bottom:9px; text-align:center; pointer-events:none;
+    font-family:var(--mono); font-size:10px; letter-spacing:0.05em; color:var(--mut); line-height:1.5; }
+  .scope-foot .hint { color:var(--blue); }
 
   .side { display:flex; flex-direction:column; gap:12px; }
   .panel { border:1px solid var(--line-2); border-radius:12px; background:linear-gradient(180deg, rgba(12,20,36,0.7), rgba(10,16,28,0.55)); padding:13px 15px; }
@@ -146,6 +169,7 @@
         <button class="btn ghost" id="comms" type="button">Jam comms</button>
         <button class="btn ghost" id="cb" type="button" aria-pressed="false" title="Colorblind-safe palette">CB</button>
         <button class="btn ghost" id="snd" type="button" aria-pressed="false" title="Sound cues (off by default)">Sound</button>
+        <button class="btn ghost" id="tour" type="button" title="Guided walkthrough of every capability">Tour ▸</button>
         <button class="btn ghost" id="pause" type="button">Pause</button>
         <button class="btn ghost" id="aar" type="button" disabled title="Download after-action report (PNG)">AAR ↓</button>
         <button class="btn" id="run" type="button">Run engagement</button>
@@ -157,13 +181,24 @@
       <span class="stat">STATE · <span class="ph" id="phase">READY</span></span>
     </p>
 
-    <div class="narrate" id="narr"><span class="mk">▸</span><span id="narrTxt">Pick a scenario and run the engagement. Click any sensor or shooter on the scope to take it offline — the kill web re-routes. “Jam comms” contests the datalink.</span></div>
+    <div class="tour" id="tourBar" hidden>
+      <span class="t-mk">◉ GUIDED TOUR</span>
+      <span class="t-txt" id="tourTxt"></span>
+      <span class="t-step" id="tourStep">1 / 7</span>
+      <button class="t-btn" id="tourNext" type="button">Next ▸</button>
+      <button class="t-btn ghost" id="tourSkip" type="button">Skip</button>
+    </div>
+
+    <div class="narrate" id="narr"><span class="mk">▸</span><span id="narrTxt">Pick a scenario and run the engagement. Click any sensor or shooter on the scope to take it offline — the kill web re-routes. “Jam comms” contests the datalink. New here? Hit <b>Tour</b>.</span></div>
 
     <div class="main">
       <div class="scope-wrap">
         <canvas id="scope" width="600" height="600"></canvas>
-        <div class="scope-tag"><b>LAYERED DEFENSE</b> · plan view · <span style="color:var(--blue)">click a node to take it offline</span></div>
-        <div class="scope-rng" id="rngScale">range rings 40 / 80 / 120 km · bearings °TRUE<br>MIL-STD-2525: ⌃ hostile air · ⌒ friend · letter = class</div>
+        <div class="scope-top">
+          <span class="st-l"><b>LAYERED DEFENSE</b> · plan view</span>
+          <span class="st-r">range 40 / 80 / 120 km · °TRUE</span>
+        </div>
+        <div class="scope-foot"><span class="hint">click a node to take it offline</span> · 2525: ⌃ hostile · ⌒ friend · A/U/M/B class</div>
       </div>
 
       <div class="side">
@@ -211,6 +246,28 @@
       <span class="i"><span class="d frd"></span> friendly (combat ID)</span>
       <span class="i"><span class="d ast"></span> defended asset</span>
     </div>
+
+    <footer class="doctrine">
+      <div class="dcol">
+        <h5>Doctrine &amp; references</h5>
+        <ul>
+          <li><b>F2T2EA</b> — Find, Fix, Track, Target, Engage, Assess; the dynamic-targeting / sensor-to-shooter kill chain.</li>
+          <li><b>CJADC2</b> — Combined Joint All-Domain Command &amp; Control: fuse any sensor to the best shooter across domains (the “kill web”).</li>
+          <li><b>DoDD 3000.09</b> — Autonomy in Weapon Systems: appropriate human judgment over the use of force. AI assists and accelerates; a human holds release authority.</li>
+          <li><b>MIL-STD-2525</b> — common warfighting symbology (affiliation frames + class amplifiers used on the scope).</li>
+        </ul>
+      </div>
+      <div class="dcol">
+        <h5>Methodology</h5>
+        <p>A browser model of layered air/all-domain defense. Tracks are carried through F2T2EA while an AI core prioritizes by time-to-impact, pairs the best <i>available</i> shooter, and re-engages leakers in depth. Probability-of-kill is rolled; magazines are finite; comms and nodes can be degraded to show resilience.</p>
+        <p class="note"><b>Notional / illustrative.</b> Track IDs, Pk, magazine depths, latencies and timings are for demonstration — not real system performance, doctrine quantities, or any fielded capability.</p>
+      </div>
+      <div class="dcol">
+        <h5>About</h5>
+        <p>LDAWIF — Layered Defense · Autonomous Warfare · Integrated Fires. Single self-contained page; no external dependencies. Respects reduced-motion; colorblind-safe palette and MIL-STD-2525 symbology available.</p>
+        <p class="note">Built as a concept demonstrator.</p>
+      </div>
+    </footer>
 
   </div>
 
@@ -784,6 +841,41 @@
     aEl.download="LDAWIF-AAR-"+a.scn+"-"+a.dtg.replace(/[^0-9]/g,"")+".png"; aEl.href=url; aEl.click();
   }
   aarBtn.addEventListener("click", downloadAAR);
+
+  // ---- guided tour: auto-walk a first-time viewer through every capability ----
+  var tourBtn=document.getElementById("tour"), tourBar=document.getElementById("tourBar"), tourTxt=document.getElementById("tourTxt"),
+      tourStepEl=document.getElementById("tourStep"), tourNext=document.getElementById("tourNext"), tourSkip=document.getElementById("tourSkip");
+  var tourT=null, tourI=-1, tourOn=false;
+  function setScenarioBtn(name){ Array.prototype.forEach.call(seg.querySelectorAll("button"), function(x){ x.classList.toggle("on", x.getAttribute("data-scn")===name); }); }
+  function setComms(on){ if(!state) return; state.ddilForced=on; commsBtn.textContent=on?"Restore comms":"Jam comms"; }
+  function offlineNode(key,on){ var n=nodeMap(key); if(n) n.offline=on; }
+  function tourRun(name){ scenario=name; setScenarioBtn(name); if(state) state.running=false; run(); }
+  var TOUR=[
+    { dur:7,  txt:"Welcome. This is an all-domain <b>kill web</b> defending the asset at center — three rings (surveillance · area · point) with sensors and shooters around the scope. Running a raid…",
+      act:function(){ offlineNode("ground",false); tourRun("raid"); } },
+    { dur:6,  txt:"<b>F2T2EA at machine speed:</b> the AI fuses every sensor into one picture, ranks threats by time-to-impact, and pairs the best shooter for each — commit latency ~0.3 s vs. minutes by hand.", act:function(){} },
+    { dur:6,  txt:"<b>Human on the loop:</b> an ambiguous track near a friendly trips a ROE <b>HOLD</b> until combat ID resolves. AI advises; a person owns the trigger.", act:function(){} },
+    { dur:9,  txt:"<b>Contested comms (DDIL):</b> the datalink is now jammed (mesh turns red). Edge nodes keep tracking and engaging <b>autonomously</b> — the chain doesn’t stall.",
+      act:function(){ tourRun("raid"); if(state){ state.ddilForced=true; commsBtn.textContent="Restore comms"; } } },
+    { dur:10, txt:"<b>Resilience:</b> I’ve taken the GROUND site offline (✕) and re-run. The kill web re-routes to the best <i>remaining</i> shooter — any sensor, best shooter.",
+      act:function(){ setComms(false); offlineNode("ground",true); tourRun("raid"); } },
+    { dur:12, txt:"<b>Saturation:</b> a drone swarm. The AI triages by priority, interceptor magazines deplete, and leakers are caught in depth by point-defense HEL.",
+      act:function(){ offlineNode("ground",false); tourRun("swarm"); } },
+    { dur:10, txt:"That’s the tour. Export a one-page <b>AAR ↓</b>, toggle <b>CB</b> (colorblind-safe) or <b>Sound</b>, and try <b>Mixed</b> (TBM · cruise · UAS · air). Explore on your own.",
+      act:function(){ offlineNode("ground",false); setComms(false); } }
+  ];
+  function tourShow(i){
+    tourI=i; var s=TOUR[i]; tourTxt.innerHTML=s.txt; tourStepEl.textContent=(i+1)+" / "+TOUR.length;
+    tourNext.textContent = i===TOUR.length-1 ? "Done" : "Next ▸";
+    try{ s.act(); }catch(e){}
+    clearTimeout(tourT); if (!reduce) tourT=setTimeout(tourAdvance, (s.dur||8)*1000);
+  }
+  function tourAdvance(){ if (tourI>=TOUR.length-1) tourEnd(); else tourShow(tourI+1); }
+  function tourStart(){ if (tourOn) return; tourOn=true; tourBar.hidden=false; tourBtn.classList.add("on"); tourShow(0); }
+  function tourEnd(){ tourOn=false; clearTimeout(tourT); tourBar.hidden=true; tourBtn.classList.remove("on"); setComms(false); offlineNode("ground",false); }
+  tourBtn.addEventListener("click", function(){ tourOn?tourEnd():tourStart(); });
+  tourNext.addEventListener("click", function(){ clearTimeout(tourT); tourAdvance(); });
+  tourSkip.addEventListener("click", tourEnd);
 
   function init(){
     sizeCanvas();

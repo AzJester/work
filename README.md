@@ -51,6 +51,12 @@ discrimination in action.
 - **Download AAR** — after an engagement, export a one-page after-action report (PNG):
   outcome, tracks by class, interceptors expended, time-to-defeat, datalink and node
   status, with a scope snapshot and a NOTIONAL banner.
+- **Guided tour** (Tour ▸) — auto-walks a first-time viewer through every capability
+  (F2T2EA, human-on-the-loop HOLD, contested comms, node-offline re-routing, swarm
+  saturation), with Next / Skip controls.
+- **Doctrine &amp; methodology footer** — cites F2T2EA, CJADC2, DoDD 3000.09, and
+  MIL-STD-2525, with a methodology note and an explicit notional/illustrative disclaimer
+  for stakeholders.
 
 ## How it's deployed
 
