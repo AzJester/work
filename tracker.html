@@ -275,6 +275,22 @@
     border-radius:11px; padding:11px 14px 11px 18px; box-shadow:0 18px 40px -16px rgba(0,0,0,.5); font-size:13.5px; }
   :root[data-theme="dark"] .toast { background:#2A2F3A; border:1px solid #3A414E; }
   .toast[hidden] { display:none; }
+
+  /* AI summary modal */
+  .modal { position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center;
+    background:rgba(10,14,22,0.55); padding:20px; }
+  .modal[hidden] { display:none; }
+  .modal-card { width:min(720px,100%); max-height:88vh; display:flex; flex-direction:column; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-lg); overflow:hidden; }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .modal-head strong { font-size:15px; }
+  .modal-body { padding:16px 18px; overflow:auto; }
+  .modal-body textarea { width:100%; min-height:300px; font:inherit; font-size:14px; line-height:1.5; color:var(--ink);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:10px; padding:12px 14px; resize:vertical; }
+  .modal-body textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
+  .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
+  .modal-foot { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:var(--input-bg); }
   .toast #toastUndo { font-family:var(--disp); font-size:13px; font-weight:700; color:#fff; background:transparent;
     border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 12px; cursor:pointer; }
   .toast #toastUndo:hover { background:rgba(255,255,255,.12); }
@@ -457,6 +473,7 @@
       <div class="actions">
         <button class="btn" id="add" type="button">+ Add task</button>
         <button class="btn ghost" id="save" type="button">Save to cloud</button>
+        <button class="btn ghost" id="aiSummary" type="button" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
         <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
         <span class="spacer"></span>
         <label class="sortlab">Sort
@@ -530,6 +547,19 @@
       <div id="kpiBody"></div>
     </section>
   </main>
+
+  <div id="aiModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>✨ AI weekly summary</strong><button class="ibtn" id="aiClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body" id="aiBody"></div>
+      <div class="modal-foot">
+        <button class="btn ghost sm" id="aiCopy" type="button">Copy</button>
+        <button class="btn ghost sm" id="aiRegen" type="button">Regenerate</button>
+        <span class="spacer" style="flex:1 1 auto"></span>
+        <button class="btn sm" id="aiDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" hidden>
     <span id="toastMsg"></span>
@@ -1590,6 +1620,55 @@ async function renderWeekKudos(){
     + (htmlToText(k.details).trim() ? '<div class="wk-det">'+richDisplay(k.details)+'</div>' : '')
     + '</div>').join("");
   el.classList.add("show");
+}
+
+// ============ AI WEEKLY SUMMARY ============
+function openAi(){ $("aiModal").hidden = false; }
+function closeAi(){ $("aiModal").hidden = true; }
+$("aiSummary").addEventListener("click", draftSummary);
+$("aiClose").addEventListener("click", closeAi);
+$("aiDone").addEventListener("click", closeAi);
+$("aiRegen").addEventListener("click", draftSummary);
+$("aiModal").addEventListener("click", (e) => { if (e.target === $("aiModal")) closeAi(); });
+$("aiCopy").addEventListener("click", function(){
+  const ta = $("aiBody").querySelector("textarea"); if (!ta) return;
+  const btn = this; const done = () => { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); };
+  ta.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
+  else { try { document.execCommand("copy"); done(); } catch(e){} }
+});
+async function draftSummary(){
+  openAi();
+  $("aiBody").innerHTML = '<div class="ai-load"><span class="spin"></span> Drafting your weekly summary…</div>';
+  $("aiCopy").disabled = true;
+  try {
+    const tasks = state.rows
+      .filter(r => (r.task && r.task.trim()) || htmlToText(r.note).trim() || (r.items && r.items.length))
+      .map(r => ({ task:(r.task||"").trim(), status:r.status, priority:r.pri, progress:r.prog,
+                   project:(r.project||"").trim(), due:r.due||"", started:r.started||"", completed:r.completed||"",
+                   update: htmlToText(r.note), items: normItems(r.items) }));
+    let kudos = kudosList;
+    if (!kudos) {
+      const { data } = await sb.from("kudos").select("kudos_date,source,title,details")
+        .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+      kudos = data || [];
+    }
+    const kud = (kudos || []).map(k => ({ date:k.kudos_date, source:(k.source||"").trim(), title:(k.title||"").trim(), details: htmlToText(k.details) }));
+    const { data, error } = await sb.functions.invoke("weekly-summary", { body: { week_ending: state.week, prepared_by: state.who, tasks, kudos: kud } });
+    if (error) {
+      let msg = error.message || "Request failed.";
+      try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){}
+      throw new Error(msg);
+    }
+    if (data && data.error) throw new Error(data.error);
+    const ta = document.createElement("textarea");
+    ta.value = (data && data.summary) || "(The model returned an empty summary.)";
+    $("aiBody").innerHTML = ""; $("aiBody").appendChild(ta);
+    $("aiCopy").disabled = false;
+  } catch (e) {
+    $("aiBody").innerHTML = '<div class="ai-err"><b>Couldn’t generate the summary.</b><br>' + escHtml(e.message || String(e))
+      + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
+  }
 }
 
 (function initTheme(){
