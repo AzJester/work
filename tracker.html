@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Status Tracker — Cloud</title>
+<meta name="description" content="Cloud-backed weekly task status tracker: sign in, save each week's status to a database, review history, run KPIs (completion, blocked/at-risk trend, velocity, carryover), and export reports for leadership." />
+<style>
+  :root {
+    --bg:#F4F6FA; --card:#FFFFFF; --line:#E2E7EF; --line-2:#CDD5E1;
+    --ink:#1B2433; --ink-2:#46536B; --mut:#7C889B;
+    --accent:#2563EB; --accent-ink:#FFFFFF; --accent-soft:#EAF1FF;
+    --green:#1A8A4E; --green-bg:#E6F6EC;
+    --amber:#9A6700; --amber-bg:#FCF3DC;
+    --red:#B42318; --red-bg:#FCEBEA;
+    --slate:#475467; --slate-bg:#EEF1F6;
+    --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; }
+  body { font-family:var(--disp); color:var(--ink); background:var(--bg); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1080px; margin:0 auto; padding:22px clamp(14px,3vw,32px) 56px; }
+  a { color:var(--accent); }
+
+  .mast { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding-bottom:14px; border-bottom:2px solid var(--ink); margin-bottom:18px; }
+  .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.01em; }
+  .mast .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.13em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
+  .who-line { display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--ink-2); }
+  .who-line .em { font-weight:600; }
+
+  .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--accent-ink); background:var(--accent);
+    border:1px solid var(--accent); padding:9px 15px; border-radius:8px; cursor:pointer; white-space:nowrap;
+    transition:filter .15s, transform .1s; }
+  .btn:hover { filter:brightness(1.07); } .btn:active { transform:translateY(1px); }
+  .btn:disabled { opacity:.55; cursor:default; }
+  .btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .btn.ghost { color:var(--ink-2); background:var(--card); border-color:var(--line-2); }
+  .btn.ghost:hover { color:var(--ink); border-color:var(--accent); filter:none; }
+  .btn.sm { font-size:12px; padding:6px 11px; }
+  .btn.danger.ghost:hover { color:var(--red); border-color:var(--red); }
+
+  /* ---- Auth gate ---- */
+  .gate { max-width:380px; margin:6vh auto 0; background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:26px 24px; box-shadow:0 18px 50px -28px rgba(20,30,60,.35); }
+  .gate h2 { margin:0 0 4px; font-size:19px; }
+  .gate p.sub { margin:0 0 18px; color:var(--mut); font-size:13.5px; }
+  .gate label { display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); margin:0 0 5px; }
+  .gate input { width:100%; font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2);
+    border-radius:8px; padding:10px 11px; margin-bottom:14px; }
+  .gate input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent); }
+  .gate .btn { width:100%; padding:11px; font-size:14px; }
+  .gate .alt { text-align:center; margin-top:14px; font-size:13px; color:var(--mut); }
+  .gate .alt a { cursor:pointer; }
+  .note { font-size:12.5px; border-radius:9px; padding:10px 12px; margin-top:14px; line-height:1.5; }
+  .note.err { color:var(--red); background:var(--red-bg); border:1px solid #F2C6C2; }
+  .note.ok  { color:var(--green); background:var(--green-bg); border:1px solid #BFE6CD; }
+  .note.info{ color:var(--ink-2); background:var(--accent-soft); border:1px solid #C9DBFF; }
+  .note.hide { display:none; }
+
+  /* ---- Tabs ---- */
+  .tabs { display:inline-flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden; margin-bottom:16px; }
+  .tabs button { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink-2); background:var(--card);
+    border:0; border-right:1px solid var(--line); padding:9px 16px; cursor:pointer; }
+  .tabs button:last-child { border-right:0; }
+  .tabs button.on { background:var(--accent); color:#fff; }
+  .tabs button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+  .view[hidden] { display:none; }
+
+  /* ---- Report header ---- */
+  .head { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; background:var(--card);
+    border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); }
+  .field input { font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2); border-radius:7px; padding:8px 10px; }
+  .field input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent); }
+
+  .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .actions .spacer { flex:1 1 auto; }
+  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
+  .savestate.ok { color:var(--green); } .savestate.err { color:var(--red); } .savestate.busy { color:var(--amber); }
+
+  /* ---- Table ---- */
+  .tcard { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  table.tasks { width:100%; border-collapse:collapse; }
+  table.tasks thead th { font-family:var(--mono); font-size:10.5px; letter-spacing:0.09em; text-transform:uppercase; color:var(--mut);
+    text-align:left; padding:11px 12px; background:#F8FAFD; border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.tasks tbody td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  table.tasks tbody tr:last-child td { border-bottom:0; }
+  .col-num { width:34px; color:var(--mut); font-family:var(--mono); font-size:12px; text-align:right; }
+  .col-status { width:138px; } .col-pri { width:90px; } .col-prog { width:148px; } .col-act { width:92px; }
+  .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:6px; padding:6px 7px; resize:none; }
+  .cell-input:hover { border-color:var(--line); }
+  .cell-input:focus { outline:none; border-color:var(--accent); background:#FBFCFE; }
+  textarea.cell-input { min-height:34px; line-height:1.35; overflow:hidden; }
+  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px; padding:5px 10px; cursor:pointer; -webkit-appearance:none; appearance:none; }
+  select.chip:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  select.chip.s-ontrack { color:var(--green); background:var(--green-bg); border-color:#BFE6CD; }
+  select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
+  select.chip.s-blocked { color:var(--red); background:var(--red-bg); border-color:#F2C6C2; }
+  select.chip.s-done { color:var(--slate); background:var(--slate-bg); border-color:#D3DAE5; }
+  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  .prog { display:flex; align-items:center; gap:8px; }
+  .prog input[type=range] { flex:1 1 auto; accent-color:var(--accent); cursor:pointer; min-width:0; }
+  .prog .pv { font-family:var(--mono); font-size:12px; color:var(--ink-2); width:38px; text-align:right; }
+  .rowbtns { display:flex; gap:4px; }
+  .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
+  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:#F8FAFD; }
+  .ibtn.del:hover { color:var(--red); border-color:var(--red); }
+  .ibtn:disabled { opacity:.35; cursor:default; }
+  .tfoot { padding:12px; border-top:1px solid var(--line); background:#FBFCFE; display:flex; gap:10px; flex-wrap:wrap; }
+  .hint { margin:14px 2px 0; font-size:12.5px; color:var(--mut); } .hint b { color:var(--ink-2); font-weight:600; }
+
+  /* ---- History ---- */
+  .hlist { display:flex; flex-direction:column; gap:10px; }
+  .hrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line);
+    border-radius:11px; padding:13px 16px; }
+  .hrow .wk { font-weight:700; font-size:15px; min-width:150px; }
+  .hrow .meta { font-family:var(--mono); font-size:11.5px; color:var(--mut); }
+  .hrow .spacer { flex:1 1 auto; }
+  .badge { font-family:var(--mono); font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; }
+  .badge.done { color:var(--green); background:var(--green-bg); } .badge.blk { color:var(--red); background:var(--red-bg); }
+  .badge.risk { color:var(--amber); background:var(--amber-bg); } .badge.tot { color:var(--slate); background:var(--slate-bg); }
+  .muted-empty { text-align:center; color:var(--mut); padding:34px; background:var(--card); border:1px dashed var(--line-2); border-radius:12px; }
+
+  /* ---- KPIs ---- */
+  .kgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .kcard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 16px; }
+  .kcard h3 { margin:0 0 2px; font-size:14px; } .kcard .desc { margin:0 0 12px; font-size:12px; color:var(--mut); }
+  .kcard.full { grid-column:1 / -1; }
+  .stat-row { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:10px; }
+  .stat .n { font-size:24px; font-weight:800; } .stat .l { font-size:11px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+  svg.chart { width:100%; height:auto; display:block; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); margin-top:8px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .agelist { margin:6px 0 0; padding:0; list-style:none; }
+  .agelist li { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .agelist li:last-child { border-bottom:0; }
+  .agelist .wks { font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap; }
+
+  .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  @media (max-width:720px) {
+    .head { grid-template-columns:1fr; } .kgrid { grid-template-columns:1fr; }
+    .col-prog, .col-pri { display:none; }
+  }
+  @media print {
+    @page { margin:14mm; }
+    body { background:#fff; }
+    .mast .who-line, .tabs, .actions, .tfoot, .hint, #nav-tabs { display:none !important; }
+    .view#v-history, .view#v-kpis { display:none !important; }
+    .head, .tcard { border:0; padding:0; } .head { display:block; margin-bottom:10pt; }
+    .head .field { display:inline-block; margin-right:24pt; } .head .field input { border:0; padding:0; background:transparent; font-weight:600; }
+    .col-act { display:none !important; } .rowbtns { display:none !important; }
+    table.tasks { border:1px solid #999; } .prog input[type=range] { display:none; }
+    .cell-input, select.chip, select.pri { border:0 !important; background:transparent !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div>
+      <h1>Weekly Status Tracker</h1>
+      <div class="tag">Cloud · saved to your database</div>
+    </div>
+    <div class="who-line" id="whoLine" hidden>
+      <span>Signed in as <span class="em" id="userEmail"></span></span>
+      <button class="btn ghost sm" id="signout" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <!-- ============ AUTH GATE ============ -->
+  <section id="gate" class="gate" hidden>
+    <h2 id="gateTitle">Sign in</h2>
+    <p class="sub" id="gateSub">Access your saved weekly reports and KPIs.</p>
+    <form id="authForm">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required />
+      <button class="btn" id="authBtn" type="submit">Sign in</button>
+    </form>
+    <div class="alt" id="authAlt">First time? <a id="toSignup">Create an account</a></div>
+    <div class="note hide" id="authNote"></div>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <main id="app" hidden>
+    <div class="tabs" id="nav-tabs" role="tablist">
+      <button id="tab-week" class="on" type="button">This week</button>
+      <button id="tab-history" type="button">History</button>
+      <button id="tab-kpis" type="button">KPIs</button>
+    </div>
+
+    <!-- ---- Editor ---- -->
+    <section class="view" id="v-week">
+      <section class="head">
+        <div class="field">
+          <label for="who">Prepared by</label>
+          <input id="who" type="text" placeholder="Your name · title" />
+        </div>
+        <div class="field">
+          <label for="week">Week ending</label>
+          <input id="week" type="date" />
+        </div>
+      </section>
+
+      <div class="actions">
+        <button class="btn" id="add" type="button">+ Add task</button>
+        <button class="btn ghost" id="save" type="button">Save to cloud</button>
+        <span class="spacer"></span>
+        <span class="savestate" id="savestate">—</span>
+      </div>
+
+      <div class="tcard">
+        <table class="tasks">
+          <thead>
+            <tr>
+              <th class="col-num">#</th><th>Task</th>
+              <th class="col-status">Status</th><th class="col-pri">Priority</th>
+              <th class="col-prog">Progress</th><th>Update this week</th><th class="col-act">Row</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="tfoot">
+          <button class="btn ghost sm" id="copy" type="button">Copy as text</button>
+          <button class="btn ghost sm" id="md" type="button">Download Markdown</button>
+          <button class="btn ghost sm" id="print" type="button">Print / PDF</button>
+          <span class="spacer" style="flex:1 1 auto"></span>
+          <button class="btn ghost sm danger" id="del" type="button">Delete this week</button>
+        </div>
+      </div>
+      <p class="hint">Edits auto-save to your database a moment after you stop typing. Pick any
+        <b>Week ending</b> date to load or start that week. Exports use the week shown above.</p>
+    </section>
+
+    <!-- ---- History ---- -->
+    <section class="view" id="v-history" hidden>
+      <div id="historyBody"></div>
+    </section>
+
+    <!-- ---- KPIs ---- -->
+    <section class="view" id="v-kpis" hidden>
+      <div id="kpiBody"></div>
+    </section>
+  </main>
+
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// ---- Supabase config (publishable key is safe to expose; Row Level Security protects data) ----
+const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const STATUSES = [
+  { v:"On Track", cls:"s-ontrack" }, { v:"At Risk", cls:"s-atrisk" },
+  { v:"Blocked", cls:"s-blocked" }, { v:"Done", cls:"s-done" }
+];
+const PRIORITIES = ["High","Med","Low"];
+const COLORS = { done:"#1A8A4E", ontrack:"#2563EB", atrisk:"#D9A300", blocked:"#B42318", accent:"#2563EB" };
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+function pad(n){ return (n<10?"0":"")+n; }
+function isoDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function comingFriday(from){
+  const d = from ? new Date(from) : new Date();
+  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7));
+  return d;
+}
+function prettyDate(iso){
+  if(!iso) return "";
+  const p = iso.split("-"); const d = new Date(+p[0], +p[1]-1, +p[2]);
+  return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" });
+}
+function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"" }; }
+function statusClass(v){ const s = STATUSES.find(s=>s.v===v); return s?s.cls:"s-ontrack"; }
+function autosize(ta){ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
+function esc(s){ return String(s==null?"":s); }
+
+// ---------- app state ----------
+let session = null;
+let state = { who:"", week:"", rows:[] };
+let reportId = null;
+let saveTimer = null;
+
+// ============ AUTH ============
+let mode = "signin"; // or "signup"
+
+function setNote(el, kind, msg){
+  el.className = "note " + kind; el.innerHTML = msg; el.classList.remove("hide");
+}
+function clearNote(el){ el.classList.add("hide"); }
+
+// One delegated listener on the container handles the (re-rendered) toggle link.
+$("authAlt").addEventListener("click", (e) => {
+  if (!e.target || e.target.id !== "toSignup") return;
+  mode = mode === "signin" ? "signup" : "signin";
+  $("gateTitle").textContent = mode === "signup" ? "Create your account" : "Sign in";
+  $("authBtn").textContent = mode === "signup" ? "Create account" : "Sign in";
+  $("authAlt").innerHTML = mode === "signup"
+    ? 'Already have an account? <a id="toSignup">Sign in</a>'
+    : 'First time? <a id="toSignup">Create an account</a>';
+  $("password").setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+  clearNote($("authNote"));
+});
+
+$("authForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  const btn = $("authBtn"); const note = $("authNote");
+  btn.disabled = true; const label = btn.textContent; btn.innerHTML = '<span class="spin"></span>';
+  clearNote(note);
+  try {
+    if (mode === "signup") {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error && !/already/i.test(error.message)) throw error;
+      // sign in straight away (works once "Confirm email" is off in Supabase Auth settings)
+      const { error: e2 } = await sb.auth.signInWithPassword({ email, password });
+      if (e2) throw e2;
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch (err) {
+    btn.disabled = false; btn.textContent = label;
+    if (/email not confirmed/i.test(err.message)) {
+      setNote(note, "info", 'Your account needs email confirmation turned off. In Supabase → '
+        + '<b>Authentication → Providers → Email</b>, switch off <b>“Confirm email,”</b> then sign in again.');
+    } else if (/invalid login credentials/i.test(err.message)) {
+      setNote(note, "err", "Email or password not recognized. New here? Use “Create an account.”");
+    } else {
+      setNote(note, "err", esc(err.message || "Sign-in failed."));
+    }
+    return;
+  }
+  btn.disabled = false; btn.textContent = label;
+});
+
+$("signout").addEventListener("click", async () => { await sb.auth.signOut(); });
+
+// react to auth changes
+sb.auth.onAuthStateChange((_e, sess) => { applySession(sess); });
+
+function applySession(sess){
+  session = sess;
+  if (session && session.user) {
+    $("gate").hidden = true; $("app").hidden = false; $("whoLine").hidden = false;
+    $("userEmail").textContent = session.user.email;
+    if (!state.week) state.week = isoDate(comingFriday());
+    loadWeek();
+  } else {
+    $("app").hidden = true; $("whoLine").hidden = true; $("gate").hidden = false;
+  }
+}
+
+// ============ EDITOR ============
+$("who").addEventListener("input", () => { state.who = $("who").value; scheduleSave(); });
+$("week").addEventListener("change", () => { state.week = $("week").value; loadWeek(); });
+$("add").addEventListener("click", () => {
+  state.rows.push(blankRow()); renderRows();
+  const inputs = $("rows").querySelectorAll("textarea.cell-input");
+  if (inputs.length) inputs[(state.rows.length-1)*2].focus();
+  scheduleSave();
+});
+$("save").addEventListener("click", () => saveWeek(true));
+
+function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
+function scheduleSave(){
+  setSave("busy", "Editing…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveWeek(false), 1100);
+}
+
+async function loadWeek(){
+  $("who").value = state.who;
+  $("week").value = state.week;
+  setSave("busy", "Loading…");
+  try {
+    const { data: reps, error } = await sb.from("reports")
+      .select("id, prepared_by").eq("week_ending", state.week).limit(1);
+    if (error) throw error;
+    if (reps && reps.length) {
+      reportId = reps[0].id;
+      state.who = reps[0].prepared_by || state.who || "";
+      const { data: ts, error: e2 } = await sb.from("tasks")
+        .select("task,status,priority,progress,note").eq("report_id", reportId).order("position");
+      if (e2) throw e2;
+      state.rows = (ts || []).map(t => ({ task:t.task, status:t.status, pri:t.priority, prog:t.progress, note:t.note }));
+      if (!state.rows.length) state.rows = [ blankRow() ];
+    } else {
+      reportId = null;
+      state.rows = [ blankRow(), blankRow(), blankRow() ];
+    }
+    $("who").value = state.who;
+    renderRows();
+    setSave(reportId ? "ok" : "", reportId ? "Loaded · saved" : "New week — not saved yet");
+  } catch (err) {
+    setSave("err", "Load failed: " + (err.message || err));
+  }
+}
+
+async function saveWeek(explicit){
+  if (!session) return;
+  setSave("busy", "Saving…");
+  try {
+    const { data: rep, error } = await sb.from("reports")
+      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who },
+              { onConflict: "user_id,week_ending" })
+      .select("id").single();
+    if (error) throw error;
+    reportId = rep.id;
+    const { error: dErr } = await sb.from("tasks").delete().eq("report_id", reportId);
+    if (dErr) throw dErr;
+    const payload = state.rows
+      .map((r, i) => ({ report_id: reportId, position: i, task: r.task, status: r.status,
+                        priority: r.pri, progress: r.prog, note: r.note }))
+      .filter(r => (r.task && r.task.trim()) || (r.note && r.note.trim()));
+    if (payload.length) {
+      const { error: iErr } = await sb.from("tasks").insert(payload);
+      if (iErr) throw iErr;
+    }
+    setSave("ok", "Saved ✓ " + new Date().toLocaleTimeString());
+  } catch (err) {
+    setSave("err", "Save failed: " + (err.message || err));
+  }
+}
+
+$("del").addEventListener("click", async () => {
+  if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
+  if (!confirm("Delete the saved report for week ending " + (prettyDate(state.week)||state.week) + "? This cannot be undone.")) return;
+  setSave("busy", "Deleting…");
+  const { error } = await sb.from("reports").delete().eq("id", reportId);
+  if (error) { setSave("err", "Delete failed: " + error.message); return; }
+  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ];
+  renderRows(); setSave("", "Deleted · new week");
+});
+
+function renderRows(){
+  const rowsEl = $("rows"); rowsEl.innerHTML = "";
+  state.rows.forEach((row, i) => {
+    const tr = document.createElement("tr");
+
+    const tdNum = document.createElement("td"); tdNum.className = "col-num"; tdNum.textContent = i+1; tr.appendChild(tdNum);
+
+    const tdTask = document.createElement("td");
+    const task = document.createElement("textarea");
+    task.className = "cell-input"; task.rows = 1; task.placeholder = "What you worked on"; task.value = row.task;
+    task.addEventListener("input", () => { row.task = task.value; autosize(task); scheduleSave(); });
+    tdTask.appendChild(task); tr.appendChild(tdTask);
+
+    const tdStatus = document.createElement("td"); tdStatus.className = "col-status";
+    const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status);
+    STATUSES.forEach(s => { const o = document.createElement("option"); o.value = s.v; o.textContent = s.v; if (s.v===row.status) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", () => { row.status = sel.value; sel.className = "chip " + statusClass(row.status); scheduleSave(); });
+    tdStatus.appendChild(sel); tr.appendChild(tdStatus);
+
+    const tdPri = document.createElement("td"); tdPri.className = "col-pri";
+    const pri = document.createElement("select"); pri.className = "pri";
+    PRIORITIES.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p===row.pri) o.selected = true; pri.appendChild(o); });
+    pri.addEventListener("change", () => { row.pri = pri.value; scheduleSave(); });
+    tdPri.appendChild(pri); tr.appendChild(tdPri);
+
+    const tdProg = document.createElement("td"); tdProg.className = "col-prog";
+    const wrap = document.createElement("div"); wrap.className = "prog";
+    const rng = document.createElement("input"); rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog;
+    const pv = document.createElement("span"); pv.className = "pv"; pv.textContent = row.prog + "%";
+    rng.addEventListener("input", () => { row.prog = parseInt(rng.value,10)||0; pv.textContent = row.prog + "%"; scheduleSave(); });
+    wrap.appendChild(rng); wrap.appendChild(pv); tdProg.appendChild(wrap); tr.appendChild(tdProg);
+
+    const tdNote = document.createElement("td");
+    const note = document.createElement("textarea");
+    note.className = "cell-input"; note.rows = 1; note.placeholder = "Progress, next step, blocker…"; note.value = row.note;
+    note.addEventListener("input", () => { row.note = note.value; autosize(note); scheduleSave(); });
+    tdNote.appendChild(note); tr.appendChild(tdNote);
+
+    const tdAct = document.createElement("td"); tdAct.className = "col-act";
+    const grp = document.createElement("div"); grp.className = "rowbtns";
+    const up = mkIbtn("▲","Move up",() => moveRow(i,-1));
+    const dn = mkIbtn("▼","Move down",() => moveRow(i,1));
+    const del = mkIbtn("✕","Delete task",() => { state.rows.splice(i,1); if(!state.rows.length) state.rows=[blankRow()]; renderRows(); scheduleSave(); });
+    del.classList.add("del"); up.disabled = (i===0); dn.disabled = (i===state.rows.length-1);
+    grp.appendChild(up); grp.appendChild(dn); grp.appendChild(del); tdAct.appendChild(grp); tr.appendChild(tdAct);
+
+    rowsEl.appendChild(tr);
+    autosize(task); autosize(note);
+  });
+}
+function mkIbtn(label, title, fn){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "ibtn"; b.textContent = label; b.title = title; b.setAttribute("aria-label", title);
+  b.addEventListener("click", fn); return b;
+}
+function moveRow(i, dir){
+  const j = i + dir; if (j < 0 || j >= state.rows.length) return;
+  const t = state.rows[i]; state.rows[i] = state.rows[j]; state.rows[j] = t; renderRows(); scheduleSave();
+}
+
+// ---------- exports (current week) ----------
+function filledRows(){ return state.rows.filter(r => (r.task && r.task.trim()) || (r.note && r.note.trim())); }
+function mdCell(s){ return String(s==null?"":s).replace(/\|/g,"\\|").replace(/\r?\n+/g," ").trim(); }
+function buildMarkdown(){
+  const L = [];
+  L.push("# Weekly Status — Week ending " + (prettyDate(state.week) || state.week));
+  if (state.who && state.who.trim()) L.push("**Prepared by:** " + state.who.trim());
+  L.push(""); L.push("| # | Task | Status | Priority | Progress | Update |");
+  L.push("|---|------|--------|----------|----------|--------|");
+  const rs = filledRows();
+  rs.forEach((r,i) => L.push("| "+(i+1)+" | "+mdCell(r.task)+" | "+mdCell(r.status)+" | "+mdCell(r.pri)+" | "+r.prog+"% | "+mdCell(r.note)+" |"));
+  if (!rs.length) L.push("| – | _No tasks recorded_ |  |  |  |  |");
+  L.push(""); return L.join("\n");
+}
+function buildText(){
+  const out = [];
+  out.push("WEEKLY STATUS — Week ending " + (prettyDate(state.week) || state.week));
+  if (state.who && state.who.trim()) out.push("Prepared by: " + state.who.trim());
+  out.push("");
+  const rs = filledRows();
+  if (!rs.length) { out.push("(No tasks recorded.)"); return out.join("\n"); }
+  rs.forEach((r,i) => { out.push((i+1)+". "+(r.task?r.task.trim():"(untitled)")+"  ["+r.status+" · "+r.pri+" · "+r.prog+"%]");
+    if (r.note && r.note.trim()) out.push("   " + r.note.trim().replace(/\r?\n+/g," ")); });
+  out.push(""); return out.join("\n");
+}
+$("md").addEventListener("click", () => {
+  const blob = new Blob([buildMarkdown()], { type:"text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = "weekly-status-" + (state.week || isoDate(new Date())) + ".md";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$("copy").addEventListener("click", function(){
+  const btn = this, text = buildText(); const orig = btn.textContent;
+  const done = () => { btn.textContent = "Copied ✓"; setTimeout(()=>btn.textContent=orig, 1100); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
+  function fallback(){ const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta); }
+});
+$("print").addEventListener("click", () => window.print());
+
+// ============ TABS ============
+const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"], kpis:["tab-kpis","v-kpis"] };
+function showTab(name){
+  Object.entries(tabs).forEach(([k,[btn,view]]) => {
+    $(btn).classList.toggle("on", k===name); $(view).hidden = (k!==name);
+  });
+  if (name === "history") loadHistory();
+  if (name === "kpis") loadKpis();
+}
+$("tab-week").addEventListener("click", () => showTab("week"));
+$("tab-history").addEventListener("click", () => showTab("history"));
+$("tab-kpis").addEventListener("click", () => showTab("kpis"));
+
+// ============ HISTORY ============
+async function loadHistory(){
+  const body = $("historyBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading history…</div>';
+  const { data, error } = await sb.from("kpi_weekly")
+    .select("week_ending,total_tasks,done,at_risk,blocked,completion_rate,avg_progress")
+    .order("week_ending", { ascending:false });
+  if (error) { body.innerHTML = '<div class="muted-empty">Could not load history: '+esc(error.message)+'</div>'; return; }
+  if (!data || !data.length) { body.innerHTML = '<div class="muted-empty">No saved weeks yet. Add tasks in <b>This week</b> and they’ll appear here.</div>'; return; }
+  const list = document.createElement("div"); list.className = "hlist";
+  data.forEach(r => {
+    const row = document.createElement("div"); row.className = "hrow";
+    row.innerHTML =
+      '<div class="wk">'+ (prettyDate(r.week_ending)||r.week_ending) +'</div>' +
+      '<span class="badge tot">'+ r.total_tasks +' tasks</span>' +
+      '<span class="badge done">'+ r.done +' done · '+ (r.completion_rate||0) +'%</span>' +
+      (r.at_risk ? '<span class="badge risk">'+ r.at_risk +' at risk</span>' : '') +
+      (r.blocked ? '<span class="badge blk">'+ r.blocked +' blocked</span>' : '') +
+      '<span class="meta">avg '+ (r.avg_progress||0) +'%</span>' +
+      '<span class="spacer"></span>';
+    const open = document.createElement("button"); open.className = "btn ghost sm"; open.textContent = "Open";
+    open.addEventListener("click", () => { state.week = r.week_ending; showTab("week"); loadWeek(); });
+    row.appendChild(open); list.appendChild(row);
+  });
+  body.innerHTML = ""; body.appendChild(list);
+}
+
+// ============ KPIs ============
+async function loadKpis(){
+  const body = $("kpiBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
+  const [{ data: wk, error: e1 }, { data: co, error: e2 }] = await Promise.all([
+    sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
+    sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false })
+  ]);
+  if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
+  if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+
+  const weeks = wk.map(r => (r.week_ending||"").slice(5)); // MM-DD labels
+  const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);
+  const totalTasks = wk.reduce((a,r)=>a+(+r.total_tasks||0),0);
+  const overallRate = totalTasks ? Math.round(100*totalDone/totalTasks) : 0;
+  const latest = wk[wk.length-1];
+  const carryNow = (co||[]).filter(r => r.week_ending===latest.week_ending && +r.prior_weeks_seen>0 && r.status!=="Done").length;
+  const aging = (co||[]).filter(r => r.status!=="Done" && +r.prior_weeks_seen>0)
+                        .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
+
+  body.innerHTML =
+    '<div class="kgrid">' +
+      kcard("Completion & throughput",
+        "Tasks completed per week and % completion rate.",
+        '<div class="stat-row">'
+          + stat(overallRate+"%","overall completion") + stat(totalDone,"tasks done (all weeks)") + stat(wk.length,"weeks tracked") +
+        '</div>' +
+        barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0)) +
+        legend([["Done / week",COLORS.done],["Completion %",COLORS.accent]])) +
+
+      kcard("Blocked & at-risk trend",
+        "Count of blocked and at-risk tasks across weeks.",
+        stackedChart(weeks, wk.map(r=>+r.at_risk||0), wk.map(r=>+r.blocked||0)) +
+        legend([["At risk",COLORS.atrisk],["Blocked",COLORS.blocked]])) +
+
+      kcard("Average progress / velocity",
+        "Mean progress % of all tasks, per week.",
+        '<div class="stat-row">' + stat((latest.avg_progress||0)+"%","latest week avg") + '</div>' +
+        lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100)) +
+
+      kcard("Carryover / aging",
+        "Open tasks repeating from earlier weeks (oldest first).",
+        '<div class="stat-row">' + stat(carryNow,"carried into latest week") + '</div>' +
+        agingList(aging)) +
+    '</div>';
+}
+
+function kcard(title, desc, inner, extra){
+  return '<div class="kcard">' +
+    '<h3>'+title+'</h3><p class="desc">'+desc+'</p>' + inner + (extra||"") + '</div>';
+}
+function stat(n, l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function legend(items){
+  return '<div class="legend">' + items.map(([t,c]) => '<span><i style="background:'+c+'"></i>'+t+'</span>').join("") + '</div>';
+}
+function agingList(rows){
+  if (!rows.length) return '<p class="desc" style="margin-top:8px">No carryover — nothing repeating from earlier weeks. 🎉</p>';
+  return '<ul class="agelist">' + rows.map(r =>
+    '<li><span>'+esc(r.task)+' <span class="badge '+(r.status==="Blocked"?"blk":r.status==="At Risk"?"risk":"tot")+'">'+r.status+'</span></span>'
+    + '<span class="wks">'+r.prior_weeks_seen+'× prior</span></li>').join("") + '</ul>';
+}
+
+// ---- tiny inline-SVG charts (no chart library) ----
+const CW = 520, CH = 170, PADL = 30, PADB = 22, PADT = 12, PADR = 12;
+function xPos(i, n){ return PADL + (n<=1 ? (CW-PADL-PADR)/2 : i*(CW-PADL-PADR)/(n-1)); }
+function bandX(i, n){ const w=(CW-PADL-PADR)/n; return PADL + i*w + w*0.5; }
+function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
+function axis(maxLabel){
+  return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
+       + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>';
+}
+function xLabels(labels){
+  const n = labels.length;
+  return labels.map((l,i) => '<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join("");
+}
+function yOf(v, max){ const h = CH-PADB-PADT; return CH-PADB - (max?Math.min(v,max)/max:0)*h; }
+
+function lineChart(labels, vals, color, fixedMax){
+  const max = fixedMax || Math.max(1, ...vals);
+  const n = labels.length;
+  const pts = vals.map((v,i)=> xPos(i,n)+","+yOf(v,max)).join(" ");
+  const dots = vals.map((v,i)=> '<circle cx="'+xPos(i,n)+'" cy="'+yOf(v,max)+'" r="3" fill="'+color+'"/>').join("");
+  return svgOpen() + axis(max+(fixedMax===100?"%":"")) +
+    '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>' + dots +
+    xLabels(labels) + '</svg>';
+}
+function barLineChart(labels, bars, line){
+  const bmax = Math.max(1, ...bars); const lmax = 100; const n = labels.length;
+  const bw = (CW-PADL-PADR)/n * 0.5;
+  const rects = bars.map((v,i)=> { const x=bandX(i,n)-bw/2, y=yOf(v,bmax);
+    return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+(CH-PADB-y)+'" rx="2" fill="'+COLORS.done+'" opacity="0.85"/>'; }).join("");
+  const pts = line.map((v,i)=> bandX(i,n)+","+yOf(v,lmax)).join(" ");
+  const dots = line.map((v,i)=> '<circle cx="'+bandX(i,n)+'" cy="'+yOf(v,lmax)+'" r="3" fill="'+COLORS.accent+'"/>').join("");
+  return svgOpen() + axis(bmax) + rects +
+    '<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>' + dots +
+    xLabels(labels) + '</svg>';
+}
+function stackedChart(labels, risk, blocked){
+  const n = labels.length; const max = Math.max(1, ...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0)));
+  const bw = (CW-PADL-PADR)/n * 0.5;
+  const bars = labels.map((_,i) => {
+    const x = bandX(i,n)-bw/2;
+    const hR = (risk[i]||0)/max*(CH-PADB-PADT); const hB = (blocked[i]||0)/max*(CH-PADB-PADT);
+    const yB = CH-PADB-hB; const yR = yB-hR;
+    return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
+         + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>';
+  }).join("");
+  return svgOpen() + axis(max) + bars + xLabels(labels) + '</svg>';
+}
+
+// ============ boot ============
+(async function init(){
+  const { data } = await sb.auth.getSession();
+  applySession(data.session);
+})();
+</script>
+</body>
+</html>
