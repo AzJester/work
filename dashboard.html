@@ -126,6 +126,13 @@
       --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
     }
     body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; }
+    /* no borders/shadows around the page; keep cards intact */
+    .kcard, .kcardk, .rep, .muted-empty { box-shadow:none; }
+    .kcard, .kcardk, .rep, .agelist, svg.chart { break-inside:avoid; page-break-inside:avoid; }
+    .kdetails, .t-note { white-space:pre-wrap !important; }
+    /* each major section starts on a new page */
+    h2.sec { break-before:page; page-break-before:always; }
+    h2.sec:first-of-type { break-before:auto; page-break-before:auto; }
   }
 </style>
 <script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
@@ -175,6 +182,13 @@ const $ = (id) => document.getElementById(id);
     apply(theme);
   });
 })();
+// expand all weekly reports when printing, then restore
+window.addEventListener("beforeprint", () => {
+  document.querySelectorAll("details.rep").forEach(d => { d.dataset.wasOpen = d.open ? "1" : "0"; d.open = true; });
+});
+window.addEventListener("afterprint", () => {
+  document.querySelectorAll("details.rep").forEach(d => { if (d.dataset.wasOpen === "0") d.open = false; });
+});
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
