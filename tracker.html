@@ -287,6 +287,22 @@
   .wkudos .wk-title { font-weight:700; font-size:12pt; }
   .wkudos .wk-det { font-size:11pt; color:#222; white-space:pre-wrap; }
 
+  /* rich-text editors (long-form fields) */
+  .richtext { cursor:text; word-wrap:break-word; overflow-wrap:anywhere; }
+  .richtext:focus { outline:none; }
+  .richtext.empty::before { content:attr(data-ph); color:var(--mut); pointer-events:none; }
+  .richtext a { color:var(--accent); text-decoration:underline; }
+  .richtext ul, .richtext ol { margin:4px 0; padding-left:22px; }
+  .work-col .richtext.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:9px 11px; font-size:13.5px; line-height:1.45; }
+  .work-col .richtext.note:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .richtext.kdetails { min-height:38px; }
+  .rtbar { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:60; display:flex; gap:4px;
+    background:var(--card); border:1px solid var(--line-2); border-radius:11px; box-shadow:var(--shadow); padding:5px 6px; }
+  .rtbar[hidden] { display:none; }
+  .rtbar button { font:inherit; font-size:13px; min-width:32px; height:28px; padding:0 8px; color:var(--ink-2);
+    background:transparent; border:1px solid transparent; border-radius:7px; cursor:pointer; }
+  .rtbar button:hover { background:var(--hover); border-color:var(--line-2); color:var(--ink); }
+
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 
@@ -519,6 +535,13 @@
     <button id="toastUndo" type="button">Undo</button>
   </div>
 
+  <div id="rtbar" class="rtbar" hidden aria-label="Text formatting">
+    <button type="button" data-cmd="bold" title="Bold (Ctrl/Cmd+B)"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="Italic (Ctrl/Cmd+I)"><i>I</i></button>
+    <button type="button" data-cmd="insertUnorderedList" title="Bullet list">&bull; List</button>
+    <button type="button" data-cmd="createLink" title="Add link (Ctrl/Cmd+K)">&#128279; Link</button>
+  </div>
+
 </div>
 
 <script type="module">
@@ -586,6 +609,96 @@ function showUndo(msg, fn){
 function hideUndo(){ $("toast").hidden = true; undoFn = null; clearTimeout(undoTimer); }
 function isBlankRow(r){ return !(r.task&&r.task.trim()) && !(r.note&&r.note.trim()) && !(r.project&&r.project.trim()) && !(r.items&&r.items.length); }
 $("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); if (f) f(); });
+
+// ============ RICH TEXT (long-form fields: comments + kudos details) ============
+function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
+function plainToHtml(s){ return escHtml(s).replace(/\r?\n/g, "<br>"); }
+const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1 };
+function sanitizeHtml(html){
+  const doc = new DOMParser().parseFromString("<div>"+(html||"")+"</div>", "text/html");
+  const root = doc.body.firstChild;
+  (function walk(node){
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeType === 3) return;                 // text node — keep
+      if (child.nodeType !== 1) { child.remove(); return; }
+      const tag = child.tagName;
+      if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); return; }
+      if (!RT_ALLOWED[tag]) { while (child.firstChild) node.insertBefore(child.firstChild, child); child.remove(); return; }
+      Array.from(child.attributes).forEach(a => {
+        const name = a.name.toLowerCase();
+        if (tag === "A" && name === "href") {
+          if (!/^(https?:|mailto:)/i.test((a.value||"").trim())) child.removeAttribute("href");
+        } else { child.removeAttribute(a.name); }
+      });
+      if (tag === "A") { child.setAttribute("target","_blank"); child.setAttribute("rel","noopener noreferrer nofollow"); }
+      walk(child);
+    });
+  })(root);
+  return root.innerHTML;
+}
+function htmlToText(s){
+  if (!looksHtml(s)) return s || "";
+  const doc = new DOMParser().parseFromString(s, "text/html");
+  doc.body.querySelectorAll("li").forEach(li => { li.prepend("• "); li.append("\n"); });
+  doc.body.querySelectorAll("br").forEach(b => b.replaceWith("\n"));
+  doc.body.querySelectorAll("p,div").forEach(d => d.append("\n"));
+  return doc.body.textContent.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function rtCurrent(el){ const h = el.innerHTML.trim(); return (h===""||h==="<br>"||h==="<div><br></div>") ? "" : sanitizeHtml(h); }
+function richDisplay(s){ return looksHtml(s) ? sanitizeHtml(s) : plainToHtml(s); }
+function rtPlaceholder(el){ el.classList.toggle("empty", el.textContent.trim()===""); }
+function rtLinkify(el){
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) { if (n.parentElement && n.parentElement.closest("a")) continue;
+    if (/(https?:\/\/|www\.)/i.test(n.nodeValue)) nodes.push(n); }
+  nodes.forEach(t => {
+    const s = t.nodeValue, frag = document.createDocumentFragment(); const re = /((https?:\/\/|www\.)[^\s<]+)/gi;
+    let last = 0, m;
+    while ((m = re.exec(s))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      const a = document.createElement("a"); let href = m[0]; if (/^www\./i.test(href)) href = "https://" + href;
+      a.href = href; a.textContent = m[0]; frag.appendChild(a); last = m.index + m[0].length;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    t.replaceWith(frag);
+  });
+}
+function makeRich(value, placeholder, onChange){
+  const el = document.createElement("div");
+  el.className = "cell-input richtext"; el.contentEditable = "true"; el.dataset.ph = placeholder || "";
+  el.innerHTML = sanitizeHtml(looksHtml(value) ? value : plainToHtml(value || ""));
+  rtPlaceholder(el);
+  el.addEventListener("input", () => { rtPlaceholder(el); onChange(rtCurrent(el)); });
+  el.addEventListener("blur", () => { rtLinkify(el); const clean = sanitizeHtml(el.innerHTML); if (clean !== el.innerHTML) el.innerHTML = clean; rtPlaceholder(el); onChange(rtCurrent(el)); });
+  el.addEventListener("focus", () => rtShow(el));
+  el.addEventListener("paste", (e) => { e.preventDefault(); const text = (e.clipboardData || window.clipboardData).getData("text/plain"); document.execCommand("insertText", false, text); });
+  el.addEventListener("keydown", (e) => { if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k") { e.preventDefault(); rtLink(); } });
+  return el;
+}
+// shared formatting toolbar
+let rtTarget = null;
+const rtbar = $("rtbar");
+rtbar.addEventListener("mousedown", e => e.preventDefault());   // keep selection in the editor
+function rtShow(el){ rtTarget = el; rtbar.hidden = false; }
+function rtHide(){ rtbar.hidden = true; rtTarget = null; }
+function rtLink(){
+  const sel = window.getSelection(); const hasSel = sel && sel.toString().trim();
+  const url = prompt("Link URL:", "https://"); if (!url) return;
+  if (hasSel) document.execCommand("createLink", false, url);
+  else document.execCommand("insertHTML", false, '<a href="'+escHtml(url)+'">'+escHtml(url)+'</a>');
+  if (rtTarget) rtTarget.dispatchEvent(new Event("input"));
+}
+rtbar.querySelectorAll("button[data-cmd]").forEach(b => b.addEventListener("click", () => {
+  const cmd = b.dataset.cmd;
+  if (cmd === "createLink") rtLink(); else document.execCommand(cmd, false, null);
+  if (rtTarget) rtTarget.dispatchEvent(new Event("input"));
+}));
+document.addEventListener("focusin", (e) => {
+  if (e.target && (e.target.classList && e.target.classList.contains("richtext") || rtbar.contains(e.target))) return;
+  rtHide();
+});
 
 // ============ AUTH ============
 let mode = "signin";
@@ -920,19 +1033,20 @@ function renderRows(){
     const work = document.createElement("div"); work.className = "work-col";
     const cmh = document.createElement("div"); cmh.className = "cmh"; cmh.textContent = "Comments & updates";
     work.appendChild(cmh);
-    note = document.createElement("textarea");
-    note.className = "cell-input note"; note.rows = 2; note.placeholder = "Comment, progress, blocker…"; note.value = row.note;
-    note.addEventListener("input", () => { row.note = note.value; autosize(note); scheduleSave(); });
+    note = makeRich(row.note, "Comment, progress, blocker…  (select text for Bold / Italic / Link)", (html) => { row.note = html; scheduleSave(); });
+    note.classList.add("note");
     work.appendChild(note);
     const logWrap = document.createElement("div"); logWrap.className = "logbtn";
     const logBtn = document.createElement("button"); logBtn.type = "button"; logBtn.className = "tlog"; logBtn.textContent = "＋ today";
     logBtn.title = "Add a dated line for today";
     logBtn.addEventListener("click", () => {
       const stamp = shortDate(todayIso()) + ": ";
-      row.note = stamp + (row.note ? "\n" + row.note : "");
-      note.value = row.note; autosize(note);
-      note.focus(); note.setSelectionRange(stamp.length, stamp.length);
-      scheduleSave();
+      const existing = note.innerHTML.trim(); const hadContent = existing && existing !== "<br>";
+      note.innerHTML = escHtml(stamp) + (hadContent ? "<br>" + note.innerHTML : "");
+      rtPlaceholder(note); row.note = rtCurrent(note); scheduleSave();
+      note.focus();
+      const first = note.firstChild;
+      if (first && first.nodeType === 3) { const sel = window.getSelection(); const r = document.createRange(); r.setStart(first, first.length); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
     });
     logWrap.appendChild(logBtn); work.appendChild(logWrap);
 
@@ -964,7 +1078,7 @@ function renderRows(){
     dwrap.appendChild(meta); dwrap.appendChild(work);
     dtd.appendChild(dwrap); dtr.appendChild(dtd); rowsEl.appendChild(dtr);
 
-    autosize(task); autosize(note);
+    autosize(task);
   });
 }
 function updateCounter(el, row){
@@ -1030,8 +1144,8 @@ function buildMarkdown(){
   L.push("|---|------|---------|--------|----------|-----|----------|--------|");
   const rs = filledOrdered();
   rs.forEach((r,i) => {
-    const ai = itemsInline(r);
-    const update = mdCell(r.note) + (ai ? (r.note && r.note.trim() ? " · " : "") + mdCell(ai) : "");
+    const ai = itemsInline(r); const noteTxt = htmlToText(r.note);
+    const update = mdCell(noteTxt) + (ai ? (noteTxt.trim() ? " · " : "") + mdCell(ai) : "");
     L.push("| "+(i+1)+" | "+mdCell(r.task)+" | "+mdCell(r.project)+" | "+mdCell(r.status)
       +" | "+mdCell(r.pri)+" | "+(r.due?shortDate(r.due):"")+" | "+r.prog+"% | "+update+" |");
   });
@@ -1051,7 +1165,7 @@ function buildText(){
     head += "  ["+r.status+" · "+r.pri+" · "+r.prog+"%"+(r.due?" · due "+shortDate(r.due):"")
       +(r.started?" · started "+shortDate(r.started):"")+(r.completed?" · done "+shortDate(r.completed):"")+"]";
     out.push(head);
-    if (r.note && r.note.trim()) r.note.trim().split(/\r?\n/).forEach(line => out.push("   " + line));
+    const nt = htmlToText(r.note); if (nt.trim()) nt.trim().split(/\r?\n/).forEach(line => out.push("   " + line));
     normItems(r.items).forEach(it => out.push("   [" + (it.done?"x":" ") + "] " + it.text.trim()));
   });
   out.push(""); return out.join("\n");
@@ -1094,7 +1208,7 @@ async function exportAllCSV(btn){
   const rows = [header].concat((data||[]).map(r => [
     r.week_ending||"", r.prepared_by||"", r.task||"", r.project||"", r.status||"", r.priority||"",
     (r.progress!=null?r.progress:""), r.due_date||"", r.started_on||"", r.completed_on||"",
-    String(r.note||"").replace(/\r?\n+/g," / "), itemsToText(r.items)
+    htmlToText(r.note).replace(/\r?\n+/g," / "), itemsToText(r.items)
   ]));
   downloadCSV("weekly-tracker-history-"+todayIso()+".csv", rows);
 }
@@ -1104,7 +1218,7 @@ function exportCompletedCSV(){
   const out = [header].concat(rows.map(r => {
     const d = daysBetween(r.started_on, r.completed_on);
     return [ r.week_ending||"", r.task||"", r.project||"", r.priority||"", r.started_on||"", r.completed_on||"",
-      (d!=null&&d>=0?d:""), String(r.note||"").replace(/\r?\n+/g," / ") ];
+      (d!=null&&d>=0?d:""), htmlToText(r.note).replace(/\r?\n+/g," / ") ];
   }));
   downloadCSV("completed-tasks-"+todayIso()+".csv", out);
 }
@@ -1189,10 +1303,10 @@ function renderKudos(){
     const title = document.createElement("input"); title.type = "text"; title.className = "ktitle"; title.placeholder = "What it was for (short summary)"; title.value = k.title || "";
     title.addEventListener("input", () => { k.title = title.value; scheduleKudosSave(k); });
     card.appendChild(title);
-    const det = document.createElement("textarea"); det.className = "kdetails"; det.rows = 2; det.placeholder = "Details / the quote…"; det.value = k.details || "";
-    det.addEventListener("input", () => { k.details = det.value; autosize(det); scheduleKudosSave(k); });
+    const det = makeRich(k.details, "Details / the quote…  (select text for Bold / Italic / Link)", (html) => { k.details = html; scheduleKudosSave(k); });
+    det.classList.add("kdetails");
     card.appendChild(det);
-    list.appendChild(card); autosize(det);
+    list.appendChild(card);
   });
   body.appendChild(list);
 }
@@ -1254,7 +1368,7 @@ function renderCompleted(){
       '<div class="crow"><div class="ct">'+esc(r.task) +
         (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
         completedDates(r) +
-        (r.note && r.note.trim()? '<div class="cn">'+esc(r.note)+'</div>':'') +
+        (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
       '</div></div>'
     ).join("") + '</div>'
   ).join("");
@@ -1471,7 +1585,7 @@ async function renderWeekKudos(){
     '<div class="wk-item"><div class="wk-meta">' + (k.kudos_date ? shortDate(k.kudos_date) : "")
       + (k.source && k.source.trim() ? ' · <b>'+esc(k.source)+'</b>' : '') + '</div>'
     + (k.title && k.title.trim() ? '<div class="wk-title">'+esc(k.title)+'</div>' : '')
-    + (k.details && k.details.trim() ? '<div class="wk-det">'+esc(k.details)+'</div>' : '')
+    + (htmlToText(k.details).trim() ? '<div class="wk-det">'+richDisplay(k.details)+'</div>' : '')
     + '</div>').join("");
   el.classList.add("show");
 }
