@@ -154,6 +154,7 @@
   .dqbtn { font-family:var(--disp); font-size:10.5px; font-weight:600; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:6px; padding:3px 7px; cursor:pointer; }
   .dqbtn:hover { border-color:var(--accent); }
   .todaylab { font-family:var(--mono); font-size:11px; color:var(--mut); margin-right:2px; }
+  .kbdhint { font-family:var(--mono); font-size:10.5px; color:var(--mut); opacity:.75; border:1px solid var(--line); border-radius:6px; padding:2px 7px; cursor:default; }
   #logToday.hot { color:var(--amber); border-color:#EFD9A0; background:var(--amber-bg); }
   .col-status { width:130px; } .col-pri { width:84px; } .col-prog { width:140px; } .col-act { width:96px; }
   .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; transition:border-color .12s, box-shadow .12s, background .12s; }
@@ -420,7 +421,7 @@
       --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
     }
     body { background:#fff; }
-    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .cmove, .rt-bar, .fromnotes, .rowcaret, .updot, .dquick, .row-sub { display:none !important; }
+    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .cmove, .rt-bar, .fromnotes, .rowcaret, .updot, .dquick, .row-sub, .kbdhint { display:none !important; }
     .cmh, .ai-head { color:#555 !important; }
     .view#v-history, .view#v-kpis, .view#v-completed, .view#v-kudos { display:none !important; }
     /* no borders/shadows around the page or table */
@@ -542,6 +543,7 @@
         <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
         <span class="spacer"></span>
         <span class="todaylab" id="todaylab"></span>
+        <span class="kbdhint" title="Press Alt with the up/down arrows to jump between tasks and start typing">⌥↑/↓ jump</span>
         <button class="btn ghost sm" id="collapseAll" type="button" title="Collapse or expand all tasks">⊟ Collapse all</button>
         <label class="sortlab">Sort
           <select id="sortMode">
@@ -930,6 +932,24 @@ $("carryBlank").addEventListener("click", () => {
 $("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
 $("logToday").addEventListener("click", logTodayAll);
 $("collapseAll").addEventListener("click", toggleCollapseAll);
+// Alt+↑ / Alt+↓ — jump to the previous/next task (expand it and focus its comment box)
+document.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  if ($("v-week").hidden || !visibleOrder.length) return;
+  e.preventDefault();
+  let cur = -1;
+  const el = document.activeElement;
+  const trEl = el && el.closest ? el.closest("tr[data-disp]") : null;
+  if (trEl) cur = parseInt(trEl.dataset.disp, 10);
+  let next;
+  if (cur < 0) next = (e.key === "ArrowDown") ? 0 : visibleOrder.length - 1;
+  else next = (e.key === "ArrowDown") ? Math.min(visibleOrder.length-1, cur+1) : Math.max(0, cur-1);
+  const row = visibleOrder[next].row;
+  row._open = true;
+  pendingFocus = { row, type: "note" };
+  renderRows();
+});
 
 function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
 function scheduleSave(){
@@ -1083,10 +1103,13 @@ function displayOrder(){
 
 function renderRows(){
   const rowsEl = $("rows"); rowsEl.innerHTML = "";
+  // first render after a (re)load: seed collapse state from this week's saved preference
+  if (state.rows.length && !state.rows.some(r => r._open !== undefined)) restoreOpenState();
   const manual = sortMode === "manual";
   const order = displayOrder();
   // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
   const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
+  visibleOrder = visible;
   updateDoneToggle();
   if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
   visible.forEach((item, dispIdx) => {
@@ -1096,7 +1119,7 @@ function renderRows(){
 
     // ---------- main row: title + status / priority / progress / delete ----------
     const open = rowOpen(row); row._open = open;
-    const tr = document.createElement("tr"); tr.className = open ? "" : "collapsed";
+    const tr = document.createElement("tr"); tr.className = open ? "" : "collapsed"; tr.dataset.disp = dispIdx;
 
     const tdNum = document.createElement("td"); tdNum.className = "col-num";
     const caret = document.createElement("button"); caret.type = "button"; caret.className = "rowcaret";
@@ -1185,7 +1208,7 @@ function renderRows(){
     rowsEl.appendChild(tr);
 
     // ---------- detail row: project + dates (left) | comments + action items (fills the width) ----------
-    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open;
+    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open; dtr.dataset.disp = dispIdx;
     const dspacer = document.createElement("td"); dspacer.className = "col-num"; dtr.appendChild(dspacer);
     const dtd = document.createElement("td"); dtd.colSpan = 5;
     const dwrap = document.createElement("div"); dwrap.className = "detail-wrap";
@@ -1291,6 +1314,7 @@ function renderRows(){
     autosize(task);
   });
   updateDailyBar();
+  saveOpenState();
   flushPendingFocus();
 }
 function updateCounter(el, row){
@@ -1327,7 +1351,7 @@ function moveItem(row, k, dir){
 }
 
 // ----- daily-entry helpers: "updated today", collapse, focus-after-render -----
-let pendingFocus = null, pendingFocusEl = null;
+let pendingFocus = null, pendingFocusEl = null, visibleOrder = [];
 function todayStamp(){ return shortDate(todayIso()); }
 function isActiveRow(row){ return !!(row.task && row.task.trim()) && row.status !== "Done"; }
 function updatedToday(row){
@@ -1336,6 +1360,23 @@ function updatedToday(row){
 }
 function needsUpdate(row){ return isActiveRow(row) && !updatedToday(row); }
 function rowOpen(row){ return (row._open !== undefined) ? row._open : !(row.task && row.task.trim()); }
+// remember which tasks are expanded, per week (collapse state isn't on the DB row)
+function openKey(){ return "tracker_open_" + (state.week || ""); }
+function saveOpenState(){
+  try {
+    const open = [];
+    state.rows.forEach((r,i) => { if (rowOpen(r)) open.push(i); });
+    localStorage.setItem(openKey(), JSON.stringify(open));
+  } catch(e){}
+}
+function restoreOpenState(){
+  try {
+    const raw = localStorage.getItem(openKey());
+    if (!raw) return;
+    const open = new Set(JSON.parse(raw));
+    state.rows.forEach((r,i) => { r._open = open.has(i); });
+  } catch(e){}
+}
 function stampTodayNote(row){
   const stamp = todayStamp() + ": ";
   const cur = richDisplay(row.note || "");           // normalize plain-or-HTML to safe HTML

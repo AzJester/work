@@ -38,6 +38,10 @@ them and run KPIs**, use the cloud-backed version:
   - **Collapsible task list** — each task collapses to a one-line summary (project · ☑
     checklist count · due · latest note), so a week of tasks reads as a tidy scannable list;
     click a task (the ▸ caret) to expand and edit, or **⊟ Collapse all / ⊞ Expand all**.
+    Which tasks you leave open is **remembered per week** (in this browser).
+  - **Jump between tasks** — **Alt + ↑ / ↓** moves to the previous/next task, expands it, and
+    drops your cursor straight into its comment box — so you can rip through a daily update
+    without reaching for the mouse.
   - **Daily updates / comments** — a per-task notes box with **＋ today** to stamp a dated
     line, so the week's progress builds up without overwriting earlier notes. An **✎ Log
     today** button stamps today's line into every task that hasn't been updated yet, and an
