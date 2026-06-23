@@ -81,7 +81,7 @@ them and run KPIs**, use the cloud-backed version:
     (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
     `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
 - **📝 Import notes (AI note taker → tasks)** — paste the summary or transcript from any AI
-  note taker (Plaud, Otter, Fireflies, Zoom/Teams/Meet AI, …) and Claude extracts the action
+  note taker (Plaud, Soundcore, Otter, Fireflies, Zoom/Teams/Meet AI, …) and Claude extracts the action
   items as draft tasks — with project, priority, due date, a context note, and checkable
   sub-items. Review the list, uncheck any you don't want, and **add them to the week** in one
   click; the raw notes are also **saved to that week** for reference. The extraction runs in a
