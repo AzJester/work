@@ -312,16 +312,24 @@
     body { background:#fff; }
     .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel { display:none !important; }
     .cmh, .ai-head { color:#555 !important; }
-    .view#v-history, .view#v-kpis, .view#v-completed { display:none !important; }
-    .head, .tcard { border:0; padding:0; box-shadow:none; } .head { display:block; margin-bottom:10pt; }
+    .view#v-history, .view#v-kpis, .view#v-completed, .view#v-kudos { display:none !important; }
+    /* no borders/shadows around the page or table */
+    .head, .tcard, table.tasks { border:0 !important; padding:0; box-shadow:none; }
+    .head { display:block; margin-bottom:10pt; }
     .head .field { display:inline-block; margin-right:28pt; vertical-align:top; }
     .head .field label { display:inline; margin:0 6pt 0 0; }
     .head .field .weeknav { display:inline; }
     .head .field input { display:inline-block; width:auto; border:0; padding:0; background:transparent; font-weight:700; }
     .weeknav .ibtn, #weekThis { display:none !important; }
     .col-act { display:none !important; } .rowbtns { display:none !important; }
-    table.tasks { border:1px solid #999; } .prog input[type=range] { display:none; }
+    .prog input[type=range] { display:none; }
     .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
+    /* preserve multi-line comments and show full content (no clipping) */
+    textarea, .cell-input { height:auto !important; min-height:0 !important; overflow:visible !important; white-space:pre-wrap !important; }
+    /* keep a task and its detail (comments / action items) together on one page */
+    table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
+    table.tasks tr.detail { break-before:avoid; page-break-before:avoid; }
+    .head { break-inside:avoid; }
   }
 </style>
 <script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
