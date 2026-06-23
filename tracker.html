@@ -142,6 +142,12 @@
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 
+  .sharebar { background:var(--accent-soft); border:1px solid #C9DBFF; border-radius:12px; padding:12px 14px; margin-bottom:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .sharebar strong { font-size:13px; }
+  .sharebar input { flex:1 1 260px; font:inherit; font-size:12.5px; color:var(--ink-2); background:#fff; border:1px solid var(--line-2); border-radius:7px; padding:8px 10px; }
+  .sharebar .note { width:100%; font-size:12px; color:var(--ink-2); margin:0; }
+  .sharebar[hidden] { display:none; }
+
   @media (max-width:720px) {
     .head { grid-template-columns:1fr; } .kgrid { grid-template-columns:1fr; }
     .col-prog, .col-pri { display:none; }
@@ -169,6 +175,7 @@
     </div>
     <div class="who-line" id="whoLine" hidden>
       <span>Signed in as <span class="em" id="userEmail"></span></span>
+      <button class="btn ghost sm" id="shareToggle" type="button">Share dashboard ▾</button>
       <button class="btn ghost sm" id="signout" type="button">Sign out</button>
     </div>
   </header>
@@ -190,6 +197,15 @@
 
   <!-- ============ APP ============ -->
   <main id="app" hidden>
+    <section class="sharebar" id="sharebar" hidden>
+      <strong>Read-only share link</strong>
+      <input id="shareUrl" type="text" readonly aria-label="Share link" />
+      <button class="btn ghost sm" id="shareCopy" type="button">Copy</button>
+      <button class="btn ghost sm danger" id="shareRevoke" type="button">Revoke &amp; regenerate</button>
+      <p class="note">Anyone with this link can view your KPIs and weekly reports — <b>read-only, no login</b>.
+        Forwarding the link grants access; <b>Revoke &amp; regenerate</b> invalidates it immediately.</p>
+    </section>
+
     <div class="tabs" id="nav-tabs" role="tablist">
       <button id="tab-week" class="on" type="button">This week</button>
       <button id="tab-history" type="button">History</button>
@@ -696,6 +712,46 @@ function stackedChart(labels, risk, blocked){
   }).join("");
   return svgOpen() + axis(max) + bars + xLabels(labels) + '</svg>';
 }
+
+// ============ SHARE LINK ============
+async function activeShareToken(){
+  const { data, error } = await sb.from("shares").select("token")
+    .eq("revoked", false).order("created_at", { ascending:false }).limit(1);
+  if (error) throw error;
+  return (data && data.length) ? data[0].token : null;
+}
+async function ensureShareToken(){
+  let tok = await activeShareToken();
+  if (tok) return tok;
+  const { data, error } = await sb.from("shares")
+    .insert({ user_id: session.user.id }).select("token").single();
+  if (error) throw error;
+  return data.token;
+}
+function shareUrlFor(token){ return new URL("dashboard.html", location.href).href + "?s=" + token; }
+
+$("shareToggle").addEventListener("click", async () => {
+  const bar = $("sharebar");
+  if (!bar.hidden) { bar.hidden = true; return; }
+  bar.hidden = false; $("shareUrl").value = "Generating link…";
+  try { $("shareUrl").value = shareUrlFor(await ensureShareToken()); }
+  catch (e) { $("shareUrl").value = "Error: " + (e.message || e); }
+});
+$("shareCopy").addEventListener("click", function(){
+  const inp = $("shareUrl"); inp.select(); const text = inp.value; const btn = this;
+  const done = () => { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
+  else { try { document.execCommand("copy"); done(); } catch(e){} }
+});
+$("shareRevoke").addEventListener("click", async () => {
+  if (!confirm("Revoke the current link and generate a new one? The old link stops working immediately.")) return;
+  $("shareUrl").value = "Working…";
+  try {
+    const { error } = await sb.from("shares").update({ revoked:true }).eq("revoked", false);
+    if (error) throw error;
+    $("shareUrl").value = shareUrlFor(await ensureShareToken());
+  } catch (e) { $("shareUrl").value = "Error: " + (e.message || e); }
+});
 
 // ============ boot ============
 (async function init(){

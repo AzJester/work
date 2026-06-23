@@ -50,6 +50,20 @@ setting and reminds you if it's still on.)
 The cloud page loads the `@supabase/supabase-js` client from a CDN — the one external
 dependency that a database-backed page necessarily has.
 
+### Shareable read-only dashboard (for your bosses)
+
+From the cloud tracker, **Share dashboard ▾** gives you a secret link your leadership can open
+with **no login** — a read-only view at `dashboard.html`:
+
+- **KPIs** — the same completion, blocked/at-risk, velocity, and carryover charts.
+- **Weekly reports** — each week's status table, expandable, newest first.
+- **Anyone with the link can view** (read-only). **Revoke &amp; regenerate** invalidates the old
+  link instantly and issues a new one.
+
+How it stays safe: the page only ever calls one **token-gated, read-only** database function
+(`shared_dashboard`) that returns *only* the link owner's data. No write access is exposed, and
+every table stays protected by Row Level Security — the share link is the single, revocable door.
+
 ## LDAWIF — All-Domain Kill Web
 
 A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·
@@ -131,6 +145,7 @@ retains release authority over the use of force.
 |------|---------|
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
+| `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
