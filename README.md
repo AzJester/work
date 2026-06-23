@@ -1,6 +1,27 @@
 # work
 My Work Repository
 
+## Weekly Status Tracker
+
+A standalone, self-contained page for tracking your **weekly task status** and producing a
+clean report to submit to leadership at the close of each week. Open it, fill in your tasks,
+and export — nothing to install, no account, no server:
+
+### → https://azjester.github.io/work/status.html
+
+- **Editable task table** — per task: name, **Status** (On Track · At Risk · Blocked · Done,
+  color-chipped), **Priority** (High · Med · Low), **Progress** (0–100%), and a free-text
+  "Update this week". Add, delete, and reorder rows.
+- **Report header** — your name/title and a **Week ending** date (defaults to the coming Friday).
+- **Three ways to submit** — **Copy as text** (paste into email/Slack/Teams), **Download
+  Markdown** (`weekly-status-YYYY-MM-DD.md`, a GitHub-style table for docs/wikis), or
+  **Print / PDF** (a clean print stylesheet → *Save as PDF* for a tidy one-pager).
+- **Saved in your browser** — everything persists to `localStorage` (this browser only).
+  **Clear &amp; start new week** rolls the date forward and clears updates for the next report.
+
+One file, **zero external dependencies** (no CDNs, web fonts, or network calls); light,
+print-friendly executive styling with the system font stack.
+
 ## LDAWIF — All-Domain Kill Web
 
 A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·
@@ -80,6 +101,7 @@ retains release authority over the use of force.
 
 | File | Purpose |
 |------|---------|
+| `status.html` | The standalone **Weekly Status Tracker** (editable task table + Markdown/text/PDF export). |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
