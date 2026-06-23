@@ -60,6 +60,10 @@ them and run KPIs**, use the cloud-backed version:
   - **By project** — tasks and completion grouped by project/area
 - Same **Copy / Markdown / Print-PDF** exports for the week, plus **⬇ Download all as CSV**
   (full history) on the History tab.
+- **Kudos** tab — log praise & recognition (date, source, what it was for, and the quote);
+  it's tracked here and shown on your shared dashboard for leadership.
+- **Undo deletes** — deleting a task, action item, week, or kudos shows an **Undo** toast so a
+  wrong delete is one click to restore.
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose).

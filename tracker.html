@@ -246,7 +246,30 @@
   .pbar .pl .pc { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
   .pbar .track { height:8px; background:var(--track-bg); border-radius:999px; overflow:hidden; }
   .pbar .fill { height:100%; background:linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius:999px; }
-  .htoolbar { display:flex; justify-content:flex-end; margin-bottom:12px; }
+  .htoolbar { display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+
+  /* ---- Kudos ---- */
+  .klist { display:flex; flex-direction:column; gap:12px; }
+  .kcardk { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow-sm); }
+  .kcardk .ktop { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .kcardk .ktop input { font:inherit; background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:7px 10px; color:var(--ink); }
+  .kcardk .ktop input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kdate { width:150px; } .kcardk .ksource { flex:1 1 200px; min-width:0; }
+  .kcardk .ktitle { width:100%; font:inherit; font-size:15px; font-weight:600; background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; color:var(--ink); margin-bottom:6px; }
+  .kcardk .ktitle:hover { border-color:var(--line-2); } .kcardk .ktitle:focus { outline:none; border-color:var(--accent); background:var(--input-bg); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kdetails { width:100%; font:inherit; font-size:13.5px; line-height:1.45; color:var(--ink-2); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; min-height:34px; overflow:hidden; }
+  .kcardk .kdetails:hover { border-color:var(--line-2); } .kcardk .kdetails:focus { outline:none; border-color:var(--accent); background:var(--input-bg); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kfoot { display:flex; justify-content:flex-end; margin-top:6px; }
+  .kdlab { font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
+
+  /* ---- Undo toast ---- */
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:50;
+    display:flex; align-items:center; gap:14px; background:var(--ink); color:#fff;
+    border-radius:11px; padding:11px 14px 11px 18px; box-shadow:0 18px 40px -16px rgba(0,0,0,.5); font-size:13.5px; }
+  .toast[hidden] { display:none; }
+  .toast #toastUndo { font-family:var(--disp); font-size:13px; font-weight:700; color:#fff; background:transparent;
+    border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 12px; cursor:pointer; }
+  .toast #toastUndo:hover { background:rgba(255,255,255,.12); }
 
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
@@ -352,6 +375,7 @@
       <button id="tab-week" class="on" type="button">This week</button>
       <button id="tab-history" type="button">History</button>
       <button id="tab-completed" type="button">Completed</button>
+      <button id="tab-kudos" type="button">Kudos</button>
       <button id="tab-kpis" type="button">KPIs</button>
     </div>
 
@@ -435,11 +459,25 @@
       <div id="completedBody"></div>
     </section>
 
+    <!-- ---- Kudos ---- -->
+    <section class="view" id="v-kudos" hidden>
+      <div class="htoolbar" style="justify-content:space-between">
+        <p class="hint" style="margin:0">Log praise &amp; recognition — it’s tracked here and appears on your shared dashboard.</p>
+        <button class="btn" id="addKudos" type="button">+ Add kudos</button>
+      </div>
+      <div id="kudosBody"></div>
+    </section>
+
     <!-- ---- KPIs ---- -->
     <section class="view" id="v-kpis" hidden>
       <div id="kpiBody"></div>
     </section>
   </main>
+
+  <div id="toast" class="toast" hidden>
+    <span id="toastMsg"></span>
+    <button id="toastUndo" type="button">Undo</button>
+  </div>
 
 </div>
 
@@ -497,6 +535,16 @@ let saveTimer = null;
 let sortMode = "status";
 try { const s = localStorage.getItem("tracker_sort"); if (s) sortMode = s; } catch(e){}
 let showDone = false;   // Done tasks move to the Completed tab; this reveals them in the editor
+
+// ---------- undo toast (safety net for any delete) ----------
+let undoTimer = null, undoFn = null;
+function showUndo(msg, fn){
+  undoFn = fn; $("toastMsg").textContent = msg; $("toast").hidden = false;
+  clearTimeout(undoTimer); undoTimer = setTimeout(hideUndo, 8000);
+}
+function hideUndo(){ $("toast").hidden = true; undoFn = null; clearTimeout(undoTimer); }
+function isBlankRow(r){ return !(r.task&&r.task.trim()) && !(r.note&&r.note.trim()) && !(r.project&&r.project.trim()) && !(r.items&&r.items.length); }
+$("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); if (f) f(); });
 
 // ============ AUTH ============
 let mode = "signin";
@@ -689,12 +737,18 @@ async function saveWeek(explicit){
 
 $("del").addEventListener("click", async () => {
   if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
-  if (!confirm("Delete the saved report for week ending " + (prettyDate(state.week)||state.week) + "? This cannot be undone.")) return;
+  const snap = { who: state.who, week: state.week,
+    rows: state.rows.map(r => ({ ...r, items:(r.items||[]).map(x=>({...x})) })) };
   setSave("busy", "Deleting…");
   const { error } = await sb.from("reports").delete().eq("id", reportId);
   if (error) { setSave("err", "Delete failed: " + error.message); return; }
   reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ];
-  renderRows(); setSave("", "Deleted · new week");
+  renderRows(); setSave("", "Week deleted");
+  showUndo("Week deleted", async () => {
+    state.who = snap.who; state.week = snap.week; state.rows = snap.rows;
+    $("who").value = state.who; $("week").value = state.week;
+    renderRows(); await saveWeek(true);
+  });
 });
 
 // display order without mutating manual order; returns [{row, idx}]
@@ -781,9 +835,14 @@ function renderRows(){
       grp.appendChild(up); grp.appendChild(dn);
     }
     const del = mkIbtn("🗑","Delete this task",() => {
-      const label = (row.task && row.task.trim()) ? '“'+row.task.trim()+'”' : "this task";
-      if (!confirm("Delete " + label + "? This removes it from this week.")) return;
-      state.rows.splice(i,1); if(!state.rows.length) state.rows=[blankRow()]; renderRows(); scheduleSave();
+      const removed = state.rows[i], at = i;
+      state.rows.splice(i,1); if(!state.rows.length) state.rows=[blankRow()];
+      renderRows(); scheduleSave();
+      showUndo("Task deleted", () => {
+        if (state.rows.length === 1 && isBlankRow(state.rows[0])) state.rows = [];
+        state.rows.splice(Math.min(at, state.rows.length), 0, removed);
+        renderRows(); scheduleSave();
+      });
     });
     del.classList.add("del"); grp.appendChild(del); tdAct.appendChild(grp); tr.appendChild(tdAct);
 
@@ -848,7 +907,11 @@ function renderRows(){
       const tx = document.createElement("input"); tx.type = "text"; tx.value = it.text; tx.placeholder = "Action item";
       tx.addEventListener("input", () => { it.text = tx.value; scheduleSave(); });
       const xb = document.createElement("button"); xb.type = "button"; xb.className = "cdel"; xb.textContent = "✕"; xb.title = "Remove action item";
-      xb.addEventListener("click", () => { row.items.splice(k,1); updateCounter(counter, row); renderRows(); scheduleSave(); });
+      xb.addEventListener("click", () => {
+        const removed = it, at = k;
+        row.items.splice(k,1); updateCounter(counter, row); renderRows(); scheduleSave();
+        showUndo("Action item deleted", () => { row.items.splice(Math.min(at,row.items.length),0,removed); updateCounter(counter,row); renderRows(); scheduleSave(); });
+      });
       ci.appendChild(cb); ci.appendChild(tx); ci.appendChild(xb); list.appendChild(ci);
     });
     const addBtn = document.createElement("button"); addBtn.type = "button"; addBtn.className = "addItem"; addBtn.textContent = "＋ action item";
@@ -1006,20 +1069,91 @@ function exportCompletedCSV(){
 
 // ============ TABS ============
 const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"],
-               completed:["tab-completed","v-completed"], kpis:["tab-kpis","v-kpis"] };
+               completed:["tab-completed","v-completed"], kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
 function showTab(name){
   Object.entries(tabs).forEach(([k,[btn,view]]) => {
     $(btn).classList.toggle("on", k===name); $(view).hidden = (k!==name);
   });
   if (name === "history") loadHistory();
   if (name === "completed") loadCompleted();
+  if (name === "kudos") loadKudos();
   if (name === "kpis") loadKpis();
 }
 $("tab-week").addEventListener("click", () => showTab("week"));
 $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
+$("tab-kudos").addEventListener("click", () => showTab("kudos"));
 $("tab-kpis").addEventListener("click", () => showTab("kpis"));
 $("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
+
+// ============ KUDOS ============
+let kudosList = null;
+const kudosTimers = {};
+$("addKudos").addEventListener("click", addKudos);
+async function loadKudos(){
+  const body = $("kudosBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading kudos…</div>';
+  const { data, error } = await sb.from("kudos")
+    .select("id,kudos_date,source,title,details")
+    .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+  if (error) { body.innerHTML = '<div class="muted-empty">Could not load kudos: '+esc(error.message)+'</div>'; return; }
+  kudosList = data || [];
+  renderKudos();
+}
+async function addKudos(){
+  if (!session) return;
+  const { data, error } = await sb.from("kudos")
+    .insert({ user_id: session.user.id, kudos_date: todayIso() }).select("id,kudos_date,source,title,details").single();
+  if (error) { alert("Could not add kudos: " + error.message); return; }
+  if (!kudosList) kudosList = [];
+  kudosList.unshift(data); renderKudos();
+  const first = $("kudosBody").querySelector(".kcardk .ktitle"); if (first) first.focus();
+}
+function scheduleKudosSave(k){
+  clearTimeout(kudosTimers[k.id]);
+  kudosTimers[k.id] = setTimeout(async () => {
+    await sb.from("kudos").update({ kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details }).eq("id", k.id);
+  }, 700);
+}
+function deleteKudos(k){
+  const idx = kudosList.findIndex(x => x.id === k.id); if (idx < 0) return;
+  kudosList.splice(idx, 1); renderKudos();
+  sb.from("kudos").delete().eq("id", k.id);
+  showUndo("Kudos deleted", async () => {
+    const { data } = await sb.from("kudos")
+      .insert({ user_id: session.user.id, kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details })
+      .select("id,kudos_date,source,title,details").single();
+    if (data) { kudosList.splice(Math.min(idx, kudosList.length), 0, data); renderKudos(); }
+  });
+}
+function renderKudos(){
+  const body = $("kudosBody");
+  if (!kudosList) return;
+  if (!kudosList.length) { body.innerHTML = '<div class="muted-empty">No kudos yet — click <b>+ Add kudos</b> to log praise or recognition.</div>'; return; }
+  body.innerHTML = ""; const list = document.createElement("div"); list.className = "klist";
+  kudosList.forEach(k => {
+    const card = document.createElement("div"); card.className = "kcardk";
+    const top = document.createElement("div"); top.className = "ktop";
+    const dlab = document.createElement("span"); dlab.className = "kdlab"; dlab.textContent = "Date";
+    const date = document.createElement("input"); date.type = "date"; date.className = "kdate"; date.value = k.kudos_date || "";
+    date.addEventListener("change", () => { k.kudos_date = date.value; scheduleKudosSave(k); });
+    const src = document.createElement("input"); src.type = "text"; src.className = "ksource"; src.placeholder = "From / source (e.g. Jennifer Damewood)"; src.value = k.source || "";
+    src.addEventListener("input", () => { k.source = src.value; scheduleKudosSave(k); });
+    const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "ibtn del"; delBtn.textContent = "🗑"; delBtn.title = "Delete kudos";
+    delBtn.addEventListener("click", () => deleteKudos(k));
+    top.appendChild(dlab); top.appendChild(date); top.appendChild(src);
+    const spacer = document.createElement("span"); spacer.style.flex = "1 1 auto"; top.appendChild(spacer); top.appendChild(delBtn);
+    card.appendChild(top);
+    const title = document.createElement("input"); title.type = "text"; title.className = "ktitle"; title.placeholder = "What it was for (short summary)"; title.value = k.title || "";
+    title.addEventListener("input", () => { k.title = title.value; scheduleKudosSave(k); });
+    card.appendChild(title);
+    const det = document.createElement("textarea"); det.className = "kdetails"; det.rows = 2; det.placeholder = "Details / the quote…"; det.value = k.details || "";
+    det.addEventListener("input", () => { k.details = det.value; autosize(det); scheduleKudosSave(k); });
+    card.appendChild(det);
+    list.appendChild(card); autosize(det);
+  });
+  body.appendChild(list);
+}
 
 // ============ COMPLETED ARCHIVE ============
 let completedCache = null;
