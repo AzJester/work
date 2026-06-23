@@ -46,7 +46,7 @@
     background:linear-gradient(145deg, var(--accent-2), var(--accent)); color:#fff;
     display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; letter-spacing:-0.02em;
     box-shadow:0 8px 18px -6px rgba(79,70,229,0.55); }
-  .brand .mark svg { width:27px; height:27px; display:block; }
+  .brand .mark svg { width:27px; height:27px; display:block; fill:#F4C430; filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
   .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.02em; }
   .mast .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
   .ro { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; letter-spacing:.08em;
@@ -173,7 +173,13 @@ const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-const COLORS = { done:"#1A8A4E", accent:"#2563EB", atrisk:"#D9A300", blocked:"#B42318" };
+let COLORS = { done:"#1A8A4E", accent:"#2563EB", atrisk:"#D9A300", blocked:"#B42318" };
+function refreshChartColors(){
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  COLORS = dark
+    ? { done:"#46D08A", accent:"#9AA0FF", atrisk:"#E6B655", blocked:"#FF8275" }
+    : { done:"#1A8A4E", accent:"#2563EB", atrisk:"#D9A300", blocked:"#B42318" };
+}
 const $ = (id) => document.getElementById(id);
 (function initTheme(){
   let theme = "light";
@@ -271,6 +277,7 @@ function showMessage(title, body){
 })();
 
 function render(data){
+  refreshChartColors();
   const wk = (data.weekly || []).slice();         // ascending by week_ending
   const co = (data.carryover || []).slice();
   const reports = (data.reports || []);            // descending by week_ending
