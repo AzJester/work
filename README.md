@@ -69,9 +69,11 @@ them and run KPIs**, use the cloud-backed version:
   and pasted URLs auto-link. Stored HTML is sanitized (allowlist) so the public shared
   dashboard stays safe.
 - **✨ AI weekly summary** — a **Draft summary** button turns the week's tasks, blockers, and
-  kudos into a polished executive narrative (Accomplishments · Risks & blockers · Next week)
-  you can edit and copy. The Anthropic call runs server-side in a Supabase **Edge Function**
-  (`weekly-summary`) so the API key never reaches the browser.
+  kudos into a polished executive narrative (Accomplishments · Risks & blockers · Next week).
+  The draft renders **formatted** (headings, bold, bullets) so it reads like the finished
+  report; toggle **Edit** to tweak the wording, and **Copy** puts rich text on the clipboard
+  for a clean paste into email. The Anthropic call runs server-side in a Supabase **Edge
+  Function** (`weekly-summary`) so the API key never reaches the browser.
   - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
     (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
     `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
