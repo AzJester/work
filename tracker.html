@@ -288,6 +288,14 @@
   .modal-body textarea { width:100%; min-height:300px; font:inherit; font-size:14px; line-height:1.5; color:var(--ink);
     background:var(--input-bg); border:1px solid var(--line-2); border-radius:10px; padding:12px 14px; resize:vertical; }
   .modal-body textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .modal-body .ai-rendered { font-size:14px; line-height:1.55; color:var(--ink); }
+  .modal-body .ai-rendered h4 { font-size:14px; margin:14px 0 6px; letter-spacing:-0.01em; }
+  .modal-body .ai-rendered h4:first-child { margin-top:0; }
+  .modal-body .ai-rendered p { margin:0 0 8px; }
+  .modal-body .ai-rendered ul, .modal-body .ai-rendered ol { margin:4px 0 10px; padding-left:22px; }
+  .modal-body .ai-rendered li { margin-bottom:3px; }
+  .modal-body .ai-rendered a { color:var(--accent); text-decoration:underline; }
+  .modal-body .ai-rendered code { font-family:var(--mono); font-size:12.5px; background:var(--input-bg); padding:1px 5px; border-radius:5px; }
   .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
   .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
   .modal-foot { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:var(--input-bg); }
@@ -561,8 +569,9 @@
       <div class="modal-head"><strong>✨ AI weekly summary</strong><button class="ibtn" id="aiClose" type="button" title="Close">✕</button></div>
       <div class="modal-body" id="aiBody"></div>
       <div class="modal-foot">
-        <button class="btn ghost sm" id="aiCopy" type="button">Copy</button>
-        <button class="btn ghost sm" id="aiRegen" type="button">Regenerate</button>
+        <button class="btn ghost sm" id="aiEdit" type="button" hidden>Edit</button>
+        <button class="btn ghost sm" id="aiCopy" type="button" hidden>Copy</button>
+        <button class="btn ghost sm" id="aiRegen" type="button" hidden>Regenerate</button>
         <span class="spacer" style="flex:1 1 auto"></span>
         <button class="btn sm" id="aiDone" type="button">Done</button>
       </div>
@@ -653,7 +662,8 @@ $("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); i
 function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
 function plainToHtml(s){ return escHtml(s).replace(/\r?\n/g, "<br>"); }
-const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1 };
+const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1,
+                     H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,CODE:1 };
 function sanitizeHtml(html){
   const doc = new DOMParser().parseFromString("<div>"+(html||"")+"</div>", "text/html");
   const root = doc.body.firstChild;
@@ -1641,6 +1651,8 @@ async function renderWeekKudos(){
 }
 
 // ============ AI WEEKLY SUMMARY ============
+let aiMarkdown = "";
+let aiMode = "preview";   // or "edit"
 function openAi(){ $("aiModal").hidden = false; }
 function closeAi(){ $("aiModal").hidden = true; }
 $("aiSummary").addEventListener("click", draftSummary);
@@ -1648,17 +1660,70 @@ $("aiClose").addEventListener("click", closeAi);
 $("aiDone").addEventListener("click", closeAi);
 $("aiRegen").addEventListener("click", draftSummary);
 $("aiModal").addEventListener("click", (e) => { if (e.target === $("aiModal")) closeAi(); });
-$("aiCopy").addEventListener("click", function(){
-  const ta = $("aiBody").querySelector("textarea"); if (!ta) return;
-  const btn = this; const done = () => { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); };
-  ta.select();
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
-  else { try { document.execCommand("copy"); done(); } catch(e){} }
+$("aiEdit").addEventListener("click", () => { aiMode = (aiMode === "edit") ? "preview" : "edit"; renderAiView(); });
+$("aiCopy").addEventListener("click", async function(){
+  const btn = this;
+  const html = '<div>' + sanitizeHtml(mdToHtml(aiMarkdown)) + '</div>';
+  const ok = await copyRich(html, aiMarkdown);
+  if (ok) { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); }
 });
+
+// minimal, safe markdown → HTML (headings, bold/italic, lists, links, code)
+function mdInline(s){
+  s = escHtml(s);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return s;
+}
+function mdToHtml(md){
+  const lines = String(md||"").replace(/\r\n/g,"\n").split("\n");
+  let html = "", list = null;
+  const closeList = () => { if (list) { html += "</"+list+">"; list = null; } };
+  lines.forEach(raw => {
+    const line = raw.replace(/\s+$/,"");
+    if (!line.trim()) { closeList(); return; }
+    let m;
+    if ((m = line.match(/^#{1,6}\s+(.*)$/)))      { closeList(); html += "<h4>"+mdInline(m[1])+"</h4>"; return; }
+    if ((m = line.match(/^\s*[-*•]\s+(.*)$/)))     { if (list!=="ul"){ closeList(); html+="<ul>"; list="ul"; } html += "<li>"+mdInline(m[1])+"</li>"; return; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/)))   { if (list!=="ol"){ closeList(); html+="<ol>"; list="ol"; } html += "<li>"+mdInline(m[1])+"</li>"; return; }
+    closeList(); html += "<p>"+mdInline(line)+"</p>";
+  });
+  closeList();
+  return html;
+}
+async function copyRich(html, plain){
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([ new ClipboardItem({
+        "text/html": new Blob([html], { type:"text/html" }),
+        "text/plain": new Blob([plain], { type:"text/plain" })
+      }) ]);
+      return true;
+    }
+  } catch(e) {}
+  try { if (navigator.clipboard) { await navigator.clipboard.writeText(plain); return true; } } catch(e) {}
+  try { const ta=document.createElement("textarea"); ta.value=plain; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); return true; } catch(e) {}
+  return false;
+}
+function renderAiView(){
+  const body = $("aiBody");
+  $("aiEdit").textContent = (aiMode === "edit") ? "Preview" : "Edit";
+  if (aiMode === "edit") {
+    body.innerHTML = "";
+    const ta = document.createElement("textarea"); ta.value = aiMarkdown;
+    ta.addEventListener("input", () => { aiMarkdown = ta.value; });
+    body.appendChild(ta);
+  } else {
+    body.innerHTML = '<div class="ai-rendered">' + sanitizeHtml(mdToHtml(aiMarkdown)) + '</div>';
+  }
+}
 async function draftSummary(){
-  openAi();
+  openAi(); aiMode = "preview";
   $("aiBody").innerHTML = '<div class="ai-load"><span class="spin"></span> Drafting your weekly summary…</div>';
-  $("aiCopy").disabled = true;
+  ["aiEdit","aiCopy","aiRegen"].forEach(id => $(id).hidden = true);
   try {
     const tasks = state.rows
       .filter(r => (r.task && r.task.trim()) || htmlToText(r.note).trim() || (r.items && r.items.length))
@@ -1679,10 +1744,9 @@ async function draftSummary(){
       throw new Error(msg);
     }
     if (data && data.error) throw new Error(data.error);
-    const ta = document.createElement("textarea");
-    ta.value = (data && data.summary) || "(The model returned an empty summary.)";
-    $("aiBody").innerHTML = ""; $("aiBody").appendChild(ta);
-    $("aiCopy").disabled = false;
+    aiMarkdown = (data && data.summary) || "(The model returned an empty summary.)";
+    ["aiEdit","aiCopy","aiRegen"].forEach(id => $(id).hidden = false);
+    renderAiView();
   } catch (e) {
     $("aiBody").innerHTML = '<div class="ai-err"><b>Couldn’t generate the summary.</b><br>' + escHtml(e.message || String(e))
       + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
