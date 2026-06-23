@@ -1919,7 +1919,9 @@ async function extractNotes(){
 }
 function addProposed(){
   const picked = proposed.filter(p => p._on !== false);
-  if (!picked.length) { closeNotes(); return; }
+  if (!picked.length) { closeNotes(); return; }   // closeNotes captures + saves notes
+  // keep any edits the user made to the pasted notes after extracting
+  state.notes = $("notesInput").value;
   // drop the empty placeholder rows so imported tasks aren't buried under blanks
   state.rows = state.rows.filter(r => !isBlankRow(r));
   picked.forEach(p => state.rows.push(rowFromProposed(p)));
