@@ -22,6 +22,34 @@ and export — nothing to install, no account, no server:
 One file, **zero external dependencies** (no CDNs, web fonts, or network calls); light,
 print-friendly executive styling with the system font stack.
 
+### Cloud version (saves to a database + KPIs)
+
+`status.html` is browser-only. When you need your reports **stored so you can refer back to
+them and run KPIs**, use the cloud-backed version:
+
+### → https://azjester.github.io/work/tracker.html
+
+- **Sign in** (email + password) and every week is saved to a **Supabase (Postgres)**
+  database — not just this browser. Edits auto-save.
+- **History** tab — every past week, with at-a-glance counts; click **Open** to reload or
+  re-export any week.
+- **KPIs** tab — computed across all your weeks:
+  - **Completion & throughput** — tasks done per week and % completion rate
+  - **Blocked & at-risk trend** — stacked counts over time
+  - **Average progress / velocity** — mean progress % per week
+  - **Carryover / aging** — open tasks repeating from earlier weeks, oldest first
+- Same **Copy / Markdown / Print-PDF** exports for the week on screen.
+- **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
+  the page only carries a public *publishable* key (safe to expose).
+
+**One-time setup (≈30 seconds, once):** so login works instantly on a static page, open the
+Supabase project → **Authentication → Providers → Email** and turn **off** *“Confirm email.”*
+Then visit the page, choose **Create an account**, and you're in. (The app detects this
+setting and reminds you if it's still on.)
+
+The cloud page loads the `@supabase/supabase-js` client from a CDN — the one external
+dependency that a database-backed page necessarily has.
+
 ## LDAWIF — All-Domain Kill Web
 
 A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·
@@ -101,7 +129,8 @@ retains release authority over the use of force.
 
 | File | Purpose |
 |------|---------|
-| `status.html` | The standalone **Weekly Status Tracker** (editable task table + Markdown/text/PDF export). |
+| `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
+| `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
