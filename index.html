@@ -61,6 +61,14 @@
   .lede .stat { font-family:var(--mono); font-size:11px; letter-spacing:0.07em; color:var(--mut); white-space:nowrap; }
   .lede .stat .ph { color:var(--cyan); } .lede.live .stat .ph { color:var(--amber); }
 
+  .narrate { display:flex; align-items:flex-start; gap:9px; border:1px solid var(--line); border-left:2px solid var(--cyan);
+    border-radius:8px; background:rgba(12,20,36,0.5); padding:9px 13px; font-size:13.5px; color:var(--dim); min-height:38px; }
+  .narrate .mk { color:var(--cyan); font-family:var(--mono); }
+  .narrate.hold { border-left-color:var(--blue); } .narrate.hold .mk { color:var(--blue); }
+  .narrate.alert { border-left-color:var(--amber); } .narrate.alert .mk { color:var(--amber); }
+  .narrate.safe { border-left-color:var(--green); } .narrate.safe .mk { color:var(--green); }
+  .narrate b { color:var(--text); font-weight:600; }
+
   .main { display:grid; grid-template-columns:minmax(440px,1.18fr) 1fr; gap:16px; align-items:stretch; }
   .scope-wrap { position:relative; border:1px solid var(--line); border-radius:14px;
     background:radial-gradient(circle at 50% 47%, rgba(53,222,255,0.05), transparent 60%), var(--ground-2); overflow:hidden; }
@@ -129,8 +137,10 @@
           <button type="button" data-scn="single">Single</button>
           <button type="button" data-scn="raid" class="on">Raid</button>
           <button type="button" data-scn="swarm">Swarm</button>
+          <button type="button" data-scn="mixed">Mixed</button>
         </div>
         <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
+        <button class="btn ghost" id="comms" type="button">Jam comms</button>
         <button class="btn ghost" id="pause" type="button">Pause</button>
         <button class="btn" id="run" type="button">Run engagement</button>
       </div>
@@ -141,11 +151,13 @@
       <span class="stat">STATE · <span class="ph" id="phase">READY</span></span>
     </p>
 
+    <div class="narrate" id="narr"><span class="mk">▸</span><span id="narrTxt">Pick a scenario and run the engagement. Click any sensor or shooter on the scope to take it offline — the kill web re-routes. “Jam comms” contests the datalink.</span></div>
+
     <div class="main">
       <div class="scope-wrap">
         <canvas id="scope" width="600" height="600"></canvas>
-        <div class="scope-tag"><b>LAYERED DEFENSE</b> · plan view</div>
-        <div class="scope-rng" id="rngScale">range rings 40 / 80 / 120 km<br>bearings °TRUE</div>
+        <div class="scope-tag"><b>LAYERED DEFENSE</b> · plan view · <span style="color:var(--blue)">click a node to take it offline</span></div>
+        <div class="scope-rng" id="rngScale">range rings 40 / 80 / 120 km · bearings °TRUE<br>◇ air · ▢ uas · △ tbm · ▷ cruise</div>
       </div>
 
       <div class="side">
@@ -165,6 +177,7 @@
             <div class="row"><span class="k">AI commit Δ</span><span class="v" id="vLat"><span class="lo">— · vs manual ~min</span></span></div>
             <div class="row"><span class="k">Arsenal</span><span class="v" id="vArsenal"><span class="lo">interceptors ready</span></span></div>
             <div class="row"><span class="k">Engaged / destroyed</span><span class="v" id="vCount">0 / 0</span></div>
+            <div class="row"><span class="k">Datalink</span><span class="v" id="vLink"><span class="hi">nominal</span></span></div>
             <div class="row"><span class="k">Weapons</span><span class="v weap" id="vWeap">TIGHT</span></div>
             <div class="row"><span class="k">Release authority</span>
               <span class="gate" id="gate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg><span id="vAuth">human on the loop</span></span>
@@ -203,12 +216,23 @@
   var canvas = document.getElementById("scope"), ctx = canvas.getContext("2d");
   var MONO = 'ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace';
 
-  var btn=document.getElementById("run"), pauseBtn=document.getElementById("pause"), seg=document.getElementById("seg");
+  var btn=document.getElementById("run"), pauseBtn=document.getElementById("pause"), seg=document.getElementById("seg"), commsBtn=document.getElementById("comms");
   var phaseEl=document.getElementById("phase"), ledeEl=document.querySelector(".lede"), scnWord=document.getElementById("scnWord");
   var sys=document.getElementById("sys"), sysPill=document.getElementById("sysPill"), dtgEl=document.getElementById("dtg");
   var raidState=document.getElementById("raidState"), tlRows=document.getElementById("tlRows"), tlMore=document.getElementById("tlMore");
   var vLat=document.getElementById("vLat"), vArsenal=document.getElementById("vArsenal"), vCount=document.getElementById("vCount"),
-      vWeap=document.getElementById("vWeap"), vAuth=document.getElementById("vAuth"), gate=document.getElementById("gate"), bda=document.getElementById("bda");
+      vWeap=document.getElementById("vWeap"), vAuth=document.getElementById("vAuth"), gate=document.getElementById("gate"), bda=document.getElementById("bda"),
+      vLink=document.getElementById("vLink"), narrBox=document.getElementById("narr"), narrTxt=document.getElementById("narrTxt");
+
+  var _narr="", _narrUntil=0;
+  // sticky (seconds) keeps an event message up; low-priority phase lines won't override it until it expires
+  function narr(msg, cls, sticky){
+    var now = state ? state.t : 1e9;
+    if (!sticky && now < _narrUntil) return;
+    if (msg===_narr){ if (sticky) _narrUntil=now+sticky; return; }
+    _narr=msg; narrTxt.innerHTML=msg; narrBox.className="narrate"+(cls?(" "+cls):"");
+    _narrUntil = sticky ? now+sticky : 0;
+  }
   var steps={}; Array.prototype.forEach.call(document.querySelectorAll(".step"), function(s){ steps[s.getAttribute("data-step")]=s; });
   var ORDER=["find","fix","track","target","engage","assess"];
 
@@ -219,12 +243,13 @@
   // ---- geometry ----
   var W=600, cx=300, cy=300, maxR=212, dpr=1, rDetect, rArea, rPoint;
   var nodes=[
-    { key:"space",  label:"SPACE",          sub:"OPIR · missile warning", brg:0,   role:"sensor" },
-    { key:"air",    label:"AIR",            sub:"AEW&C · interceptor",     brg:72,  role:"both"   },
-    { key:"sea",    label:"MARITIME",       sub:"Aegis · SPY radar",       brg:132, role:"both"   },
-    { key:"ground", label:"GROUND",         sub:"AESA · SHORAD / HEL",     brg:208, role:"both"   },
-    { key:"cyber",  label:"CYBER / SIGINT", sub:"passive RF · EW",         brg:300, role:"sensor" }
+    { key:"space",  label:"SPACE",          sub:"OPIR · missile warning", brg:0,   role:"sensor", offline:false },
+    { key:"air",    label:"AIR",            sub:"AEW&C · interceptor",     brg:72,  role:"both",   offline:false },
+    { key:"sea",    label:"MARITIME",       sub:"Aegis · SPY radar",       brg:132, role:"both",   offline:false },
+    { key:"ground", label:"GROUND",         sub:"AESA · SHORAD / HEL",     brg:208, role:"both",   offline:false },
+    { key:"cyber",  label:"CYBER / SIGINT", sub:"passive RF · EW",         brg:300, role:"sensor", offline:false }
   ];
+  function shooterAvail(key){ var n=nodeMap(key); return SHOOTERS[key].mag>0 && !(n && n.offline); }
   function nodeMap(k){ for (var i=0;i<nodes.length;i++) if (nodes[i].key===k) return nodes[i]; }
   function polar(brg,r){ var a=(brg-90)*DEG; return { x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r }; }
   var P_AREA=0.42, P_POINT=0.70, friendly={ brg:250, rf:0.5 };
@@ -258,6 +283,14 @@
     }
     return arr;
   }
+  // mixed raid: class-distinct profiles routed to class-appropriate layers
+  function makeMixed(){ return [
+    { id:"TK-0610", cls:"TBM",    brg:18,  brgRate:0,    dur:6.5,  delay:0.0, prefer:"sea"    },  // fast, steep; OPIR cue -> SM (upper tier)
+    { id:"TK-0611", cls:"CRUISE", brg:300, brgRate:0,    dur:8.0,  delay:0.9, prefer:"sea", popup:true }, // sea-skimmer, late detection
+    { id:"TK-0612", cls:"UAS",    brg:120, brgRate:1.6,  dur:12.5, delay:1.4, prefer:"ground" },
+    { id:"TK-0613", cls:"AIR",    brg:200, brgRate:-1.0, dur:11.0, delay:2.4, prefer:"air", hold:true },
+    { id:"TK-0614", cls:"CRUISE", brg:70,  brgRate:0,    dur:9.0,  delay:3.2, prefer:"air", popup:true }
+  ]; }
 
   // ---- state ----
   var state, sweep=0, lastT=0, paused=false, bursts=[], shots=[], jams=[], activeSensors={}, scenario="raid", tableT=0;
@@ -269,8 +302,10 @@
   };
 
   function reset(){
-    var defs = scenario==="single"?makeSingle():scenario==="swarm"?makeSwarm():makeRaid();
-    state = { running:false, t:0, threats:[], destroyed:0, engaged:0, leakers:0, fired:0, finishAt:0, rng:mulberry32(scenario==="swarm"?7:scenario==="single"?3:11), lat:null, ttd:0 };
+    var defs = scenario==="single"?makeSingle():scenario==="swarm"?makeSwarm():scenario==="mixed"?makeMixed():makeRaid();
+    var seed = scenario==="swarm"?7:scenario==="single"?3:scenario==="mixed"?23:11;
+    state = { running:false, t:0, threats:[], destroyed:0, engaged:0, leakers:0, fired:0, finishAt:0, rng:mulberry32(seed), lat:null, ttd:0,
+      ddil:false, ddilForced:false, reroutes:{} };
     bursts=[]; shots=[]; jams=[]; activeSensors={};
     for (var k in SHOOTERS) SHOOTERS[k].mag = SHOOTERS[k].lbl==="GND HEL"?Infinity:6;
     defs.forEach(function(d,i){ state.threats.push({ d:d, idx:i, p:0, brg:d.brg, alive:true, started:false, detected:false,
@@ -283,7 +318,10 @@
     vAuth.textContent="human on the loop"; gate.className="gate";
     bda.textContent="Standing by — defended asset secure. Sensors holding the volume."; bda.className="bda";
     phaseEl.textContent="READY"; ledeEl.classList.remove("live"); sys.textContent="DEFENDED · NOMINAL"; sysPill.classList.remove("alert");
-    scnWord.textContent = scenario==="single"?"single track":scenario==="swarm"?"drone swarm":"raid";
+    scnWord.textContent = scenario==="single"?"single track":scenario==="swarm"?"drone swarm":scenario==="mixed"?"mixed all-domain raid":"raid";
+    vLink.innerHTML='<span class="hi">nominal</span>'; commsBtn.textContent=state.ddilForced?"Restore comms":"Jam comms";
+    _narr=""; _narrUntil=0;
+    narr("Threat inbound. All-domain sensors search the volume; the AI fuses every contact into one track picture.");
     buildTable();
   }
 
@@ -344,7 +382,8 @@
         bursts.push(ping(polar(th.brg, threatRadius(p)))); });
       if (th.detected && p>=dThresh+0.10) once(th,"fix", function(){ th.ph="fix"; activeSensors.air=1; });
       if (th.detected && p>=dThresh+0.20) once(th,"track", function(){ th.ph="track"; activeSensors.ground=activeSensors.sea=1;
-        if (d.ea){ th.eaOn=true; bda.innerHTML="<b>EA DETECTED</b> — "+d.id+" jamming GROUND radar · custody held via OPIR + passive RF."; bda.className="bda leak"; } });
+        if (d.ea){ th.eaOn=true; bda.innerHTML="<b>EA DETECTED</b> — "+d.id+" jamming GROUND radar · custody held via OPIR + passive RF."; bda.className="bda leak";
+          narr("<b>Jamming detected</b> ("+d.id+") degrading GROUND radar — fusion keeps custody from OPIR + passive RF. Why all-domain matters.","alert",3); } });
       if (th.detected && p>=0.33) once(th,"targetReady", function(){ th.ph="target"; });
       if (th.ph!=null) maxPh=Math.max(maxPh, ORDER.indexOf(th.ph));
     });
@@ -353,9 +392,11 @@
     state.threats.forEach(function(th){
       if (!th.d.hold || th.released || !th.alive) return;
       if (th.ph==="target" && !th.flags.holdStart){ th.flags.holdStart=true; th.held=true; th.holdT=state.t;
-        bda.innerHTML="<b>ROE HOLD</b> — "+th.d.id+" ambiguous ID near friendly · AI recommends HOLD, operator withholds."; bda.className="bda leak"; }
+        bda.innerHTML="<b>ROE HOLD</b> — "+th.d.id+" ambiguous ID near friendly · AI recommends HOLD, operator withholds."; bda.className="bda leak";
+        narr("<b>Ambiguous ID</b> near a friendly — the operator <b>HOLDS</b> fire. AI assists; a human owns the trigger.","hold",3); }
       if (th.held && state.t - th.holdT > 1.8){ th.held=false; th.released=true;
-        bda.innerHTML="ID resolved HOSTILE on "+th.d.id+" — operator clears to engage."; bda.className="bda"; }
+        bda.innerHTML="ID resolved HOSTILE on "+th.d.id+" — operator clears to engage."; bda.className="bda";
+        narr("ID resolves <b>HOSTILE</b> on "+th.d.id+" — operator clears to engage.","",2.5); }
     });
 
     // AI targeting: prioritize ready tracks by time-to-impact, assign best available shooter
@@ -364,8 +405,10 @@
     ready.sort(function(a,b){ return ttiOf(a)-ttiOf(b); });
     ready.forEach(function(th){
       var order = th.d.prefer==="sea"?["sea","air","ground"]:th.d.prefer==="ground"?["ground","air","sea"]:["air","ground","sea"];
-      var pick=null; for (var i=0;i<order.length;i++){ if (SHOOTERS[order[i]].mag>0){ pick=order[i]; break; } }
-      if (!pick){ th.shooter="leak"; th.leakedOnce=true; return; }   // magazine empty -> leaks to point defense
+      var pick=null; for (var i=0;i<order.length;i++){ if (shooterAvail(order[i])){ pick=order[i]; break; } }
+      if (!pick){ th.shooter="leak"; th.leakedOnce=true; return; }   // no shooter available -> leaks to point defense
+      if (pick!==order[0]){ var pn=nodeMap(order[0]); var why=(pn&&pn.offline)?"offline":"winchester";
+        narr("<b>"+order[0].toUpperCase()+" "+why+"</b> — kill web re-routes "+th.d.id+" to <b>"+SHOOTERS[pick].lbl+"</b>. Any sensor, best <i>available</i> shooter.", "alert", 3); }
       th.shooter=pick; th.ph="engage"; state.engaged++;
       var sh=SHOOTERS[pick], n=nodeMap(pick==="sea"?"sea":pick==="ground"?"ground":"air");
       var salvo=th.d.salvo||1;
@@ -388,12 +431,30 @@
 
     for (var i=0;i<shots.length;i++) stepShot(shots[i], dt);
 
+    // contested-comms (DDIL) window — auto for raid/mixed, or forced by the operator
+    if (!state.ddilForced && (scenario==="raid"||scenario==="mixed") && state.engaged>0 && !state.flags_ddilDone){
+      if (!state.ddilStart) state.ddilStart=state.t+1.0;
+      var on = state.t>=state.ddilStart && state.t<state.ddilStart+3.2;
+      if (on && !state.ddil){ state.ddil=true; }
+      if (!on && state.ddil && state.t>=state.ddilStart+3.2){ state.ddil=false; state.flags_ddilDone=true; }
+    }
+    var contested = state.ddil || state.ddilForced;
+    vLink.innerHTML = contested ? '<span class="am">CONTESTED — edge autonomy</span>' : '<span class="hi">nominal</span>';
+
     // global phase + UI
     if (maxPh>=0){ var gp=ORDER[Math.min(5,maxPh)];
       var allDead = state.destroyed>=state.threats.length;
       setPhase(allDead?"assess":gp);
       var L={find:"DETECT · ALL-DOMAIN",fix:"FIX · CORRELATE",track:"TRACK · COMBAT ID",target:"TARGET · PRIORITIZE",engage:"ENGAGE · MULTI-DOMAIN",assess:"ASSESS · BDA"};
-      phaseEl.textContent = allDead ? "DEFEATED" : L[gp]; }
+      phaseEl.textContent = allDead ? "DEFEATED" : L[gp];
+      if (contested){ narr("<b>Datalink contested</b> — comms degraded. Edge nodes keep tracking and engaging <b>autonomously</b> (mission command); the chain does not stall.","alert"); }
+      else if (!allDead){ var N={find:"Contacts detected and fused into single tracks across all domains.",
+        fix:"Tracks correlated and geolocated — one integrated picture, de-duplicated.",
+        track:"Custody held on every track; AI combat-IDs friend from foe.",
+        target:"AI ranks threats by time-to-impact and pairs the best shooter for each.",
+        engage:"Weapons free — effectors commit in depth, deconflicted, at machine speed.",
+        assess:"Battle-damage assessment confirms kills and flags any leaker to re-engage."}; if (N[gp]) narr(N[gp]); }
+    }
     vCount.textContent = state.engaged + " / " + state.destroyed;
     // release authority — human on the loop, with a real HOLD when ID is ambiguous
     var anyHeld = state.threats.some(function(t){ return t.alive && t.held; });
@@ -446,7 +507,8 @@
     var hit = state.rng() < s.pk;
     if (s.kind==="hel") hit = true;                       // point defense is the backstop
     if (hit){ bursts.push(burst(tp,42,"#FF6A3D")); th.alive=false; th.ph="assess"; state.destroyed++; }
-    else { bursts.push(burst(tp,26,"#FFB13C")); th.leakedOnce=true; state.leakers++; } // miss -> leaker, re-engaged in depth by point defense
+    else { bursts.push(burst(tp,26,"#FFB13C")); th.leakedOnce=true; state.leakers++;
+      narr("<b>Leaker</b> — "+th.d.id+" survived the area shot; AI hands it to point-defense HEL for re-engagement in depth.","alert",2.5); } // miss -> leaker
   }
 
   function afterAction(){
@@ -456,6 +518,7 @@
       "TTD "+state.ttd.toFixed(0)+" s · asset DEFENDED.";
     bda.className="bda kill"; raidState.textContent="DEFEATED";
     sys.textContent=(scenario==="swarm"?"SWARM":scenario==="single"?"THREAT":"RAID")+" DEFEATED · ASSET SAFE"; sysPill.classList.remove("alert");
+    narr("<b>Asset defended.</b> Every track defeated — leakers caught in depth, the loop closed, and the engagement logged so the models improve next time.","safe",6);
   }
   function finish(){
     state.running=false; btn.disabled=false; btn.textContent="Run engagement";
@@ -503,27 +566,33 @@
 
   function rrect(x,y,w,h,r,fill,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
     if (fill){ ctx.fillStyle=fill; ctx.fill(); } if (stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); } }
-  function drawNodeLabel(n,on,degraded){
-    ctx.save(); ctx.font="700 10px "+MONO; var w1=ctx.measureText(n.label).width; ctx.font="400 8.5px "+MONO; var w2=ctx.measureText(n.sub).width;
+  function drawNodeLabel(n,on,degraded,offline){
+    ctx.save(); ctx.font="700 10px "+MONO; var w1=ctx.measureText(n.label).width; ctx.font="400 8.5px "+MONO;
+    var subTxt = offline?"— OFFLINE —":degraded?"radar degraded":n.sub; var w2=ctx.measureText(subTxt).width;
     var tw=Math.max(w1,w2), pad=6, boxH=24, left=n.x<cx-2, right=n.x>cx+2, align, bx, sx;
     if (left){ align="left"; sx=n.x+9; bx=sx; } else if (right){ align="right"; sx=n.x-9; bx=sx-tw; } else { align="center"; sx=n.x; bx=sx-tw/2; }
     bx=Math.max(5,Math.min(bx,W-5-tw)); var ty=n.y+(n.y<cy?13:-13);
-    rrect(bx-pad,ty-boxH/2,tw+pad*2,boxH,5,"rgba(7,11,20,0.82)", degraded?"rgba(255,93,110,0.5)":on?"rgba(53,222,255,0.35)":"rgba(41,59,90,0.55)");
+    rrect(bx-pad,ty-boxH/2,tw+pad*2,boxH,5,"rgba(7,11,20,0.82)", offline?"rgba(132,149,175,0.45)":degraded?"rgba(255,93,110,0.5)":on?"rgba(53,222,255,0.35)":"rgba(41,59,90,0.55)");
     if (align==="left") sx=bx; else if (align==="right") sx=bx+tw; else sx=bx+tw/2;
     ctx.textAlign=align; ctx.textBaseline="middle";
-    ctx.font="700 10px "+MONO; ctx.fillStyle=degraded?"#FF9AA4":on?"#CFEFFA":"#7E8EA8"; ctx.fillText(n.label,sx,ty-5);
-    ctx.font="400 8.5px "+MONO; ctx.fillStyle=degraded?"#A8707A":"#5A6A84"; ctx.fillText(degraded?"radar degraded":n.sub,sx,ty+6);
+    ctx.font="700 10px "+MONO; ctx.fillStyle=offline?"#6E7E98":degraded?"#FF9AA4":on?"#CFEFFA":"#7E8EA8"; ctx.fillText(n.label,sx,ty-5);
+    ctx.font="400 8.5px "+MONO; ctx.fillStyle=offline?"#5A6A84":degraded?"#A8707A":"#5A6A84"; ctx.fillText(subTxt,sx,ty+6);
     ctx.restore();
   }
   function degradedNow(){ var any=false; if (state&&state.threats) state.threats.forEach(function(t){ if (t.eaOn&&t.alive) any=true; }); return any; }
   function drawNodes(){
     var deg=degradedNow();
-    for (var i=0;i<nodes.length;i++){ var n=nodes[i], on=activeSensors[n.key], dg=(n.key==="ground"&&deg);
-      var inn=polar(n.brg,maxR); ctx.strokeStyle=on?"rgba(53,222,255,0.5)":"rgba(41,59,90,0.6)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(inn.x,inn.y); ctx.lineTo(n.x,n.y); ctx.stroke();
-      var flick = dg ? (0.4+0.6*Math.abs(Math.sin(performance.now()/120))) : 1;
-      ctx.globalAlpha=flick; ctx.beginPath(); ctx.arc(n.x,n.y,4.5,0,Math.PI*2); ctx.fillStyle=dg?"#FF6A3D":on?"#35DEFF":"#3A4D6E";
-      if (on&&!dg){ ctx.shadowColor="#35DEFF"; ctx.shadowBlur=10; } ctx.fill(); ctx.shadowBlur=0; ctx.globalAlpha=1;
-      drawNodeLabel(n,on,dg);
+    for (var i=0;i<nodes.length;i++){ var n=nodes[i], off=n.offline, on=activeSensors[n.key]&&!off, dg=(n.key==="ground"&&deg&&!off);
+      var inn=polar(n.brg,maxR); ctx.strokeStyle=off?"rgba(41,59,90,0.45)":on?"rgba(53,222,255,0.5)":"rgba(41,59,90,0.6)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(inn.x,inn.y); ctx.lineTo(n.x,n.y); ctx.stroke();
+      if (off){
+        ctx.strokeStyle="#5A6A84"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(n.x,n.y,5,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(n.x-4,n.y-4); ctx.lineTo(n.x+4,n.y+4); ctx.moveTo(n.x+4,n.y-4); ctx.lineTo(n.x-4,n.y+4); ctx.stroke();
+      } else {
+        var flick = dg ? (0.4+0.6*Math.abs(Math.sin(performance.now()/120))) : 1;
+        ctx.globalAlpha=flick; ctx.beginPath(); ctx.arc(n.x,n.y,4.5,0,Math.PI*2); ctx.fillStyle=dg?"#FF6A3D":on?"#35DEFF":"#3A4D6E";
+        if (on&&!dg){ ctx.shadowColor="#35DEFF"; ctx.shadowBlur=10; } ctx.fill(); ctx.shadowBlur=0; ctx.globalAlpha=1;
+      }
+      drawNodeLabel(n,on,dg,off);
     }
   }
   function drawAsset(){
@@ -552,7 +621,10 @@
   }
   function drawMesh(){
     if (!state||!state.threats) return; var pulse=(Math.sin(performance.now()/200)+1)/2;
-    ctx.save(); ctx.lineWidth=1.2; ctx.setLineDash([4,4]); ctx.strokeStyle="rgba(156,140,255,"+(0.28+pulse*0.32)+")";
+    var contested = state.ddil||state.ddilForced;
+    ctx.save(); ctx.lineWidth=1.2;
+    if (contested){ ctx.setLineDash([2,5]); ctx.strokeStyle="rgba(255,93,110,"+(0.22+pulse*0.3)+")"; }   // degraded link — edge autonomy
+    else { ctx.setLineDash([4,4]); ctx.strokeStyle="rgba(156,140,255,"+(0.28+pulse*0.32)+")"; }
     state.threats.forEach(function(th){ if (!th.alive||(th.ph!=="target"&&th.ph!=="engage")||th.held) return;
       var sh=th.shooter&&th.shooter!=="leak"?nodeMap(th.shooter):nodeMap(th.d.prefer); if (!sh) return;
       ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(sh.x,sh.y); ctx.stroke();
@@ -570,10 +642,16 @@
       ctx.save(); ctx.translate(pos.x,pos.y);
       var lead=polar(th.brg,r-20); ctx.strokeStyle= th.held?"rgba(79,168,255,0.8)":"rgba(255,93,110,0.7)"; ctx.lineWidth=1.2;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(lead.x-pos.x,lead.y-pos.y); ctx.stroke();
-      ctx.rotate(Math.PI/4);
-      var col = th.held? "#4FA8FF" : "#FF5D6E";
-      ctx.strokeStyle=col; ctx.fillStyle= th.held?"rgba(79,168,255,0.22)":"rgba(255,93,110,0.25)"; ctx.lineWidth=2; ctx.shadowColor=col; ctx.shadowBlur=7;
-      var sz = th.d.cls==="UAS"?4.6:6; ctx.beginPath(); ctx.rect(-sz,-sz,sz*2,sz*2); ctx.fill(); ctx.stroke(); ctx.restore(); ctx.shadowBlur=0;
+      var col = th.held?"#4FA8FF":"#FF5D6E", fl= th.held?"rgba(79,168,255,0.22)":"rgba(255,93,110,0.25)";
+      ctx.strokeStyle=col; ctx.fillStyle=fl; ctx.lineWidth=2; ctx.shadowColor=col; ctx.shadowBlur=7;
+      var inward=Math.atan2(cy-pos.y,cx-pos.x), cls=th.d.cls;
+      ctx.save();
+      if (cls==="UAS"){ ctx.beginPath(); ctx.rect(-4.2,-4.2,8.4,8.4); ctx.fill(); ctx.stroke(); }                                  // small square
+      else if (cls==="TBM"){ ctx.rotate(inward); ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-5,-5.5); ctx.lineTo(-5,5.5); ctx.closePath(); ctx.fill(); ctx.stroke(); }   // triangle
+      else if (cls==="CRUISE"||cls==="ASCM"){ ctx.rotate(inward); ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(-2,-4.5); ctx.lineTo(-5,0); ctx.lineTo(-2,4.5); ctx.closePath(); ctx.fill(); ctx.stroke(); } // dart
+      else { ctx.rotate(Math.PI/4); ctx.beginPath(); ctx.rect(-5,-5,10,10); ctx.fill(); ctx.stroke(); }                            // AIR diamond
+      ctx.restore();
+      ctx.restore(); ctx.shadowBlur=0;
       if (state.threats.length<=6){ var nx=pos.x+(pos.x<cx?9:-9);
         ctx.font="600 8.5px "+MONO; ctx.fillStyle= th.held?"rgba(120,190,255,0.95)":"rgba(255,150,160,0.95)"; ctx.textBaseline="middle"; ctx.textAlign=pos.x<cx?"left":"right";
         ctx.fillText(th.d.id.slice(-2), nx, pos.y+(pos.y<cy?9:-9)); }
@@ -603,8 +681,27 @@
     b.classList.add("on"); scenario=b.getAttribute("data-scn"); run(); }); });
   btn.addEventListener("click", run);
   pauseBtn.addEventListener("click", function(){ if (!state||!state.running) return; paused=!paused; pauseBtn.textContent=paused?"Resume":"Pause"; });
+  commsBtn.addEventListener("click", function(){ if (!state) return; state.ddilForced=!state.ddilForced; commsBtn.textContent=state.ddilForced?"Restore comms":"Jam comms";
+    narr(state.ddilForced ? "<b>Operator contests the datalink.</b> Comms degraded — edge nodes keep fighting <b>autonomously</b>." : "Datalink restored — full CJADC2 fusion back online.", state.ddilForced?"alert":"", 3); });
 
-  function init(){ sizeCanvas(); scenario="raid"; reset();
+  // click a sensor/shooter node on the scope to take it offline; the kill web re-routes
+  canvas.addEventListener("click", function(e){
+    var rct=canvas.getBoundingClientRect(), mx=e.clientX-rct.left, my=e.clientY-rct.top, hit=null;
+    for (var i=0;i<nodes.length;i++){ var n=nodes[i]; if (Math.hypot(mx-n.x,my-n.y)<=18){ hit=n; break; } }
+    if (!hit) return;
+    hit.offline=!hit.offline;
+    var role = hit.role==="sensor" ? "sensor" : "node";
+    narr(hit.offline
+      ? "<b>"+hit.label+" "+role+" OFFLINE.</b> "+(hit.role==="sensor"?"Fusion keeps custody from the remaining domains.":"AI re-routes engagements to the best remaining shooter.")
+      : "<b>"+hit.label+" back online.</b>", hit.offline?"alert":"", 3);
+  });
+
+  function init(){
+    sizeCanvas();
+    var q=(location.search.match(/[?&]scenario=(single|raid|swarm|mixed)/)||[])[1];
+    scenario = q || "raid";
+    Array.prototype.forEach.call(seg.querySelectorAll("button"), function(x){ x.classList.toggle("on", x.getAttribute("data-scn")===scenario); });
+    reset();
     if (reduce) resolveStatic(); else { lastT=performance.now(); requestAnimationFrame(frame); setTimeout(run,900); } }
   var rt; window.addEventListener("resize", function(){ clearTimeout(rt); rt=setTimeout(function(){ sizeCanvas(); if (reduce) drawScene(0); },150); });
   init();
