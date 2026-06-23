@@ -112,6 +112,8 @@
   .tag-date { font-family:var(--mono); font-size:11px; color:var(--mut); background:var(--chip3-bg); border-radius:999px; padding:2px 8px; }
   .tag-date.done { color:var(--green); background:var(--green-bg); }
   .t-note { color:var(--mut); font-size:12.5px; margin-top:4px; white-space:pre-line; }
+  .t-note a, .kdetails a { color:var(--accent); text-decoration:underline; word-break:break-word; }
+  .t-note ul, .t-note ol, .kdetails ul, .kdetails ol { margin:4px 0; padding-left:20px; }
   .t-items { margin:6px 0 0; padding:0; list-style:none; }
   .t-items li { font-size:12.5px; color:var(--ink-2); padding:1px 0; }
   .t-items li.hdr { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); margin-bottom:2px; }
@@ -119,19 +121,24 @@
 
   @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
   @media print {
-    @page { margin:14mm; }
+    /* even margins all round so nothing is crammed at the top or bottom */
+    @page { margin:16mm; }
     :root, :root[data-theme="dark"] {
       --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
       --line:#ccc!important; --line-2:#bbb!important; --th-bg:#f0f0f0!important; --accent:#000!important;
       --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
     }
-    body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; }
+    html, body { background:#fff !important; }
+    body { background-attachment:scroll !important; }
+    .wrap { max-width:none; margin:0; padding:0 !important; }
+    .btn, .ro { display:none !important; } .rep > summary::before { display:none; }
+    .mast { margin-bottom:12pt; }
     /* no borders/shadows around the page; keep cards intact */
     .kcard, .kcardk, .rep, .muted-empty { box-shadow:none; }
     .kcard, .kcardk, .rep, .agelist, svg.chart { break-inside:avoid; page-break-inside:avoid; }
     .kdetails, .t-note { white-space:pre-wrap !important; }
-    /* each major section starts on a new page */
-    h2.sec { break-before:page; page-break-before:always; }
+    /* each major section starts on a new page, with a little top breathing room */
+    h2.sec { break-before:page; page-break-before:always; padding-top:2pt; margin-top:0; }
     h2.sec:first-of-type { break-before:auto; page-break-before:auto; }
   }
 </style>
@@ -190,6 +197,31 @@ window.addEventListener("afterprint", () => {
   document.querySelectorAll("details.rep").forEach(d => { if (d.dataset.wasOpen === "0") d.open = false; });
 });
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+// rich-text display: sanitize stored HTML (allowlist) or escape plain text — public page, so this is the XSS guard
+function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
+const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1 };
+function sanitizeHtml(html){
+  const doc = new DOMParser().parseFromString("<div>"+(html||"")+"</div>", "text/html");
+  const root = doc.body.firstChild;
+  (function walk(node){
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeType === 3) return;
+      if (child.nodeType !== 1) { child.remove(); return; }
+      const tag = child.tagName;
+      if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); return; }
+      if (!RT_ALLOWED[tag]) { while (child.firstChild) node.insertBefore(child.firstChild, child); child.remove(); return; }
+      Array.from(child.attributes).forEach(a => {
+        const name = a.name.toLowerCase();
+        if (tag === "A" && name === "href") { if (!/^(https?:|mailto:)/i.test((a.value||"").trim())) child.removeAttribute("href"); }
+        else child.removeAttribute(a.name);
+      });
+      if (tag === "A") { child.setAttribute("target","_blank"); child.setAttribute("rel","noopener noreferrer nofollow"); }
+      walk(child);
+    });
+  })(root);
+  return root.innerHTML;
+}
+function richDisplay(s){ return looksHtml(s) ? sanitizeHtml(s) : esc(s).replace(/\r?\n/g,"<br>"); }
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
 function statusChipCls(s){ return s==="On Track"?"s-ontrack":s==="At Risk"?"s-atrisk":s==="Blocked"?"s-blocked":"s-done"; }
@@ -206,7 +238,7 @@ function taskCell(t){
   if (t.started_on) tags.push('<span class="tag-date">started '+shortDate(t.started_on)+'</span>');
   if (t.completed_on) tags.push('<span class="tag-date done">completed '+shortDate(t.completed_on)+'</span>');
   if (tags.length) html += '<div class="t-tags">'+tags.join("")+'</div>';
-  if (t.note && String(t.note).trim()) html += '<div class="t-note">'+esc(t.note)+'</div>';
+  if (t.note && String(t.note).trim()) html += '<div class="t-note">'+richDisplay(t.note)+'</div>';
   const items = Array.isArray(t.items) ? t.items : [];
   if (items.length) {
     const done = items.filter(i=>i.done).length;
@@ -275,7 +307,7 @@ function render(data){
           '<div class="kmeta">' + (k.kudos_date ? shortDate(k.kudos_date) : "") +
             (k.source && k.source.trim() ? ' · <b>'+esc(k.source)+'</b>' : '') + '</div>' +
           (k.title && k.title.trim() ? '<div class="ktitle">'+esc(k.title)+'</div>' : '') +
-          (k.details && k.details.trim() ? '<div class="kdetails">'+esc(k.details)+'</div>' : '') +
+          (k.details && k.details.trim() ? '<div class="kdetails">'+richDisplay(k.details)+'</div>' : '') +
         '</div>').join("") + '</div>'
     : '';
 

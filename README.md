@@ -64,6 +64,10 @@ them and run KPIs**, use the cloud-backed version:
   it's tracked here and shown on your shared dashboard for leadership.
 - **Undo deletes** — deleting a task, action item, week, or kudos shows an **Undo** toast so a
   wrong delete is one click to restore.
+- **Rich text & links** — the **Comments & updates** and **Kudos details** fields are
+  formatted editors: select text for **Bold / Italic / bullet list / Link** (Ctrl/Cmd+K),
+  and pasted URLs auto-link. Stored HTML is sanitized (allowlist) so the public shared
+  dashboard stays safe.
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose).
