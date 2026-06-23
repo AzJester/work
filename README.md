@@ -56,8 +56,8 @@ them and run KPIs**, use the cloud-backed version:
   - **Average progress / velocity** — mean progress % per week
   - **Carryover / aging** — open tasks repeating from earlier weeks, oldest first
   - **Cycle time** — avg/median days from Start to Done
-  - **On-time delivery** — % completed on or before the due date
   - **By project** — tasks and completion grouped by project/area
+  - **Kudos & recognition** — count and recent praise from the Kudos tab
 - Same **Copy / Markdown / Print-PDF** exports for the week, plus **⬇ Download all as CSV**
   (full history) on the History tab.
 - **Kudos** tab — log praise & recognition (date, source, what it was for, and the quote);

@@ -277,6 +277,16 @@
     border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 12px; cursor:pointer; }
   .toast #toastUndo:hover { background:rgba(255,255,255,.12); }
 
+  /* print-kudos toggle + print-only kudos section */
+  .pk-toggle { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); cursor:pointer; }
+  .pk-toggle input { accent-color:var(--accent); cursor:pointer; }
+  .wkudos { display:none; }
+  .wkudos .wk-h { font-size:15px; margin:14pt 0 8pt; }
+  .wkudos .wk-item { padding:6pt 0; border-top:1px solid #ddd; }
+  .wkudos .wk-meta { font-family:var(--mono); font-size:10pt; color:#555; }
+  .wkudos .wk-title { font-weight:700; font-size:12pt; }
+  .wkudos .wk-det { font-size:11pt; color:#222; white-space:pre-wrap; }
+
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 
@@ -327,15 +337,22 @@
     .head .field .weeknav { display:inline; }
     .head .field input { display:inline-block; width:auto; border:0; padding:0; background:transparent; font-weight:700; }
     .weeknav .ibtn, #weekThis { display:none !important; }
-    .col-act { display:none !important; } .rowbtns { display:none !important; }
+    /* hide every button / reorder arrow when printing */
+    .col-act, .rowbtns, .ibtn { display:none !important; }
     .prog input[type=range] { display:none; }
     .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
-    /* no dropdown arrow on selects when printing */
-    select { -webkit-appearance:none !important; -moz-appearance:none !important; appearance:none !important; background-image:none !important; padding-right:0 !important; }
+    /* strip ALL native control arrows / spinners / icons so only text prints */
+    select, input { -webkit-appearance:none !important; -moz-appearance:none !important; appearance:none !important; background-image:none !important; padding-right:0 !important; }
+    select::-ms-expand { display:none !important; }
+    input::-webkit-calendar-picker-indicator, input::-webkit-inner-spin-button,
+    input::-webkit-clear-button, select::-webkit-inner-spin-button { display:none !important; -webkit-appearance:none !important; }
     /* preserve multi-line comments and show full content (no clipping) */
     textarea, .cell-input { height:auto !important; min-height:0 !important; overflow:visible !important; white-space:pre-wrap !important; }
     /* no horizontal divider lines anywhere in the task list */
     table.tasks td { border:0 !important; }
+    /* optional kudos section on the printed weekly report */
+    .wkudos.show { display:block !important; break-before:auto; }
+    .wkudos .wk-item { break-inside:avoid; }
     /* keep a task and its detail (comments / action items) together on one page */
     table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
     table.tasks tr.detail { break-before:avoid; page-break-before:avoid; }
@@ -450,10 +467,15 @@
           <button class="btn ghost sm" id="copy" type="button">Copy as text</button>
           <button class="btn ghost sm" id="md" type="button">Download Markdown</button>
           <button class="btn ghost sm" id="print" type="button">Print / PDF</button>
+          <label class="pk-toggle"><input type="checkbox" id="printKudos" /> Include kudos in print</label>
           <span class="spacer" style="flex:1 1 auto"></span>
           <button class="btn ghost sm danger" id="del" type="button">Delete this week</button>
         </div>
       </div>
+
+      <!-- print-only kudos section (shown in print when "Include kudos" is on) -->
+      <section class="wkudos" id="weekKudos"></section>
+
       <p class="hint">Edits auto-save a moment after you stop typing. Use <b>◀ ▶</b> or <b>This week</b> to move
         between weeks; a new week pre-fills with last week's unfinished tasks. <b>＋ today</b> stamps a dated line
         so you can log progress daily. Add checkable <b>action items</b> under any task and tick them off as you go.</p>
@@ -624,6 +646,7 @@ function applySession(sess){
     $("userEmail").textContent = session.user.email;
     if (!state.week) state.week = isoDate(comingFriday());
     loadWeek();
+    renderWeekKudos();
   } else {
     $("app").hidden = true; $("whoLine").hidden = true; $("gate").hidden = false;
   }
@@ -1268,23 +1291,21 @@ async function loadHistory(){
 async function loadKpis(){
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }] = await Promise.all([
+  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
     sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
     sb.from("completed_tasks").select("started_on,completed_on,due_date"),
-    sb.from("kpi_by_project").select("project,total_tasks,done")
+    sb.from("kpi_by_project").select("project,total_tasks,done"),
+    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false })
   ]);
   if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
   if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
 
-  // cycle time (start → complete) and on-time delivery, from completed tasks
+  // cycle time (start → complete), from completed tasks
   const comps = comp || [];
   const cyc = comps.map(r => daysBetween(r.started_on, r.completed_on)).filter(d => d != null && d >= 0).sort((a,b)=>a-b);
   const avgCyc = cyc.length ? Math.round(cyc.reduce((a,b)=>a+b,0)/cyc.length) : null;
   const medCyc = cyc.length ? cyc[Math.floor(cyc.length/2)] : null;
-  const withDue = comps.filter(r => r.due_date && r.completed_on);
-  const onTime = withDue.filter(r => r.completed_on <= r.due_date).length;
-  const onRate = withDue.length ? Math.round(100*onTime/withDue.length) : null;
   const projects = (proj || []).slice().sort((a,b)=>(b.total_tasks-a.total_tasks)||(b.done-a.done)).slice(0,8);
 
   const weeks = wk.map(r => (r.week_ending||"").slice(5));
@@ -1314,12 +1335,15 @@ async function loadKpis(){
         cyc.length
           ? '<div class="stat-row">' + stat(avgCyc+"d","avg to complete") + stat(medCyc+"d","median") + stat(cyc.length,"measured") + '</div>'
           : '<p class="desc" style="margin:0">Set <b>Start</b> and <b>Done</b> dates on completed tasks to measure cycle time.</p>') +
-      kcard("On-time delivery", "Tasks completed on or before their due date.",
-        onRate != null
-          ? '<div class="stat-row">' + stat(onRate+"%","on time") + stat(onTime+"/"+withDue.length,"of tasks with a due date") + '</div>' + hbar(onRate)
-          : '<p class="desc" style="margin:0">Add <b>due dates</b> to tasks to track on-time delivery.</p>') +
       kcard("By project", "Tasks and completion grouped by project / area.",
         projects.length ? projBars(projects) : '<p class="desc" style="margin:0">Tag tasks with a project to see this breakdown.</p>') +
+      kcard("Kudos &amp; recognition", "Praise logged on the Kudos tab.",
+        (kud && kud.length)
+          ? '<div class="stat-row">' + stat(kud.length, "total kudos") + '</div>' +
+            '<ul class="agelist">' + kud.slice(0,5).map(k =>
+              '<li><span>'+esc(k.title || "(kudos)")+(k.source&&k.source.trim()?' <span class="badge tot">'+esc(k.source)+'</span>':'')+'</span>'
+              + '<span class="wks">'+(k.kudos_date?shortDate(k.kudos_date):"")+'</span></li>').join("") + '</ul>'
+          : '<p class="desc" style="margin:0">Log praise on the <b>Kudos</b> tab and it’ll appear here.</p>') +
     '</div>';
 }
 function hbar(pct){
@@ -1422,6 +1446,36 @@ $("shareRevoke").addEventListener("click", async () => {
 });
 
 // ============ THEME ============
+// ============ PRINT KUDOS TOGGLE ============
+let printKudosOn = false;
+try { printKudosOn = localStorage.getItem("tracker_print_kudos") === "1"; } catch(e){}
+$("printKudos").checked = printKudosOn;
+$("printKudos").addEventListener("change", () => {
+  printKudosOn = $("printKudos").checked;
+  try { localStorage.setItem("tracker_print_kudos", printKudosOn ? "1" : "0"); } catch(e){}
+  renderWeekKudos();
+});
+async function renderWeekKudos(){
+  const el = $("weekKudos");
+  if (!el) return;
+  if (!printKudosOn || !session) { el.classList.remove("show"); el.innerHTML = ""; return; }
+  let list = kudosList;
+  if (!list) {
+    const { data } = await sb.from("kudos")
+      .select("kudos_date,source,title,details")
+      .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+    list = data || [];
+  }
+  if (!list.length) { el.classList.remove("show"); el.innerHTML = ""; return; }
+  el.innerHTML = '<h2 class="wk-h">Kudos &amp; recognition</h2>' + list.map(k =>
+    '<div class="wk-item"><div class="wk-meta">' + (k.kudos_date ? shortDate(k.kudos_date) : "")
+      + (k.source && k.source.trim() ? ' · <b>'+esc(k.source)+'</b>' : '') + '</div>'
+    + (k.title && k.title.trim() ? '<div class="wk-title">'+esc(k.title)+'</div>' : '')
+    + (k.details && k.details.trim() ? '<div class="wk-det">'+esc(k.details)+'</div>' : '')
+    + '</div>').join("");
+  el.classList.add("show");
+}
+
 (function initTheme(){
   let theme = "light";
   try { theme = localStorage.getItem("tracker_theme") || "light"; } catch(e){}
