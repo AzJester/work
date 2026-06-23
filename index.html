@@ -148,6 +148,35 @@
   @media (max-width:900px) { .main { grid-template-columns:1fr; } .rail { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:520px) { .rail { grid-template-columns:repeat(2,1fr); } .tl-h, .tl-r { grid-template-columns:54px 38px 46px 1fr; } .tl .sh { display:none; } }
   @media (prefers-reduced-motion: reduce) { .btn,.step { transition:none; } }
+
+  /* screen-reader-only live region */
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+  /* legend 2525 shape keys */
+  .legend .sym { font-size:13px; line-height:1; color:var(--dim); }
+
+  /* glossary dialog */
+  .gloss-wrap { position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(4,7,14,0.74); }
+  .gloss-wrap[hidden] { display:none; }
+  .gloss-card { width:min(740px,100%); max-height:86vh; overflow:auto; border:1px solid var(--line-2); border-radius:14px;
+    background:linear-gradient(180deg, rgba(16,26,46,0.98), rgba(10,16,28,0.98)); padding:18px 20px; box-shadow:0 30px 80px -20px #000; }
+  .gloss-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .gloss-head h4 { margin:0; font-family:var(--mono); font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:var(--cyan); }
+  .g-x { background:transparent; border:1px solid var(--line-2); color:var(--dim); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:14px; line-height:1; }
+  .g-x:hover { color:var(--text); border-color:var(--cyan); } .g-x:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+  .gloss-list { display:grid; grid-template-columns:max-content 1fr; gap:8px 16px; margin:0; }
+  .gloss-list dt { font-family:var(--mono); font-size:12px; font-weight:700; color:var(--cyan); white-space:nowrap; }
+  .gloss-list dd { margin:0; font-size:12.5px; color:var(--dim); line-height:1.45; }
+  .gloss-foot { margin:14px 0 0; padding-top:11px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11.5px; color:var(--mut); line-height:1.6; }
+
+  /* bigger touch targets / cleaner controls on phones */
+  @media (max-width:600px) {
+    .ctrls { gap:8px; row-gap:9px; }
+    .btn, .btn.ghost { padding:11px 15px; font-size:12px; }
+    .seg button { padding:11px 13px; font-size:11.5px; }
+    .tour .t-btn { padding:9px 14px; }
+    .gloss-list { grid-template-columns:1fr; gap:2px 0; } .gloss-list dt { margin-top:9px; }
+  }
 </style>
 </head>
 <body>
@@ -166,7 +195,13 @@
         <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
         <button class="btn ghost" id="comms" type="button">Jam comms</button>
         <button class="btn ghost" id="snd" type="button" aria-pressed="false" title="Sound cues (off by default)">Sound</button>
+        <button class="btn ghost" id="gloss" type="button" aria-haspopup="dialog" title="Glossary of terms &amp; symbols">? Glossary</button>
         <button class="btn ghost" id="tour" type="button" title="Guided walkthrough of every capability">Tour ▸</button>
+        <div class="seg" id="speedSeg" role="group" aria-label="Playback speed" title="Playback speed">
+          <button type="button" data-spd="0.5">0.5×</button>
+          <button type="button" data-spd="1" class="on">1×</button>
+          <button type="button" data-spd="2">2×</button>
+        </div>
         <button class="btn ghost" id="pause" type="button">Pause</button>
         <button class="btn ghost" id="aar" type="button" disabled title="Download after-action report (PNG)">AAR ↓</button>
         <button class="btn" id="run" type="button">Run engagement</button>
@@ -177,6 +212,8 @@
       <span class="txt">An all-domain <span class="cy">kill web</span> against a <span id="scnWord">raid</span>: any sensor cues the best shooter. <b>F2T2EA</b> runs at machine speed while an <span class="ai">AI / CJADC2 core</span> prioritizes and pairs effectors — a human holds release authority.</span>
       <span class="stat">STATE · <span class="ph" id="phase">READY</span></span>
     </p>
+
+    <p class="sr-only" id="srLive" aria-live="polite"></p>
 
     <div class="tour" id="tourBar" hidden>
       <span class="t-mk">◉ GUIDED TOUR</span>
@@ -190,7 +227,7 @@
 
     <div class="main">
       <div class="scope-wrap">
-        <canvas id="scope" width="600" height="600"></canvas>
+        <canvas id="scope" width="600" height="600" role="img" aria-label="Tactical layered-defense scope. Run an engagement to see it update."></canvas>
         <div class="scope-top">
           <span class="st-l"><b>LAYERED DEFENSE</b> · plan view</span>
           <span class="st-r">range 40 / 80 / 120 km · °TRUE</span>
@@ -242,6 +279,8 @@
       <span class="i"><span class="d thr"></span> hostile track</span>
       <span class="i"><span class="d frd"></span> friendly (combat ID)</span>
       <span class="i"><span class="d ast"></span> defended asset</span>
+      <span class="i"><span class="sym">⌃</span> hostile air (2525)</span>
+      <span class="i"><span class="sym">⌒</span> friendly air</span>
     </div>
 
     <footer class="doctrine">
@@ -266,6 +305,39 @@
       </div>
     </footer>
 
+  </div>
+
+  <div class="gloss-wrap" id="glossary" hidden>
+    <div class="gloss-card" role="dialog" aria-modal="true" aria-label="Glossary of terms and symbols">
+      <div class="gloss-head"><h4>Glossary — terms &amp; symbols</h4><button class="g-x" id="glossClose" type="button" aria-label="Close glossary">✕ Close</button></div>
+      <dl class="gloss-list">
+        <dt>F2T2EA</dt><dd>Find · Fix · Track · Target · Engage · Assess — the dynamic-targeting kill chain.</dd>
+        <dt>CJADC2</dt><dd>Combined Joint All-Domain Command &amp; Control — connect any sensor to the best shooter across domains.</dd>
+        <dt>Kill web</dt><dd>A networked mesh of sensors and shooters (not a single chain) — resilient if a node drops.</dd>
+        <dt>Combat ID</dt><dd>Classifying a track as friend, hostile, or unknown.</dd>
+        <dt>PID</dt><dd>Positive Identification of a target.</dd>
+        <dt>IFF</dt><dd>Identification, Friend or Foe — interrogation/response.</dd>
+        <dt>ROE</dt><dd>Rules of Engagement — when and how force may be used.</dd>
+        <dt>CDE</dt><dd>Collateral Damage Estimate.</dd>
+        <dt>WTP</dt><dd>Weapon–Target Pairing — matching an effector to a threat.</dd>
+        <dt>Pk</dt><dd>Probability of Kill for a given shot.</dd>
+        <dt>TTI</dt><dd>Time To Intercept / Impact.</dd>
+        <dt>TTD</dt><dd>Time To Defeat — to neutralize the whole raid.</dd>
+        <dt>BDA</dt><dd>Battle-Damage Assessment — did the shot work; re-engage if not.</dd>
+        <dt>DDIL</dt><dd>Denied, Degraded, Intermittent or Limited communications.</dd>
+        <dt>HEL</dt><dd>High-Energy Laser — directed-energy point defense.</dd>
+        <dt>SHORAD</dt><dd>Short-Range Air Defense.</dd>
+        <dt>SAM / SM</dt><dd>Surface-to-Air Missile / Standard Missile interceptors.</dd>
+        <dt>OPIR</dt><dd>Overhead Persistent Infrared — missile-warning satellites.</dd>
+        <dt>AEW&amp;C</dt><dd>Airborne Early Warning &amp; Control.</dd>
+        <dt>TBM</dt><dd>Ballistic missile — fast, steep trajectory.</dd>
+        <dt>ASCM</dt><dd>Anti-Ship Cruise Missile — low, sea-skimming.</dd>
+        <dt>UAS</dt><dd>Uncrewed Aircraft System (drone).</dd>
+        <dt>CAP</dt><dd>Combat Air Patrol — friendly fighters on station.</dd>
+        <dt>MIL-STD-2525</dt><dd>Standard military map symbology.</dd>
+      </dl>
+      <p class="gloss-foot">Scope symbols — <b>⌃</b> caret = hostile air · <b>⌒</b> dome = friendly air · class letter: <b>A</b> air · <b>U</b> uas · <b>M</b> cruise/ASCM · <b>B</b> ballistic. Cyan = sensing/data · amber = effectors · violet = AI fusion · green = friendly/defended · red = hostile.</p>
+    </div>
   </div>
 
 <script>
@@ -360,7 +432,7 @@
   ]; }
 
   // ---- state ----
-  var state, sweep=0, lastT=0, paused=false, bursts=[], shots=[], jams=[], activeSensors={}, scenario="raid", tableT=0;
+  var state, sweep=0, lastT=0, paused=false, speed=1, bursts=[], shots=[], jams=[], activeSensors={}, scenario="raid", tableT=0;
   var SHOOTERS = {
     air:    { lbl:"AIR SAM", kind:"kin", pk:0.85, mag:6 },
     ground: { lbl:"GND SAM", kind:"kin", pk:0.80, mag:6 },
@@ -428,6 +500,7 @@
     reset(); state.running=true; paused=false; pauseBtn.textContent="Pause";
     btn.disabled=true; btn.textContent="Engaging…";
     ledeEl.classList.add("live"); raidState.textContent="INBOUND"; sys.textContent="ENGAGEMENT IN PROGRESS"; sysPill.classList.add("alert");
+    setA11y("Engagement started — "+state.threats.length+" hostile track"+(state.threats.length>1?"s":"")+" inbound toward the defended asset.");
     if (reduce) resolveStatic();
   }
 
@@ -515,6 +588,7 @@
       setPhase(allDead?"assess":gp);
       var L={find:"DETECT · ALL-DOMAIN",fix:"FIX · CORRELATE",track:"TRACK · COMBAT ID",target:"TARGET · PRIORITIZE",engage:"ENGAGE · MULTI-DOMAIN",assess:"ASSESS · BDA"};
       phaseEl.textContent = allDead ? "DEFEATED" : L[gp];
+      setA11y(state.threats.length+" hostile track"+(state.threats.length>1?"s":"")+"; "+state.destroyed+" destroyed"+(allDead?"; asset defended.":"; "+(L[gp]||"")+"."));
       if (contested){ narr("<b>Datalink contested</b> — comms degraded. Edge nodes keep tracking and engaging <b>autonomously</b> (mission command); the chain does not stall.","alert"); }
       else if (!allDead){ var N={find:"Contacts detected and fused into single tracks across all domains.",
         fix:"Tracks correlated and geolocated — one integrated picture, de-duplicated.",
@@ -746,8 +820,8 @@
     var lg=ctx.createRadialGradient(cx,cy,0,cx,cy,maxR); lg.addColorStop(0,"rgba(53,222,255,0.10)"); lg.addColorStop(1,"rgba(53,222,255,0)"); ctx.fillStyle=lg; ctx.fill(); ctx.restore();
   }
 
-  function frame(now){ var dt=Math.min(0.05,(now-lastT)/1000)||0; lastT=now;
-    if (!reduce && !document.hidden){ logic(dt); drawScene(dt); } requestAnimationFrame(frame); }
+  function frame(now){ var dt=Math.min(0.05,(now-lastT)/1000)||0; lastT=now; var sdt=dt*speed;
+    if (!reduce && !document.hidden){ logic(sdt); drawScene(sdt); } requestAnimationFrame(frame); }
 
   // controls
   Array.prototype.forEach.call(seg.querySelectorAll("button"), function(b){ b.addEventListener("click", function(){
@@ -865,6 +939,36 @@
   tourBtn.addEventListener("click", function(){ tourOn?tourEnd():tourStart(); });
   tourNext.addEventListener("click", function(){ clearTimeout(tourT); tourAdvance(); });
   tourSkip.addEventListener("click", tourEnd);
+
+  // ---- accessibility: live text summary + canvas alt text ----
+  var srLive=document.getElementById("srLive"), _a11y="";
+  function setA11y(t){ if (t===_a11y) return; _a11y=t; if (srLive) srLive.textContent=t; canvas.setAttribute("aria-label","Tactical layered-defense scope — "+t); }
+
+  // ---- playback speed ----
+  var speedSeg=document.getElementById("speedSeg");
+  Array.prototype.forEach.call(speedSeg.querySelectorAll("button"), function(b){ b.addEventListener("click", function(){
+    speed=parseFloat(b.getAttribute("data-spd"));
+    Array.prototype.forEach.call(speedSeg.querySelectorAll("button"), function(x){ x.classList.toggle("on", x===b); }); }); });
+
+  // ---- glossary dialog ----
+  var glossBtn=document.getElementById("gloss"), glossary=document.getElementById("glossary"), glossClose=document.getElementById("glossClose");
+  function openGloss(){ glossary.hidden=false; glossClose.focus(); }
+  function closeGloss(){ glossary.hidden=true; glossBtn.focus(); }
+  glossBtn.addEventListener("click", function(){ glossary.hidden?openGloss():closeGloss(); });
+  glossClose.addEventListener("click", closeGloss);
+  glossary.addEventListener("click", function(e){ if (e.target===glossary) closeGloss(); });
+
+  // ---- keyboard shortcuts (when not typing in a control) ----
+  document.addEventListener("keydown", function(e){
+    if (e.key==="Escape" && !glossary.hidden){ closeGloss(); return; }
+    var tag=(e.target&&e.target.tagName)||""; if (/^(BUTTON|INPUT|SELECT|TEXTAREA|A)$/.test(tag)) return;
+    var k=e.key.toLowerCase();
+    if (e.key===" "||k==="k"){ e.preventDefault(); if (state&&state.running) pauseBtn.click(); else run(); }
+    else if (k==="r"){ run(); }
+    else if (k==="t"){ tourOn?tourEnd():tourStart(); }
+    else if (k==="g"){ glossary.hidden?openGloss():closeGloss(); }
+    else if (k==="j"){ commsBtn.click(); }
+  });
 
   function init(){
     sizeCanvas();
