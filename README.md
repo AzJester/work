@@ -87,6 +87,11 @@ them and run KPIs**, use the cloud-backed version:
   click; the raw notes are also **saved to that week** for reference. The extraction runs in a
   Supabase **Edge Function** (`extract-tasks`, Claude tool-use) using the same
   `ANTHROPIC_API_KEY` — the key never reaches the browser.
+  - **Per-task ✨ From notes** — on any existing task, the **✨ From notes** button (next to
+    *Action items*) lets you paste *that meeting's* notes and have Claude pull the **action
+    items for just that task** (added to its checklist) plus a **concise summary** (appended to
+    its Comments & updates). Review and uncheck before adding. Runs in the `task-actions` edge
+    function with the same key.
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Per-recipient share links** — create multiple labelled read-only links (one per person)
   from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
