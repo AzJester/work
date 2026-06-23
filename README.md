@@ -43,6 +43,14 @@ discrimination in action.
   briefs itself to non-experts.
 - **Deep-link a scenario** — `…/work/?scenario=swarm` (or `single` / `raid` / `mixed`)
   opens straight into that run.
+- **MIL-STD-2525 symbology** — hostile tracks use the air-affiliation caret frame, friendly
+  the dome, with a class amplifier (A air · U uas · M cruise/ASCM · B ballistic).
+- **Colorblind-safe palette** (CB toggle) — shifts red→orange / green→teal / blue→sky and
+  leans on shape for affiliation; remembered across visits.
+- **Sound cues** (off by default) — subtle synth pings for detect / launch / kill / alert.
+- **Download AAR** — after an engagement, export a one-page after-action report (PNG):
+  outcome, tracks by class, interceptors expended, time-to-defeat, datalink and node
+  status, with a scope snapshot and a NOTIONAL banner.
 
 ## How it's deployed
 
