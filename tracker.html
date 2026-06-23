@@ -194,6 +194,8 @@
   .citem .cdel:hover { color:var(--red); border-color:var(--red); }
   .addItem { align-self:flex-start; font-size:12px; font-weight:600; color:var(--accent); background:transparent; border:1px dashed var(--line-2); border-radius:6px; padding:4px 10px; cursor:pointer; }
   .addItem:hover { border-color:var(--accent); }
+  .fromnotes { margin-left:auto; font-family:var(--disp); font-size:11.5px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:6px; padding:3px 9px; cursor:pointer; white-space:nowrap; }
+  .fromnotes:hover { border-color:var(--accent); }
 
   .rowbtns { display:flex; gap:4px; padding-top:4px; }
   .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
@@ -298,7 +300,8 @@
   .modal-body .ai-rendered code { font-family:var(--mono); font-size:12.5px; background:var(--input-bg); padding:1px 5px; border-radius:5px; }
   .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
   .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
-  #notesInput { min-height:150px; }
+  #notesInput, #tnInput { min-height:150px; }
+  .tn-summary { font-size:13.5px; line-height:1.5; color:var(--ink); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:6px 0 4px; }
   .np-head { font-size:13px; color:var(--mut); margin:14px 0 8px; }
   .np-list { display:flex; flex-direction:column; gap:8px; }
   .np-row { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; background:var(--card); }
@@ -387,7 +390,7 @@
       --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
     }
     body { background:#fff; }
-    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .rt-bar { display:none !important; }
+    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .rt-bar, .fromnotes { display:none !important; }
     .cmh, .ai-head { color:#555 !important; }
     .view#v-history, .view#v-kpis, .view#v-completed, .view#v-kudos { display:none !important; }
     /* no borders/shadows around the page or table */
@@ -610,6 +613,23 @@
         <button class="btn ghost sm" id="notesExtract" type="button">✨ Extract tasks</button>
         <button class="btn sm" id="notesAdd" type="button" hidden>Add tasks to week</button>
         <button class="btn ghost sm" id="notesDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="taskNotesModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>✨ From notes</strong><button class="ibtn" id="tnClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body" id="tnBody">
+        <p class="hint" id="tnHint" style="margin:0 0 8px">Paste this meeting's notes — Claude pulls action items and a concise summary for this task.</p>
+        <textarea id="tnInput" placeholder="Paste the meeting notes for this task here…"></textarea>
+        <div id="tnResult"></div>
+      </div>
+      <div class="modal-foot">
+        <span class="spacer" style="flex:1 1 auto"></span>
+        <button class="btn ghost sm" id="tnExtract" type="button">✨ Extract</button>
+        <button class="btn sm" id="tnAdd" type="button" hidden>Add to task</button>
+        <button class="btn ghost sm" id="tnDone" type="button">Cancel</button>
       </div>
     </div>
   </div>
@@ -1153,6 +1173,11 @@ function renderRows(){
     const aih = document.createElement("div"); aih.className = "ai-head";
     const aihl = document.createElement("span"); aihl.textContent = "Action items"; aih.appendChild(aihl);
     counter = document.createElement("span"); counter.className = "aicount"; updateCounter(counter, row); aih.appendChild(counter);
+    const fromNotes = document.createElement("button");
+    fromNotes.type = "button"; fromNotes.className = "fromnotes"; fromNotes.textContent = "✨ From notes";
+    fromNotes.title = "Pull action items and a summary for this task from meeting notes";
+    fromNotes.addEventListener("click", () => openTaskNotes(row));
+    aih.appendChild(fromNotes);
     work.appendChild(aih);
     const list = document.createElement("div"); list.className = "checklist";
     row.items.forEach((it, k) => {
@@ -1934,6 +1959,109 @@ function addProposed(){
 }
 $("notesExtract").addEventListener("click", extractNotes);
 $("notesAdd").addEventListener("click", addProposed);
+
+// ============ PER-TASK: notes → action items + summary ============
+let tnTarget = null, tnSummary = "", tnSummaryOn = true, tnItems = [];
+function openTaskNotes(row){
+  tnTarget = row;
+  tnSummary = ""; tnSummaryOn = true; tnItems = [];
+  $("tnInput").value = "";
+  $("tnResult").innerHTML = "";
+  $("tnAdd").hidden = true;
+  const title = (row.task || "").trim();
+  $("tnHint").innerHTML = title
+    ? 'Paste the notes from your meeting for <b>' + escHtml(title) + '</b> — Claude pulls action items and a concise summary for this task.'
+    : "Paste this meeting's notes — Claude pulls action items and a concise summary for this task.";
+  $("taskNotesModal").hidden = false;
+  $("tnInput").focus();
+}
+function closeTaskNotes(){ $("taskNotesModal").hidden = true; tnTarget = null; }
+$("tnClose").addEventListener("click", closeTaskNotes);
+$("tnDone").addEventListener("click", closeTaskNotes);
+$("taskNotesModal").addEventListener("click", (e) => { if (e.target === $("taskNotesModal")) closeTaskNotes(); });
+
+function renderTaskResult(){
+  const box = $("tnResult");
+  box.innerHTML = "";
+  const hasSummary = !!(tnSummary && tnSummary.trim());
+  if (!hasSummary && !tnItems.length) {
+    box.innerHTML = '<p class="np-head">Nothing actionable was found in those notes for this task.</p>';
+    $("tnAdd").hidden = true;
+    return;
+  }
+  if (hasSummary) {
+    const sh = document.createElement("p"); sh.className = "np-head"; sh.style.margin = "12px 0 4px";
+    const scb = document.createElement("input"); scb.type = "checkbox"; scb.checked = tnSummaryOn; scb.style.marginRight = "6px";
+    scb.addEventListener("change", () => { tnSummaryOn = scb.checked; });
+    const slab = document.createElement("label"); slab.style.cursor = "pointer";
+    slab.appendChild(scb); slab.appendChild(document.createTextNode("Add this summary to Comments & updates"));
+    sh.appendChild(slab); box.appendChild(sh);
+    const sd = document.createElement("div"); sd.className = "tn-summary"; sd.textContent = tnSummary.trim();
+    box.appendChild(sd);
+  }
+  if (tnItems.length) {
+    const h = document.createElement("p"); h.className = "np-head"; h.style.margin = "14px 0 8px";
+    h.innerHTML = "Action items — uncheck any you don’t want:";
+    box.appendChild(h);
+    const list = document.createElement("div"); list.className = "np-list";
+    tnItems.forEach(it => {
+      const r = document.createElement("div"); r.className = "np-row";
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = it._on !== false;
+      cb.addEventListener("change", () => { it._on = cb.checked; r.classList.toggle("off", !cb.checked); });
+      const main = document.createElement("div"); main.className = "np-main";
+      main.innerHTML = '<div class="np-title" style="font-weight:500">' + escHtml(it.text) + '</div>';
+      r.appendChild(cb); r.appendChild(main); list.appendChild(r);
+    });
+    box.appendChild(list);
+  }
+  $("tnAdd").hidden = false;
+}
+async function extractTaskNotes(){
+  if (!tnTarget) return;
+  const notes = $("tnInput").value.trim();
+  if (!notes) { $("tnInput").focus(); return; }
+  const btn = $("tnExtract"); const orig = btn.textContent; btn.disabled = true; btn.textContent = "Extracting…";
+  $("tnResult").innerHTML = '<p class="np-head"><span class="spin"></span> Reading your notes…</p>';
+  $("tnAdd").hidden = true;
+  try {
+    const { data, error } = await sb.functions.invoke("task-actions", { body: { task: tnTarget.task || "", notes, today: todayIso() } });
+    if (error) {
+      let msg = error.message || "Request failed.";
+      try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){}
+      throw new Error(msg);
+    }
+    if (data && data.error) throw new Error(data.error);
+    tnSummary = String((data && data.summary) || "");
+    tnSummaryOn = !!(tnSummary && tnSummary.trim());
+    tnItems = (data && Array.isArray(data.action_items) ? data.action_items : [])
+      .filter(t => typeof t === "string" && t.trim()).map(t => ({ text: t.trim(), _on: true }));
+    renderTaskResult();
+  } catch (e) {
+    $("tnResult").innerHTML = '<div class="ai-err"><b>Couldn’t read those notes.</b><br>' + escHtml(e.message || String(e))
+      + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+function addTaskNotes(){
+  if (!tnTarget) { closeTaskNotes(); return; }
+  const row = tnTarget;
+  if (!Array.isArray(row.items)) row.items = [];
+  const picked = tnItems.filter(it => it._on !== false);
+  picked.forEach(it => row.items.push({ text: it.text, done: false }));
+  if (tnSummaryOn && tnSummary && tnSummary.trim()) {
+    const sumHtml = plainToHtml(tnSummary.trim());
+    const existing = (row.note || "").trim();
+    row.note = existing && existing !== "<br>" ? existing + "<br><br>" + sumHtml : sumHtml;
+  }
+  closeTaskNotes();
+  renderRows();
+  scheduleSave();
+  const n = picked.length;
+  setSave("ok", n ? ("Added " + n + " action item" + (n===1?"":"s") + " from notes") : "Summary added from notes");
+}
+$("tnExtract").addEventListener("click", extractTaskNotes);
+$("tnAdd").addEventListener("click", addTaskNotes);
 
 (function initTheme(){
   let theme = "light";
