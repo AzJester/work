@@ -55,8 +55,6 @@
   .btn.ghost:hover { color:var(--text); border-color:var(--cyan); transform:none; }
   .btn.ghost.on { color:var(--cyan); border-color:var(--cyan); background:rgba(53,222,255,0.12); }
   .btn:focus-visible, .btn.ghost:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
-  /* colorblind-safe palette (Okabe-Ito-ish): red→orange, green→teal, blue→sky; shape still carries affiliation */
-  body.cb { --red:#FF7A1A; --green:#19C3A6; --blue:#56B4E9; }
 
   .lede { margin:0; color:var(--dim); font-size:14px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:baseline; }
   .lede .txt { max-width:86ch; }
@@ -167,7 +165,6 @@
         </div>
         <span class="pill" id="sysPill"><i></i><span id="sys">DEFENDED · NOMINAL</span></span>
         <button class="btn ghost" id="comms" type="button">Jam comms</button>
-        <button class="btn ghost" id="cb" type="button" aria-pressed="false" title="Colorblind-safe palette">CB</button>
         <button class="btn ghost" id="snd" type="button" aria-pressed="false" title="Sound cues (off by default)">Sound</button>
         <button class="btn ghost" id="tour" type="button" title="Guided walkthrough of every capability">Tour ▸</button>
         <button class="btn ghost" id="pause" type="button">Pause</button>
@@ -264,7 +261,7 @@
       </div>
       <div class="dcol">
         <h5>About</h5>
-        <p>LDAWIF — Layered Defense · Autonomous Warfare · Integrated Fires. Single self-contained page; no external dependencies. Respects reduced-motion; colorblind-safe palette and MIL-STD-2525 symbology available.</p>
+        <p>LDAWIF — Layered Defense · Autonomous Warfare · Integrated Fires. Single self-contained page; no external dependencies. Respects reduced-motion; MIL-STD-2525 symbology.</p>
         <p class="note">Built as a concept demonstrator.</p>
       </div>
     </footer>
@@ -279,16 +276,12 @@
   var canvas = document.getElementById("scope"), ctx = canvas.getContext("2d");
   var MONO = 'ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace';
   var DISP_FONT = '"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif';
-  var cbBtn=document.getElementById("cb"), sndBtn=document.getElementById("snd"), aarBtn=document.getElementById("aar");
+  var sndBtn=document.getElementById("snd"), aarBtn=document.getElementById("aar");
 
-  // swappable palette — colorblind-safe mode shifts red→orange / green→teal / blue→sky; shape (2525 frames) carries affiliation either way
-  var PALS = {
-    std: { threat:"#FF5D6E", threatRGB:"255,93,110", threatFill:"rgba(255,93,110,0.25)", threatLine:"rgba(255,93,110,0.7)", threatNum:"rgba(255,150,160,0.95)",
-           friend:"#4FA8FF", friendRGB:"79,168,255", friendNum:"rgba(120,190,255,0.95)", asset:"#34E0A1", assetTxt:"#9FF0CF", burst:"#FF6A3D", hel:"#FF6A3D" },
-    cb:  { threat:"#FF7A1A", threatRGB:"255,122,26", threatFill:"rgba(255,122,26,0.25)", threatLine:"rgba(255,122,26,0.78)", threatNum:"rgba(255,176,110,0.97)",
-           friend:"#56B4E9", friendRGB:"86,180,233", friendNum:"rgba(150,205,240,0.97)", asset:"#19C3A6", assetTxt:"#A9F0E0", burst:"#FF7A1A", hel:"#FF7A1A" }
-  };
-  var PAL = PALS.std, cbOn=false, sndOn=false;
+  // canvas palette (semantic colors; affiliation also carried by 2525 frame shape)
+  var PAL = { threat:"#FF5D6E", threatRGB:"255,93,110", threatFill:"rgba(255,93,110,0.25)", threatLine:"rgba(255,93,110,0.7)", threatNum:"rgba(255,150,160,0.95)",
+              friend:"#4FA8FF", friendRGB:"79,168,255", friendNum:"rgba(120,190,255,0.95)", asset:"#34E0A1", assetTxt:"#9FF0CF", burst:"#FF6A3D", hel:"#FF6A3D" };
+  var sndOn=false;
 
   var btn=document.getElementById("run"), pauseBtn=document.getElementById("pause"), seg=document.getElementById("seg"), commsBtn=document.getElementById("comms");
   var phaseEl=document.getElementById("phase"), ledeEl=document.querySelector(".lede"), scnWord=document.getElementById("scnWord");
@@ -795,12 +788,8 @@
     }catch(e){}
   }
 
-  function setCB(on){ cbOn=on; PAL=on?PALS.cb:PALS.std; document.body.classList.toggle("cb",on);
-    cbBtn.classList.toggle("on",on); cbBtn.setAttribute("aria-pressed",on?"true":"false");
-    try{ localStorage.setItem("ldawif_cb",on?"1":"0"); }catch(e){} if (reduce) drawScene(0); }
   function setSnd(on){ sndOn=on; sndBtn.classList.toggle("on",on); sndBtn.setAttribute("aria-pressed",on?"true":"false");
     try{ localStorage.setItem("ldawif_snd",on?"1":"0"); }catch(e){} if (on) cue("ping"); }
-  cbBtn.addEventListener("click", function(){ setCB(!cbOn); });
   sndBtn.addEventListener("click", function(){ setSnd(!sndOn); });
 
   // ---- after-action report (PNG) ----
@@ -861,7 +850,7 @@
       act:function(){ setComms(false); offlineNode("ground",true); tourRun("raid"); } },
     { dur:12, txt:"<b>Saturation:</b> a drone swarm. The AI triages by priority, interceptor magazines deplete, and leakers are caught in depth by point-defense HEL.",
       act:function(){ offlineNode("ground",false); tourRun("swarm"); } },
-    { dur:10, txt:"That’s the tour. Export a one-page <b>AAR ↓</b>, toggle <b>CB</b> (colorblind-safe) or <b>Sound</b>, and try <b>Mixed</b> (TBM · cruise · UAS · air). Explore on your own.",
+    { dur:10, txt:"That’s the tour. Export a one-page <b>AAR ↓</b>, turn on <b>Sound</b> for cues, and try <b>Mixed</b> (TBM · cruise · UAS · air). Explore on your own.",
       act:function(){ offlineNode("ground",false); setComms(false); } }
   ];
   function tourShow(i){
@@ -879,7 +868,7 @@
 
   function init(){
     sizeCanvas();
-    try{ if (localStorage.getItem("ldawif_cb")==="1") setCB(true); if (localStorage.getItem("ldawif_snd")==="1") setSnd(true); }catch(e){}
+    try{ if (localStorage.getItem("ldawif_snd")==="1") setSnd(true); }catch(e){}
     var q=(location.search.match(/[?&]scenario=(single|raid|swarm|mixed)/)||[])[1];
     scenario = q || "raid";
     Array.prototype.forEach.call(seg.querySelectorAll("button"), function(x){ x.classList.toggle("on", x.getAttribute("data-scn")===scenario); });
