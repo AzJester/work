@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><title>LDAWIF animated poster</title>
+<style>html,body{margin:0;background:#070B14}#c{display:block}</style></head>
+<body>
+<canvas id="c" width="1000" height="525"></canvas>
+<script>
+(function(){
+  var DEG=Math.PI/180, c=document.getElementById("c"), x=c.getContext("2d");
+  var W=1000, H=525, MONO='ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace';
+  var DISP='"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif';
+  // scope geometry
+  var sx=748, sy=252, R=150;
+  var rD=R, rA=R*0.66, rP=R*0.33;
+  var thrAng=-32*DEG;                // threat bearing within scope (up-right)
+  var chain=["Find","Fix","Track","Target","Engage","Assess"];
+  var chainOn=[0.12,0.20,0.29,0.38,0.48,0.58];
+
+  function bg(){
+    x.fillStyle="#070B14"; x.fillRect(0,0,W,H);
+    var g1=x.createRadialGradient(W*0.84,-40,0,W*0.84,-40,560); g1.addColorStop(0,"rgba(53,222,255,0.13)"); g1.addColorStop(1,"rgba(53,222,255,0)"); x.fillStyle=g1; x.fillRect(0,0,W,H);
+    var g2=x.createRadialGradient(40,H+40,0,40,H+40,520); g2.addColorStop(0,"rgba(156,140,255,0.12)"); g2.addColorStop(1,"rgba(156,140,255,0)"); x.fillStyle=g2; x.fillRect(0,0,W,H);
+    x.strokeStyle="rgba(53,222,255,0.045)"; x.lineWidth=1;
+    for (var gx=0;gx<W;gx+=42){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,H); x.stroke(); }
+    for (var gy=0;gy<H;gy+=42){ x.beginPath(); x.moveTo(0,gy); x.lineTo(W,gy); x.stroke(); }
+  }
+  function sc(b,r){ return { x:sx+Math.cos(b)*r, y:sy+Math.sin(b)*r }; }
+  function ring(r,col){ x.beginPath(); x.arc(sx,sy,r,0,Math.PI*2); x.strokeStyle=col; x.lineWidth=1.3; x.stroke(); }
+
+  window.renderFrame=function(t){
+    bg();
+    // ---- left: text ----
+    x.textBaseline="alphabetic";
+    x.font="600 13px "+MONO; x.fillStyle="#35DEFF"; x.textAlign="left";
+    x.fillText("LAYERED DEFENSE · AUTONOMOUS WARFARE · INTEGRATED FIRES", 56, 78);
+    var wm=x.createLinearGradient(0,95,0,205); wm.addColorStop(0,"#FFFFFF"); wm.addColorStop(0.58,"#BBD7F2"); wm.addColorStop(1,"#6FA8CF");
+    x.font="800 118px "+DISP; x.fillStyle=wm; x.fillText("LDAWIF", 52, 196);
+    x.font="400 23px "+DISP; x.fillStyle="#8595AF";
+    x.fillText("All-domain ", 56, 250); var w1=x.measureText("All-domain ").width;
+    x.fillStyle="#9C8CFF"; x.font="600 23px "+DISP; x.fillText("kill web", 56+w1, 250); var w2=x.measureText("kill web").width;
+    x.fillStyle="#8595AF"; x.font="400 23px "+DISP; x.fillText(" — F2T2EA at machine speed.", 56+w1+w2, 250);
+
+    // ---- mini F2T2EA chain (lights progressively) ----
+    var cxs=56, cys=312, pad=13, gap=12; x.font="700 14px "+MONO; x.textBaseline="middle";
+    var clear = t>0.9;                         // reset before loop wraps
+    for (var i=0;i<chain.length;i++){
+      var lit = !clear && t>=chainOn[i];
+      var tw=x.measureText(chain[i].toUpperCase()).width, bw=tw+pad*2, bh=30;
+      x.beginPath(); var rx=cxs, ry=cys-bh/2, rr=7;
+      x.moveTo(rx+rr,ry); x.arcTo(rx+bw,ry,rx+bw,ry+bh,rr); x.arcTo(rx+bw,ry+bh,rx,ry+bh,rr); x.arcTo(rx,ry+bh,rx,ry,rr); x.arcTo(rx,ry,rx+bw,ry,rr); x.closePath();
+      x.fillStyle="rgba(16,26,46,0.7)"; x.fill();
+      x.strokeStyle= lit ? (i===4?"rgba(255,177,60,0.9)":"rgba(53,222,255,0.85)") : "rgba(41,59,90,0.7)"; x.lineWidth=1.4; x.stroke();
+      x.fillStyle= lit ? (i===4?"#FFD79A":"#CFEFFA") : "#5A6A84"; x.textAlign="left"; x.fillText(chain[i].toUpperCase(), cxs+pad, cys+1);
+      cxs += bw + gap;
+      if (i<chain.length-1){ x.fillStyle= lit?"#35DEFF":"#3A4D6E"; x.fillText("→", cxs-gap+2, cys+1); cxs+=10; }
+    }
+    // url + cta
+    x.font="600 13px "+MONO; x.fillStyle="#54637C"; x.textBaseline="alphabetic"; x.textAlign="left";
+    x.fillText("AZJESTER.GITHUB.IO/WORK", 56, 470);
+    var cta="▶ RUN THE LIVE ENGAGEMENT"; x.font="700 15px "+MONO; var ctw=x.measureText(cta).width;
+    var px=W-56-ctw-30, py=440, pw=ctw+30, ph=40;
+    var pg=x.createLinearGradient(0,py,0,py+ph); pg.addColorStop(0,"#6BEBFF"); pg.addColorStop(1,"#35DEFF");
+    x.beginPath(); x.moveTo(px+9,py); x.arcTo(px+pw,py,px+pw,py+ph,9); x.arcTo(px+pw,py+ph,px,py+ph,9); x.arcTo(px,py+ph,px,py,9); x.arcTo(px,py,px+pw,py,9); x.closePath();
+    x.fillStyle=pg; x.fill(); x.fillStyle="#04222C"; x.textAlign="left"; x.textBaseline="middle"; x.fillText(cta, px+15, py+ph/2+1);
+
+    // ---- right: radar scope ----
+    x.save();
+    // range-ring bands
+    function band(r0,r1,f){ x.beginPath(); x.arc(sx,sy,r1,0,Math.PI*2); x.arc(sx,sy,r0,0,Math.PI*2,true); x.fillStyle=f; x.fill("evenodd"); }
+    band(rA,rD,"rgba(53,222,255,0.05)"); band(rP,rA,"rgba(255,177,60,0.05)"); band(0,rP,"rgba(255,93,110,0.05)");
+    for (var b=0;b<360;b+=30){ var p=sc(b*DEG,R); x.strokeStyle="rgba(53,222,255,0.07)"; x.lineWidth=1; x.beginPath(); x.moveTo(sx,sy); x.lineTo(p.x,p.y); x.stroke(); }
+    ring(rD,"rgba(53,222,255,0.5)"); ring(rA,"rgba(255,177,60,0.5)"); ring(rP,"rgba(255,93,110,0.55)");
+    // sweep
+    var ang=-Math.PI/2 + t*2*Math.PI, span=0.5;
+    x.beginPath(); x.moveTo(sx,sy); x.arc(sx,sy,R,ang-span,ang); x.closePath();
+    var sg=x.createRadialGradient(sx,sy,0,sx,sy,R); sg.addColorStop(0,"rgba(53,222,255,0.16)"); sg.addColorStop(1,"rgba(53,222,255,0)"); x.fillStyle=sg; x.fill();
+    x.beginPath(); x.moveTo(sx,sy); var sp=sc(ang,R); x.lineTo(sp.x,sp.y); x.strokeStyle="rgba(53,222,255,0.6)"; x.lineWidth=1.4; x.stroke();
+    // threat + intercept
+    var active = t>=0.08 && t<0.62;
+    if (active){
+      var tp = (t-0.08)/(0.62-0.08);                 // 0..1 inbound
+      var r = R*(1.04 - 0.72*tp);
+      var pos=sc(thrAng,r);
+      // trail
+      for (var k=1;k<=5;k++){ var pr=sc(thrAng,R*(1.04-0.72*Math.max(0,tp-k*0.04))); x.beginPath(); x.arc(pr.x,pr.y,2,0,Math.PI*2); x.fillStyle="rgba(255,93,110,"+(0.16-k*0.026)+")"; x.fill(); }
+      x.save(); x.translate(pos.x,pos.y); x.rotate(Math.PI/4); x.strokeStyle="#FF5D6E"; x.fillStyle="rgba(255,93,110,0.25)"; x.lineWidth=2; x.shadowColor="#FF5D6E"; x.shadowBlur=7; x.beginPath(); x.rect(-5,-5,10,10); x.fill(); x.stroke(); x.restore(); x.shadowBlur=0;
+      // interceptor streak from GROUND-ish (bottom) toward threat in the last third
+      if (tp>0.6){ var ip=tp, from=sc(150*DEG,R+6), ix=from.x+(pos.x-from.x)*((ip-0.6)/0.4), iy=from.y+(pos.y-from.y)*((ip-0.6)/0.4);
+        x.beginPath(); x.arc(ix,iy,2.6,0,Math.PI*2); x.fillStyle="#FFB13C"; x.shadowColor="#FFB13C"; x.shadowBlur=9; x.fill(); x.shadowBlur=0; }
+    }
+    // burst at intercept
+    if (t>=0.58 && t<0.70){ var bk=(t-0.58)/0.12; var bp=sc(thrAng,R*0.34); x.beginPath(); x.arc(bp.x,bp.y,40*bk,0,Math.PI*2); x.globalAlpha=1-bk; x.strokeStyle="#FF6A3D"; x.lineWidth=2.4; x.stroke(); x.globalAlpha=1; }
+    // asset (center) + CJADC2 hub
+    x.beginPath(); x.arc(sx,sy,13,0,Math.PI*2); x.strokeStyle="rgba(156,140,255,0.5)"; x.lineWidth=1.3; x.stroke();
+    x.save(); x.translate(sx,sy); x.rotate(Math.PI/4); x.fillStyle="#34E0A1"; x.shadowColor="#34E0A1"; x.shadowBlur=11; x.fillRect(-6,-6,12,12); x.restore(); x.shadowBlur=0;
+    // ring caption
+    x.font="600 9px "+MONO; x.fillStyle="rgba(53,222,255,0.7)"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("LAYERED DEFENSE", sx, sy-R-12);
+    x.restore();
+  };
+
+  // preview loop when opened directly
+  if (!window.__capture){ var t0=performance.now(); (function loop(){ var t=((performance.now()-t0)/2200)%1; window.renderFrame(t); requestAnimationFrame(loop); })(); }
+})();
+</script>
+</body></html>

@@ -55,6 +55,12 @@ retains release authority over the use of force.
 | File | Purpose |
 |------|---------|
 | `index.html` | The standalone LDAWIF site (the whole app). |
-| `poster.png` / `poster.html` | A 1200×630 banner image and its source (for link previews / social cards). |
+| `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
+| `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
 | `.github/workflows/pages.yml` | Publishes the site to GitHub Pages on push to `main`. |
 | `embed-snippet.html` | Optional `<a><img></a>` if you ever want to link to the site from elsewhere. |
+
+> **Animated banner:** use `poster.gif` as a regular `<img>` wherever you want motion
+> (it loops on its own). Note that social/link-preview cards (Open Graph / Twitter) show a
+> *static* image, so those still point at `poster.png`. To re-render the GIF after editing
+> `poster-anim.html`, capture its frames and encode with a GIF encoder (e.g. `gifenc`).
