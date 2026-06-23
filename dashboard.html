@@ -13,11 +13,22 @@
     --accent:#4F46E5; --accent-2:#6366F1; --accent-soft:#EEEFFE; --ring:rgba(99,102,241,0.30);
     --green:#0F8A4F; --green-bg:#E5F6EC; --amber:#9A6700; --amber-bg:#FBF1D9;
     --red:#C2362B; --red-bg:#FCEBE9; --slate:#475467; --slate-bg:#EDF0F5;
+    --th-bg:#F6F7FB; --chip2-bg:#EEF2F8; --chip3-bg:#F1F4F9;
     --radius:14px;
     --shadow-sm:0 1px 2px rgba(20,28,50,0.05), 0 1px 1px rgba(20,28,50,0.04);
     --shadow:0 4px 14px -6px rgba(22,30,55,0.16), 0 2px 5px -3px rgba(22,30,55,0.10);
     --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0E1117; --card:#171B22; --line:#262C36; --line-2:#333B47;
+    --ink:#E7EBF2; --ink-2:#AEB6C4; --mut:#7E8796;
+    --accent:#7C83FF; --accent-2:#9AA0FF; --accent-soft:#1E2340; --ring:rgba(124,131,255,0.35);
+    --green:#46D08A; --green-bg:#10271C; --amber:#E6B655; --amber-bg:#2A2310;
+    --red:#FF8275; --red-bg:#2C1714; --slate:#AEB6C4; --slate-bg:#222936;
+    --th-bg:#1B2029; --chip2-bg:#222A36; --chip3-bg:#1E2530;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow:0 6px 18px -8px rgba(0,0,0,0.6);
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; }
@@ -77,7 +88,7 @@
   .badge.risk { color:var(--amber); background:var(--amber-bg); } .badge.tot { color:var(--slate); background:var(--slate-bg); }
   table.tasks { width:100%; border-collapse:collapse; border-top:1px solid var(--line); }
   table.tasks th { font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--mut);
-    text-align:left; padding:9px 16px; background:#F8FAFD; border-bottom:1px solid var(--line); }
+    text-align:left; padding:9px 16px; background:var(--th-bg); border-bottom:1px solid var(--line); }
   table.tasks td { padding:9px 16px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.5px; }
   table.tasks tr:last-child td { border-bottom:0; }
   .chip { font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap; }
@@ -88,9 +99,9 @@
   .t-main { font-weight:600; }
   .t-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:3px; }
   .tag-proj { font-size:11px; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; }
-  .tag-due { font-family:var(--mono); font-size:11px; color:var(--ink-2); background:#EEF2F8; border-radius:999px; padding:2px 8px; }
+  .tag-due { font-family:var(--mono); font-size:11px; color:var(--ink-2); background:var(--chip2-bg); border-radius:999px; padding:2px 8px; }
   .tag-due.od { color:var(--red); background:var(--red-bg); }
-  .tag-date { font-family:var(--mono); font-size:11px; color:var(--mut); background:#F1F4F9; border-radius:999px; padding:2px 8px; }
+  .tag-date { font-family:var(--mono); font-size:11px; color:var(--mut); background:var(--chip3-bg); border-radius:999px; padding:2px 8px; }
   .tag-date.done { color:var(--green); background:var(--green-bg); }
   .t-note { color:var(--mut); font-size:12.5px; margin-top:4px; white-space:pre-line; }
   .t-items { margin:6px 0 0; padding:0; list-style:none; }
@@ -99,8 +110,17 @@
   .t-items li.done { color:var(--mut); text-decoration:line-through; }
 
   @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
-  @media print { @page { margin:14mm; } body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; } }
+  @media print {
+    @page { margin:14mm; }
+    :root, :root[data-theme="dark"] {
+      --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
+      --line:#ccc!important; --line-2:#bbb!important; --th-bg:#f0f0f0!important; --accent:#000!important;
+      --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
+    }
+    body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; }
+  }
 </style>
+<script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
@@ -114,6 +134,7 @@
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
       <span class="ro" id="roPill" hidden>● Read-only</span>
+      <button class="btn" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
       <button class="btn" id="print" type="button" hidden>Print / PDF</button>
     </div>
   </header>
@@ -131,6 +152,21 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: fa
 
 const COLORS = { done:"#1A8A4E", accent:"#2563EB", atrisk:"#D9A300", blocked:"#B42318" };
 const $ = (id) => document.getElementById(id);
+(function initTheme(){
+  let theme = "light";
+  try { theme = localStorage.getItem("tracker_theme") || "light"; } catch(e){}
+  const apply = (t) => {
+    if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+    $("themeToggle").textContent = (t === "dark") ? "☀️" : "🌙";
+  };
+  apply(theme);
+  $("themeToggle").addEventListener("click", () => {
+    theme = (theme === "dark") ? "light" : "dark";
+    try { localStorage.setItem("tracker_theme", theme); } catch(e){}
+    apply(theme);
+  });
+})();
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }

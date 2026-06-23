@@ -45,14 +45,22 @@ them and run KPIs**, use the cloud-backed version:
     when you mark it Done) and editable.
 - **History** tab — every past week, with at-a-glance counts; click **Open** to reload or
   re-export any week.
+  - **Done moves to Completed** — marking a task Done removes it from the active editor and files
+    it on the **Completed** tab, while it's still saved and reported as done in the week it was
+    finished. A **Show done** toggle reveals/reopens them in the editor.
 - **Completed** tab — a searchable archive of every finished task across all weeks, with the
-  week, project, and start → completion dates (and how long it took).
+  week, project, and start → completion dates (and how long it took). **⬇ CSV** to export it.
 - **KPIs** tab — computed across all your weeks:
   - **Completion & throughput** — tasks done per week and % completion rate
   - **Blocked & at-risk trend** — stacked counts over time
   - **Average progress / velocity** — mean progress % per week
   - **Carryover / aging** — open tasks repeating from earlier weeks, oldest first
-- Same **Copy / Markdown / Print-PDF** exports for the week on screen.
+  - **Cycle time** — avg/median days from Start to Done
+  - **On-time delivery** — % completed on or before the due date
+  - **By project** — tasks and completion grouped by project/area
+- Same **Copy / Markdown / Print-PDF** exports for the week, plus **⬇ Download all as CSV**
+  (full history) on the History tab.
+- **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose).
 

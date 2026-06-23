@@ -14,12 +14,26 @@
     --amber:#9A6700; --amber-bg:#FBF1D9;
     --red:#C2362B; --red-bg:#FCEBE9;
     --slate:#475467; --slate-bg:#EDF0F5;
+    --input-bg:#FBFCFE; --th-bg:#F6F7FB; --hover:#FBFBFE; --detail-bg:#FBFCFE; --track-bg:#E3E7F0;
     --radius:14px; --radius-sm:9px;
     --shadow-sm:0 1px 2px rgba(20,28,50,0.05), 0 1px 1px rgba(20,28,50,0.04);
     --shadow:0 4px 14px -6px rgba(22,30,55,0.16), 0 2px 5px -3px rgba(22,30,55,0.10);
     --shadow-lg:0 24px 60px -28px rgba(22,30,55,0.40);
     --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0E1117; --card:#171B22; --line:#262C36; --line-2:#333B47;
+    --ink:#E7EBF2; --ink-2:#AEB6C4; --mut:#7E8796;
+    --accent:#7C83FF; --accent-2:#9AA0FF; --accent-soft:#1E2340; --ring:rgba(124,131,255,0.35);
+    --green:#46D08A; --green-bg:#10271C;
+    --amber:#E6B655; --amber-bg:#2A2310;
+    --red:#FF8275; --red-bg:#2C1714;
+    --slate:#AEB6C4; --slate-bg:#222936;
+    --input-bg:#1E232C; --th-bg:#1B2029; --hover:#1C212A; --detail-bg:#13171E; --track-bg:#1E232C;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow:0 6px 18px -8px rgba(0,0,0,0.6);
+    --shadow-lg:0 24px 60px -28px rgba(0,0,0,0.7);
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; }
@@ -56,6 +70,9 @@
   .btn.ghost:hover { color:var(--accent); border-color:var(--accent); filter:none; box-shadow:var(--shadow-sm); }
   .btn.sm { font-size:12px; padding:6px 12px; border-radius:8px; }
   .btn.danger.ghost:hover { color:var(--red); border-color:var(--red); }
+  .btn.ghost.on { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+  .empty-week { text-align:center; color:var(--mut); padding:36px 18px; font-size:14px; }
+  .empty-week a { color:var(--accent); cursor:pointer; font-weight:600; }
 
   /* ---- Auth gate ---- */
   .gate { max-width:392px; margin:7vh auto 0; background:var(--card); border:1px solid var(--line);
@@ -63,7 +80,7 @@
   .gate h2 { margin:0 0 4px; font-size:20px; letter-spacing:-0.01em; }
   .gate p.sub { margin:0 0 18px; color:var(--mut); font-size:13.5px; }
   .gate label { display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); margin:0 0 5px; }
-  .gate input { width:100%; font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2);
+  .gate input { width:100%; font:inherit; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2);
     border-radius:10px; padding:11px 12px; margin-bottom:14px; transition:border-color .15s, box-shadow .15s; }
   .gate input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .gate .btn { width:100%; padding:11px; font-size:14px; }
@@ -76,7 +93,7 @@
   .note.hide { display:none; }
 
   /* ---- Tabs ---- */
-  .tabs { display:inline-flex; gap:3px; background:#E3E7F0; border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); }
+  .tabs { display:inline-flex; gap:3px; background:var(--track-bg); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); }
   .tabs button { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink-2); background:transparent;
     border:0; padding:8px 16px; border-radius:9px; cursor:pointer; transition:background .15s, color .15s, box-shadow .15s; }
   .tabs button:hover { color:var(--ink); }
@@ -89,7 +106,7 @@
     border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:14px; box-shadow:var(--shadow); }
   .field { display:flex; flex-direction:column; gap:6px; }
   .field label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); }
-  .field input { font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; transition:border-color .15s, box-shadow .15s; }
+  .field input { font:inherit; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; transition:border-color .15s, box-shadow .15s; }
   .field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .weeknav { display:flex; gap:6px; align-items:center; }
   .weeknav input { flex:1 1 auto; }
@@ -97,7 +114,7 @@
   .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
   .actions .spacer { flex:1 1 auto; }
   .sortlab { font-size:12px; color:var(--mut); display:inline-flex; align-items:center; gap:6px; }
-  .sortlab select { font:inherit; font-size:12.5px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; cursor:pointer; }
+  .sortlab select { font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; cursor:pointer; }
   .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
   .savestate.ok { color:var(--green); } .savestate.err { color:var(--red); } .savestate.busy { color:var(--amber); }
 
@@ -109,18 +126,18 @@
   .tcard { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
   table.tasks { width:100%; border-collapse:collapse; }
   table.tasks thead th { font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut);
-    text-align:left; padding:12px 14px; background:#F6F7FB; border-bottom:1px solid var(--line); white-space:nowrap; }
+    text-align:left; padding:12px 14px; background:var(--th-bg); border-bottom:1px solid var(--line); white-space:nowrap; }
   table.tasks tbody td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
   table.tasks tbody tr:last-child td { border-bottom:0; }
-  table.tasks tbody tr:not(.detail):hover td { background:#FBFBFE; }
+  table.tasks tbody tr:not(.detail):hover td { background:var(--hover); }
   .col-num { width:30px; color:var(--mut); font-family:var(--mono); font-size:12px; text-align:right; padding-top:13px !important; }
   .col-status { width:130px; } .col-pri { width:84px; } .col-prog { width:140px; } .col-act { width:96px; }
   .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; transition:border-color .12s, box-shadow .12s, background .12s; }
   .cell-input:hover { border-color:var(--line-2); }
-  .cell-input:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px var(--ring); }
+  .cell-input:focus { outline:none; border-color:var(--accent); background:var(--card); box-shadow:0 0 0 3px var(--ring); }
   textarea.cell-input { min-height:34px; line-height:1.35; overflow:hidden; }
 
-  .mini { font:inherit; font-size:12px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2); border-radius:7px; padding:5px 8px; transition:border-color .12s, box-shadow .12s; }
+  .mini { font:inherit; font-size:12px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 8px; transition:border-color .12s, box-shadow .12s; }
   .mini:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .mini.project { width:200px; max-width:100%; }
   .mini.due, .mini.date { width:150px; }
@@ -134,7 +151,7 @@
   select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
   select.chip.s-blocked { color:var(--red); background:var(--red-bg); border-color:#F2C6C2; }
   select.chip.s-done { color:var(--slate); background:var(--slate-bg); border-color:#D3DAE5; }
-  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
   .prog { display:flex; align-items:center; gap:8px; padding-top:4px; }
   .prog input[type=range] { flex:1 1 auto; accent-color:var(--accent); cursor:pointer; min-width:0; }
   .prog .pv { font-family:var(--mono); font-size:12px; color:var(--ink-2); width:38px; text-align:right; }
@@ -148,15 +165,15 @@
   .aicount.all { color:var(--green); }
 
   /* full-width detail area under each task */
-  tr.detail td { padding-top:0; padding-bottom:16px; background:#FBFCFE; }
+  tr.detail td { padding-top:0; padding-bottom:16px; background:var(--input-bg); }
   .detail-wrap { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
   .meta-col { flex:0 0 290px; display:flex; flex-direction:column; gap:7px; }
   .work-col { flex:1 1 340px; min-width:0; display:flex; flex-direction:column; gap:6px; }
   .cmh, .ai-head { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); }
   .ai-head { display:flex; align-items:center; gap:10px; margin-top:6px; }
-  .work-col textarea.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:#fff; border-radius:9px; padding:9px 11px; }
+  .work-col textarea.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:9px 11px; }
   .work-col textarea.note:hover { border-color:var(--line-2); }
-  .work-col textarea.note:focus { border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px var(--ring); }
+  .work-col textarea.note:focus { border-color:var(--accent); background:var(--card); box-shadow:0 0 0 3px var(--ring); }
 
   /* action-items checklist */
   .checklist { display:flex; flex-direction:column; gap:5px; }
@@ -164,7 +181,7 @@
   .citem input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; flex:0 0 auto; }
   .citem input[type=text] { flex:1 1 auto; min-width:0; font:inherit; font-size:13px; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:6px; padding:4px 7px; }
   .citem input[type=text]:hover { border-color:var(--line); }
-  .citem input[type=text]:focus { outline:none; border-color:var(--accent); background:#fff; }
+  .citem input[type=text]:focus { outline:none; border-color:var(--accent); background:var(--card); }
   .citem.done input[type=text] { text-decoration:line-through; color:var(--mut); }
   .citem .cdel { font-size:12px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:24px; height:24px; cursor:pointer; flex:0 0 auto; }
   .citem .cdel:hover { color:var(--red); border-color:var(--red); }
@@ -173,10 +190,10 @@
 
   .rowbtns { display:flex; gap:4px; padding-top:4px; }
   .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
-  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:#F8FAFD; }
+  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:var(--hover); }
   .ibtn.del:hover { color:var(--red); border-color:var(--red); }
   .ibtn:disabled { opacity:.35; cursor:default; }
-  .tfoot { padding:12px; border-top:1px solid var(--line); background:#FBFCFE; display:flex; gap:10px; flex-wrap:wrap; }
+  .tfoot { padding:12px; border-top:1px solid var(--line); background:var(--input-bg); display:flex; gap:10px; flex-wrap:wrap; }
   .hint { margin:14px 2px 0; font-size:12.5px; color:var(--mut); } .hint b { color:var(--ink-2); font-weight:600; }
 
   /* ---- History ---- */
@@ -197,7 +214,7 @@
   .cbar input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent); }
   .cbar-count { font-family:var(--mono); font-size:12px; color:var(--mut); white-space:nowrap; }
   .cgroup { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow-sm); }
-  .cgh { font-weight:700; font-size:14px; padding:12px 16px; background:#F6F7FB; border-bottom:1px solid var(--line); }
+  .cgh { font-weight:700; font-size:14px; padding:12px 16px; background:var(--th-bg); border-bottom:1px solid var(--line); }
   .cgh .cgn { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); background:var(--green-bg); border-radius:999px; padding:2px 9px; margin-left:6px; }
   .crow { padding:10px 15px; border-bottom:1px solid var(--line); }
   .crow:last-child { border-bottom:0; }
@@ -221,34 +238,70 @@
   .agelist li { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px; }
   .agelist li:last-child { border-bottom:0; }
   .agelist .wks { font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap; }
+  .hbar { height:10px; background:var(--track-bg); border-radius:999px; overflow:hidden; margin-top:2px; }
+  .hbar-fill { height:100%; background:linear-gradient(90deg, var(--green), #36c07a); border-radius:999px; }
+  .pbars { display:flex; flex-direction:column; gap:10px; }
+  .pbar .pl { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; font-size:13px; }
+  .pbar .pl .pn { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pbar .pl .pc { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
+  .pbar .track { height:8px; background:var(--track-bg); border-radius:999px; overflow:hidden; }
+  .pbar .fill { height:100%; background:linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius:999px; }
+  .htoolbar { display:flex; justify-content:flex-end; margin-bottom:12px; }
 
   .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 
   .sharebar { background:var(--accent-soft); border:1px solid #D7D9FB; border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; box-shadow:var(--shadow-sm); }
   .sharebar strong { font-size:13px; }
-  .sharebar input { flex:1 1 260px; font:inherit; font-size:12.5px; color:var(--ink-2); background:#fff; border:1px solid var(--line-2); border-radius:8px; padding:9px 11px; }
+  .sharebar input { flex:1 1 260px; font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px; }
   .sharebar .note { width:100%; font-size:12px; color:var(--ink-2); margin:0; }
   .sharebar[hidden] { display:none; }
 
   @media (max-width:760px) {
     .head { grid-template-columns:1fr; } .kgrid { grid-template-columns:1fr; }
-    .col-prog, .col-pri { display:none; }
+  }
+  @media (max-width:680px) {
+    .wrap { padding-left:14px; padding-right:14px; }
+    .who-line { flex-wrap:wrap; }
+    table.tasks thead { display:none; }
+    table.tasks, table.tasks tbody, table.tasks tr, table.tasks td { display:block; }
+    table.tasks tr:not(.detail) { padding:12px 12px 2px; }
+    table.tasks tr:not(.detail) td { border:0 !important; padding:4px 0; }
+    table.tasks tr:not(.detail):hover td { background:transparent; }
+    .col-num { font-size:11px; padding-top:0 !important; }
+    .col-status, .col-pri, .col-act { display:inline-block; vertical-align:middle; width:auto; margin-right:14px; }
+    .col-prog { display:block; max-width:280px; }
+    tr.detail td { display:block; padding:0 12px 16px; }
+    tr.detail .col-num { display:none; }
+    .meta-col { flex:1 1 100%; }
+    .work-col { flex:1 1 100%; }
+    .mini.project { width:100%; }
   }
   @media print {
     @page { margin:14mm; }
+    /* always print light, even if dark mode is on */
+    :root, :root[data-theme="dark"] {
+      --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
+      --line:#ccc!important; --line-2:#bbb!important; --input-bg:#fff!important; --th-bg:#f0f0f0!important;
+      --hover:#fff!important; --detail-bg:#fff!important; --accent:#000!important; --accent-soft:#fff!important;
+      --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
+    }
     body { background:#fff; }
-    .mast .who-line, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .logbtn, .addItem, .cdel { display:none !important; }
+    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel { display:none !important; }
     .cmh, .ai-head { color:#555 !important; }
-    .view#v-history, .view#v-kpis { display:none !important; }
-    .head, .tcard { border:0; padding:0; } .head { display:block; margin-bottom:10pt; }
-    .head .field { display:inline-block; margin-right:24pt; } .head .field input { border:0; padding:0; background:transparent; font-weight:600; }
+    .view#v-history, .view#v-kpis, .view#v-completed { display:none !important; }
+    .head, .tcard { border:0; padding:0; box-shadow:none; } .head { display:block; margin-bottom:10pt; }
+    .head .field { display:inline-block; margin-right:28pt; vertical-align:top; }
+    .head .field label { display:inline; margin:0 6pt 0 0; }
+    .head .field .weeknav { display:inline; }
+    .head .field input { display:inline-block; width:auto; border:0; padding:0; background:transparent; font-weight:700; }
     .weeknav .ibtn, #weekThis { display:none !important; }
     .col-act { display:none !important; } .rowbtns { display:none !important; }
     table.tasks { border:1px solid #999; } .prog input[type=range] { display:none; }
     .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
   }
 </style>
+<script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
@@ -263,6 +316,7 @@
     </div>
     <div class="who-line" id="whoLine" hidden>
       <span>Signed in as <span class="em" id="userEmail"></span></span>
+      <button class="btn ghost sm" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
       <button class="btn ghost sm" id="shareToggle" type="button">Share dashboard ▾</button>
       <button class="btn ghost sm" id="signout" type="button">Sign out</button>
     </div>
@@ -327,6 +381,7 @@
       <div class="actions">
         <button class="btn" id="add" type="button">+ Add task</button>
         <button class="btn ghost" id="save" type="button">Save to cloud</button>
+        <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
         <span class="spacer"></span>
         <label class="sortlab">Sort
           <select id="sortMode">
@@ -364,6 +419,9 @@
 
     <!-- ---- History ---- -->
     <section class="view" id="v-history" hidden>
+      <div class="htoolbar">
+        <button class="btn ghost sm" id="historyCsv" type="button">⬇ Download all as CSV</button>
+      </div>
       <div id="historyBody"></div>
     </section>
 
@@ -372,6 +430,7 @@
       <div class="cbar">
         <input id="completedSearch" type="search" placeholder="Search completed tasks…" aria-label="Search completed tasks" />
         <span class="cbar-count" id="completedCount"></span>
+        <button class="btn ghost sm" id="completedCsv" type="button">⬇ CSV</button>
       </div>
       <div id="completedBody"></div>
     </section>
@@ -437,6 +496,7 @@ let reportId = null;
 let saveTimer = null;
 let sortMode = "status";
 try { const s = localStorage.getItem("tracker_sort"); if (s) sortMode = s; } catch(e){}
+let showDone = false;   // Done tasks move to the Completed tab; this reveals them in the editor
 
 // ============ AUTH ============
 let mode = "signin";
@@ -526,6 +586,7 @@ $("carryBlank").addEventListener("click", () => {
   $("carryBanner").hidden = true; renderRows();
   setSave("", "New week — not saved yet");
 });
+$("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
 
 function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
 function scheduleSave(){
@@ -660,7 +721,11 @@ function renderRows(){
   const rowsEl = $("rows"); rowsEl.innerHTML = "";
   const manual = sortMode === "manual";
   const order = displayOrder();
-  order.forEach((item, dispIdx) => {
+  // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
+  const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
+  updateDoneToggle();
+  if (!visible.length) { renderEmptyWeek(rowsEl); return; }
+  visible.forEach((item, dispIdx) => {
     const row = item.row, i = item.idx;
     if (!Array.isArray(row.items)) row.items = [];
     let startedInput, completedInput, dueInput, counter, note;
@@ -689,7 +754,7 @@ function renderRows(){
       else { row.completed = ""; }
       if (completedInput) completedInput.value = row.completed || "";
       if (dueInput) markOverdue(dueInput, row);
-      if (sortMode === "status") renderRows();
+      renderRows();   // Done tasks drop out of the editor (still saved + reported for the week)
       scheduleSave();
     });
     tdStatus.appendChild(sel); tr.appendChild(tdStatus);
@@ -822,6 +887,25 @@ function moveRow(i, dir){
   const j = i + dir; if (j < 0 || j >= state.rows.length) return;
   const t = state.rows[i]; state.rows[i] = state.rows[j]; state.rows[j] = t; renderRows(); scheduleSave();
 }
+function updateDoneToggle(){
+  const n = state.rows.filter(r => r.status === "Done").length;
+  const b = $("toggleDone");
+  if (!n) { b.hidden = true; b.classList.remove("on"); return; }
+  b.hidden = false;
+  b.textContent = showDone ? ("Hide done ("+n+")") : ("Show done ("+n+")");
+  b.classList.toggle("on", showDone);
+}
+function renderEmptyWeek(rowsEl){
+  const doneN = state.rows.filter(r => r.status === "Done").length;
+  const tr = document.createElement("tr");
+  const td = document.createElement("td"); td.colSpan = 6; td.className = "empty-week";
+  td.innerHTML = doneN
+    ? '✓ Every task this week is <b>done</b> — saved in this week’s report and on the <b>Completed</b> tab. <a id="revealDone">Show them here</a>'
+    : 'No tasks yet — click <b>+ Add task</b> to start this week.';
+  tr.appendChild(td); rowsEl.appendChild(tr);
+  const rd = $("revealDone");
+  if (rd) rd.addEventListener("click", () => { showDone = true; renderRows(); });
+}
 
 // ---------- exports (current week, in display order) ----------
 function filledOrdered(){
@@ -884,6 +968,42 @@ $("copy").addEventListener("click", function(){
 });
 $("print").addEventListener("click", () => window.print());
 
+// ============ CSV EXPORT ============
+function csvEscape(v){ v = String(v==null?"":v); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function downloadCSV(filename, rows){
+  const text = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["﻿"+text], { type:"text/csv;charset=utf-8" });   // BOM → opens cleanly in Excel
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function itemsToText(items){ const a = normItems(items); return a.length ? a.map(it => (it.done?"[x] ":"[ ] ")+String(it.text||"").trim()).join(" | ") : ""; }
+async function exportAllCSV(btn){
+  const orig = btn ? btn.textContent : null; if (btn){ btn.disabled = true; btn.textContent = "Preparing…"; }
+  const { data, error } = await sb.from("task_export")
+    .select("week_ending,prepared_by,task,project,status,priority,progress,due_date,started_on,completed_on,note,items,position")
+    .order("week_ending", { ascending:false }).order("position");
+  if (btn){ btn.disabled = false; btn.textContent = orig; }
+  if (error){ alert("CSV export failed: " + error.message); return; }
+  const header = ["Week ending","Prepared by","Task","Project","Status","Priority","Progress %","Due","Started","Completed","Comments","Action items"];
+  const rows = [header].concat((data||[]).map(r => [
+    r.week_ending||"", r.prepared_by||"", r.task||"", r.project||"", r.status||"", r.priority||"",
+    (r.progress!=null?r.progress:""), r.due_date||"", r.started_on||"", r.completed_on||"",
+    String(r.note||"").replace(/\r?\n+/g," / "), itemsToText(r.items)
+  ]));
+  downloadCSV("weekly-tracker-history-"+todayIso()+".csv", rows);
+}
+function exportCompletedCSV(){
+  const rows = filteredCompleted();
+  const header = ["Week ending","Task","Project","Priority","Started","Completed","Days","Comments"];
+  const out = [header].concat(rows.map(r => {
+    const d = daysBetween(r.started_on, r.completed_on);
+    return [ r.week_ending||"", r.task||"", r.project||"", r.priority||"", r.started_on||"", r.completed_on||"",
+      (d!=null&&d>=0?d:""), String(r.note||"").replace(/\r?\n+/g," / ") ];
+  }));
+  downloadCSV("completed-tasks-"+todayIso()+".csv", out);
+}
+
 // ============ TABS ============
 const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"],
                completed:["tab-completed","v-completed"], kpis:["tab-kpis","v-kpis"] };
@@ -899,6 +1019,7 @@ $("tab-week").addEventListener("click", () => showTab("week"));
 $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
 $("tab-kpis").addEventListener("click", () => showTab("kpis"));
+$("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
 
 // ============ COMPLETED ARCHIVE ============
 let completedCache = null;
@@ -928,13 +1049,19 @@ function completedDates(r){
   return '<div class="cdates">'+bits.join(" → ")+dur+'</div>';
 }
 $("completedSearch").addEventListener("input", renderCompleted);
+$("completedCsv").addEventListener("click", exportCompletedCSV);
+function filteredCompleted(){
+  if (!completedCache) return [];
+  const q = $("completedSearch").value.trim().toLowerCase();
+  return q ? completedCache.filter(r =>
+    (r.task||"").toLowerCase().includes(q) || (r.project||"").toLowerCase().includes(q) || (r.note||"").toLowerCase().includes(q)
+  ) : completedCache;
+}
 function renderCompleted(){
   const body = $("completedBody");
   if (!completedCache) return;
   const q = $("completedSearch").value.trim().toLowerCase();
-  const rows = q ? completedCache.filter(r =>
-    (r.task||"").toLowerCase().includes(q) || (r.project||"").toLowerCase().includes(q) || (r.note||"").toLowerCase().includes(q)
-  ) : completedCache;
+  const rows = filteredCompleted();
   $("completedCount").textContent = rows.length + (rows.length===1?" task":" tasks");
   if (!completedCache.length) { body.innerHTML = '<div class="muted-empty">No completed tasks yet. Mark a task <b>Done</b> and save — it’ll be archived here.</div>'; return; }
   if (!rows.length) { body.innerHTML = '<div class="muted-empty">No completed tasks match “'+esc(q)+'”.</div>'; return; }
@@ -988,12 +1115,24 @@ async function loadHistory(){
 async function loadKpis(){
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wk, error: e1 }, { data: co, error: e2 }] = await Promise.all([
+  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
-    sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false })
+    sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
+    sb.from("completed_tasks").select("started_on,completed_on,due_date"),
+    sb.from("kpi_by_project").select("project,total_tasks,done")
   ]);
   if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
   if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+
+  // cycle time (start → complete) and on-time delivery, from completed tasks
+  const comps = comp || [];
+  const cyc = comps.map(r => daysBetween(r.started_on, r.completed_on)).filter(d => d != null && d >= 0).sort((a,b)=>a-b);
+  const avgCyc = cyc.length ? Math.round(cyc.reduce((a,b)=>a+b,0)/cyc.length) : null;
+  const medCyc = cyc.length ? cyc[Math.floor(cyc.length/2)] : null;
+  const withDue = comps.filter(r => r.due_date && r.completed_on);
+  const onTime = withDue.filter(r => r.completed_on <= r.due_date).length;
+  const onRate = withDue.length ? Math.round(100*onTime/withDue.length) : null;
+  const projects = (proj || []).slice().sort((a,b)=>(b.total_tasks-a.total_tasks)||(b.done-a.done)).slice(0,8);
 
   const weeks = wk.map(r => (r.week_ending||"").slice(5));
   const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);
@@ -1018,7 +1157,30 @@ async function loadKpis(){
         lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100)) +
       kcard("Carryover / aging", "Open tasks repeating from earlier weeks (oldest first).",
         '<div class="stat-row">' + stat(carryNow,"carried into latest week") + '</div>' + agingList(aging)) +
+      kcard("Cycle time", "How long tasks take from Start to Done.",
+        cyc.length
+          ? '<div class="stat-row">' + stat(avgCyc+"d","avg to complete") + stat(medCyc+"d","median") + stat(cyc.length,"measured") + '</div>'
+          : '<p class="desc" style="margin:0">Set <b>Start</b> and <b>Done</b> dates on completed tasks to measure cycle time.</p>') +
+      kcard("On-time delivery", "Tasks completed on or before their due date.",
+        onRate != null
+          ? '<div class="stat-row">' + stat(onRate+"%","on time") + stat(onTime+"/"+withDue.length,"of tasks with a due date") + '</div>' + hbar(onRate)
+          : '<p class="desc" style="margin:0">Add <b>due dates</b> to tasks to track on-time delivery.</p>') +
+      kcard("By project", "Tasks and completion grouped by project / area.",
+        projects.length ? projBars(projects) : '<p class="desc" style="margin:0">Tag tasks with a project to see this breakdown.</p>') +
     '</div>';
+}
+function hbar(pct){
+  return '<div class="hbar"><div class="hbar-fill" style="width:'+Math.max(0,Math.min(100,pct))+'%"></div></div>';
+}
+function projBars(rows){
+  const max = Math.max(1, ...rows.map(r => +r.total_tasks||0));
+  return '<div class="pbars">' + rows.map(r => {
+    const total = +r.total_tasks||0, done = +r.done||0;
+    const pct = total ? Math.round(100*done/total) : 0;
+    return '<div class="pbar"><div class="pl"><span class="pn">'+esc(r.project)+'</span>'
+      + '<span class="pc">'+done+'/'+total+' · '+pct+'%</span></div>'
+      + '<div class="track"><div class="fill" style="width:'+(total/max*100)+'%"></div></div></div>';
+  }).join("") + '</div>';
 }
 function kcard(title, desc, inner, extra){ return '<div class="kcard"><h3>'+title+'</h3><p class="desc">'+desc+'</p>'+inner+(extra||"")+'</div>'; }
 function stat(n, l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
@@ -1105,6 +1267,23 @@ $("shareRevoke").addEventListener("click", async () => {
     $("shareUrl").value = shareUrlFor(await ensureShareToken());
   } catch (e) { $("shareUrl").value = "Error: " + (e.message || e); }
 });
+
+// ============ THEME ============
+(function initTheme(){
+  let theme = "light";
+  try { theme = localStorage.getItem("tracker_theme") || "light"; } catch(e){}
+  const apply = (t) => {
+    if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+    $("themeToggle").textContent = (t === "dark") ? "☀️" : "🌙";
+  };
+  apply(theme);
+  $("themeToggle").addEventListener("click", () => {
+    theme = (theme === "dark") ? "light" : "dark";
+    try { localStorage.setItem("tracker_theme", theme); } catch(e){}
+    apply(theme);
+  });
+})();
 
 // ============ boot ============
 (async function init(){
