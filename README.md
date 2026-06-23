@@ -38,7 +38,7 @@ them and run KPIs**, use the cloud-backed version:
   - **Daily updates / comments** — a per-task notes box with **＋ today** to stamp a dated
     line, so the week's progress builds up without overwriting earlier notes.
   - **Action items** — a checkable sub-list under each task; tick them off as you go
-    (a ☑ counter shows progress).
+    (a ☑ counter shows progress), and reorder them with **▲ / ▼**.
   - **Projects, due dates & sorting** — tag each task with a project/area and a due date
     (overdue ones flag red); sort the list **By status**, **By due date**, **By project /
     area**, or **Manual**. The chosen sort also drives the **Print / PDF**, **Copy as text**,
