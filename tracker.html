@@ -1088,7 +1088,7 @@ function renderRows(){
   // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
   const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
   updateDoneToggle();
-  if (!visible.length) { renderEmptyWeek(rowsEl); return; }
+  if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
   visible.forEach((item, dispIdx) => {
     const row = item.row, i = item.idx;
     if (!Array.isArray(row.items)) row.items = [];
@@ -1338,9 +1338,9 @@ function needsUpdate(row){ return isActiveRow(row) && !updatedToday(row); }
 function rowOpen(row){ return (row._open !== undefined) ? row._open : !(row.task && row.task.trim()); }
 function stampTodayNote(row){
   const stamp = todayStamp() + ": ";
-  const existing = (row.note || "").trim();
-  const had = existing && existing !== "<br>";
-  row.note = escHtml(stamp) + (had ? "<br>" + row.note : "");
+  const cur = richDisplay(row.note || "");           // normalize plain-or-HTML to safe HTML
+  const had = cur.trim() && cur.trim() !== "<br>";
+  row.note = escHtml(stamp) + (had ? "<br>" + cur : "");
 }
 function logTodayAll(){
   const targets = state.rows.filter(needsUpdate);
