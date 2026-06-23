@@ -298,6 +298,20 @@
   .modal-body .ai-rendered code { font-family:var(--mono); font-size:12.5px; background:var(--input-bg); padding:1px 5px; border-radius:5px; }
   .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
   .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
+  #notesInput { min-height:150px; }
+  .np-head { font-size:13px; color:var(--mut); margin:14px 0 8px; }
+  .np-list { display:flex; flex-direction:column; gap:8px; }
+  .np-row { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; background:var(--card); }
+  .np-row input[type=checkbox] { margin-top:3px; width:16px; height:16px; flex:0 0 auto; cursor:pointer; }
+  .np-row.off { opacity:.5; }
+  .np-main { flex:1 1 auto; min-width:0; }
+  .np-title { font-size:14px; font-weight:600; color:var(--ink); }
+  .np-meta { font-size:12px; color:var(--mut); margin-top:2px; display:flex; flex-wrap:wrap; gap:6px; }
+  .np-meta .chip { background:var(--input-bg); border-radius:999px; padding:1px 8px; }
+  .np-upd { font-size:12.5px; color:var(--ink-2); margin-top:4px; }
+  .np-items { font-size:12.5px; color:var(--mut); margin:4px 0 0; padding-left:18px; }
+  .np-items li { margin:1px 0; }
+  .muted-sm { font-size:12px; color:var(--mut); }
   .modal-foot { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:var(--input-bg); }
   .toast #toastUndo { font-family:var(--disp); font-size:13px; font-weight:700; color:#fff; background:transparent;
     border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 12px; cursor:pointer; }
@@ -488,6 +502,7 @@
 
       <div class="actions">
         <button class="btn" id="add" type="button">+ Add task</button>
+        <button class="btn ghost" id="importNotes" type="button" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
         <button class="btn ghost" id="save" type="button">Save to cloud</button>
         <button class="btn ghost" id="aiSummary" type="button" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
         <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
@@ -582,6 +597,23 @@
     </div>
   </div>
 
+  <div id="notesModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>📝 Import notes</strong><button class="ibtn" id="notesClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body" id="notesBody">
+        <p class="hint" style="margin:0 0 8px">Paste the summary or transcript from your AI note taker (Plaud, Otter, Zoom, etc.). Claude pulls out tasks and action items you can add to this week — and your notes are saved to the week for reference.</p>
+        <textarea id="notesInput" placeholder="Paste your meeting notes here…"></textarea>
+        <div id="notesResult"></div>
+      </div>
+      <div class="modal-foot">
+        <span class="muted-sm" id="notesSaved" style="flex:1 1 auto"></span>
+        <button class="btn ghost sm" id="notesExtract" type="button">✨ Extract tasks</button>
+        <button class="btn sm" id="notesAdd" type="button" hidden>Add tasks to week</button>
+        <button class="btn ghost sm" id="notesDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden>
     <span id="toastMsg"></span>
     <button id="toastUndo" type="button">Undo</button>
@@ -645,7 +677,7 @@ function esc(s){ return String(s==null?"":s); }
 
 // ---------- app state ----------
 let session = null;
-let state = { who:"", week:"", rows:[] };
+let state = { who:"", week:"", rows:[], notes:"" };
 let reportId = null;
 let saveTimer = null;
 let sortMode = "status";
@@ -876,11 +908,12 @@ async function loadWeek(){
   setSave("busy", "Loading…");
   try {
     const { data: reps, error } = await sb.from("reports")
-      .select("id, prepared_by").eq("week_ending", state.week).limit(1);
+      .select("id, prepared_by, meeting_notes").eq("week_ending", state.week).limit(1);
     if (error) throw error;
     if (reps && reps.length) {
       reportId = reps[0].id;
       state.who = reps[0].prepared_by || state.who || "";
+      state.notes = reps[0].meeting_notes || "";
       const { data: ts, error: e2 } = await sb.from("tasks")
         .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on").eq("report_id", reportId).order("position");
       if (e2) throw e2;
@@ -893,6 +926,7 @@ async function loadWeek(){
       setSave("ok", "Loaded · saved");
     } else {
       reportId = null;
+      state.notes = "";
       const carried = await fetchCarryForward(state.week);
       if (carried) {
         state.rows = carried.rows;
@@ -918,7 +952,7 @@ async function saveWeek(explicit){
   setSave("busy", "Saving…");
   try {
     const { data: rep, error } = await sb.from("reports")
-      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who },
+      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who, meeting_notes: state.notes || "" },
               { onConflict: "user_id,week_ending" })
       .select("id").single();
     if (error) throw error;
@@ -945,15 +979,15 @@ async function saveWeek(explicit){
 
 $("del").addEventListener("click", async () => {
   if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
-  const snap = { who: state.who, week: state.week,
+  const snap = { who: state.who, week: state.week, notes: state.notes,
     rows: state.rows.map(r => ({ ...r, items:(r.items||[]).map(x=>({...x})) })) };
   setSave("busy", "Deleting…");
   const { error } = await sb.from("reports").delete().eq("id", reportId);
   if (error) { setSave("err", "Delete failed: " + error.message); return; }
-  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ];
+  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ]; state.notes = "";
   renderRows(); setSave("", "Week deleted");
   showUndo("Week deleted", async () => {
-    state.who = snap.who; state.week = snap.week; state.rows = snap.rows;
+    state.who = snap.who; state.week = snap.week; state.rows = snap.rows; state.notes = snap.notes;
     $("who").value = state.who; $("week").value = state.week;
     renderRows(); await saveWeek(true);
   });
@@ -1787,6 +1821,117 @@ async function draftSummary(){
       + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
   }
 }
+
+// ============ IMPORT NOTES (AI note taker → tasks) ============
+let proposed = [];
+function openNotes(){
+  $("notesInput").value = state.notes || "";
+  $("notesResult").innerHTML = "";
+  proposed = [];
+  $("notesAdd").hidden = true;
+  $("notesSaved").textContent = state.notes && state.notes.trim() ? "Notes saved to this week." : "";
+  $("notesModal").hidden = false;
+  $("notesInput").focus();
+}
+function closeNotes(){
+  // persist any edits to the pasted notes before closing
+  const v = $("notesInput").value;
+  if (v !== (state.notes || "")) { state.notes = v; if (session) saveWeek(true); }
+  $("notesModal").hidden = true;
+}
+$("importNotes").addEventListener("click", openNotes);
+$("notesClose").addEventListener("click", closeNotes);
+$("notesDone").addEventListener("click", closeNotes);
+$("notesModal").addEventListener("click", (e) => { if (e.target === $("notesModal")) closeNotes(); });
+
+function rowFromProposed(p){
+  const r = blankRow();
+  r.task = String(p.task || "").trim();
+  r.project = String(p.project || "").trim();
+  r.pri = ["High","Med","Low"].includes(p.priority) ? p.priority : "Med";
+  r.status = ["On Track","At Risk","Blocked","Done"].includes(p.status) ? p.status : "On Track";
+  r.due = /^\d{4}-\d{2}-\d{2}$/.test(String(p.due||"")) ? p.due : "";
+  const upd = String(p.update || "").trim();
+  r.note = upd ? plainToHtml(upd) : "";
+  const items = Array.isArray(p.action_items) ? p.action_items : [];
+  r.items = items.filter(t => typeof t === "string" && t.trim()).map(t => ({ text: t.trim(), done: false }));
+  r.started = todayIso();
+  if (r.status === "Done") r.completed = todayIso();
+  return r;
+}
+function renderProposals(){
+  const box = $("notesResult");
+  if (!proposed.length) {
+    box.innerHTML = '<p class="np-head">No action items were found in those notes. You can edit the notes and try again, or add tasks manually.</p>';
+    $("notesAdd").hidden = true;
+    return;
+  }
+  box.innerHTML = '<p class="np-head">Found <b>' + proposed.length + '</b> task' + (proposed.length===1?"":"s") + ' — uncheck any you don’t want, then add them:</p>';
+  const list = document.createElement("div"); list.className = "np-list";
+  proposed.forEach((p, i) => {
+    const row = document.createElement("div"); row.className = "np-row";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = p._on !== false;
+    cb.addEventListener("change", () => { p._on = cb.checked; row.classList.toggle("off", !cb.checked); });
+    const main = document.createElement("div"); main.className = "np-main";
+    const meta = [];
+    if (p.project && String(p.project).trim()) meta.push('<span class="chip">'+escHtml(p.project)+'</span>');
+    meta.push('<span class="chip">'+escHtml(["High","Med","Low"].includes(p.priority)?p.priority:"Med")+'</span>');
+    meta.push('<span class="chip">'+escHtml(["On Track","At Risk","Blocked","Done"].includes(p.status)?p.status:"On Track")+'</span>');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(p.due||""))) meta.push('<span class="chip">due '+shortDate(p.due)+'</span>');
+    const upd = String(p.update||"").trim();
+    const items = (Array.isArray(p.action_items)?p.action_items:[]).filter(t=>typeof t==="string"&&t.trim());
+    main.innerHTML = '<div class="np-title">'+escHtml(p.task||"(untitled)")+'</div>'
+      + '<div class="np-meta">'+meta.join("")+'</div>'
+      + (upd ? '<div class="np-upd">'+escHtml(upd)+'</div>' : "")
+      + (items.length ? '<ul class="np-items">'+items.map(t=>'<li>'+escHtml(t.trim())+'</li>').join("")+'</ul>' : "");
+    row.appendChild(cb); row.appendChild(main); list.appendChild(row);
+  });
+  box.appendChild(list);
+  $("notesAdd").hidden = false;
+}
+async function extractNotes(){
+  const notes = $("notesInput").value.trim();
+  if (!notes) { $("notesInput").focus(); return; }
+  // save the pasted notes to this week first
+  state.notes = $("notesInput").value;
+  if (session) saveWeek(true);
+  $("notesSaved").textContent = "Notes saved to this week.";
+  const btn = $("notesExtract"); const orig = btn.textContent; btn.disabled = true; btn.textContent = "Extracting…";
+  $("notesResult").innerHTML = '<p class="np-head"><span class="spin"></span> Reading your notes…</p>';
+  $("notesAdd").hidden = true;
+  try {
+    const projects = [...new Set(state.rows.map(r => (r.project||"").trim()).filter(Boolean))];
+    const { data, error } = await sb.functions.invoke("extract-tasks", { body: { notes, today: todayIso(), projects } });
+    if (error) {
+      let msg = error.message || "Request failed.";
+      try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){}
+      throw new Error(msg);
+    }
+    if (data && data.error) throw new Error(data.error);
+    proposed = (data && Array.isArray(data.tasks) ? data.tasks : []).map(p => ({ ...p, _on: true }));
+    renderProposals();
+  } catch (e) {
+    $("notesResult").innerHTML = '<div class="ai-err"><b>Couldn’t read those notes.</b><br>' + escHtml(e.message || String(e))
+      + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+function addProposed(){
+  const picked = proposed.filter(p => p._on !== false);
+  if (!picked.length) { closeNotes(); return; }
+  // drop the empty placeholder rows so imported tasks aren't buried under blanks
+  state.rows = state.rows.filter(r => !isBlankRow(r));
+  picked.forEach(p => state.rows.push(rowFromProposed(p)));
+  renderRows();
+  if (session) saveWeek(true);
+  $("notesModal").hidden = true;
+  showTab("week");
+  const n = picked.length;
+  setSave("ok", "Added " + n + " task" + (n===1?"":"s") + " from notes");
+}
+$("notesExtract").addEventListener("click", extractNotes);
+$("notesAdd").addEventListener("click", addProposed);
 
 (function initTheme(){
   let theme = "light";

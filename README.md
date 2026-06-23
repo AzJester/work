@@ -80,6 +80,13 @@ them and run KPIs**, use the cloud-backed version:
   - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
     (Edge Functions → Secrets). It uses your Anthropic API credits. Optional: set
     `ANTHROPIC_MODEL` (defaults to `claude-sonnet-4-6`).
+- **📝 Import notes (AI note taker → tasks)** — paste the summary or transcript from any AI
+  note taker (Plaud, Otter, Fireflies, Zoom/Teams/Meet AI, …) and Claude extracts the action
+  items as draft tasks — with project, priority, due date, a context note, and checkable
+  sub-items. Review the list, uncheck any you don't want, and **add them to the week** in one
+  click; the raw notes are also **saved to that week** for reference. The extraction runs in a
+  Supabase **Edge Function** (`extract-tasks`, Claude tool-use) using the same
+  `ANTHROPIC_API_KEY` — the key never reaches the browser.
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Per-recipient share links** — create multiple labelled read-only links (one per person)
   from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
