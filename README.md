@@ -40,7 +40,9 @@ them and run KPIs**, use the cloud-backed version:
   - **Action items** — a checkable sub-list under each task; tick them off as you go
     (a ☑ counter shows progress).
   - **Projects, due dates & sorting** — tag each task with a project/area and a due date
-    (overdue ones flag red); sort the list **By status**, **By due date**, or **Manual**.
+    (overdue ones flag red); sort the list **By status**, **By due date**, **By project /
+    area**, or **Manual**. The chosen sort also drives the **Print / PDF**, **Copy as text**,
+    and **Download Markdown** outputs, so you can hand leadership a report grouped by area.
   - **Start & completion dates** — auto-stamped (start when you first name a task, complete
     when you mark it Done) and editable.
 - **History** tab — every past week, with at-a-glance counts; click **Open** to reload or
