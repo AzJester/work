@@ -151,7 +151,13 @@
   select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
   select.chip.s-blocked { color:var(--red); background:var(--red-bg); border-color:#F2C6C2; }
   select.chip.s-done { color:var(--slate); background:var(--slate-bg); border-color:#D3DAE5; }
-  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  select.pri { font:inherit; font-size:13px; font-weight:600; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  select.pri.p-high { color:#B4451C; background:#FFF1E8; border-color:#F4D2BE; }
+  select.pri.p-med  { color:#8A6A00; background:#FFF8E0; border-color:#EFE0A6; }
+  select.pri.p-low  { color:#2C6E8F; background:#EAF4FA; border-color:#C9E2EE; }
+  :root[data-theme="dark"] select.pri.p-high { color:#FFB59B; background:#3A1E16; border-color:#5A2E22; }
+  :root[data-theme="dark"] select.pri.p-med  { color:#E8C766; background:#332B12; border-color:#4D421C; }
+  :root[data-theme="dark"] select.pri.p-low  { color:#8FC9E6; background:#152A36; border-color:#244657; }
   .prog { display:flex; align-items:center; gap:8px; padding-top:4px; }
   .prog input[type=range] { flex:1 1 auto; accent-color:var(--accent); cursor:pointer; min-width:0; }
   .prog .pv { font-family:var(--mono); font-size:12px; color:var(--ink-2); width:38px; text-align:right; }
@@ -324,10 +330,12 @@
     .col-act { display:none !important; } .rowbtns { display:none !important; }
     .prog input[type=range] { display:none; }
     .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
+    /* no dropdown arrow on selects when printing */
+    select { -webkit-appearance:none !important; -moz-appearance:none !important; appearance:none !important; background-image:none !important; padding-right:0 !important; }
     /* preserve multi-line comments and show full content (no clipping) */
     textarea, .cell-input { height:auto !important; min-height:0 !important; overflow:visible !important; white-space:pre-wrap !important; }
-    /* no divider line between a task's main row and its detail block */
-    table.tasks tr:not(.detail) td { border-bottom:0 !important; }
+    /* no horizontal divider lines anywhere in the task list */
+    table.tasks td { border:0 !important; }
     /* keep a task and its detail (comments / action items) together on one page */
     table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
     table.tasks tr.detail { break-before:avoid; page-break-before:avoid; }
@@ -534,6 +542,7 @@ function shortDate(iso){
 function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"", project:"", due:"", items:[], started:"", completed:"" }; }
 function normItems(v){ return Array.isArray(v) ? v.filter(it => it && typeof it.text==="string").map(it => ({ text:it.text, done:!!it.done })) : []; }
 function statusClass(v){ const s = STATUSES.find(s=>s.v===v); return s?s.cls:"s-ontrack"; }
+function priClass(v){ return v==="High" ? "p-high" : v==="Low" ? "p-low" : "p-med"; }
 function autosize(ta){ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
 function esc(s){ return String(s==null?"":s); }
 
@@ -824,9 +833,9 @@ function renderRows(){
     tdStatus.appendChild(sel); tr.appendChild(tdStatus);
 
     const tdPri = document.createElement("td"); tdPri.className = "col-pri";
-    const pri = document.createElement("select"); pri.className = "pri";
+    const pri = document.createElement("select"); pri.className = "pri " + priClass(row.pri);
     PRIORITIES.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p===row.pri) o.selected = true; pri.appendChild(o); });
-    pri.addEventListener("change", () => { row.pri = pri.value; scheduleSave(); });
+    pri.addEventListener("change", () => { row.pri = pri.value; pri.className = "pri " + priClass(row.pri); scheduleSave(); });
     tdPri.appendChild(pri); tr.appendChild(tdPri);
 
     const tdProg = document.createElement("td"); tdProg.className = "col-prog";
