@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Status — Shared Dashboard</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="Read-only shared view of weekly task status: KPI trends (completion, blocked/at-risk, velocity, carryover) and each week's report." />
+<style>
+  :root {
+    --bg:#F4F6FA; --card:#FFFFFF; --line:#E2E7EF; --line-2:#CDD5E1;
+    --ink:#1B2433; --ink-2:#46536B; --mut:#7C889B;
+    --accent:#2563EB; --accent-soft:#EAF1FF;
+    --green:#1A8A4E; --green-bg:#E6F6EC; --amber:#9A6700; --amber-bg:#FCF3DC;
+    --red:#B42318; --red-bg:#FCEBEA; --slate:#475467; --slate-bg:#EEF1F6;
+    --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; }
+  body { font-family:var(--disp); color:var(--ink); background:var(--bg); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1080px; margin:0 auto; padding:22px clamp(14px,3vw,32px) 56px; }
+
+  .mast { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding-bottom:14px; border-bottom:2px solid var(--ink); margin-bottom:20px; }
+  .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.01em; }
+  .mast .tag { font-family:var(--mono); font-size:11px; letter-spacing:0.13em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
+  .ro { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:4px 11px; }
+  .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink-2); background:var(--card);
+    border:1px solid var(--line-2); padding:8px 14px; border-radius:8px; cursor:pointer; }
+  .btn:hover { color:var(--ink); border-color:var(--accent); }
+
+  .muted-empty { text-align:center; color:var(--mut); padding:48px 20px; background:var(--card);
+    border:1px dashed var(--line-2); border-radius:12px; max-width:480px; margin:8vh auto 0; }
+  .muted-empty h2 { margin:0 0 8px; color:var(--ink); font-size:18px; }
+  .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent);
+    border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; } @keyframes sp { to { transform:rotate(360deg); } }
+
+  /* KPIs */
+  .kgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:26px; }
+  .kcard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 16px; }
+  .kcard h3 { margin:0 0 2px; font-size:14px; } .kcard .desc { margin:0 0 12px; font-size:12px; color:var(--mut); }
+  .stat-row { display:flex; gap:22px; flex-wrap:wrap; margin-bottom:10px; }
+  .stat .n { font-size:24px; font-weight:800; } .stat .l { font-size:11px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+  svg.chart { width:100%; height:auto; display:block; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); margin-top:8px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .agelist { margin:6px 0 0; padding:0; list-style:none; }
+  .agelist li { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .agelist li:last-child { border-bottom:0; }
+  .agelist .wks { font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap; }
+
+  /* weekly reports (read-only) */
+  h2.sec { font-size:15px; margin:0 0 12px; }
+  .rep { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:14px; }
+  .rep > summary { list-style:none; cursor:pointer; padding:13px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .rep > summary::-webkit-details-marker { display:none; }
+  .rep > summary::before { content:"▸"; color:var(--mut); transition:transform .15s; }
+  .rep[open] > summary::before { transform:rotate(90deg); }
+  .rep .wk { font-weight:700; font-size:15px; } .rep .meta { font-family:var(--mono); font-size:11.5px; color:var(--mut); }
+  .rep .spacer { flex:1 1 auto; }
+  .badge { font-family:var(--mono); font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; }
+  .badge.done { color:var(--green); background:var(--green-bg); } .badge.blk { color:var(--red); background:var(--red-bg); }
+  .badge.risk { color:var(--amber); background:var(--amber-bg); } .badge.tot { color:var(--slate); background:var(--slate-bg); }
+  table.tasks { width:100%; border-collapse:collapse; border-top:1px solid var(--line); }
+  table.tasks th { font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--mut);
+    text-align:left; padding:9px 16px; background:#F8FAFD; border-bottom:1px solid var(--line); }
+  table.tasks td { padding:9px 16px; border-bottom:1px solid var(--line); vertical-align:top; font-size:13.5px; }
+  table.tasks tr:last-child td { border-bottom:0; }
+  .chip { font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+  .chip.s-ontrack { color:var(--green); background:var(--green-bg); } .chip.s-atrisk { color:var(--amber); background:var(--amber-bg); }
+  .chip.s-blocked { color:var(--red); background:var(--red-bg); } .chip.s-done { color:var(--slate); background:var(--slate-bg); }
+  .prog-cell { font-family:var(--mono); font-size:12px; color:var(--ink-2); white-space:nowrap; }
+  .col-pri { color:var(--ink-2); }
+
+  @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
+  @media print { @page { margin:14mm; } body { background:#fff; } .btn, .ro { display:none !important; } .rep > summary::before { display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1 id="title">Weekly Status</h1>
+      <div class="tag" id="subtitle">Shared dashboard</div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span class="ro" id="roPill" hidden>● Read-only</span>
+      <button class="btn" id="print" type="button" hidden>Print / PDF</button>
+    </div>
+  </header>
+
+  <div id="root">
+    <div class="muted-empty"><span class="spin"></span> Loading shared dashboard…</div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+
+const COLORS = { done:"#1A8A4E", accent:"#2563EB", atrisk:"#D9A300", blocked:"#B42318" };
+const $ = (id) => document.getElementById(id);
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
+  return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
+function statusChipCls(s){ return s==="On Track"?"s-ontrack":s==="At Risk"?"s-atrisk":s==="Blocked"?"s-blocked":"s-done"; }
+
+function showMessage(title, body){
+  $("root").innerHTML = '<div class="muted-empty"><h2>'+esc(title)+'</h2><p>'+body+'</p></div>';
+}
+
+(async function init(){
+  const token = new URLSearchParams(location.search).get("s");
+  if (!token) { showMessage("No dashboard link", "This page needs a share link. Ask the owner for the full URL (it ends with <b>?s=…</b>)."); return; }
+
+  const { data, error } = await sb.rpc("shared_dashboard", { p_token: token });
+  if (error) { showMessage("Couldn’t load", esc(error.message)); return; }
+  if (!data) { showMessage("Link not valid", "This share link is unknown or has been revoked. Ask the owner for a fresh link."); return; }
+
+  const prep = data.prepared_by || "Weekly Status";
+  $("title").textContent = prep;
+  $("subtitle").textContent = "Weekly status · read-only shared dashboard";
+  $("roPill").hidden = false; $("print").hidden = false;
+  $("print").addEventListener("click", () => window.print());
+
+  render(data);
+})();
+
+function render(data){
+  const wk = (data.weekly || []).slice();         // ascending by week_ending
+  const co = (data.carryover || []).slice();
+  const reports = (data.reports || []);            // descending by week_ending
+  if (!wk.length) { showMessage("Nothing to show yet", "No weekly reports have been saved for this dashboard."); return; }
+
+  const weeks = wk.map(r => String(r.week_ending||"").slice(5));
+  const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);
+  const totalTasks = wk.reduce((a,r)=>a+(+r.total_tasks||0),0);
+  const overallRate = totalTasks ? Math.round(100*totalDone/totalTasks) : 0;
+  const latest = wk[wk.length-1];
+  const carryNow = co.filter(r => r.week_ending===latest.week_ending && +r.prior_weeks_seen>0 && r.status!=="Done").length;
+  const aging = co.filter(r => r.status!=="Done" && +r.prior_weeks_seen>0)
+                  .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
+
+  const kpis =
+    '<div class="kgrid">' +
+      kcard("Completion & throughput", "Tasks completed per week and % completion rate.",
+        '<div class="stat-row">' + stat(overallRate+"%","overall completion") + stat(totalDone,"tasks done (all weeks)") + stat(wk.length,"weeks tracked") + '</div>' +
+        barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0)) +
+        legend([["Done / week",COLORS.done],["Completion %",COLORS.accent]])) +
+      kcard("Blocked & at-risk trend", "Count of blocked and at-risk tasks across weeks.",
+        stackedChart(weeks, wk.map(r=>+r.at_risk||0), wk.map(r=>+r.blocked||0)) +
+        legend([["At risk",COLORS.atrisk],["Blocked",COLORS.blocked]])) +
+      kcard("Average progress / velocity", "Mean progress % of all tasks, per week.",
+        '<div class="stat-row">' + stat((latest.avg_progress||0)+"%","latest week avg") + '</div>' +
+        lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100)) +
+      kcard("Carryover / aging", "Open tasks repeating from earlier weeks (oldest first).",
+        '<div class="stat-row">' + stat(carryNow,"carried into latest week") + '</div>' + agingList(aging)) +
+    '</div>';
+
+  const repHtml = '<h2 class="sec">Weekly reports</h2>' + reports.map((r,idx) => reportBlock(r, idx===0)).join("");
+
+  $("root").innerHTML = kpis + repHtml;
+}
+
+function reportBlock(r, open){
+  const tasks = r.tasks || [];
+  const done = tasks.filter(t=>t.status==="Done").length;
+  const blk = tasks.filter(t=>t.status==="Blocked").length;
+  const risk = tasks.filter(t=>t.status==="At Risk").length;
+  const rows = tasks.length ? tasks.map(t =>
+    '<tr><td>'+esc(t.task)+(t.note? '<div style="color:var(--mut);font-size:12.5px;margin-top:2px">'+esc(t.note)+'</div>':'')+'</td>'
+    + '<td><span class="chip '+statusChipCls(t.status)+'">'+esc(t.status)+'</span></td>'
+    + '<td class="col-pri">'+esc(t.priority)+'</td>'
+    + '<td class="prog-cell">'+(+t.progress||0)+'%</td></tr>').join("")
+    : '<tr><td colspan="4" style="color:var(--mut)">No tasks recorded.</td></tr>';
+  return '<details class="rep"'+(open?' open':'')+'>' +
+    '<summary><span class="wk">'+(prettyDate(r.week_ending)||esc(r.week_ending))+'</span>' +
+      '<span class="badge tot">'+tasks.length+' tasks</span>' +
+      (done? '<span class="badge done">'+done+' done</span>':'') +
+      (risk? '<span class="badge risk">'+risk+' at risk</span>':'') +
+      (blk? '<span class="badge blk">'+blk+' blocked</span>':'') +
+      '<span class="spacer"></span>' + (r.prepared_by? '<span class="meta">'+esc(r.prepared_by)+'</span>':'') +
+    '</summary>' +
+    '<table class="tasks"><thead><tr><th>Task</th><th>Status</th><th class="col-pri">Priority</th><th class="prog-cell">Progress</th></tr></thead>' +
+    '<tbody>'+rows+'</tbody></table></details>';
+}
+
+function kcard(title, desc, inner){ return '<div class="kcard"><h3>'+title+'</h3><p class="desc">'+desc+'</p>'+inner+'</div>'; }
+function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function legend(items){ return '<div class="legend">'+items.map(([t,c])=>'<span><i style="background:'+c+'"></i>'+t+'</span>').join("")+'</div>'; }
+function agingList(rows){
+  if (!rows.length) return '<p class="desc" style="margin-top:8px">No carryover — nothing repeating from earlier weeks. 🎉</p>';
+  return '<ul class="agelist">'+rows.map(r =>
+    '<li><span>'+esc(r.task)+' <span class="badge '+(r.status==="Blocked"?"blk":r.status==="At Risk"?"risk":"tot")+'">'+esc(r.status)+'</span></span>'
+    + '<span class="wks">'+r.prior_weeks_seen+'× prior</span></li>').join("")+'</ul>';
+}
+
+// ---- inline-SVG charts (no chart library) ----
+const CW=520, CH=170, PADL=30, PADB=22, PADT=12, PADR=12;
+function xPos(i,n){ return PADL+(n<=1?(CW-PADL-PADR)/2:i*(CW-PADL-PADR)/(n-1)); }
+function bandX(i,n){ const w=(CW-PADL-PADR)/n; return PADL+i*w+w*0.5; }
+function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
+function axis(maxLabel){ return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
+  + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>'; }
+function xLabels(labels){ const n=labels.length; return labels.map((l,i)=>'<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join(""); }
+function yOf(v,max){ const h=CH-PADB-PADT; return CH-PADB-(max?Math.min(v,max)/max:0)*h; }
+function lineChart(labels, vals, color, fixedMax){
+  const max=fixedMax||Math.max(1,...vals); const n=labels.length;
+  const pts=vals.map((v,i)=>xPos(i,n)+","+yOf(v,max)).join(" ");
+  const dots=vals.map((v,i)=>'<circle cx="'+xPos(i,n)+'" cy="'+yOf(v,max)+'" r="3" fill="'+color+'"/>').join("");
+  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+xLabels(labels)+'</svg>';
+}
+function barLineChart(labels, bars, line){
+  const bmax=Math.max(1,...bars); const lmax=100; const n=labels.length; const bw=(CW-PADL-PADR)/n*0.5;
+  const rects=bars.map((v,i)=>{ const x=bandX(i,n)-bw/2, y=yOf(v,bmax);
+    return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+(CH-PADB-y)+'" rx="2" fill="'+COLORS.done+'" opacity="0.85"/>'; }).join("");
+  const pts=line.map((v,i)=>bandX(i,n)+","+yOf(v,lmax)).join(" ");
+  const dots=line.map((v,i)=>'<circle cx="'+bandX(i,n)+'" cy="'+yOf(v,lmax)+'" r="3" fill="'+COLORS.accent+'"/>').join("");
+  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+xLabels(labels)+'</svg>';
+}
+function stackedChart(labels, risk, blocked){
+  const n=labels.length; const max=Math.max(1,...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0))); const bw=(CW-PADL-PADR)/n*0.5;
+  const bars=labels.map((_,i)=>{ const x=bandX(i,n)-bw/2;
+    const hR=(risk[i]||0)/max*(CH-PADB-PADT); const hB=(blocked[i]||0)/max*(CH-PADB-PADT); const yB=CH-PADB-hB; const yR=yB-hR;
+    return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
+         + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>'; }).join("");
+  return svgOpen()+axis(max)+bars+xLabels(labels)+'</svg>';
+}
+</script>
+</body>
+</html>
