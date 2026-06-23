@@ -326,6 +326,8 @@
     .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
     /* preserve multi-line comments and show full content (no clipping) */
     textarea, .cell-input { height:auto !important; min-height:0 !important; overflow:visible !important; white-space:pre-wrap !important; }
+    /* no divider line between a task's main row and its detail block */
+    table.tasks tr:not(.detail) td { border-bottom:0 !important; }
     /* keep a task and its detail (comments / action items) together on one page */
     table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
     table.tasks tr.detail { break-before:avoid; page-break-before:avoid; }
