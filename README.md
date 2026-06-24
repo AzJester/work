@@ -131,7 +131,11 @@ From the cloud tracker, **Share dashboard ▾** gives you a secret link your lea
 with **no login** — a read-only view at `dashboard.html`:
 
 - **KPIs** — the same completion, blocked/at-risk, velocity, and carryover charts.
+  **Interactive** — hover any chart to see that week's exact figures in a tooltip, with the
+  hovered week highlighted.
 - **Weekly reports** — each week's status table, expandable, newest first.
+- **Print / PDF** — matches the tracker's clean report: borderless tables, status shown as
+  colored text (not filled pills), each task kept whole, and a section per page.
 - **Anyone with the link can view** (read-only). **Revoke &amp; regenerate** invalidates the old
   link instantly and issues a new one.
 

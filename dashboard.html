@@ -78,6 +78,14 @@
   .stat-row { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px; }
   .stat .n { font-size:26px; font-weight:800; letter-spacing:-0.02em; } .stat .l { font-size:10.5px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
   svg.chart { width:100%; height:auto; display:block; }
+  svg.chart .pt { transition:r .1s; }
+  svg.chart .hb { fill:#000; fill-opacity:0; cursor:crosshair; }
+  svg.chart .hb:hover { fill:var(--accent); fill-opacity:.07; }
+  .chart-tip { position:fixed; z-index:60; pointer-events:none; background:#1F2937; color:#fff; font-size:11.5px;
+    line-height:1.4; padding:7px 10px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.28); opacity:0; transition:opacity .08s; max-width:240px; }
+  .chart-tip.show { opacity:1; }
+  .chart-tip b { display:block; font-weight:700; margin-bottom:2px; }
+  .chart-tip span { display:block; color:#D7DBE4; }
   .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); margin-top:8px; }
   .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
   .agelist { margin:6px 0 0; padding:0; list-style:none; }
@@ -146,8 +154,21 @@
     .mast { margin-bottom:12pt; }
     /* no borders/shadows around the page; keep cards intact */
     .kcard, .kcardk, .rep, .muted-empty { box-shadow:none; }
-    .kcard, .kcardk, .rep, .agelist, svg.chart { break-inside:avoid; page-break-inside:avoid; }
+    .kcard, .kcardk, .agelist, svg.chart { break-inside:avoid; page-break-inside:avoid; }
     .kdetails, .t-note { white-space:pre-wrap !important; }
+    /* ---- weekly reports print like the tracker's clean report ---- */
+    .rep { border:0 !important; box-shadow:none !important; }
+    .rep > summary { padding:0 0 4pt !important; }
+    .rep > summary .badge { background:transparent !important; padding-left:0 !important; padding-right:6pt !important; }
+    /* no grid lines under tasks (match the tracker report) */
+    table.tasks, table.tasks td, table.tasks th { border:0 !important; }
+    table.tasks th { background:transparent !important; padding-left:0 !important; }
+    table.tasks td { padding-left:0 !important; }
+    /* status / tags print as colored text, not filled pills */
+    .chip, .tag-proj, .tag-due, .tag-date { background:transparent !important; padding-left:0 !important; padding-right:0 !important; }
+    /* keep each task (and its notes / action items) together; let a long report flow across pages */
+    table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
+    svg.chart .hb { display:none !important; }
     /* each major section starts on a new page, with a little top breathing room */
     h2.sec { break-before:page; page-break-before:always; padding-top:2pt; margin-top:0; }
     h2.sec:first-of-type { break-before:auto; page-break-before:auto; }
@@ -288,6 +309,7 @@ function showMessage(title, body){
 
 function render(data){
   refreshChartColors();
+  CHART_DATA = [];
   const wk = (data.weekly || []).slice();         // ascending by week_ending
   const co = (data.carryover || []).slice();
   const reports = (data.reports || []);            // descending by week_ending
@@ -302,18 +324,26 @@ function render(data){
   const aging = co.filter(r => r.status!=="Done" && +r.prior_weeks_seen>0)
                   .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
 
+  const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  const tipCompletion = wk.map(r => ({ label: wkLabel(r),
+    lines: [ (+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", (+r.completion_rate||0)+"% completion" ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r),
+    lines: [ (+r.at_risk||0)+" at risk", (+r.blocked||0)+" blocked" ] }));
+  const tipProgress = wk.map(r => ({ label: wkLabel(r),
+    lines: [ (+r.avg_progress||0)+"% average progress" ] }));
+
   const kpis =
     '<div class="kgrid">' +
       kcard("Completion & throughput", "Tasks completed per week and % completion rate.",
         '<div class="stat-row">' + stat(overallRate+"%","overall completion") + stat(totalDone,"tasks done (all weeks)") + stat(wk.length,"weeks tracked") + '</div>' +
-        barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0)) +
+        barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0), tipCompletion) +
         legend([["Done / week",COLORS.done],["Completion %",COLORS.accent]])) +
       kcard("Blocked & at-risk trend", "Count of blocked and at-risk tasks across weeks.",
-        stackedChart(weeks, wk.map(r=>+r.at_risk||0), wk.map(r=>+r.blocked||0)) +
+        stackedChart(weeks, wk.map(r=>+r.at_risk||0), wk.map(r=>+r.blocked||0), tipTrend) +
         legend([["At risk",COLORS.atrisk],["Blocked",COLORS.blocked]])) +
       kcard("Average progress / velocity", "Mean progress % of all tasks, per week.",
         '<div class="stat-row">' + stat((latest.avg_progress||0)+"%","latest week avg") + '</div>' +
-        lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100)) +
+        lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100, tipProgress)) +
       kcard("Carryover / aging", "Open tasks repeating from earlier weeks (oldest first).",
         '<div class="stat-row">' + stat(carryNow,"carried into latest week") + '</div>' + agingList(aging)) +
     '</div>';
@@ -348,6 +378,7 @@ function render(data){
   const repHtml = '<h2 class="sec">Weekly reports</h2>' + reports.map((r,idx) => reportBlock(r, idx===0)).join("");
 
   $("root").innerHTML = execHtml + kpis + kudosHtml + repHtml;
+  wireCharts();
 }
 function execStat(n, l, tone){ return '<div class="exec-s '+(tone||"")+'"><div class="exec-n">'+n+'</div><div class="exec-sl">'+l+'</div></div>'; }
 
@@ -388,32 +419,63 @@ function agingList(rows){
 const CW=520, CH=170, PADL=30, PADB=22, PADT=12, PADR=12;
 function xPos(i,n){ return PADL+(n<=1?(CW-PADL-PADR)/2:i*(CW-PADL-PADR)/(n-1)); }
 function bandX(i,n){ const w=(CW-PADL-PADR)/n; return PADL+i*w+w*0.5; }
+// ---- interactive tooltips: register per-week values, draw transparent hover columns ----
+let CHART_DATA = [];
+function regChart(rows){ const c = CHART_DATA.length; CHART_DATA.push(rows || []); return c; }
+function hoverBands(c, n){
+  const full = CW-PADL-PADR, w = full/n; let out = "";
+  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  return out;
+}
+function chartTip(){ let t=document.getElementById("chartTip"); if(!t){ t=document.createElement("div"); t.id="chartTip"; t.className="chart-tip"; document.body.appendChild(t); } return t; }
+function moveTip(e){
+  const t=chartTip(), pad=14, w=t.offsetWidth, h=t.offsetHeight;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if (x+w > window.innerWidth-8) x = e.clientX-w-pad;
+  if (y+h > window.innerHeight-8) y = e.clientY-h-pad;
+  t.style.left=x+"px"; t.style.top=y+"px";
+}
+function wireCharts(){
+  const t=chartTip();
+  document.querySelectorAll("svg.chart .hb").forEach(b => {
+    b.addEventListener("mouseenter", (e) => {
+      const d = (CHART_DATA[+b.dataset.c] || [])[+b.dataset.i]; if (!d) return;
+      t.innerHTML = '<b>'+esc(d.label)+'</b>' + (d.lines||[]).map(l => '<span>'+esc(l)+'</span>').join("");
+      t.classList.add("show"); moveTip(e);
+    });
+    b.addEventListener("mousemove", moveTip);
+    b.addEventListener("mouseleave", () => t.classList.remove("show"));
+  });
+}
 function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
 function axis(maxLabel){ return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
   + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>'; }
 function xLabels(labels){ const n=labels.length; return labels.map((l,i)=>'<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join(""); }
 function yOf(v,max){ const h=CH-PADB-PADT; return CH-PADB-(max?Math.min(v,max)/max:0)*h; }
-function lineChart(labels, vals, color, fixedMax){
+function lineChart(labels, vals, color, fixedMax, tipRows){
   const max=fixedMax||Math.max(1,...vals); const n=labels.length;
   const pts=vals.map((v,i)=>xPos(i,n)+","+yOf(v,max)).join(" ");
-  const dots=vals.map((v,i)=>'<circle cx="'+xPos(i,n)+'" cy="'+yOf(v,max)+'" r="3" fill="'+color+'"/>').join("");
-  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+xLabels(labels)+'</svg>';
+  const dots=vals.map((v,i)=>'<circle class="pt" cx="'+xPos(i,n)+'" cy="'+yOf(v,max)+'" r="3" fill="'+color+'"/>').join("");
+  const c=regChart(tipRows);
+  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+xLabels(labels)+hoverBands(c,n)+'</svg>';
 }
-function barLineChart(labels, bars, line){
+function barLineChart(labels, bars, line, tipRows){
   const bmax=Math.max(1,...bars); const lmax=100; const n=labels.length; const bw=(CW-PADL-PADR)/n*0.5;
   const rects=bars.map((v,i)=>{ const x=bandX(i,n)-bw/2, y=yOf(v,bmax);
     return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+(CH-PADB-y)+'" rx="2" fill="'+COLORS.done+'" opacity="0.85"/>'; }).join("");
   const pts=line.map((v,i)=>bandX(i,n)+","+yOf(v,lmax)).join(" ");
-  const dots=line.map((v,i)=>'<circle cx="'+bandX(i,n)+'" cy="'+yOf(v,lmax)+'" r="3" fill="'+COLORS.accent+'"/>').join("");
-  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+xLabels(labels)+'</svg>';
+  const dots=line.map((v,i)=>'<circle class="pt" cx="'+bandX(i,n)+'" cy="'+yOf(v,lmax)+'" r="3" fill="'+COLORS.accent+'"/>').join("");
+  const c=regChart(tipRows);
+  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+xLabels(labels)+hoverBands(c,n)+'</svg>';
 }
-function stackedChart(labels, risk, blocked){
+function stackedChart(labels, risk, blocked, tipRows){
   const n=labels.length; const max=Math.max(1,...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0))); const bw=(CW-PADL-PADR)/n*0.5;
   const bars=labels.map((_,i)=>{ const x=bandX(i,n)-bw/2;
     const hR=(risk[i]||0)/max*(CH-PADB-PADT); const hB=(blocked[i]||0)/max*(CH-PADB-PADT); const yB=CH-PADB-hB; const yR=yB-hR;
     return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
          + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>'; }).join("");
-  return svgOpen()+axis(max)+bars+xLabels(labels)+'</svg>';
+  const c=regChart(tipRows);
+  return svgOpen()+axis(max)+bars+xLabels(labels)+hoverBands(c,n)+'</svg>';
 }
 </script>
 </body>
