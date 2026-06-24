@@ -258,6 +258,7 @@
   .crow .recall { flex:0 0 auto; }
   .crow .ct { font-size:14px; font-weight:600; }
   .crow .tag-proj { font-family:var(--disp); font-size:11px; font-weight:600; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; margin-left:4px; }
+  .crow .cwk { font-family:var(--mono); font-size:11px; color:var(--mut); margin-left:6px; }
   .crow .cdates { font-family:var(--mono); font-size:11.5px; color:var(--mut); margin-top:3px; font-weight:400; }
   .crow .cdates .cdur { color:var(--accent); }
   .crow .cn { font-size:13px; color:var(--ink-2); font-weight:400; margin-top:4px; white-space:pre-line; }
@@ -581,6 +582,16 @@
     <section class="view" id="v-completed" hidden>
       <div class="cbar">
         <input id="completedSearch" type="search" placeholder="Search completed tasks…" aria-label="Search completed tasks" />
+        <label class="sortlab">Sort
+          <select id="completedSort">
+            <option value="week-desc">Newest week</option>
+            <option value="week-asc">Oldest week</option>
+            <option value="completed-desc">Recently completed</option>
+            <option value="cycle-desc">Longest to finish</option>
+            <option value="project">Project A–Z</option>
+            <option value="task">Task A–Z</option>
+          </select>
+        </label>
         <span class="cbar-count" id="completedCount"></span>
         <button class="btn ghost sm" id="completedCsv" type="button">⬇ CSV</button>
       </div>
@@ -601,6 +612,14 @@
 
     <!-- ---- KPIs ---- -->
     <section class="view" id="v-kpis" hidden>
+      <div class="htoolbar" style="justify-content:flex-end; margin-bottom:14px">
+        <label class="sortlab">Weeks shown
+          <select id="kpiWeeks">
+            <option value="4">Last 4</option><option value="8">Last 8</option>
+            <option value="12">Last 12</option><option value="all" selected>All</option>
+          </select>
+        </label>
+      </div>
       <div id="kpiBody"></div>
     </section>
   </main>
@@ -1515,7 +1534,7 @@ async function exportAllCSV(btn){
   downloadCSV("weekly-tracker-history-"+todayIso()+".csv", rows);
 }
 function exportCompletedCSV(){
-  const rows = filteredCompleted();
+  const rows = sortedCompleted().rows;
   const header = ["Week ending","Task","Project","Priority","Started","Completed","Days","Comments"];
   const out = [header].concat(rows.map(r => {
     const d = daysBetween(r.started_on, r.completed_on);
@@ -1559,6 +1578,11 @@ $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
 $("tab-kudos").addEventListener("click", () => showTab("kudos"));
 $("tab-kpis").addEventListener("click", () => showTab("kpis"));
+try { const kw = localStorage.getItem("tracker_kpi_weeks"); if (kw) $("kpiWeeks").value = kw; } catch(e){}
+$("kpiWeeks").addEventListener("change", () => {
+  try { localStorage.setItem("tracker_kpi_weeks", $("kpiWeeks").value); } catch(e){}
+  loadKpis();
+});
 $("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
 
 // ============ KUDOS ============
@@ -1660,6 +1684,11 @@ function completedDates(r){
 }
 $("completedSearch").addEventListener("input", renderCompleted);
 $("completedCsv").addEventListener("click", exportCompletedCSV);
+try { const cs = localStorage.getItem("tracker_completed_sort"); if (cs) $("completedSort").value = cs; } catch(e){}
+$("completedSort").addEventListener("change", () => {
+  try { localStorage.setItem("tracker_completed_sort", $("completedSort").value); } catch(e){}
+  renderCompleted();
+});
 function filteredCompleted(){
   if (!completedCache) return [];
   const q = $("completedSearch").value.trim().toLowerCase();
@@ -1667,33 +1696,49 @@ function filteredCompleted(){
     (r.task||"").toLowerCase().includes(q) || (r.project||"").toLowerCase().includes(q) || (r.note||"").toLowerCase().includes(q)
   ) : completedCache;
 }
+function cycleDays(r){ const d = daysBetween(r.started_on, r.completed_on); return (d==null||d<0) ? -1 : d; }
+function sortedCompleted(){
+  const rows = filteredCompleted().slice();
+  const s = ($("completedSort") && $("completedSort").value) || "week-desc";
+  const txt = (v) => String(v||"").toLowerCase();
+  const cmps = {
+    "week-desc":      (a,b)=> txt(b.week_ending).localeCompare(txt(a.week_ending)) || (a.position-b.position),
+    "week-asc":       (a,b)=> txt(a.week_ending).localeCompare(txt(b.week_ending)) || (a.position-b.position),
+    "completed-desc": (a,b)=> txt(b.completed_on).localeCompare(txt(a.completed_on)) || txt(a.task).localeCompare(txt(b.task)),
+    "cycle-desc":     (a,b)=> cycleDays(b)-cycleDays(a) || txt(a.task).localeCompare(txt(b.task)),
+    "project":        (a,b)=> txt(a.project).localeCompare(txt(b.project)) || txt(a.task).localeCompare(txt(b.task)),
+    "task":           (a,b)=> txt(a.task).localeCompare(txt(b.task)),
+  };
+  rows.sort(cmps[s] || cmps["week-desc"]);
+  return { rows, grouped: s === "week-desc" || s === "week-asc" };
+}
+function completedRowHtml(r, ri, grouped){
+  return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
+    (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
+    (!grouped ? ' <span class="cwk">'+(prettyDate(r.week_ending)||esc(r.week_ending))+'</span>' : '') +
+    '</div>' + completedDates(r) +
+    (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
+  '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
+}
 function renderCompleted(){
   const body = $("completedBody");
   if (!completedCache) return;
   const q = $("completedSearch").value.trim().toLowerCase();
-  const rows = filteredCompleted();
+  const { rows, grouped } = sortedCompleted();
   $("completedCount").textContent = rows.length + (rows.length===1?" task":" tasks");
   if (!completedCache.length) { body.innerHTML = '<div class="muted-empty">No completed tasks yet. Mark a task <b>Done</b> and save — it’ll be archived here.</div>'; return; }
   if (!rows.length) { body.innerHTML = '<div class="muted-empty">No completed tasks match “'+esc(q)+'”.</div>'; return; }
-  // group by week
-  const groups = [];
-  rows.forEach(r => {
-    let g = groups[groups.length-1];
-    if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); }
-    g.items.push(r);
-  });
   let flat = 0;
-  body.innerHTML = groups.map(g =>
-    '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
-    g.items.map(r => {
-      const ri = flat++;
-      return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
-        (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
-        '</div>' + completedDates(r) +
-        (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
-      '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
-    }).join("") + '</div>'
-  ).join("");
+  if (grouped) {
+    const groups = [];
+    rows.forEach(r => { let g = groups[groups.length-1]; if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); } g.items.push(r); });
+    body.innerHTML = groups.map(g =>
+      '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
+      g.items.map(r => completedRowHtml(r, flat++, true)).join("") + '</div>'
+    ).join("");
+  } else {
+    body.innerHTML = '<div class="cgroup">' + rows.map(r => completedRowHtml(r, flat++, false)).join("") + '</div>';
+  }
   body.querySelectorAll(".recall").forEach(b => b.addEventListener("click", () => recallCompleted(rows[+b.dataset.ri])));
 }
 function recallCompleted(r){
@@ -1752,15 +1797,19 @@ async function loadKpis(){
   refreshChartColors();
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }] = await Promise.all([
+  const [{ data: wkRaw, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }, { data: texp }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
     sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
     sb.from("completed_tasks").select("started_on,completed_on,due_date"),
     sb.from("kpi_by_project").select("project,total_tasks,done"),
-    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false })
+    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false }),
+    sb.from("task_export").select("week_ending,task,status")
   ]);
   if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
-  if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+  if (!wkRaw || !wkRaw.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+  const kwv = ($("kpiWeeks") && $("kpiWeeks").value) || "all";
+  const kwN = kwv === "all" ? Infinity : (parseInt(kwv,10) || Infinity);
+  const wk = isFinite(kwN) ? wkRaw.slice(-kwN) : wkRaw;
 
   // cycle time (start → complete), from completed tasks
   const comps = comp || [];
@@ -1772,10 +1821,26 @@ async function loadKpis(){
   const weeks = wk.map(r => (r.week_ending||"").slice(5));
   CHART_DATA = [];
   const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  const flagsByWeek = {};
+  (texp || []).forEach(t => {
+    if (t.status !== "At Risk" && t.status !== "Blocked") return;
+    const f = (flagsByWeek[t.week_ending] = flagsByWeek[t.week_ending] || { risk:[], blocked:[] });
+    const nm = ((t.task||"").trim() || "(untitled)").slice(0,46);
+    (t.status === "At Risk" ? f.risk : f.blocked).push(nm);
+  });
+  function trendLines(r){
+    const f = flagsByWeek[r.week_ending] || { risk:[], blocked:[] };
+    const lines = [];
+    if (f.risk.length){ lines.push({ t:f.risk.length+" at risk", c:COLORS.atrisk });
+      f.risk.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.risk.length>4) lines.push("   +"+(f.risk.length-4)+" more"); }
+    if (f.blocked.length){ lines.push({ t:f.blocked.length+" blocked", c:COLORS.blocked });
+      f.blocked.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.blocked.length>4) lines.push("   +"+(f.blocked.length-4)+" more"); }
+    if (!lines.length) lines.push("No blocked or at-risk tasks 🎉");
+    return lines;
+  }
   const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
-  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
-    lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending, lines: trendLines(r) }));
   const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
   const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);

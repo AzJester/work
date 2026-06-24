@@ -108,6 +108,7 @@
   .chart-tip span { display:flex; align-items:center; color:#D7DBE4; }
   .chart-tip i { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; flex:0 0 auto; }
   .ptoggle { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-2); cursor:pointer; user-select:none; white-space:nowrap; }
+  .ptoggle select { font:inherit; font-size:12px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:8px; padding:5px 7px; cursor:pointer; }
   .ptoggle input { accent-color:var(--accent); cursor:pointer; }
   .kcard { transition:box-shadow .15s, transform .15s; }
   .kcard:hover { box-shadow:0 6px 22px rgba(0,0,0,.10); transform:translateY(-1px); }
@@ -169,8 +170,12 @@
 
   @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
   @media print {
-    /* even margins all round so nothing is crammed at the top or bottom */
-    @page { margin:16mm; }
+    /* even margins all round; reset wrappers so content fills the margin box symmetrically */
+    @page { margin:14mm; }
+    html, body { margin:0 !important; padding:0 !important; }
+    .wrap { max-width:none !important; width:auto !important; margin:0 !important; padding:0 !important; }
+    /* decorative accent bars can print as stray marks — hide them */
+    .hero::before, h2.sec::before { display:none !important; }
     :root, :root[data-theme="dark"] {
       --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
       --line:#ccc!important; --line-2:#bbb!important; --th-bg:#f0f0f0!important; --accent:#000!important;
@@ -217,8 +222,16 @@
         <div class="tag" id="subtitle">Shared dashboard</div>
       </div>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <span class="ro" id="roPill" hidden>● Read-only</span>
+      <label class="ptoggle" id="weeksWrap" hidden title="How many recent weeks of reports to show (and print)">Weeks
+        <select id="weeksShown">
+          <option value="4">Last 4</option>
+          <option value="8">Last 8</option>
+          <option value="12">Last 12</option>
+          <option value="all" selected>All</option>
+        </select>
+      </label>
       <label class="ptoggle" id="kpiToggleWrap" hidden title="Include the KPI charts in the printed PDF (off = weekly reports only)"><input type="checkbox" id="kpiPrint" checked> KPIs in PDF</label>
       <button class="btn" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
       <button class="btn" id="print" type="button" hidden>Print / PDF</button>
@@ -344,9 +357,20 @@ function showMessage(title, body){
     applyKpiPrint($("kpiPrint").checked);
     try { localStorage.setItem("dash_print_kpi", $("kpiPrint").checked ? "1" : "0"); } catch(e){}
   });
+  // how many recent weeks of reports to show / print (remembered per browser)
+  DASH_DATA = data;
+  $("weeksWrap").hidden = false;
+  let weeksPref = "all"; try { weeksPref = localStorage.getItem("dash_weeks") || "all"; } catch(e){}
+  $("weeksShown").value = weeksPref;
+  $("weeksShown").addEventListener("change", () => {
+    try { localStorage.setItem("dash_weeks", $("weeksShown").value); } catch(e){}
+    render(DASH_DATA);
+  });
 
   render(data);
 })();
+let DASH_DATA = null;
+function weeksLimit(){ const v = ($("weeksShown") && $("weeksShown").value) || "all"; return v === "all" ? Infinity : (parseInt(v,10) || Infinity); }
 
 function render(data){
   refreshChartColors();
@@ -366,10 +390,30 @@ function render(data){
                   .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
 
   const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  // map each week → the actual At Risk / Blocked task names (for the trend tooltip)
+  const flagsByWeek = {};
+  reports.forEach(rep => {
+    const risk = [], blocked = [];
+    (rep.tasks||[]).forEach(t => {
+      const nm = ((t.task||"").trim() || "(untitled)").slice(0,46);
+      if (t.status === "At Risk") risk.push(nm);
+      else if (t.status === "Blocked") blocked.push(nm);
+    });
+    flagsByWeek[rep.week_ending] = { risk, blocked };
+  });
+  function trendLines(r){
+    const f = flagsByWeek[r.week_ending] || { risk:[], blocked:[] };
+    const lines = [];
+    if (f.risk.length){ lines.push({ t:f.risk.length+" at risk", c:COLORS.atrisk });
+      f.risk.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.risk.length>4) lines.push("   +"+(f.risk.length-4)+" more"); }
+    if (f.blocked.length){ lines.push({ t:f.blocked.length+" blocked", c:COLORS.blocked });
+      f.blocked.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.blocked.length>4) lines.push("   +"+(f.blocked.length-4)+" more"); }
+    if (!lines.length) lines.push("No blocked or at-risk tasks 🎉");
+    return lines;
+  }
   const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
-  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
-    lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending, lines: trendLines(r) }));
   const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
 
@@ -427,7 +471,12 @@ function render(data){
       '</div>' +
     '</div>';
 
-  const repHtml = '<h2 class="sec">Weekly reports</h2>' + reports.map((r,idx) => reportBlock(r, idx===0)).join("");
+  // reports are newest-first; show only the chosen number of recent weeks
+  const lim = weeksLimit();
+  const shownReports = isFinite(lim) ? reports.slice(0, lim) : reports;
+  const moreNote = (reports.length > shownReports.length)
+    ? '<p class="desc" style="margin:-6px 0 14px">Showing the latest '+shownReports.length+' of '+reports.length+' weeks. Use <b>Weeks</b> (top right) to show more.</p>' : '';
+  const repHtml = '<h2 class="sec">Weekly reports</h2>' + moreNote + shownReports.map((r,idx) => reportBlock(r, idx===0)).join("");
 
   $("root").innerHTML = execHtml + '<section id="kpiSection">' + kpis + '</section>' + kudosHtml + repHtml;
   wireCharts();
