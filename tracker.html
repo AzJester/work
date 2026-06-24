@@ -115,8 +115,18 @@
   .actions .spacer { flex:1 1 auto; }
   .sortlab { font-size:12px; color:var(--mut); display:inline-flex; align-items:center; gap:6px; }
   .sortlab select { font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; cursor:pointer; }
-  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
+  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; cursor:pointer; border-radius:6px; padding:2px 5px; }
+  .savestate:hover { color:var(--ink-2); background:var(--accent-soft); }
   .savestate.ok { color:var(--green); } .savestate.err { color:var(--red); } .savestate.busy { color:var(--amber); }
+  .menuwrap { position:relative; display:inline-flex; }
+  .menu { position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:200px;
+    background:var(--card); border:1px solid var(--line-2); border-radius:11px;
+    box-shadow:var(--shadow); padding:6px; display:flex; flex-direction:column; gap:2px; }
+  .menu[hidden] { display:none; }
+  .menuitem { display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+    font:inherit; font-size:13px; color:var(--ink-2); background:transparent;
+    border:0; border-radius:8px; padding:8px 10px; cursor:pointer; white-space:nowrap; box-shadow:none; }
+  .menuitem:hover { background:var(--accent-soft); color:var(--accent); }
 
   .carry { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 14px; }
   .carry[hidden] { display:none; }
@@ -552,13 +562,18 @@
       <div class="actions">
         <button class="btn" id="add" type="button">+ Add task</button>
         <button class="btn ghost" id="logToday" type="button" title="Stamp today's date into every task that has no update yet today">✎ Log today</button>
-        <button class="btn ghost" id="importNotes" type="button" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
-        <button class="btn ghost" id="save" type="button">Save to cloud</button>
-        <button class="btn ghost" id="aiSummary" type="button" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
-        <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
+        <div class="menuwrap" id="moreWrap">
+          <button class="btn ghost" id="moreBtn" type="button" aria-haspopup="true" aria-expanded="false" title="More actions">⋯ More ▾</button>
+          <div class="menu" id="moreMenu" role="menu" hidden>
+            <button class="menuitem" id="importNotes" type="button" role="menuitem" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
+            <button class="menuitem" id="aiSummary" type="button" role="menuitem" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
+            <button class="menuitem" id="save" type="button" role="menuitem" title="Saves automatically as you type — click to save now">☁ Save now</button>
+          </div>
+        </div>
         <span class="spacer"></span>
         <span class="todaylab" id="todaylab"></span>
         <span class="kbdhint" title="Press Alt with the up/down arrows to jump between tasks and start typing">⌥↑/↓ jump</span>
+        <button class="btn ghost sm" id="toggleDone" type="button" hidden>Show done</button>
         <button class="btn ghost sm" id="collapseAll" type="button" title="Collapse or expand all tasks">⊟ Collapse all</button>
         <label class="sortlab">Sort
           <select id="sortMode">
@@ -568,7 +583,7 @@
             <option value="manual">Manual order</option>
           </select>
         </label>
-        <span class="savestate" id="savestate">—</span>
+        <span class="savestate" id="savestate" role="button" tabindex="0" title="Saved automatically — click to save now">—</span>
       </div>
 
       <div class="tcard">
@@ -965,6 +980,27 @@ $("carryBlank").addEventListener("click", () => {
 $("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
 $("logToday").addEventListener("click", logTodayAll);
 $("collapseAll").addEventListener("click", toggleCollapseAll);
+// "⋯ More" overflow menu — toggle, and close on item pick / outside click / Escape
+(function(){
+  const wrap = $("moreWrap"), btn = $("moreBtn"), menu = $("moreMenu");
+  if (!wrap || !btn || !menu) return;
+  const close = () => { menu.hidden = true; btn.setAttribute("aria-expanded", "false"); };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = menu.hidden;
+    menu.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  menu.addEventListener("click", close);
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+})();
+// The "saved" chip doubles as a manual save trigger (autosave still runs as you type)
+(function(){
+  const chip = $("savestate");
+  if (!chip) return;
+  chip.addEventListener("click", () => saveWeek(true));
+  chip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); saveWeek(true); } });
+})();
 // Alt+↑ / Alt+↓ — jump to the previous/next task (expand it and focus its comment box)
 document.addEventListener("keydown", (e) => {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
