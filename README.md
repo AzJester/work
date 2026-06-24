@@ -138,8 +138,10 @@ them and run KPIs**, use the cloud-backed version:
   paste into an email or chat (older links keep a manual **⚡ Shorten** button). The shortening
   runs in a Supabase Edge Function (`shorten`) that only shortens your own dashboard links; if
   the shortener is ever unavailable, the full link is used instead.
-- **Exec summary header** — the shared dashboard opens with the latest week at a glance
-  (tasks · done % · at-risk · blocked · avg progress · weeks tracked).
+- **Exec hero** — the shared dashboard opens with a polished headline panel: large KPI tiles
+  (completion · avg progress · at-risk · blocked · total tasks · weeks tracked), each with a
+  **week-over-week trend** arrow (green = better, red = worse) — designed to read cleanly for
+  leadership.
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose). The signed-in email is
   **not shown anywhere** in the header, so nothing leaks in screen-shares or screenshots.
