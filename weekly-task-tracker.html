@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Weekly Task Tracker</title>
-<meta name="description" content="A self-contained weekly task status tracker — record your tasks, status, priority, and progress, then export a clean report (Markdown, copy-to-text, or print/PDF) to submit to leadership at the close of each week." />
+<meta name="description" content="A standalone weekly task tracker — log tasks daily, carry unfinished work forward, track action items, run KPIs, and export reports. Saved in your browser; no account or server." />
 <style>
   :root {
     --bg:#EEF1F7; --card:#FFFFFF; --line:#E7EAF1; --line-2:#D5DAE4;
@@ -14,11 +14,26 @@
     --amber:#9A6700; --amber-bg:#FBF1D9;
     --red:#C2362B; --red-bg:#FCEBE9;
     --slate:#475467; --slate-bg:#EDF0F5;
-    --radius:14px;
+    --input-bg:#FBFCFE; --th-bg:#F6F7FB; --hover:#FBFBFE; --detail-bg:#FBFCFE; --track-bg:#E3E7F0;
+    --radius:14px; --radius-sm:9px;
     --shadow-sm:0 1px 2px rgba(20,28,50,0.05), 0 1px 1px rgba(20,28,50,0.04);
     --shadow:0 4px 14px -6px rgba(22,30,55,0.16), 0 2px 5px -3px rgba(22,30,55,0.10);
+    --shadow-lg:0 24px 60px -28px rgba(22,30,55,0.40);
     --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0E1117; --card:#171B22; --line:#262C36; --line-2:#333B47;
+    --ink:#E7EBF2; --ink-2:#AEB6C4; --mut:#7E8796;
+    --accent:#7C83FF; --accent-2:#9AA0FF; --accent-soft:#1E2340; --ring:rgba(124,131,255,0.35);
+    --green:#46D08A; --green-bg:#10271C;
+    --amber:#E6B655; --amber-bg:#2A2310;
+    --red:#FF8275; --red-bg:#2C1714;
+    --slate:#AEB6C4; --slate-bg:#222936;
+    --input-bg:#1E232C; --th-bg:#1B2029; --hover:#1C212A; --detail-bg:#13171E; --track-bg:#1E232C;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow:0 6px 18px -8px rgba(0,0,0,0.6);
+    --shadow-lg:0 24px 60px -28px rgba(0,0,0,0.7);
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; }
@@ -28,120 +43,433 @@
       radial-gradient(900px 500px at -5% 10%, rgba(79,70,229,0.07), transparent 55%),
       var(--bg);
     background-attachment:fixed; }
-  .wrap { max-width:1080px; margin:0 auto; padding:26px clamp(14px,3vw,32px) 64px; }
+  .wrap { max-width:1120px; margin:0 auto; padding:26px clamp(14px,3vw,32px) 64px; }
+  a { color:var(--accent); }
 
-  /* ---- Masthead ---- */
-  .mast { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .mast { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
   .brand { display:flex; align-items:center; gap:13px; }
   .brand .mark { width:42px; height:42px; border-radius:12px; flex:0 0 auto;
     background:linear-gradient(145deg, var(--accent-2), var(--accent)); color:#fff;
     display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; letter-spacing:-0.02em;
     box-shadow:0 8px 18px -6px rgba(79,70,229,0.55); }
   .brand .mark svg { width:27px; height:27px; display:block; }
-  .mast h1 { margin:0; font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+  .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); }
   .mast .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
-  .mast .saved { font-family:var(--mono); font-size:11px; color:var(--mut); white-space:nowrap;
-    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 12px; box-shadow:var(--shadow-sm); }
-  .mast .saved.flash { color:var(--green); }
+  .who-line { display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2);
+    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 8px; box-shadow:var(--shadow-sm); }
 
-  /* ---- Report header card ---- */
-  .head { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; background:var(--card);
-    border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:18px; box-shadow:var(--shadow); }
-  .field { display:flex; flex-direction:column; gap:6px; }
-  .field label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); }
-  .field input { font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; transition:border-color .15s, box-shadow .15s; }
-  .field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
-
-  /* ---- Action bar ---- */
-  .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
-  .actions .spacer { flex:1 1 auto; }
-  .btn { font-family:var(--disp); font-size:13px; font-weight:600; letter-spacing:0.01em;
-    color:var(--accent-ink); background:linear-gradient(180deg, var(--accent-2), var(--accent)); border:1px solid var(--accent); padding:9px 16px; border-radius:10px;
-    cursor:pointer; white-space:nowrap; box-shadow:0 6px 16px -8px rgba(79,70,229,0.6); transition:transform .12s, box-shadow .2s, filter .2s; }
-  .btn:hover { filter:brightness(1.05); transform:translateY(-1px); } .btn:active { transform:translateY(0); }
+  .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--accent-ink);
+    background:linear-gradient(180deg, var(--accent-2), var(--accent));
+    border:1px solid var(--accent); padding:9px 16px; border-radius:10px; cursor:pointer; white-space:nowrap;
+    box-shadow:0 6px 16px -8px rgba(79,70,229,0.6); transition:transform .12s, box-shadow .2s, filter .2s; }
+  .btn:hover { filter:brightness(1.05); transform:translateY(-1px); box-shadow:0 10px 22px -10px rgba(79,70,229,0.65); }
+  .btn:active { transform:translateY(0); }
+  .btn:disabled { opacity:.5; cursor:default; box-shadow:none; transform:none; }
   .btn:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
   .btn.ghost { color:var(--ink-2); background:var(--card); border-color:var(--line-2); box-shadow:var(--shadow-sm); }
-  .btn.ghost:hover { color:var(--accent); border-color:var(--accent); filter:none; }
+  .btn.ghost:hover { color:var(--accent); border-color:var(--accent); filter:none; box-shadow:var(--shadow-sm); }
   .btn.sm { font-size:12px; padding:6px 12px; border-radius:8px; }
   .btn.danger.ghost:hover { color:var(--red); border-color:var(--red); }
+  .btn.ghost.on { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+  .empty-week { text-align:center; color:var(--mut); padding:36px 18px; font-size:14px; }
+  .empty-week a { color:var(--accent); cursor:pointer; font-weight:600; }
+
+  /* ---- Auth gate ---- */
+  .gate { max-width:392px; margin:7vh auto 0; background:var(--card); border:1px solid var(--line);
+    border-radius:18px; padding:30px 28px; box-shadow:var(--shadow-lg); }
+  .gate h2 { margin:0 0 4px; font-size:20px; letter-spacing:-0.01em; }
+  .gate p.sub { margin:0 0 18px; color:var(--mut); font-size:13.5px; }
+  .gate label { display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); margin:0 0 5px; }
+  .gate input { width:100%; font:inherit; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2);
+    border-radius:10px; padding:11px 12px; margin-bottom:14px; transition:border-color .15s, box-shadow .15s; }
+  .gate input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .gate .btn { width:100%; padding:11px; font-size:14px; }
+  .gate .alt { text-align:center; margin-top:14px; font-size:13px; color:var(--mut); }
+  .gate .alt a { cursor:pointer; }
+  .note { font-size:12.5px; border-radius:9px; padding:10px 12px; margin-top:14px; line-height:1.5; }
+  .note.err { color:var(--red); background:var(--red-bg); border:1px solid #F2C6C2; }
+  .note.ok  { color:var(--green); background:var(--green-bg); border:1px solid #BFE6CD; }
+  .note.info{ color:var(--ink-2); background:var(--accent-soft); border:1px solid #C9DBFF; }
+  .note.hide { display:none; }
+
+  /* ---- Tabs ---- */
+  .tabs { display:inline-flex; gap:3px; background:var(--track-bg); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); }
+  .tabs button { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink-2); background:transparent;
+    border:0; padding:8px 16px; border-radius:9px; cursor:pointer; transition:background .15s, color .15s, box-shadow .15s; }
+  .tabs button:hover { color:var(--ink); }
+  .tabs button.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow-sm); }
+  .tabs button:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
+  .view[hidden] { display:none; }
+
+  /* ---- Report header ---- */
+  .head { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:14px; box-shadow:var(--shadow); }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); }
+  .field input { font:inherit; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; transition:border-color .15s, box-shadow .15s; }
+  .field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .weeknav { display:flex; gap:6px; align-items:center; }
+  .weeknav input { flex:1 1 auto; }
+
+  .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .actions .spacer { flex:1 1 auto; }
+  .sortlab { font-size:12px; color:var(--mut); display:inline-flex; align-items:center; gap:6px; }
+  .sortlab select { font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; cursor:pointer; }
+  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
+  .savestate.ok { color:var(--green); } .savestate.err { color:var(--red); } .savestate.busy { color:var(--amber); }
+
+  .carry { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 14px; }
+  .carry[hidden] { display:none; }
+  .carry .ct { flex:1 1 auto; }
 
   /* ---- Table ---- */
   .tcard { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
   table.tasks { width:100%; border-collapse:collapse; }
   table.tasks thead th { font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut);
-    text-align:left; padding:12px 14px; background:#F6F7FB; border-bottom:1px solid var(--line); white-space:nowrap; }
-  table.tasks tbody td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+    text-align:left; padding:12px 14px; background:var(--th-bg); border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.tasks tbody td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
   table.tasks tbody tr:last-child td { border-bottom:0; }
-  .col-num { width:34px; color:var(--mut); font-family:var(--mono); font-size:12px; text-align:right; }
-  .col-status { width:138px; } .col-pri { width:96px; } .col-prog { width:150px; } .col-act { width:96px; }
-
-  .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent;
-    border-radius:6px; padding:6px 7px; resize:none; }
-  .cell-input:hover { border-color:var(--line); }
-  .cell-input:focus { outline:none; border-color:var(--accent); background:#FBFCFE; }
+  table.tasks tbody tr:not(.detail):hover td { background:var(--hover); }
+  .col-num { width:46px; color:var(--mut); font-family:var(--mono); font-size:12px; padding-top:11px !important; }
+  .col-num-inner { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
+  .rowcaret { font-size:11px; line-height:1; color:var(--mut); background:transparent; border:0; cursor:pointer; padding:2px 1px; border-radius:4px; }
+  .rowcaret:hover { color:var(--accent); background:var(--hover); }
+  .rnum { font-variant-numeric:tabular-nums; min-width:14px; text-align:right; }
+  .updot { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .updot.need { background:var(--amber); box-shadow:0 0 0 2px var(--amber-bg); }
+  .updot.ok { background:var(--green); }
+  .updot.none { background:transparent; }
+  tr.collapsed .updot.need { width:9px; height:9px; }
+  .row-sub { display:flex; flex-wrap:wrap; align-items:center; gap:6px 9px; padding:3px 8px 2px; font-size:12px; color:var(--mut); cursor:pointer; }
+  .row-sub > span { white-space:nowrap; }
+  .row-sub .rs-proj { color:var(--ink-2); font-weight:600; }
+  .row-sub .rs-chk { font-family:var(--mono); font-size:11px; }
+  .row-sub .rs-chk.all { color:var(--green); }
+  .row-sub .rs-due { font-family:var(--mono); font-size:11px; }
+  .row-sub .rs-due.od { color:var(--red); }
+  .row-sub .rs-note { color:var(--mut); font-style:italic; overflow:hidden; text-overflow:ellipsis; max-width:46ch; }
+  .row-sub .rs-empty { color:var(--line); font-style:italic; }
+  .dquick { display:inline-flex; gap:4px; margin-left:2px; }
+  .dqbtn { font-family:var(--disp); font-size:10.5px; font-weight:600; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:6px; padding:3px 7px; cursor:pointer; }
+  .dqbtn:hover { border-color:var(--accent); }
+  .todaylab { font-family:var(--mono); font-size:11px; color:var(--mut); margin-right:2px; }
+  .kbdhint { font-family:var(--mono); font-size:10.5px; color:var(--mut); opacity:.75; border:1px solid var(--line); border-radius:6px; padding:2px 7px; cursor:default; }
+  #logToday.hot { color:var(--amber); border-color:#EFD9A0; background:var(--amber-bg); }
+  .col-status { width:130px; } .col-pri { width:84px; } .col-prog { width:140px; } .col-act { width:96px; }
+  .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; transition:border-color .12s, box-shadow .12s, background .12s; }
+  .cell-input:hover { border-color:var(--line-2); }
+  .cell-input:focus { outline:none; border-color:var(--accent); background:var(--card); box-shadow:0 0 0 3px var(--ring); }
   textarea.cell-input { min-height:34px; line-height:1.35; overflow:hidden; }
 
-  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px;
-    padding:5px 10px; cursor:pointer; -webkit-appearance:none; appearance:none; text-align:left;
-    background-image:none; }
+  .mini { font:inherit; font-size:12px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 8px; transition:border-color .12s, box-shadow .12s; }
+  .mini:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .mini.project { width:200px; max-width:100%; }
+  .mini.due, .mini.date { width:150px; }
+  .mini.due.overdue { color:var(--red); border-color:#F2C6C2; background:var(--red-bg); }
+  .dlab { display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
+  .dlab .dl { width:42px; flex:0 0 auto; }
+
+  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px; padding:5px 10px; cursor:pointer; -webkit-appearance:none; appearance:none; }
   select.chip:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
   select.chip.s-ontrack { color:var(--green); background:var(--green-bg); border-color:#BFE6CD; }
   select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
   select.chip.s-blocked { color:var(--red); background:var(--red-bg); border-color:#F2C6C2; }
   select.chip.s-done { color:var(--slate); background:var(--slate-bg); border-color:#D3DAE5; }
-
-  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2);
-    border-radius:7px; padding:6px 8px; cursor:pointer; }
-  select.pri:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
-
-  .prog { display:flex; align-items:center; gap:8px; }
+  select.pri { font:inherit; font-size:13px; font-weight:600; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  select.pri.p-high { color:#B4451C; background:#FFF1E8; border-color:#F4D2BE; }
+  select.pri.p-med  { color:#8A6A00; background:#FFF8E0; border-color:#EFE0A6; }
+  select.pri.p-low  { color:#2C6E8F; background:#EAF4FA; border-color:#C9E2EE; }
+  :root[data-theme="dark"] select.pri.p-high { color:#FFB59B; background:#3A1E16; border-color:#5A2E22; }
+  :root[data-theme="dark"] select.pri.p-med  { color:#E8C766; background:#332B12; border-color:#4D421C; }
+  :root[data-theme="dark"] select.pri.p-low  { color:#8FC9E6; background:#152A36; border-color:#244657; }
+  .prog { display:flex; align-items:center; gap:8px; padding-top:4px; }
   .prog input[type=range] { flex:1 1 auto; accent-color:var(--accent); cursor:pointer; min-width:0; }
   .prog .pv { font-family:var(--mono); font-size:12px; color:var(--ink-2); width:38px; text-align:right; }
 
-  .rowbtns { display:flex; gap:4px; }
-  .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent;
-    border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
-  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:#F8FAFD; }
+  .logbtn { margin-top:5px; }
+  .tlog { font-family:var(--disp); font-size:11.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
+    border:1px solid #C9DBFF; border-radius:6px; padding:3px 9px; cursor:pointer; }
+  .tlog:hover { filter:brightness(.98); }
+
+  .aicount { font-family:var(--mono); font-size:11px; color:var(--mut); align-self:center; white-space:nowrap; }
+  .aicount.all { color:var(--green); }
+
+  /* full-width detail area under each task */
+  tr.detail td { padding-top:0; padding-bottom:16px; background:var(--input-bg); }
+  .detail-wrap { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .meta-col { flex:0 0 320px; display:flex; flex-direction:column; gap:8px; }
+  .meta-col .dlab { flex-wrap:wrap; row-gap:4px; }
+  .work-col { flex:1 1 340px; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .cmh, .ai-head { font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-2); font-weight:600; }
+  .ai-head { display:flex; align-items:center; gap:10px; margin-top:6px; }
+  .work-col textarea.note { width:100%; min-height:64px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:9px 11px; }
+  .work-col textarea.note:hover { border-color:var(--line-2); }
+  .work-col textarea.note:focus { border-color:var(--accent); background:var(--card); box-shadow:0 0 0 3px var(--ring); }
+
+  /* action-items checklist */
+  .checklist { display:flex; flex-direction:column; gap:5px; }
+  .citem { display:flex; align-items:center; gap:8px; }
+  .citem input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; flex:0 0 auto; }
+  .citem input[type=text] { flex:1 1 auto; min-width:0; font:inherit; font-size:13px; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:6px; padding:4px 7px; }
+  .citem input[type=text]:hover { border-color:var(--line); }
+  .citem input[type=text]:focus { outline:none; border-color:var(--accent); background:var(--card); }
+  .citem.done input[type=text] { text-decoration:line-through; color:var(--mut); }
+  .citem .cdel { font-size:12px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:24px; height:24px; cursor:pointer; flex:0 0 auto; }
+  .citem .cdel:hover { color:var(--red); border-color:var(--red); }
+  .citem .cmove { font-size:9px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:22px; height:24px; cursor:pointer; flex:0 0 auto; }
+  .citem .cmove:hover:not(:disabled) { color:var(--accent); border-color:var(--accent); }
+  .citem .cmove:disabled { opacity:.3; cursor:default; }
+  .addItem { align-self:flex-start; font-size:12px; font-weight:600; color:var(--accent); background:transparent; border:1px dashed var(--line-2); border-radius:6px; padding:4px 10px; cursor:pointer; }
+  .addItem:hover { border-color:var(--accent); }
+  .fromnotes { margin-left:auto; font-family:var(--disp); font-size:11.5px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--accent); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:6px; padding:3px 9px; cursor:pointer; white-space:nowrap; }
+  .fromnotes:hover { border-color:var(--accent); }
+
+  .rowbtns { display:flex; gap:4px; padding-top:4px; }
+  .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent; border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
+  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:var(--hover); }
   .ibtn.del:hover { color:var(--red); border-color:var(--red); }
   .ibtn:disabled { opacity:.35; cursor:default; }
-  .ibtn:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  .tfoot { padding:12px; border-top:1px solid var(--line); background:var(--input-bg); display:flex; gap:10px; flex-wrap:wrap; }
+  .hint { margin:14px 2px 0; font-size:12.5px; color:var(--mut); } .hint b { color:var(--ink-2); font-weight:600; }
 
-  .tfoot { padding:12px; border-top:1px solid var(--line); background:#FBFCFE; }
-  .empty { padding:34px 16px; text-align:center; color:var(--mut); font-size:14px; }
+  /* ---- History ---- */
+  .hlist { display:flex; flex-direction:column; gap:10px; }
+  .hrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow-sm); transition:box-shadow .15s, transform .1s; }
+  .hrow:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+  .hrow .wk { font-weight:700; font-size:15px; min-width:150px; }
+  .hrow .meta { font-family:var(--mono); font-size:11.5px; color:var(--mut); }
+  .hrow .spacer { flex:1 1 auto; }
+  .badge { font-family:var(--mono); font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; }
+  .badge.done { color:var(--green); background:var(--green-bg); } .badge.blk { color:var(--red); background:var(--red-bg); }
+  .badge.risk { color:var(--amber); background:var(--amber-bg); } .badge.tot { color:var(--slate); background:var(--slate-bg); }
+  .muted-empty { text-align:center; color:var(--mut); padding:40px 28px; background:var(--card); border:1px dashed var(--line-2); border-radius:var(--radius); box-shadow:var(--shadow-sm); }
 
-  .hint { margin:16px 2px 0; font-size:12.5px; color:var(--mut); }
-  .hint b { color:var(--ink-2); font-weight:600; }
+  /* ---- Completed archive ---- */
+  .cbar { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .cbar input { flex:1 1 auto; font:inherit; font-size:14px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:9px; padding:9px 12px; }
+  .cbar input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent); }
+  .cbar-count { font-family:var(--mono); font-size:12px; color:var(--mut); white-space:nowrap; }
+  .cgroup { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow-sm); }
+  .cgh { font-weight:700; font-size:14px; padding:12px 16px; background:var(--th-bg); border-bottom:1px solid var(--line); }
+  .cgh .cgn { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); background:var(--green-bg); border-radius:999px; padding:2px 9px; margin-left:6px; }
+  .crow { padding:10px 15px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:10px; }
+  .crow:last-child { border-bottom:0; }
+  .crow .ctmain { flex:1 1 auto; min-width:0; }
+  .crow .recall { flex:0 0 auto; }
+  .crow .ct { font-size:14px; font-weight:600; }
+  .crow .tag-proj { font-family:var(--disp); font-size:11px; font-weight:600; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; margin-left:4px; }
+  .crow .cdates { font-family:var(--mono); font-size:11.5px; color:var(--mut); margin-top:3px; font-weight:400; }
+  .crow .cdates .cdur { color:var(--accent); }
+  .crow .cn { font-size:13px; color:var(--ink-2); font-weight:400; margin-top:4px; white-space:pre-line; }
 
-  @media (max-width:720px) {
-    .head { grid-template-columns:1fr; }
-    .col-prog, .col-pri { display:none; }
-    table.tasks thead { display:none; }
-    table.tasks, table.tasks tbody, table.tasks tr, table.tasks td { display:block; width:100%; }
-    table.tasks tbody tr { border-bottom:8px solid var(--bg); padding:6px 4px; }
-    table.tasks tbody td { border:0; padding:5px 6px; }
-    .col-num { display:inline-block; }
+  /* ---- KPIs ---- */
+  .kgrid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .kcard { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px 18px; box-shadow:var(--shadow); }
+  .kcard h3 { margin:0 0 2px; font-size:14.5px; letter-spacing:-0.01em; } .kcard .desc { margin:0 0 14px; font-size:12px; color:var(--mut); }
+  .stat-row { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px; }
+  .stat .n { font-size:26px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); }
+  .stat .l { font-size:10.5px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+  svg.chart { width:100%; height:auto; display:block; touch-action:pan-y; }
+  svg.chart .pt { transition:r .1s; }
+  svg.chart .hb { fill:#000; fill-opacity:0; pointer-events:all; cursor:pointer; }
+  svg.chart .hb:hover, svg.chart .hb.on { fill:var(--accent); fill-opacity:.07; }
+  svg.chart .cguide { stroke:var(--line-2); stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
+  svg.chart .cfocus { pointer-events:none; }
+  .chart-tip { position:fixed; z-index:60; pointer-events:none; background:#1F2937; color:#fff; font-size:11.5px;
+    line-height:1.4; padding:7px 10px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,.28); opacity:0; transition:opacity .08s; max-width:240px; }
+  .chart-tip.show { opacity:1; }
+  .chart-tip b { display:block; font-weight:700; margin-bottom:2px; }
+  .chart-tip span { display:flex; align-items:center; color:#D7DBE4; }
+  .chart-tip i { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; flex:0 0 auto; }
+  .chart-tip .tip-hint { display:block; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,.15); color:#9AA3B2; font-size:10.5px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); margin-top:8px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .agelist { margin:6px 0 0; padding:0; list-style:none; }
+  .agelist li { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .agelist li:last-child { border-bottom:0; }
+  .agelist .wks { font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap; }
+  .hbar { height:10px; background:var(--track-bg); border-radius:999px; overflow:hidden; margin-top:2px; }
+  .hbar-fill { height:100%; background:linear-gradient(90deg, var(--green), #36c07a); border-radius:999px; }
+  .pbars { display:flex; flex-direction:column; gap:10px; }
+  .pbar .pl { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; font-size:13px; }
+  .pbar .pl .pn { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pbar .pl .pc { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; }
+  .pbar .track { height:8px; background:var(--track-bg); border-radius:999px; overflow:hidden; }
+  .pbar .fill { height:100%; background:linear-gradient(90deg, var(--accent-2), var(--accent)); border-radius:999px; }
+  .htoolbar { display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+
+  /* ---- Kudos ---- */
+  .klist { display:flex; flex-direction:column; gap:12px; }
+  .kcardk { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow-sm); }
+  .kcardk .ktop { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .kcardk .ktop input { font:inherit; background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:7px 10px; color:var(--ink); }
+  .kcardk .ktop input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kdate { width:150px; } .kcardk .ksource { flex:1 1 200px; min-width:0; }
+  .kcardk .ktitle { width:100%; font:inherit; font-size:15px; font-weight:600; background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; color:var(--ink); margin-bottom:6px; }
+  .kcardk .ktitle:hover { border-color:var(--line-2); } .kcardk .ktitle:focus { outline:none; border-color:var(--accent); background:var(--input-bg); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kdetails { width:100%; font:inherit; font-size:13.5px; line-height:1.45; color:var(--ink-2); background:transparent; border:1px solid transparent; border-radius:8px; padding:6px 8px; resize:none; min-height:34px; overflow:hidden; }
+  .kcardk .kdetails:hover { border-color:var(--line-2); } .kcardk .kdetails:focus { outline:none; border-color:var(--accent); background:var(--input-bg); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .kfoot { display:flex; justify-content:flex-end; margin-top:6px; }
+  .kdlab { font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
+
+  /* ---- Undo toast ---- */
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:50;
+    display:flex; align-items:center; gap:14px; background:#1F2937; color:#fff;
+    border-radius:11px; padding:11px 14px 11px 18px; box-shadow:0 18px 40px -16px rgba(0,0,0,.5); font-size:13.5px; }
+  :root[data-theme="dark"] .toast { background:#2A2F3A; border:1px solid #3A414E; }
+  .toast[hidden] { display:none; }
+
+  /* AI summary modal */
+  .modal { position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center;
+    background:rgba(10,14,22,0.55); padding:20px; }
+  .modal[hidden] { display:none; }
+  .modal-card { width:min(720px,100%); max-height:88vh; display:flex; flex-direction:column; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-lg); overflow:hidden; }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .modal-head strong { font-size:15px; }
+  .modal-body { padding:16px 18px; overflow:auto; }
+  .modal-body textarea { width:100%; min-height:300px; font:inherit; font-size:14px; line-height:1.5; color:var(--ink);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:10px; padding:12px 14px; resize:vertical; }
+  .modal-body textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .modal-body .ai-rendered { font-size:14px; line-height:1.55; color:var(--ink); }
+  .modal-body .ai-rendered h4 { font-size:14px; margin:14px 0 6px; letter-spacing:-0.01em; }
+  .modal-body .ai-rendered h4:first-child { margin-top:0; }
+  .modal-body .ai-rendered p { margin:0 0 8px; }
+  .modal-body .ai-rendered ul, .modal-body .ai-rendered ol { margin:4px 0 10px; padding-left:22px; }
+  .modal-body .ai-rendered li { margin-bottom:3px; }
+  .modal-body .ai-rendered a { color:var(--accent); text-decoration:underline; }
+  .modal-body .ai-rendered code { font-family:var(--mono); font-size:12.5px; background:var(--input-bg); padding:1px 5px; border-radius:5px; }
+  .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
+  .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
+  #notesInput, #tnInput { min-height:150px; }
+  .tn-summary { font-size:13.5px; line-height:1.5; color:var(--ink); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:6px 0 4px; }
+  .np-head { font-size:13px; color:var(--mut); margin:14px 0 8px; }
+  .np-list { display:flex; flex-direction:column; gap:8px; }
+  .np-row { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; background:var(--card); }
+  .np-row input[type=checkbox] { margin-top:3px; width:16px; height:16px; flex:0 0 auto; cursor:pointer; }
+  .np-row.off { opacity:.5; }
+  .np-main { flex:1 1 auto; min-width:0; }
+  .np-title { font-size:14px; font-weight:600; color:var(--ink); }
+  .np-meta { font-size:12px; color:var(--mut); margin-top:2px; display:flex; flex-wrap:wrap; gap:6px; }
+  .np-meta .chip { background:var(--input-bg); border-radius:999px; padding:1px 8px; }
+  .np-upd { font-size:12.5px; color:var(--ink-2); margin-top:4px; }
+  .np-items { font-size:12.5px; color:var(--mut); margin:4px 0 0; padding-left:18px; }
+  .np-items li { margin:1px 0; }
+  .muted-sm { font-size:12px; color:var(--mut); }
+  .modal-foot { display:flex; align-items:center; gap:10px; padding:12px 18px; border-top:1px solid var(--line); background:var(--input-bg); }
+  .toast #toastUndo { font-family:var(--disp); font-size:13px; font-weight:700; color:#fff; background:transparent;
+    border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 12px; cursor:pointer; }
+  .toast #toastUndo:hover { background:rgba(255,255,255,.12); }
+
+  /* print-kudos toggle + print-only kudos section */
+  .pk-toggle { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); cursor:pointer; }
+  .pk-toggle input { accent-color:var(--accent); cursor:pointer; }
+  .wkudos { display:none; }
+  .wkudos .wk-h { font-size:15px; margin:14pt 0 8pt; }
+  .wkudos .wk-item { padding:6pt 0; border-top:1px solid #ddd; }
+  .wkudos .wk-meta { font-family:var(--mono); font-size:10pt; color:#555; }
+  .wkudos .wk-title { font-weight:700; font-size:12pt; }
+  .wkudos .wk-det { font-size:11pt; color:#222; white-space:pre-wrap; }
+
+  /* rich-text editors (long-form fields) */
+  .richtext { cursor:text; word-wrap:break-word; overflow-wrap:anywhere; }
+  .richtext:focus { outline:none; }
+  .richtext.empty::before { content:attr(data-ph); color:var(--mut); pointer-events:none; }
+  .richtext a { color:var(--accent); text-decoration:underline; }
+  .richtext ul, .richtext ol { margin:4px 0; padding-left:22px; }
+  .work-col .richtext.note { width:100%; min-height:76px; border:1px solid var(--line-2); background:var(--card); border-radius:9px; padding:10px 12px; font-size:13.5px; line-height:1.5; }
+  .work-col .richtext.note:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .kcardk .richtext.kdetails { min-height:38px; }
+  .rt-wrap { display:flex; flex-direction:column; gap:5px; }
+  .rt-bar { display:flex; gap:3px; flex-wrap:wrap; }
+  .rt-btn { font:inherit; font-size:12px; min-width:28px; height:24px; padding:0 8px; color:var(--ink-2);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:6px; cursor:pointer; }
+  .rt-btn:hover { background:var(--hover); color:var(--accent); border-color:var(--accent); }
+
+  .spin { display:inline-block; width:15px; height:15px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  .sharebar { background:var(--accent-soft); border:1px solid #D7D9FB; border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; box-shadow:var(--shadow-sm); }
+  :root[data-theme="dark"] .sharebar { border-color:#3A3F66; }
+  .share-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .share-head strong { font-size:13px; }
+  .share-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .share-label { width:130px; font:inherit; font-size:12.5px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
+  .share-url { flex:1 1 240px; min-width:0; font:inherit; font-size:12px; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
+  .share-label:focus, .share-url:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .share-loading { font-size:12.5px; color:var(--ink-2); padding:6px 0; }
+  .sharebar .note { font-size:12px; color:var(--ink-2); margin:6px 0 0; }
+  .sharebar[hidden] { display:none; }
+
+  @media (max-width:760px) {
+    .head { grid-template-columns:1fr; } .kgrid { grid-template-columns:1fr; }
   }
-
-  /* ---- Print: clean one-pager ---- */
+  @media (max-width:680px) {
+    .wrap { padding-left:14px; padding-right:14px; }
+    .who-line { flex-wrap:wrap; }
+    table.tasks thead { display:none; }
+    table.tasks, table.tasks tbody, table.tasks tr, table.tasks td { display:block; }
+    /* the block-display rule above re-shows [hidden] rows; keep collapsed tasks collapsed */
+    table.tasks tr.detail[hidden] { display:none !important; }
+    table.tasks tr:not(.detail) { padding:12px 12px 2px; }
+    table.tasks tr:not(.detail) td { border:0 !important; padding:4px 0; }
+    table.tasks tr:not(.detail):hover td { background:transparent; }
+    .col-num { font-size:11px; padding-top:0 !important; }
+    .col-status, .col-pri, .col-act { display:inline-block; vertical-align:middle; width:auto; margin-right:14px; }
+    .col-prog { display:block; max-width:280px; }
+    tr.detail td { display:block; padding:0 12px 16px; }
+    tr.detail .col-num { display:none; }
+    .meta-col { flex:1 1 100%; }
+    .work-col { flex:1 1 100%; }
+    .mini.project { width:100%; }
+  }
   @media print {
     @page { margin:14mm; }
-    body { background:#fff; font-size:11pt; }
-    .wrap { max-width:none; padding:0; }
-    .actions, .tfoot, .hint, .mast .saved, .rowbtns, .col-act { display:none !important; }
-    .head, .tcard { border:0; border-radius:0; padding:0; }
+    /* collapsed tasks still print their full detail */
+    tr.detail[hidden] { display:table-row !important; }
+    tr.collapsed { break-inside:avoid; }
+    /* always print light, even if dark mode is on */
+    :root, :root[data-theme="dark"] {
+      --bg:#fff!important; --card:#fff!important; --ink:#000!important; --ink-2:#1a1a1a!important; --mut:#555!important;
+      --line:#ccc!important; --line-2:#bbb!important; --input-bg:#fff!important; --th-bg:#f0f0f0!important;
+      --hover:#fff!important; --detail-bg:#fff!important; --accent:#000!important; --accent-soft:#fff!important;
+      --green:#0a6b3b!important; --amber:#7a5200!important; --red:#a52015!important; --slate:#333!important;
+    }
+    body { background:#fff; }
+    .mast .who-line, .mast .tag, .tabs, .actions, .tfoot, .hint, #nav-tabs, .carry, .sharebar, .logbtn, .addItem, .cdel, .cmove, .rt-bar, .fromnotes, .rowcaret, .updot, .dquick, .row-sub, .kbdhint { display:none !important; }
+    .cmh, .ai-head { color:#555 !important; }
+    .view#v-history, .view#v-kpis, .view#v-completed, .view#v-kudos { display:none !important; }
+    /* no borders/shadows around the page or table */
+    .head, .tcard, table.tasks { border:0 !important; padding:0; box-shadow:none; }
     .head { display:block; margin-bottom:10pt; }
-    .head .field { display:inline-block; margin-right:24pt; }
-    .head .field input { border:0; padding:0; background:transparent; font-weight:600; }
-    .head .field label { display:block; }
-    table.tasks { border:1px solid #999; }
-    table.tasks thead th { background:#f0f0f0; color:#000; border-bottom:1px solid #999; }
-    table.tasks tbody td { border-bottom:1px solid #ccc; }
-    .cell-input, select.chip, select.pri { border:0 !important; background:transparent !important; padding:2px 0 !important; -webkit-appearance:none; appearance:none; }
-    select.chip { font-weight:700; padding-left:0; }
+    .head .field { display:inline-block; margin-right:28pt; vertical-align:top; }
+    .head .field label { display:inline; margin:0 6pt 0 0; }
+    .head .field .weeknav { display:inline; }
+    .head .field input { display:inline-block; width:auto; border:0; padding:0; background:transparent; font-weight:700; }
+    .weeknav .ibtn, #weekThis { display:none !important; }
+    /* hide every button / reorder arrow when printing */
+    .col-act, .rowbtns, .ibtn { display:none !important; }
     .prog input[type=range] { display:none; }
-    .prog .pv { width:auto; }
+    .cell-input, select.chip, select.pri, .mini { border:0 !important; background:transparent !important; }
+    /* strip ALL native control arrows / spinners / icons so only text prints */
+    select, input { -webkit-appearance:none !important; -moz-appearance:none !important; appearance:none !important; background-image:none !important; padding-right:0 !important; }
+    select::-ms-expand { display:none !important; }
+    input::-webkit-calendar-picker-indicator, input::-webkit-inner-spin-button,
+    input::-webkit-clear-button, select::-webkit-inner-spin-button { display:none !important; -webkit-appearance:none !important; }
+    /* preserve multi-line comments and show full content (no clipping) */
+    textarea, .cell-input { height:auto !important; min-height:0 !important; overflow:visible !important; white-space:pre-wrap !important; }
+    /* no horizontal divider lines anywhere in the task list */
+    table.tasks td { border:0 !important; }
+    /* optional kudos section on the printed weekly report */
+    .wkudos.show { display:block !important; break-before:auto; }
+    .wkudos .wk-item { break-inside:avoid; }
+    /* keep a task and its detail (comments / action items) together on one page */
+    table.tasks tr { break-inside:avoid; page-break-inside:avoid; }
+    table.tasks tr.detail { break-before:avoid; page-break-before:avoid; }
+    .head { break-inside:avoid; }
   }
 </style>
+<script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 </head>
 <body>
 <div class="wrap">
@@ -151,365 +479,1532 @@
       <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><ellipse cx="12" cy="7.5" rx="7" ry="3"/><circle cx="12" cy="5" r="3.2"/><circle cx="7.5" cy="6.5" r="2.4"/><circle cx="16.5" cy="6.5" r="2.4"/><circle cx="9.7" cy="4.6" r="1.8"/><circle cx="14.3" cy="4.6" r="1.8"/><path d="M10 9.5q-.6 3 .4 4.5-1 1.6-.8 3.5h4.8q.2-1.9-.8-3.5 1-1.5.4-4.5z"/><ellipse cx="12" cy="18.5" rx="5.2" ry="1.7"/><circle cx="6.8" cy="18.3" r="1.1"/><circle cx="17.2" cy="18.3" r="1.1"/></svg></div>
       <div>
         <h1>Weekly Task Tracker</h1>
-        <div class="tag">Task status report · for leadership</div>
+        <div class="tag">Saved in this browser</div>
       </div>
     </div>
-    <div class="saved" id="saved" aria-live="polite">Saved locally</div>
+    <div class="who-line" id="whoLine" hidden>
+      <button class="btn ghost sm" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+    </div>
   </header>
 
-  <section class="head">
-    <div class="field">
-      <label for="who">Prepared by</label>
-      <input id="who" type="text" placeholder="Your name · title" autocomplete="name" />
+  <!-- ============ APP ============ -->
+  <main id="app" hidden>
+    <div class="tabs" id="nav-tabs" role="tablist">
+      <button id="tab-week" class="on" type="button">This week</button>
+      <button id="tab-history" type="button">History</button>
+      <button id="tab-completed" type="button">Completed</button>
+      <button id="tab-kudos" type="button">Kudos</button>
+      <button id="tab-kpis" type="button">KPIs</button>
     </div>
-    <div class="field">
-      <label for="week">Week ending</label>
-      <input id="week" type="date" />
-    </div>
-  </section>
 
-  <div class="actions">
-    <button class="btn" id="add" type="button">+ Add task</button>
-    <span class="spacer"></span>
-    <button class="btn ghost" id="copy" type="button">Copy as text</button>
-    <button class="btn ghost" id="md" type="button">Download Markdown</button>
-    <button class="btn ghost" id="print" type="button">Print / PDF</button>
+    <!-- ---- Editor ---- -->
+    <section class="view" id="v-week">
+      <section class="head">
+        <div class="field">
+          <label for="who">Prepared by</label>
+          <input id="who" type="text" placeholder="Your name · title" />
+        </div>
+        <div class="field">
+          <label for="week">Week ending</label>
+          <div class="weeknav">
+            <button class="ibtn" id="weekPrev" type="button" title="Previous week" aria-label="Previous week">◀</button>
+            <input id="week" type="date" />
+            <button class="ibtn" id="weekNext" type="button" title="Next week" aria-label="Next week">▶</button>
+            <button class="btn ghost sm" id="weekThis" type="button">This week</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="carry note info" id="carryBanner" hidden>
+        <span class="ct" id="carryText"></span>
+        <button class="btn ghost sm" id="carryBlank" type="button">Start blank instead</button>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="add" type="button">+ Add task</button>
+        <button class="btn ghost" id="logToday" type="button" title="Stamp today's date into every task that has no update yet today">✎ Log today</button>
+        <button class="btn ghost" id="save" type="button">Save</button>
+        <button class="btn ghost" id="toggleDone" type="button" hidden>Show done</button>
+        <span class="spacer"></span>
+        <span class="todaylab" id="todaylab"></span>
+        <span class="kbdhint" title="Press Alt with the up/down arrows to jump between tasks and start typing">⌥↑/↓ jump</span>
+        <button class="btn ghost sm" id="collapseAll" type="button" title="Collapse or expand all tasks">⊟ Collapse all</button>
+        <label class="sortlab">Sort
+          <select id="sortMode">
+            <option value="status">By status</option>
+            <option value="due">By due date</option>
+            <option value="project">By project / area</option>
+            <option value="manual">Manual order</option>
+          </select>
+        </label>
+        <span class="savestate" id="savestate">—</span>
+      </div>
+
+      <div class="tcard">
+        <table class="tasks">
+          <thead>
+            <tr>
+              <th class="col-num">#</th><th>Task</th>
+              <th class="col-status">Status</th><th class="col-pri">Priority</th>
+              <th class="col-prog">Progress</th><th class="col-act">Delete</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="tfoot">
+          <button class="btn ghost sm" id="copy" type="button">Copy as text</button>
+          <button class="btn ghost sm" id="md" type="button">Download Markdown</button>
+          <button class="btn ghost sm" id="print" type="button">Print / PDF</button>
+          <label class="pk-toggle"><input type="checkbox" id="printKudos" /> Include kudos in print</label>
+          <span class="spacer" style="flex:1 1 auto"></span>
+          <button class="btn ghost sm danger" id="del" type="button">Delete this week</button>
+        </div>
+      </div>
+
+      <!-- print-only kudos section (shown in print when "Include kudos" is on) -->
+      <section class="wkudos" id="weekKudos"></section>
+
+      <p class="hint">Edits auto-save a moment after you stop typing. Use <b>◀ ▶</b> or <b>This week</b> to move
+        between weeks; a new week pre-fills with last week's unfinished tasks. <b>＋ today</b> stamps a dated line
+        so you can log progress daily. Add checkable <b>action items</b> under any task and tick them off as you go.</p>
+    </section>
+
+    <!-- ---- History ---- -->
+    <section class="view" id="v-history" hidden>
+      <div class="htoolbar">
+        <button class="btn ghost sm" id="historyCsv" type="button">⬇ Download all as CSV</button>
+      </div>
+      <div id="historyBody"></div>
+    </section>
+
+    <!-- ---- Completed archive ---- -->
+    <section class="view" id="v-completed" hidden>
+      <div class="cbar">
+        <input id="completedSearch" type="search" placeholder="Search completed tasks…" aria-label="Search completed tasks" />
+        <span class="cbar-count" id="completedCount"></span>
+        <button class="btn ghost sm" id="completedCsv" type="button">⬇ CSV</button>
+      </div>
+      <div id="completedBody"></div>
+    </section>
+
+    <!-- ---- Kudos ---- -->
+    <section class="view" id="v-kudos" hidden>
+      <div class="htoolbar" style="justify-content:space-between">
+        <p class="hint" style="margin:0">Log praise &amp; recognition — it’s tracked here and on the KPIs tab, and can be included on your printed report.</p>
+        <div class="htoolbar" style="gap:8px">
+          <button class="btn ghost sm" id="kudosCsv" type="button">⬇ CSV</button>
+          <button class="btn" id="addKudos" type="button">+ Add kudos</button>
+        </div>
+      </div>
+      <div id="kudosBody"></div>
+    </section>
+
+    <!-- ---- KPIs ---- -->
+    <section class="view" id="v-kpis" hidden>
+      <div id="kpiBody"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden>
+    <span id="toastMsg"></span>
+    <button id="toastUndo" type="button">Undo</button>
   </div>
 
-  <div class="tcard">
-    <table class="tasks">
-      <thead>
-        <tr>
-          <th class="col-num">#</th>
-          <th>Task</th>
-          <th class="col-status">Status</th>
-          <th class="col-pri">Priority</th>
-          <th class="col-prog">Progress</th>
-          <th>Update this week</th>
-          <th class="col-act">Row</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div class="tfoot">
-      <button class="btn ghost sm danger" id="clear" type="button">Clear &amp; start new week</button>
-    </div>
-  </div>
-
-  <p class="hint">
-    Everything is saved <b>in this browser only</b> (no account, no server). Use
-    <b>Copy as text</b> for email/Slack, <b>Download Markdown</b> for docs/wikis, or
-    <b>Print / PDF</b> for a clean one-pager. <b>Clear &amp; start new week</b> rolls the
-    date forward and clears updates so you can begin the next report.
-  </p>
-  <p class="hint" style="margin-top:8px">
-    Need your reports <b>saved to a database</b> so you can refer back to them and run KPIs?
-    Use the <a href="tracker.html" style="color:#2563EB;font-weight:600">cloud version &rarr;</a>
-  </p>
 
 </div>
 
-<script>
-(function () {
-  "use strict";
-
-  var KEY = "weekly_task_tracker_v1";
-  var STATUSES = [
-    { v:"On Track", cls:"s-ontrack" },
-    { v:"At Risk",  cls:"s-atrisk" },
-    { v:"Blocked",  cls:"s-blocked" },
-    { v:"Done",     cls:"s-done" }
-  ];
-  var PRIORITIES = ["High", "Med", "Low"];
-
-  var rowsEl   = document.getElementById("rows");
-  var whoEl    = document.getElementById("who");
-  var weekEl   = document.getElementById("week");
-  var savedEl  = document.getElementById("saved");
-
-  // ---- date helpers ----
-  function pad(n){ return (n < 10 ? "0" : "") + n; }
-  function isoDate(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
-  function comingFriday(from){
-    var d = from ? new Date(from) : new Date();
-    // 5 = Friday; advance to the next Friday (today counts if it's Friday)
-    var delta = (5 - d.getDay() + 7) % 7;
-    d.setDate(d.getDate() + delta);
-    return d;
-  }
-  function prettyDate(iso){
-    if (!iso) return "";
-    var p = iso.split("-");
-    var d = new Date(+p[0], +p[1]-1, +p[2]);
-    return d.toLocaleDateString(undefined, { year:"numeric", month:"long", day:"numeric" });
-  }
-
-  // ---- state ----
-  function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"" }; }
-
-  var state = { who:"", week:"", rows:[] };
-
-  function load(){
-    var raw;
-    try { raw = localStorage.getItem(KEY); } catch(e) { raw = null; }
-    if (raw) {
-      try {
-        var s = JSON.parse(raw);
-        state.who  = typeof s.who === "string" ? s.who : "";
-        state.week = typeof s.week === "string" ? s.week : "";
-        state.rows = Array.isArray(s.rows) ? s.rows : [];
-      } catch(e) { /* fall through to defaults */ }
+<script type="module">
+// ============================================================================
+//  Local backend — this standalone stores everything in your browser
+//  (localStorage). No account, no server. A tiny shim mimics the slice of the
+//  Supabase query API the app uses, and computes the KPI "views" in JS.
+// ============================================================================
+const DB_KEY = "weekly_task_tracker_db_v1";
+function dbLoad(){ try { const v = JSON.parse(localStorage.getItem(DB_KEY)); if (v && Array.isArray(v.reports)) return v; } catch(e){} return { reports:[], tasks:[], kudos:[] }; }
+function dbSave(d){ try { localStorage.setItem(DB_KEY, JSON.stringify(d)); } catch(e){} }
+function uid(){ return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "id-"+Math.random().toString(36).slice(2)+Date.now(); }
+function nowIso(){ return new Date().toISOString(); }
+function clone(x){ return x==null ? x : JSON.parse(JSON.stringify(x)); }
+function matchFilters(r, filters){ return filters.every(([op,c,v]) => { const a=r[c];
+  if (op==="eq") return a===v; if (op==="neq") return a!==v; if (op==="lt") return (a==null?"":a) < v; return true; }); }
+function applyOrders(rows, orders){
+  if (!orders.length) return rows.slice();
+  return rows.slice().sort((a,b) => {
+    for (const [c,asc,nullsFirst] of orders){
+      let av=a[c], bv=b[c]; const an=(av==null||av===""), bn=(bv==null||bv==="");
+      if (an&&bn) continue; if (an) return nullsFirst?-1:1; if (bn) return nullsFirst?1:-1;
+      if (av<bv) return asc?-1:1; if (av>bv) return asc?1:-1;
     }
-    if (!state.week) state.week = isoDate(comingFriday());
-    if (!state.rows.length) state.rows = [ blankRow(), blankRow(), blankRow() ];
-    // normalize rows
-    state.rows = state.rows.map(function (r) {
-      r = r || {};
-      return {
-        task:   typeof r.task === "string" ? r.task : "",
-        status: STATUSES.some(function(s){return s.v===r.status;}) ? r.status : "On Track",
-        pri:    PRIORITIES.indexOf(r.pri) >= 0 ? r.pri : "Med",
-        prog:   Math.max(0, Math.min(100, parseInt(r.prog, 10) || 0)),
-        note:   typeof r.note === "string" ? r.note : ""
-      };
-    });
-  }
-
-  var saveTimer = null;
-  function save(){
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
-    savedEl.textContent = "Saved locally";
-    savedEl.classList.add("flash");
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(function(){ savedEl.classList.remove("flash"); }, 700);
-  }
-
-  function statusClass(v){
-    for (var i=0;i<STATUSES.length;i++) if (STATUSES[i].v===v) return STATUSES[i].cls;
-    return "s-ontrack";
-  }
-
-  function autosize(ta){ ta.style.height = "auto"; ta.style.height = (ta.scrollHeight) + "px"; }
-
-  // ---- rendering ----
-  function render(){
-    whoEl.value = state.who;
-    weekEl.value = state.week;
-    rowsEl.innerHTML = "";
-
-    if (!state.rows.length) {
-      var tr = document.createElement("tr");
-      var td = document.createElement("td");
-      td.colSpan = 7; td.className = "empty";
-      td.textContent = "No tasks yet — click “+ Add task” to start your report.";
-      tr.appendChild(td); rowsEl.appendChild(tr);
-      return;
+    return 0;
+  });
+}
+function reportWeek(db){ const m={}; db.reports.forEach(r=>m[r.id]=r.week_ending); return m; }
+function liveTasks(db){ const wk=reportWeek(db); return db.tasks.filter(t=>wk[t.report_id] !== undefined); } // inner-join task→report (ignore any orphans)
+function computeCompleted(db){ const wk=reportWeek(db);
+  return liveTasks(db).filter(t=>t.status==="Done").map(t=>({ week_ending:wk[t.report_id], task:t.task, project:t.project,
+    priority:t.priority, progress:t.progress, note:t.note, due_date:t.due_date, items:t.items, position:t.position,
+    started_on:t.started_on, completed_on:t.completed_on })); }
+function computeKpiWeekly(db){ return db.reports.map(rep => { const ts=db.tasks.filter(t=>t.report_id===rep.id);
+    const total=ts.length, done=ts.filter(t=>t.status==="Done").length;
+    return { week_ending:rep.week_ending, total_tasks:total, done,
+      on_track:ts.filter(t=>t.status==="On Track").length, at_risk:ts.filter(t=>t.status==="At Risk").length,
+      blocked:ts.filter(t=>t.status==="Blocked").length, completion_rate: total?Math.round(100*done/total):0,
+      avg_progress: total?Math.round(ts.reduce((a,t)=>a+(+t.progress||0),0)/total):0 };
+  }).filter(r=>r.total_tasks>0); }
+function computeCarryover(db){ const wk=reportWeek(db);
+  const occ=liveTasks(db).map(t=>({ week:wk[t.report_id], title:(t.task||"").trim().toLowerCase(), task:t.task, status:t.status })).filter(o=>o.title);
+  return occ.map(o => ({ week_ending:o.week, task:o.task, status:o.status,
+    prior_weeks_seen: new Set(occ.filter(x=>x.title===o.title && x.week < o.week).map(x=>x.week)).size })); }
+function computeByProject(db){ const m={};
+  liveTasks(db).forEach(t=>{ const p=(t.project||"").trim(); if(!p) return; (m[p]=m[p]||{project:p,total_tasks:0,done:0}); m[p].total_tasks++; if(t.status==="Done") m[p].done++; });
+  return Object.values(m); }
+function computeTaskExport(db){ const rep={}; db.reports.forEach(r=>rep[r.id]=r);
+  return liveTasks(db).map(t=>{ const r=rep[t.report_id]||{}; return { week_ending:r.week_ending, prepared_by:r.prepared_by,
+    task:t.task, project:t.project, status:t.status, priority:t.priority, progress:t.progress, due_date:t.due_date,
+    started_on:t.started_on, completed_on:t.completed_on, note:t.note, items:t.items, position:t.position }; }); }
+function viewRows(db, table){
+  if (db[table]) return db[table];
+  if (table==="completed_tasks") return computeCompleted(db);
+  if (table==="kpi_weekly") return computeKpiWeekly(db);
+  if (table==="kpi_carryover") return computeCarryover(db);
+  if (table==="kpi_by_project") return computeByProject(db);
+  if (table==="task_export") return computeTaskExport(db);
+  return [];
+}
+function localRun(q){
+  const db = dbLoad();
+  try {
+    if (q.action==="select"){
+      let rows = viewRows(db, q.table).filter(r => matchFilters(r, q.filters));
+      rows = applyOrders(rows, q.orders);
+      if (q.lim!=null) rows = rows.slice(0, q.lim);
+      if (q.single){ const r=rows[0]; return { data: r?clone(r):null, error: r?null:{message:"No rows"} }; }
+      return { data: rows.map(clone), error:null };
     }
-
-    state.rows.forEach(function (row, i) {
-      var tr = document.createElement("tr");
-
-      // # number
-      var tdNum = document.createElement("td");
-      tdNum.className = "col-num"; tdNum.textContent = (i+1);
-      tr.appendChild(tdNum);
-
-      // Task
-      var tdTask = document.createElement("td");
-      var task = document.createElement("textarea");
-      task.className = "cell-input"; task.rows = 1; task.placeholder = "What you worked on";
-      task.value = row.task;
-      task.addEventListener("input", function(){ row.task = task.value; autosize(task); save(); });
-      tdTask.appendChild(task); tr.appendChild(tdTask);
-
-      // Status
-      var tdStatus = document.createElement("td"); tdStatus.className = "col-status";
-      var sel = document.createElement("select");
-      sel.className = "chip " + statusClass(row.status);
-      STATUSES.forEach(function (s) {
-        var o = document.createElement("option"); o.value = s.v; o.textContent = s.v;
-        if (s.v === row.status) o.selected = true; sel.appendChild(o);
+    const arr = db[q.table];
+    if (!arr) return { data:null, error:{message:"Unknown table "+q.table} };
+    if (q.action==="insert" || q.action==="upsert"){
+      const items = Array.isArray(q.payload) ? q.payload : [q.payload];
+      const out = items.map(p => {
+        if (q.action==="upsert"){ const ex = arr.find(r=>r.week_ending===p.week_ending); if (ex){ Object.assign(ex,p); return ex; } }
+        const row = Object.assign({ id: uid(), created_at: nowIso() }, p); arr.push(row); return row;
       });
-      sel.addEventListener("change", function(){
-        row.status = sel.value;
-        sel.className = "chip " + statusClass(row.status);
-        save();
-      });
-      tdStatus.appendChild(sel); tr.appendChild(tdStatus);
-
-      // Priority
-      var tdPri = document.createElement("td"); tdPri.className = "col-pri";
-      var pri = document.createElement("select"); pri.className = "pri";
-      PRIORITIES.forEach(function (p) {
-        var o = document.createElement("option"); o.value = p; o.textContent = p;
-        if (p === row.pri) o.selected = true; pri.appendChild(o);
-      });
-      pri.addEventListener("change", function(){ row.pri = pri.value; save(); });
-      tdPri.appendChild(pri); tr.appendChild(tdPri);
-
-      // Progress
-      var tdProg = document.createElement("td"); tdProg.className = "col-prog";
-      var wrap = document.createElement("div"); wrap.className = "prog";
-      var rng = document.createElement("input");
-      rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog;
-      var pv = document.createElement("span"); pv.className = "pv"; pv.textContent = row.prog + "%";
-      rng.addEventListener("input", function(){
-        row.prog = parseInt(rng.value, 10) || 0; pv.textContent = row.prog + "%"; save();
-      });
-      wrap.appendChild(rng); wrap.appendChild(pv);
-      tdProg.appendChild(wrap); tr.appendChild(tdProg);
-
-      // Update / note
-      var tdNote = document.createElement("td");
-      var note = document.createElement("textarea");
-      note.className = "cell-input"; note.rows = 1; note.placeholder = "Progress, next step, blocker…";
-      note.value = row.note;
-      note.addEventListener("input", function(){ row.note = note.value; autosize(note); save(); });
-      tdNote.appendChild(note); tr.appendChild(tdNote);
-
-      // Row actions
-      var tdAct = document.createElement("td"); tdAct.className = "col-act";
-      var grp = document.createElement("div"); grp.className = "rowbtns";
-      var up = mkIbtn("▲", "Move up", function(){ moveRow(i, -1); });
-      var dn = mkIbtn("▼", "Move down", function(){ moveRow(i, 1); });
-      var del = mkIbtn("✕", "Delete task", function(){ state.rows.splice(i,1); save(); render(); });
-      del.classList.add("del");
-      up.disabled = (i === 0);
-      dn.disabled = (i === state.rows.length - 1);
-      grp.appendChild(up); grp.appendChild(dn); grp.appendChild(del);
-      tdAct.appendChild(grp); tr.appendChild(tdAct);
-
-      rowsEl.appendChild(tr);
-
-      // size textareas to content after they're in the DOM
-      autosize(task); autosize(note);
-    });
-  }
-
-  function mkIbtn(label, title, fn){
-    var b = document.createElement("button");
-    b.type = "button"; b.className = "ibtn"; b.textContent = label;
-    b.title = title; b.setAttribute("aria-label", title);
-    b.addEventListener("click", fn);
-    return b;
-  }
-
-  function moveRow(i, dir){
-    var j = i + dir;
-    if (j < 0 || j >= state.rows.length) return;
-    var tmp = state.rows[i]; state.rows[i] = state.rows[j]; state.rows[j] = tmp;
-    save(); render();
-  }
-
-  // ---- export builders ----
-  function filledRows(){
-    return state.rows.filter(function (r) {
-      return (r.task && r.task.trim()) || (r.note && r.note.trim());
-    });
-  }
-
-  function buildMarkdown(){
-    var lines = [];
-    lines.push("# Weekly Status — Week ending " + (prettyDate(state.week) || state.week));
-    if (state.who && state.who.trim()) lines.push("**Prepared by:** " + state.who.trim());
-    lines.push("");
-    lines.push("| # | Task | Status | Priority | Progress | Update |");
-    lines.push("|---|------|--------|----------|----------|--------|");
-    var rs = filledRows();
-    rs.forEach(function (r, i) {
-      lines.push("| " + (i+1) +
-        " | " + mdCell(r.task) +
-        " | " + mdCell(r.status) +
-        " | " + mdCell(r.pri) +
-        " | " + r.prog + "%" +
-        " | " + mdCell(r.note) + " |");
-    });
-    if (!rs.length) lines.push("| – | _No tasks recorded_ |  |  |  |  |");
-    lines.push("");
-    return lines.join("\n");
-  }
-  function mdCell(s){
-    return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n+/g, " ").trim();
-  }
-
-  function buildText(){
-    var out = [];
-    out.push("WEEKLY STATUS — Week ending " + (prettyDate(state.week) || state.week));
-    if (state.who && state.who.trim()) out.push("Prepared by: " + state.who.trim());
-    out.push("");
-    var rs = filledRows();
-    if (!rs.length) { out.push("(No tasks recorded.)"); return out.join("\n"); }
-    rs.forEach(function (r, i) {
-      out.push((i+1) + ". " + (r.task ? r.task.trim() : "(untitled)") +
-        "  [" + r.status + " · " + r.pri + " · " + r.prog + "%]");
-      if (r.note && r.note.trim()) out.push("   " + r.note.trim().replace(/\r?\n+/g, " "));
-    });
-    out.push("");
-    return out.join("\n");
-  }
-
-  function download(filename, text){
-    var blob = new Blob([text], { type:"text/markdown;charset=utf-8" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-  }
-
-  function flashBtn(btn, msg){
-    var orig = btn.textContent;
-    btn.textContent = msg; btn.disabled = true;
-    setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1100);
-  }
-
-  // ---- wire up ----
-  whoEl.addEventListener("input", function(){ state.who = whoEl.value; save(); });
-  weekEl.addEventListener("change", function(){ state.week = weekEl.value; save(); });
-
-  document.getElementById("add").addEventListener("click", function(){
-    state.rows.push(blankRow()); save(); render();
-    // focus the new row's task field
-    var inputs = rowsEl.querySelectorAll("textarea.cell-input");
-    if (inputs.length) inputs[(state.rows.length-1)*2].focus();
-  });
-
-  document.getElementById("md").addEventListener("click", function(){
-    download("weekly-task-tracker-" + (state.week || isoDate(new Date())) + ".md", buildMarkdown());
-  });
-
-  document.getElementById("copy").addEventListener("click", function(){
-    var btn = this, text = buildText();
-    function ok(){ flashBtn(btn, "Copied ✓"); }
-    function fallback(){
-      var ta = document.createElement("textarea");
-      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); ok(); } catch(e){ flashBtn(btn, "Copy failed"); }
-      document.body.removeChild(ta);
+      dbSave(db);
+      const data = q.single ? clone(out[0]) : out.map(clone);
+      return { data: q.sel ? data : null, error:null };
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(ok, fallback);
-    } else { fallback(); }
+    if (q.action==="update"){ arr.filter(r=>matchFilters(r,q.filters)).forEach(r=>Object.assign(r,q.payload)); dbSave(db); return { data:null, error:null }; }
+    if (q.action==="delete"){
+      const removed = arr.filter(r=>matchFilters(r,q.filters));
+      db[q.table] = arr.filter(r=>!matchFilters(r,q.filters));
+      if (q.table==="reports" && removed.length){ const ids=new Set(removed.map(r=>r.id)); db.tasks = db.tasks.filter(t=>!ids.has(t.report_id)); } // FK cascade
+      dbSave(db); return { data:null, error:null };
+    }
+    return { data:null, error:{message:"Unsupported"} };
+  } catch(e){ return { data:null, error:{message:String((e&&e.message)||e)} }; }
+}
+function localFrom(table){
+  const q = { table, sel:null, filters:[], orders:[], lim:null, single:false, action:"select", payload:null };
+  const api = {
+    select(c){ q.sel=c; return api; },
+    insert(p){ q.action="insert"; q.payload=p; return api; },
+    update(p){ q.action="update"; q.payload=p; return api; },
+    upsert(p){ q.action="upsert"; q.payload=p; return api; },
+    delete(){ q.action="delete"; return api; },
+    eq(c,v){ q.filters.push(["eq",c,v]); return api; },
+    neq(c,v){ q.filters.push(["neq",c,v]); return api; },
+    lt(c,v){ q.filters.push(["lt",c,v]); return api; },
+    order(c,o){ q.orders.push([c, !(o&&o.ascending===false), !!(o&&o.nullsFirst)]); return api; },
+    limit(n){ q.lim=n; return api; },
+    single(){ q.single=true; return api; },
+    then(res,rej){ return Promise.resolve().then(()=>localRun(q)).then(res,rej); },
+  };
+  return api;
+}
+const LOCAL_SESSION = { user: { id: "local" } };
+const sb = {
+  from: localFrom,
+  auth: {
+    getSession: async () => ({ data:{ session: LOCAL_SESSION } }),
+    onAuthStateChange: () => ({ data:{ subscription:{ unsubscribe(){} } } }),
+    signOut: async () => ({ error:null }),
+    signUp: async () => ({ error:null }),
+    signInWithPassword: async () => ({ error:null }),
+  },
+};
+
+const STATUSES = [
+  { v:"On Track", cls:"s-ontrack" }, { v:"At Risk", cls:"s-atrisk" },
+  { v:"Blocked", cls:"s-blocked" }, { v:"Done", cls:"s-done" }
+];
+const STATUS_RANK = { "Blocked":0, "At Risk":1, "On Track":2, "Done":3 };
+const PRIORITIES = ["High","Med","Low"];
+let COLORS = { done:"#1A8A4E", ontrack:"#2563EB", atrisk:"#D9A300", blocked:"#B42318", accent:"#2563EB" };
+function refreshChartColors(){
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  COLORS = dark
+    ? { done:"#46D08A", ontrack:"#9AA0FF", atrisk:"#E6B655", blocked:"#FF8275", accent:"#9AA0FF" }
+    : { done:"#1A8A4E", ontrack:"#2563EB", atrisk:"#D9A300", blocked:"#B42318", accent:"#2563EB" };
+}
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+function pad(n){ return (n<10?"0":"")+n; }
+function isoDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayIso(){ return isoDate(new Date()); }
+function comingFriday(from){
+  const d = from ? new Date(from) : new Date();
+  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7));
+  return d;
+}
+function addDaysIso(iso, days){
+  const p = iso.split("-"); const d = new Date(+p[0], +p[1]-1, +p[2]);
+  d.setDate(d.getDate() + days); return isoDate(d);
+}
+function prettyDate(iso){
+  if(!iso) return "";
+  const p = iso.split("-"); const d = new Date(+p[0], +p[1]-1, +p[2]);
+  return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" });
+}
+function shortDate(iso){
+  if(!iso) return "";
+  const p = iso.split("-"); const d = new Date(+p[0], +p[1]-1, +p[2]);
+  return d.toLocaleDateString(undefined,{ month:"short", day:"numeric" });
+}
+function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"", project:"", due:"", items:[], started:"", completed:"" }; }
+function normItems(v){ return Array.isArray(v) ? v.filter(it => it && typeof it.text==="string").map(it => ({ text:it.text, done:!!it.done })) : []; }
+function statusClass(v){ const s = STATUSES.find(s=>s.v===v); return s?s.cls:"s-ontrack"; }
+function priClass(v){ return v==="High" ? "p-high" : v==="Low" ? "p-low" : "p-med"; }
+function autosize(ta){ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
+function esc(s){ return String(s==null?"":s); }
+
+// ---------- app state ----------
+let session = null;
+let state = { who:"", week:"", rows:[], notes:"" };
+let reportId = null;
+let saveTimer = null;
+let sortMode = "status";
+try { const s = localStorage.getItem("tracker_sort"); if (s) sortMode = s; } catch(e){}
+let showDone = false;   // Done tasks move to the Completed tab; this reveals them in the editor
+
+// ---------- undo toast (safety net for any delete) ----------
+let undoTimer = null, undoFn = null;
+function showUndo(msg, fn){
+  undoFn = fn; $("toastMsg").textContent = msg; $("toast").hidden = false;
+  clearTimeout(undoTimer); undoTimer = setTimeout(hideUndo, 8000);
+}
+function hideUndo(){ $("toast").hidden = true; undoFn = null; clearTimeout(undoTimer); }
+function isBlankRow(r){ return !(r.task&&r.task.trim()) && !(r.note&&r.note.trim()) && !(r.project&&r.project.trim()) && !(r.items&&r.items.length); }
+$("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); if (f) f(); });
+
+// ============ RICH TEXT (long-form fields: comments + kudos details) ============
+function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
+function plainToHtml(s){ return escHtml(s).replace(/\r?\n/g, "<br>"); }
+const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1,
+                     H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,CODE:1 };
+function sanitizeHtml(html){
+  const doc = new DOMParser().parseFromString("<div>"+(html||"")+"</div>", "text/html");
+  const root = doc.body.firstChild;
+  (function walk(node){
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeType === 3) return;                 // text node — keep
+      if (child.nodeType !== 1) { child.remove(); return; }
+      const tag = child.tagName;
+      if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); return; }
+      if (!RT_ALLOWED[tag]) { while (child.firstChild) node.insertBefore(child.firstChild, child); child.remove(); return; }
+      Array.from(child.attributes).forEach(a => {
+        const name = a.name.toLowerCase();
+        if (tag === "A" && name === "href") {
+          if (!/^(https?:|mailto:)/i.test((a.value||"").trim())) child.removeAttribute("href");
+        } else { child.removeAttribute(a.name); }
+      });
+      if (tag === "A") { child.setAttribute("target","_blank"); child.setAttribute("rel","noopener noreferrer nofollow"); }
+      walk(child);
+    });
+  })(root);
+  return root.innerHTML;
+}
+function htmlToText(s){
+  if (!looksHtml(s)) return s || "";
+  const doc = new DOMParser().parseFromString(s, "text/html");
+  doc.body.querySelectorAll("li").forEach(li => { li.prepend("• "); li.append("\n"); });
+  doc.body.querySelectorAll("br").forEach(b => b.replaceWith("\n"));
+  doc.body.querySelectorAll("p,div").forEach(d => d.append("\n"));
+  return doc.body.textContent.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+function rtCurrent(el){ const h = el.innerHTML.trim(); return (h===""||h==="<br>"||h==="<div><br></div>") ? "" : sanitizeHtml(h); }
+function richDisplay(s){ return looksHtml(s) ? sanitizeHtml(s) : plainToHtml(s); }
+function rtPlaceholder(el){ el.classList.toggle("empty", el.textContent.trim()===""); }
+function rtLinkify(el){
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) { if (n.parentElement && n.parentElement.closest("a")) continue;
+    if (/(https?:\/\/|www\.)/i.test(n.nodeValue)) nodes.push(n); }
+  nodes.forEach(t => {
+    const s = t.nodeValue, frag = document.createDocumentFragment(); const re = /((https?:\/\/|www\.)[^\s<]+)/gi;
+    let last = 0, m;
+    while ((m = re.exec(s))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      const a = document.createElement("a"); let href = m[0]; if (/^www\./i.test(href)) href = "https://" + href;
+      a.href = href; a.textContent = m[0]; frag.appendChild(a); last = m.index + m[0].length;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    t.replaceWith(frag);
   });
-
-  document.getElementById("print").addEventListener("click", function(){ window.print(); });
-
-  document.getElementById("clear").addEventListener("click", function(){
-    if (!confirm("Start a new week? This clears all tasks/updates and rolls the week-ending date forward.")) return;
-    // roll forward one week from the current week-ending date
-    var base = state.week ? new Date(state.week + "T00:00:00") : new Date();
-    base.setDate(base.getDate() + 7);
-    state.week = isoDate(comingFriday(base));
-    state.rows = [ blankRow(), blankRow(), blankRow() ];
-    save(); render();
+}
+const RT_BTNS = [["bold","<b>B</b>","Bold (Ctrl/Cmd+B)"],["italic","<i>I</i>","Italic (Ctrl/Cmd+I)"],
+                 ["insertUnorderedList","&bull; List","Bullet list"],["createLink","&#128279; Link","Add link (Ctrl/Cmd+K)"]];
+function rtLinkOn(el){
+  el.focus();
+  const sel = window.getSelection(); const hasSel = sel && sel.toString().trim();
+  const url = prompt("Link URL:", "https://"); if (!url) return;
+  if (hasSel) document.execCommand("createLink", false, url);
+  else document.execCommand("insertHTML", false, '<a href="'+escHtml(url)+'">'+escHtml(url)+'</a>');
+}
+// returns a wrapper { its own inline toolbar + the contenteditable }; the editor is .querySelector('.richtext')
+function makeRich(value, placeholder, onChange){
+  const wrap = document.createElement("div"); wrap.className = "rt-wrap";
+  const bar = document.createElement("div"); bar.className = "rt-bar";
+  const el = document.createElement("div");
+  el.className = "cell-input richtext"; el.contentEditable = "true"; el.dataset.ph = placeholder || "";
+  el.innerHTML = sanitizeHtml(looksHtml(value) ? value : plainToHtml(value || ""));
+  rtPlaceholder(el);
+  RT_BTNS.forEach(([cmd, label, title]) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "rt-btn"; b.title = title; b.innerHTML = label;
+    b.addEventListener("mousedown", e => e.preventDefault());   // keep the editor's selection/focus
+    b.addEventListener("click", () => {
+      el.focus();
+      if (cmd === "createLink") rtLinkOn(el); else document.execCommand(cmd, false, null);
+      rtPlaceholder(el); onChange(rtCurrent(el));
+    });
+    bar.appendChild(b);
   });
+  el.addEventListener("input", () => { rtPlaceholder(el); onChange(rtCurrent(el)); });
+  el.addEventListener("blur", () => { rtLinkify(el); const clean = sanitizeHtml(el.innerHTML); if (clean !== el.innerHTML) el.innerHTML = clean; rtPlaceholder(el); onChange(rtCurrent(el)); });
+  el.addEventListener("paste", (e) => { e.preventDefault(); const text = (e.clipboardData || window.clipboardData).getData("text/plain"); document.execCommand("insertText", false, text); });
+  el.addEventListener("keydown", (e) => { if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k") { e.preventDefault(); rtLinkOn(el); } });
+  wrap.appendChild(bar); wrap.appendChild(el);
+  return wrap;
+}
 
-  // ---- init ----
-  load();
-  render();
-  save();
+// ============ SESSION (local, no login) ============
+function applySession(sess){
+  session = sess;
+  $("app").hidden = false; $("whoLine").hidden = false;
+  if (!state.week) state.week = isoDate(comingFriday());
+  loadWeek();
+  renderWeekKudos();
+}
+
+// ============ EDITOR ============
+$("who").addEventListener("input", () => { state.who = $("who").value; scheduleSave(); });
+$("week").addEventListener("change", () => { state.week = $("week").value; loadWeek(); });
+$("weekPrev").addEventListener("click", () => { state.week = addDaysIso(state.week || todayIso(), -7); loadWeek(); });
+$("weekNext").addEventListener("click", () => { state.week = addDaysIso(state.week || todayIso(), 7); loadWeek(); });
+$("weekThis").addEventListener("click", () => { state.week = isoDate(comingFriday()); loadWeek(); });
+$("add").addEventListener("click", () => {
+  state.rows.push(blankRow()); renderRows();
+  const inputs = $("rows").querySelectorAll("textarea.cell-input.task");
+  if (inputs.length) inputs[inputs.length-1].focus();
+  scheduleSave();
+});
+$("save").addEventListener("click", () => saveWeek(true));
+$("sortMode").value = sortMode;
+$("sortMode").addEventListener("change", () => {
+  sortMode = $("sortMode").value;
+  try { localStorage.setItem("tracker_sort", sortMode); } catch(e){}
+  renderRows();
+});
+$("carryBlank").addEventListener("click", () => {
+  state.rows = [ blankRow(), blankRow(), blankRow() ];
+  $("carryBanner").hidden = true; renderRows();
+  setSave("", "New week — not saved yet");
+});
+$("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
+$("logToday").addEventListener("click", logTodayAll);
+$("collapseAll").addEventListener("click", toggleCollapseAll);
+// Alt+↑ / Alt+↓ — jump to the previous/next task (expand it and focus its comment box)
+document.addEventListener("keydown", (e) => {
+  if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  if ($("v-week").hidden || !visibleOrder.length) return;
+  e.preventDefault();
+  let cur = -1;
+  const el = document.activeElement;
+  const trEl = el && el.closest ? el.closest("tr[data-disp]") : null;
+  if (trEl) cur = parseInt(trEl.dataset.disp, 10);
+  let next;
+  if (cur < 0) next = (e.key === "ArrowDown") ? 0 : visibleOrder.length - 1;
+  else next = (e.key === "ArrowDown") ? Math.min(visibleOrder.length-1, cur+1) : Math.max(0, cur-1);
+  const row = visibleOrder[next].row;
+  row._open = true;
+  pendingFocus = { row, type: "note" };
+  renderRows();
+});
+
+function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
+function scheduleSave(){
+  setSave("busy", "Editing…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveWeek(false), 1100);
+}
+
+async function fetchCarryForward(week){
+  // most recent prior report for this user (RLS scopes to the owner)
+  const { data: prev, error } = await sb.from("reports")
+    .select("id, week_ending").lt("week_ending", week)
+    .order("week_ending", { ascending:false }).limit(1);
+  if (error || !prev || !prev.length) return null;
+  const { data: ts, error: e2 } = await sb.from("tasks")
+    .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on")
+    .eq("report_id", prev[0].id).neq("status", "Done").order("position");
+  if (e2 || !ts || !ts.length) return null;
+  return {
+    fromWeek: prev[0].week_ending,
+    rows: ts.map(t => ({ task:t.task, status:t.status, pri:t.priority, prog:t.progress,
+                         note:t.note, project:t.project||"", due:t.due_date||"", items:normItems(t.items),
+                         started:t.started_on||"", completed:t.completed_on||"" }))
+  };
+}
+
+async function loadWeek(){
+  $("who").value = state.who;
+  $("week").value = state.week;
+  $("carryBanner").hidden = true;
+  setSave("busy", "Loading…");
+  try {
+    const { data: reps, error } = await sb.from("reports")
+      .select("id, prepared_by, meeting_notes").eq("week_ending", state.week).limit(1);
+    if (error) throw error;
+    if (reps && reps.length) {
+      reportId = reps[0].id;
+      state.who = reps[0].prepared_by || state.who || "";
+      state.notes = reps[0].meeting_notes || "";
+      const { data: ts, error: e2 } = await sb.from("tasks")
+        .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on").eq("report_id", reportId).order("position");
+      if (e2) throw e2;
+      state.rows = (ts || []).map(t => ({ task:t.task, status:t.status, pri:t.priority, prog:t.progress,
+                                          note:t.note, project:t.project||"", due:t.due_date||"", items:normItems(t.items),
+                                          started:t.started_on||"", completed:t.completed_on||"" }));
+      if (!state.rows.length) state.rows = [ blankRow() ];
+      $("who").value = state.who;
+      renderRows();
+      setSave("ok", "Loaded · saved");
+    } else {
+      reportId = null;
+      state.notes = "";
+      const carried = await fetchCarryForward(state.week);
+      if (carried) {
+        state.rows = carried.rows;
+        $("carryText").innerHTML = "Carried <b>" + carried.rows.length + "</b> unfinished task"
+          + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek)
+          + "</b>. Edit or Save to keep them.";
+        $("carryBanner").hidden = false;
+        renderRows();
+        setSave("", "New week — not saved yet");
+      } else {
+        state.rows = [ blankRow(), blankRow(), blankRow() ];
+        renderRows();
+        setSave("", "New week — not saved yet");
+      }
+    }
+  } catch (err) {
+    setSave("err", "Load failed: " + (err.message || err));
+  }
+}
+
+async function saveWeek(explicit){
+  if (!session) return;
+  setSave("busy", "Saving…");
+  try {
+    const { data: rep, error } = await sb.from("reports")
+      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who, meeting_notes: state.notes || "" },
+              { onConflict: "user_id,week_ending" })
+      .select("id").single();
+    if (error) throw error;
+    reportId = rep.id;
+    $("carryBanner").hidden = true;
+    const { error: dErr } = await sb.from("tasks").delete().eq("report_id", reportId);
+    if (dErr) throw dErr;
+    const payload = state.rows
+      .map((r, i) => ({ report_id: reportId, position: i, task: r.task, status: r.status,
+                        priority: r.pri, progress: r.prog, note: r.note,
+                        project: r.project || "", due_date: r.due || null,
+                        items: normItems(r.items),
+                        started_on: r.started || null, completed_on: r.completed || null }))
+      .filter(r => (r.task && r.task.trim()) || (r.note && r.note.trim()) || (r.items && r.items.length));
+    if (payload.length) {
+      const { error: iErr } = await sb.from("tasks").insert(payload);
+      if (iErr) throw iErr;
+    }
+    setSave("ok", "Saved ✓ " + new Date().toLocaleTimeString());
+  } catch (err) {
+    setSave("err", "Save failed: " + (err.message || err));
+  }
+}
+
+$("del").addEventListener("click", async () => {
+  if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
+  const snap = { who: state.who, week: state.week, notes: state.notes,
+    rows: state.rows.map(r => ({ ...r, items:(r.items||[]).map(x=>({...x})) })) };
+  setSave("busy", "Deleting…");
+  const { error } = await sb.from("reports").delete().eq("id", reportId);
+  if (error) { setSave("err", "Delete failed: " + error.message); return; }
+  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ]; state.notes = "";
+  renderRows(); setSave("", "Week deleted");
+  showUndo("Week deleted", async () => {
+    state.who = snap.who; state.week = snap.week; state.rows = snap.rows; state.notes = snap.notes;
+    $("who").value = state.who; $("week").value = state.week;
+    renderRows(); await saveWeek(true);
+  });
+});
+
+// display order without mutating manual order; returns [{row, idx}]
+function displayOrder(){
+  const items = state.rows.map((row, idx) => ({ row, idx }));
+  if (sortMode === "manual") return items;
+  if (sortMode === "due") {
+    return items.sort((a,b) => {
+      const da = a.row.due || "9999-99-99", db = b.row.due || "9999-99-99";
+      return da < db ? -1 : da > db ? 1 : a.idx - b.idx;
+    });
+  }
+  if (sortMode === "project") {
+    // group by project/area (alphabetical, blank/untagged last), then status, then due
+    const key = r => (r.project || "").trim().toLowerCase();
+    return items.sort((a,b) => {
+      const pa = key(a.row), pb = key(b.row);
+      if (pa !== pb) { if (!pa) return 1; if (!pb) return -1; return pa < pb ? -1 : 1; }
+      const ra = STATUS_RANK[a.row.status] ?? 9, rb = STATUS_RANK[b.row.status] ?? 9;
+      if (ra !== rb) return ra - rb;
+      const da = a.row.due || "9999-99-99", db = b.row.due || "9999-99-99";
+      if (da !== db) return da < db ? -1 : 1;
+      return a.idx - b.idx;
+    });
+  }
+  // by status, then due, then original order
+  return items.sort((a,b) => {
+    const ra = STATUS_RANK[a.row.status] ?? 9, rb = STATUS_RANK[b.row.status] ?? 9;
+    if (ra !== rb) return ra - rb;
+    const da = a.row.due || "9999-99-99", db = b.row.due || "9999-99-99";
+    if (da !== db) return da < db ? -1 : 1;
+    return a.idx - b.idx;
+  });
+}
+
+function renderRows(){
+  const rowsEl = $("rows"); rowsEl.innerHTML = "";
+  // first render after a (re)load: seed collapse state from this week's saved preference
+  if (state.rows.length && !state.rows.some(r => r._open !== undefined)) restoreOpenState();
+  const manual = sortMode === "manual";
+  const order = displayOrder();
+  // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
+  const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
+  visibleOrder = visible;
+  updateDoneToggle();
+  if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
+  visible.forEach((item, dispIdx) => {
+    const row = item.row, i = item.idx;
+    if (!Array.isArray(row.items)) row.items = [];
+    let startedInput, completedInput, dueInput, counter, note;
+
+    // ---------- main row: title + status / priority / progress / delete ----------
+    const open = rowOpen(row); row._open = open;
+    const tr = document.createElement("tr"); tr.className = open ? "" : "collapsed"; tr.dataset.disp = dispIdx;
+
+    const tdNum = document.createElement("td"); tdNum.className = "col-num";
+    const caret = document.createElement("button"); caret.type = "button"; caret.className = "rowcaret";
+    caret.textContent = open ? "▾" : "▸"; caret.title = open ? "Collapse task" : "Expand task";
+    caret.setAttribute("aria-label", caret.title);
+    caret.addEventListener("click", () => { row._open = !open; renderRows(); });
+    const rnum = document.createElement("span"); rnum.className = "rnum"; rnum.textContent = dispIdx+1;
+    const dot = document.createElement("span"); dot.className = "updot";
+    if (needsUpdate(row)) { dot.classList.add("need"); dot.title = "No update logged today"; }
+    else if (isActiveRow(row) && updatedToday(row)) { dot.classList.add("ok"); dot.title = "Updated today"; }
+    else { dot.classList.add("none"); }
+    const numInner = document.createElement("div"); numInner.className = "col-num-inner";
+    numInner.appendChild(caret); numInner.appendChild(rnum); numInner.appendChild(dot);
+    tdNum.appendChild(numInner); tr.appendChild(tdNum);
+
+    const tdTask = document.createElement("td");
+    const task = document.createElement("textarea");
+    task.className = "cell-input task"; task.rows = 1; task.placeholder = "What you worked on"; task.value = row.task;
+    task.addEventListener("input", () => {
+      row.task = task.value; autosize(task);
+      if (!row.started && task.value.trim()) { row.started = todayIso(); if (startedInput) startedInput.value = row.started; }
+      scheduleSave();
+    });
+    tdTask.appendChild(task);
+    // collapsed summary line (project · checklist · due · first note line) — click to expand
+    const sub = document.createElement("div"); sub.className = "row-sub"; sub.hidden = open;
+    const parts = [];
+    if (row.project && row.project.trim()) parts.push('<span class="rs-proj">'+escHtml(row.project.trim())+'</span>');
+    const subItems = normItems(row.items);
+    if (subItems.length) { const d = subItems.filter(x=>x.done).length; parts.push('<span class="rs-chk'+(d===subItems.length?' all':'')+'">☑ '+d+'/'+subItems.length+'</span>'); }
+    if (row.due) parts.push('<span class="rs-due'+(row.due<todayIso()&&row.status!=="Done"?' od':'')+'">'+shortDate(row.due)+'</span>');
+    const subNote = htmlToText(row.note).trim().split(/\r?\n/)[0];
+    if (subNote) parts.push('<span class="rs-note">'+escHtml(subNote.slice(0,90))+'</span>');
+    sub.innerHTML = parts.length ? parts.join("") : '<span class="rs-empty">No details yet — click to add</span>';
+    sub.addEventListener("click", () => { row._open = true; renderRows(); });
+    tdTask.appendChild(sub);
+    tr.appendChild(tdTask);
+
+    const tdStatus = document.createElement("td"); tdStatus.className = "col-status";
+    const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status);
+    STATUSES.forEach(s => { const o = document.createElement("option"); o.value = s.v; o.textContent = s.v; if (s.v===row.status) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", () => {
+      row.status = sel.value; sel.className = "chip " + statusClass(row.status);
+      if (row.status === "Done") { if (!row.completed) row.completed = todayIso(); row.prog = 100; }
+      else { row.completed = ""; }
+      if (completedInput) completedInput.value = row.completed || "";
+      if (dueInput) markOverdue(dueInput, row);
+      renderRows();   // Done tasks drop out of the editor (still saved + reported for the week)
+      scheduleSave();
+    });
+    tdStatus.appendChild(sel); tr.appendChild(tdStatus);
+
+    const tdPri = document.createElement("td"); tdPri.className = "col-pri";
+    const pri = document.createElement("select"); pri.className = "pri " + priClass(row.pri);
+    PRIORITIES.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p===row.pri) o.selected = true; pri.appendChild(o); });
+    pri.addEventListener("change", () => { row.pri = pri.value; pri.className = "pri " + priClass(row.pri); scheduleSave(); });
+    tdPri.appendChild(pri); tr.appendChild(tdPri);
+
+    const tdProg = document.createElement("td"); tdProg.className = "col-prog";
+    const wrap = document.createElement("div"); wrap.className = "prog";
+    const rng = document.createElement("input"); rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog;
+    const pv = document.createElement("span"); pv.className = "pv"; pv.textContent = row.prog + "%";
+    rng.addEventListener("input", () => { row.prog = parseInt(rng.value,10)||0; pv.textContent = row.prog + "%"; scheduleSave(); });
+    wrap.appendChild(rng); wrap.appendChild(pv); tdProg.appendChild(wrap); tr.appendChild(tdProg);
+
+    const tdAct = document.createElement("td"); tdAct.className = "col-act";
+    const grp = document.createElement("div"); grp.className = "rowbtns";
+    if (manual) {
+      const up = mkIbtn("▲","Move task up",() => moveRow(i,-1));
+      const dn = mkIbtn("▼","Move task down",() => moveRow(i,1));
+      up.disabled = (i===0); dn.disabled = (i===state.rows.length-1);
+      grp.appendChild(up); grp.appendChild(dn);
+    }
+    const del = mkIbtn("🗑","Delete this task",() => {
+      const removed = state.rows[i], at = i;
+      state.rows.splice(i,1); if(!state.rows.length) state.rows=[blankRow()];
+      renderRows(); scheduleSave();
+      showUndo("Task deleted", () => {
+        if (state.rows.length === 1 && isBlankRow(state.rows[0])) state.rows = [];
+        state.rows.splice(Math.min(at, state.rows.length), 0, removed);
+        renderRows(); scheduleSave();
+      });
+    });
+    del.classList.add("del"); grp.appendChild(del); tdAct.appendChild(grp); tr.appendChild(tdAct);
+
+    rowsEl.appendChild(tr);
+
+    // ---------- detail row: project + dates (left) | comments + action items (fills the width) ----------
+    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open; dtr.dataset.disp = dispIdx;
+    const dspacer = document.createElement("td"); dspacer.className = "col-num"; dtr.appendChild(dspacer);
+    const dtd = document.createElement("td"); dtd.colSpan = 5;
+    const dwrap = document.createElement("div"); dwrap.className = "detail-wrap";
+
+    // meta column (project + dates)
+    const meta = document.createElement("div"); meta.className = "meta-col";
+    const proj = document.createElement("input");
+    proj.className = "mini project"; proj.type = "text"; proj.placeholder = "Add a project…"; proj.value = row.project || "";
+    proj.addEventListener("input", () => { row.project = proj.value; scheduleSave(); });
+    dueInput = document.createElement("input");
+    dueInput.className = "mini due"; dueInput.type = "date"; dueInput.title = "Due date"; dueInput.value = row.due || "";
+    markOverdue(dueInput, row);
+    dueInput.addEventListener("change", () => { row.due = dueInput.value; markOverdue(dueInput, row); if (sortMode==="due") renderRows(); scheduleSave(); });
+    startedInput = document.createElement("input");
+    startedInput.className = "mini date"; startedInput.type = "date"; startedInput.title = "Date started"; startedInput.value = row.started || "";
+    startedInput.addEventListener("change", () => { row.started = startedInput.value; scheduleSave(); });
+    completedInput = document.createElement("input");
+    completedInput.className = "mini date"; completedInput.type = "date"; completedInput.title = "Date completed"; completedInput.value = row.completed || "";
+    completedInput.addEventListener("change", () => { row.completed = completedInput.value; scheduleSave(); });
+    const setDue = (iso) => { dueInput.value = iso; row.due = iso; markOverdue(dueInput, row); if (sortMode==="due") renderRows(); scheduleSave(); };
+    const dueQuick = document.createElement("span"); dueQuick.className = "dquick";
+    dueQuick.appendChild(mkMini("Today", "Set due to today", () => setDue(todayIso())));
+    dueQuick.appendChild(mkMini("+1w", "Push due out one week", () => setDue(addDaysIso(row.due || todayIso(), 7))));
+    const startQuick = document.createElement("span"); startQuick.className = "dquick";
+    startQuick.appendChild(mkMini("Today", "Set start to today", () => { startedInput.value = todayIso(); row.started = todayIso(); scheduleSave(); }));
+    const doneQuick = document.createElement("span"); doneQuick.className = "dquick";
+    doneQuick.appendChild(mkMini("Today", "Set completed to today", () => { completedInput.value = todayIso(); row.completed = todayIso(); scheduleSave(); }));
+    meta.appendChild(dateField("Area", proj));
+    meta.appendChild(dateField("Due", dueInput, dueQuick));
+    meta.appendChild(dateField("Start", startedInput, startQuick));
+    meta.appendChild(dateField("Done", completedInput, doneQuick));
+
+    // work column (comments + action items) — fills the remaining width
+    const work = document.createElement("div"); work.className = "work-col";
+    const cmh = document.createElement("div"); cmh.className = "cmh"; cmh.textContent = "Comments & updates";
+    work.appendChild(cmh);
+    const noteWrap = makeRich(row.note, "Comment, progress, blocker…", (html) => { row.note = html; scheduleSave(); });
+    note = noteWrap.querySelector(".richtext"); note.classList.add("note");
+    if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "note") pendingFocusEl = note;
+    work.appendChild(noteWrap);
+    const logWrap = document.createElement("div"); logWrap.className = "logbtn";
+    const logBtn = document.createElement("button"); logBtn.type = "button"; logBtn.className = "tlog"; logBtn.textContent = "＋ today";
+    logBtn.title = "Add a dated line for today";
+    logBtn.addEventListener("click", () => {
+      const stamp = shortDate(todayIso()) + ": ";
+      const existing = note.innerHTML.trim(); const hadContent = existing && existing !== "<br>";
+      note.innerHTML = escHtml(stamp) + (hadContent ? "<br>" + note.innerHTML : "");
+      rtPlaceholder(note); row.note = rtCurrent(note); scheduleSave();
+      note.focus();
+      const first = note.firstChild;
+      if (first && first.nodeType === 3) { const sel = window.getSelection(); const r = document.createRange(); r.setStart(first, first.length); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
+    });
+    logWrap.appendChild(logBtn); work.appendChild(logWrap);
+
+    const aih = document.createElement("div"); aih.className = "ai-head";
+    const aihl = document.createElement("span"); aihl.textContent = "Action items"; aih.appendChild(aihl);
+    counter = document.createElement("span"); counter.className = "aicount"; updateCounter(counter, row); aih.appendChild(counter);
+    work.appendChild(aih);
+    const list = document.createElement("div"); list.className = "checklist";
+    row.items.forEach((it, k) => {
+      const ci = document.createElement("div"); ci.className = "citem" + (it.done ? " done" : "");
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!it.done;
+      cb.title = "Mark done"; cb.setAttribute("aria-label", "Mark action item done");
+      cb.addEventListener("change", () => { it.done = cb.checked; ci.classList.toggle("done", cb.checked); updateCounter(counter, row); scheduleSave(); });
+      const tx = document.createElement("input"); tx.type = "text"; tx.value = it.text; tx.placeholder = "Action item";
+      tx.addEventListener("input", () => { it.text = tx.value; scheduleSave(); });
+      tx.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          row.items.splice(k+1, 0, { text:"", done:false });
+          pendingFocus = { row, type:"item", k:k+1 };
+          updateCounter(counter, row); renderRows(); scheduleSave();
+        }
+      });
+      if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "item" && pendingFocus.k === k) pendingFocusEl = tx;
+      const xb = document.createElement("button"); xb.type = "button"; xb.className = "cdel"; xb.textContent = "✕"; xb.title = "Remove action item";
+      xb.addEventListener("click", () => {
+        const removed = it, at = k;
+        row.items.splice(k,1); updateCounter(counter, row); renderRows(); scheduleSave();
+        showUndo("Action item deleted", () => { row.items.splice(Math.min(at,row.items.length),0,removed); updateCounter(counter,row); renderRows(); scheduleSave(); });
+      });
+      const up = document.createElement("button"); up.type = "button"; up.className = "cmove"; up.textContent = "▲"; up.title = "Move action item up";
+      up.disabled = (k === 0);
+      up.addEventListener("click", () => moveItem(row, k, -1));
+      const dn = document.createElement("button"); dn.type = "button"; dn.className = "cmove"; dn.textContent = "▼"; dn.title = "Move action item down";
+      dn.disabled = (k === row.items.length - 1);
+      dn.addEventListener("click", () => moveItem(row, k, 1));
+      ci.appendChild(cb); ci.appendChild(tx); ci.appendChild(up); ci.appendChild(dn); ci.appendChild(xb); list.appendChild(ci);
+    });
+    const addBtn = document.createElement("button"); addBtn.type = "button"; addBtn.className = "addItem"; addBtn.textContent = "＋ action item";
+    addBtn.addEventListener("click", () => { row.items.push({ text:"", done:false }); pendingFocus = { row, type:"item", k:row.items.length-1 }; updateCounter(counter, row); renderRows(); scheduleSave(); });
+    list.appendChild(addBtn);
+    work.appendChild(list);
+
+    dwrap.appendChild(meta); dwrap.appendChild(work);
+    dtd.appendChild(dwrap); dtr.appendChild(dtd); rowsEl.appendChild(dtr);
+
+    autosize(task);
+  });
+  updateDailyBar();
+  saveOpenState();
+  flushPendingFocus();
+}
+function updateCounter(el, row){
+  const items = Array.isArray(row.items) ? row.items : [];
+  if (!items.length) { el.textContent = ""; el.className = "aicount"; return; }
+  const done = items.filter(i => i.done).length;
+  el.textContent = "☑ " + done + "/" + items.length;
+  el.className = "aicount" + (done === items.length ? " all" : "");
+}
+function markOverdue(input, row){
+  const od = row.due && row.due < todayIso() && row.status !== "Done";
+  input.classList.toggle("overdue", !!od);
+}
+function mkIbtn(label, title, fn){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "ibtn"; b.textContent = label; b.title = title; b.setAttribute("aria-label", title);
+  b.addEventListener("click", fn); return b;
+}
+function dateField(labelText, input, extra){
+  const w = document.createElement("label"); w.className = "dlab";
+  const s = document.createElement("span"); s.className = "dl"; s.textContent = labelText;
+  w.appendChild(s); w.appendChild(input);
+  if (extra) w.appendChild(extra);
+  return w;
+}
+function moveRow(i, dir){
+  const j = i + dir; if (j < 0 || j >= state.rows.length) return;
+  const t = state.rows[i]; state.rows[i] = state.rows[j]; state.rows[j] = t; renderRows(); scheduleSave();
+}
+function moveItem(row, k, dir){
+  const items = row.items; const j = k + dir;
+  if (!Array.isArray(items) || j < 0 || j >= items.length) return;
+  const t = items[k]; items[k] = items[j]; items[j] = t; renderRows(); scheduleSave();
+}
+
+// ----- daily-entry helpers: "updated today", collapse, focus-after-render -----
+let pendingFocus = null, pendingFocusEl = null, visibleOrder = [];
+function todayStamp(){ return shortDate(todayIso()); }
+function isActiveRow(row){ return !!(row.task && row.task.trim()) && row.status !== "Done"; }
+function updatedToday(row){
+  if (row.completed === todayIso() || row.started === todayIso()) return true;
+  return (row.note || "").indexOf(todayStamp()) !== -1;
+}
+function needsUpdate(row){ return isActiveRow(row) && !updatedToday(row); }
+function rowOpen(row){ return (row._open !== undefined) ? row._open : !(row.task && row.task.trim()); }
+// remember which tasks are expanded, per week (collapse state isn't on the DB row)
+function openKey(){ return "tracker_open_" + (state.week || ""); }
+function saveOpenState(){
+  try {
+    const open = [];
+    state.rows.forEach((r,i) => { if (rowOpen(r)) open.push(i); });
+    localStorage.setItem(openKey(), JSON.stringify(open));
+  } catch(e){}
+}
+function restoreOpenState(){
+  try {
+    const raw = localStorage.getItem(openKey());
+    if (!raw) return;
+    const open = new Set(JSON.parse(raw));
+    state.rows.forEach((r,i) => { r._open = open.has(i); });
+  } catch(e){}
+}
+function stampTodayNote(row){
+  const stamp = todayStamp() + ": ";
+  const cur = richDisplay(row.note || "");           // normalize plain-or-HTML to safe HTML
+  const had = cur.trim() && cur.trim() !== "<br>";
+  row.note = escHtml(stamp) + (had ? "<br>" + cur : "");
+}
+function logTodayAll(){
+  const targets = state.rows.filter(needsUpdate);
+  if (!targets.length) { setSave("ok", "All caught up — every active task has today's update"); return; }
+  targets.forEach(r => { stampTodayNote(r); r._open = true; });
+  pendingFocus = { row: targets[0], type: "note" };
+  renderRows(); scheduleSave();
+  setSave("ok", "Stamped today’s line on " + targets.length + " task" + (targets.length===1?"":"s"));
+}
+function toggleCollapseAll(){
+  const anyOpen = state.rows.some(rowOpen);
+  state.rows.forEach(r => { r._open = !anyOpen; });
+  renderRows();
+}
+function updateDailyBar(){
+  const n = state.rows.filter(needsUpdate).length;
+  const lt = $("logToday");
+  if (lt) { lt.textContent = n ? ("✎ Log today (" + n + ")") : "✎ Log today"; lt.classList.toggle("hot", n>0); }
+  const ca = $("collapseAll");
+  if (ca) ca.textContent = state.rows.some(rowOpen) ? "⊟ Collapse all" : "⊞ Expand all";
+  const td = $("todaylab"); if (td) td.textContent = "Today · " + shortDate(todayIso());
+}
+function flushPendingFocus(){
+  if (!pendingFocusEl) { pendingFocus = null; return; }
+  const el = pendingFocusEl; pendingFocusEl = null; pendingFocus = null;
+  setTimeout(() => {
+    el.focus();
+    if (el.isContentEditable) {
+      const r = document.createRange(); r.selectNodeContents(el); r.collapse(true);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+  }, 0);
+}
+function mkMini(label, title, fn){
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "dqbtn"; b.textContent = label; b.title = title;
+  b.addEventListener("click", fn); return b;
+}
+function updateDoneToggle(){
+  const n = state.rows.filter(r => r.status === "Done").length;
+  const b = $("toggleDone");
+  if (!n) { b.hidden = true; b.classList.remove("on"); return; }
+  b.hidden = false;
+  b.textContent = showDone ? ("Hide done ("+n+")") : ("Show done ("+n+")");
+  b.classList.toggle("on", showDone);
+}
+function renderEmptyWeek(rowsEl){
+  const doneN = state.rows.filter(r => r.status === "Done").length;
+  const tr = document.createElement("tr");
+  const td = document.createElement("td"); td.colSpan = 6; td.className = "empty-week";
+  td.innerHTML = doneN
+    ? '✓ Every task this week is <b>done</b> — saved in this week’s report and on the <b>Completed</b> tab. <a id="revealDone">Show them here</a>'
+    : 'No tasks yet — click <b>+ Add task</b> to start this week.';
+  tr.appendChild(td); rowsEl.appendChild(tr);
+  const rd = $("revealDone");
+  if (rd) rd.addEventListener("click", () => { showDone = true; renderRows(); });
+}
+
+// ---------- exports (current week, in display order) ----------
+function filledOrdered(){
+  return displayOrder().map(it => it.row).filter(r => (r.task && r.task.trim()) || (r.note && r.note.trim()));
+}
+function mdCell(s){ return String(s==null?"":s).replace(/\|/g,"\\|").replace(/\r?\n+/g," · ").trim(); }
+function itemsInline(r){
+  const items = normItems(r.items);
+  if (!items.length) return "";
+  return items.map(it => (it.done?"☑":"☐") + " " + it.text.trim()).join("; ");
+}
+function buildMarkdown(){
+  const L = [];
+  L.push("# Weekly Status — Week ending " + (prettyDate(state.week) || state.week));
+  if (state.who && state.who.trim()) L.push("**Prepared by:** " + state.who.trim());
+  L.push(""); L.push("| # | Task | Project | Status | Priority | Due | Progress | Update |");
+  L.push("|---|------|---------|--------|----------|-----|----------|--------|");
+  const rs = filledOrdered();
+  rs.forEach((r,i) => {
+    const ai = itemsInline(r); const noteTxt = htmlToText(r.note);
+    const update = mdCell(noteTxt) + (ai ? (noteTxt.trim() ? " · " : "") + mdCell(ai) : "");
+    L.push("| "+(i+1)+" | "+mdCell(r.task)+" | "+mdCell(r.project)+" | "+mdCell(r.status)
+      +" | "+mdCell(r.pri)+" | "+(r.due?shortDate(r.due):"")+" | "+r.prog+"% | "+update+" |");
+  });
+  if (!rs.length) L.push("| – | _No tasks recorded_ |  |  |  |  |  |  |");
+  L.push(""); return L.join("\n");
+}
+function buildText(){
+  const out = [];
+  out.push("WEEKLY STATUS — Week ending " + (prettyDate(state.week) || state.week));
+  if (state.who && state.who.trim()) out.push("Prepared by: " + state.who.trim());
+  out.push("");
+  const rs = filledOrdered();
+  if (!rs.length) { out.push("(No tasks recorded.)"); return out.join("\n"); }
+  rs.forEach((r,i) => {
+    let head = (i+1)+". "+(r.task?r.task.trim():"(untitled)");
+    if (r.project && r.project.trim()) head += " ("+r.project.trim()+")";
+    head += "  ["+r.status+" · "+r.pri+" · "+r.prog+"%"+(r.due?" · due "+shortDate(r.due):"")
+      +(r.started?" · started "+shortDate(r.started):"")+(r.completed?" · done "+shortDate(r.completed):"")+"]";
+    out.push(head);
+    const nt = htmlToText(r.note); if (nt.trim()) nt.trim().split(/\r?\n/).forEach(line => out.push("   " + line));
+    normItems(r.items).forEach(it => out.push("   [" + (it.done?"x":" ") + "] " + it.text.trim()));
+  });
+  out.push(""); return out.join("\n");
+}
+$("md").addEventListener("click", () => {
+  const blob = new Blob([buildMarkdown()], { type:"text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = "weekly-status-" + (state.week || isoDate(new Date())) + ".md";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+$("copy").addEventListener("click", function(){
+  const btn = this, text = buildText(); const orig = btn.textContent;
+  const done = () => { btn.textContent = "Copied ✓"; setTimeout(()=>btn.textContent=orig, 1100); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
+  function fallback(){ const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){} document.body.removeChild(ta); }
+});
+$("print").addEventListener("click", () => window.print());
+
+// ============ CSV EXPORT ============
+function csvEscape(v){ v = String(v==null?"":v); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function downloadCSV(filename, rows){
+  const text = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+  const blob = new Blob(["﻿"+text], { type:"text/csv;charset=utf-8" });   // BOM → opens cleanly in Excel
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function itemsToText(items){ const a = normItems(items); return a.length ? a.map(it => (it.done?"[x] ":"[ ] ")+String(it.text||"").trim()).join(" | ") : ""; }
+async function exportAllCSV(btn){
+  const orig = btn ? btn.textContent : null; if (btn){ btn.disabled = true; btn.textContent = "Preparing…"; }
+  const { data, error } = await sb.from("task_export")
+    .select("week_ending,prepared_by,task,project,status,priority,progress,due_date,started_on,completed_on,note,items,position")
+    .order("week_ending", { ascending:false }).order("position");
+  if (btn){ btn.disabled = false; btn.textContent = orig; }
+  if (error){ alert("CSV export failed: " + error.message); return; }
+  const header = ["Week ending","Prepared by","Task","Project","Status","Priority","Progress %","Due","Started","Completed","Comments","Action items"];
+  const rows = [header].concat((data||[]).map(r => [
+    r.week_ending||"", r.prepared_by||"", r.task||"", r.project||"", r.status||"", r.priority||"",
+    (r.progress!=null?r.progress:""), r.due_date||"", r.started_on||"", r.completed_on||"",
+    htmlToText(r.note).replace(/\r?\n+/g," / "), itemsToText(r.items)
+  ]));
+  downloadCSV("weekly-tracker-history-"+todayIso()+".csv", rows);
+}
+function exportCompletedCSV(){
+  const rows = filteredCompleted();
+  const header = ["Week ending","Task","Project","Priority","Started","Completed","Days","Comments"];
+  const out = [header].concat(rows.map(r => {
+    const d = daysBetween(r.started_on, r.completed_on);
+    return [ r.week_ending||"", r.task||"", r.project||"", r.priority||"", r.started_on||"", r.completed_on||"",
+      (d!=null&&d>=0?d:""), htmlToText(r.note).replace(/\r?\n+/g," / ") ];
+  }));
+  downloadCSV("completed-tasks-"+todayIso()+".csv", out);
+}
+async function exportKudosCSV(btn){
+  const orig = btn ? btn.textContent : null; if (btn){ btn.disabled = true; btn.textContent = "Preparing…"; }
+  let rows = kudosList;
+  if (!rows) {
+    const { data, error } = await sb.from("kudos")
+      .select("kudos_date,source,title,details")
+      .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+    if (error){ if (btn){ btn.disabled=false; btn.textContent=orig; } alert("Kudos CSV export failed: " + error.message); return; }
+    rows = data || [];
+  }
+  if (btn){ btn.disabled = false; btn.textContent = orig; }
+  const header = ["Date","From / source","For","Details"];
+  const out = [header].concat((rows||[]).map(k => [
+    k.kudos_date||"", k.source||"", k.title||"", htmlToText(k.details).replace(/\r?\n+/g," / ")
+  ]));
+  downloadCSV("kudos-"+todayIso()+".csv", out);
+}
+
+// ============ TABS ============
+const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"],
+               completed:["tab-completed","v-completed"], kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
+function showTab(name){
+  Object.entries(tabs).forEach(([k,[btn,view]]) => {
+    $(btn).classList.toggle("on", k===name); $(view).hidden = (k!==name);
+  });
+  if (name === "history") loadHistory();
+  if (name === "completed") loadCompleted();
+  if (name === "kudos") loadKudos();
+  if (name === "kpis") loadKpis();
+}
+$("tab-week").addEventListener("click", () => showTab("week"));
+$("tab-history").addEventListener("click", () => showTab("history"));
+$("tab-completed").addEventListener("click", () => showTab("completed"));
+$("tab-kudos").addEventListener("click", () => showTab("kudos"));
+$("tab-kpis").addEventListener("click", () => showTab("kpis"));
+$("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
+
+// ============ KUDOS ============
+let kudosList = null;
+const kudosTimers = {};
+$("addKudos").addEventListener("click", addKudos);
+$("kudosCsv").addEventListener("click", function(){ exportKudosCSV(this); });
+async function loadKudos(){
+  const body = $("kudosBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading kudos…</div>';
+  const { data, error } = await sb.from("kudos")
+    .select("id,kudos_date,source,title,details")
+    .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+  if (error) { body.innerHTML = '<div class="muted-empty">Could not load kudos: '+esc(error.message)+'</div>'; return; }
+  kudosList = data || [];
+  renderKudos();
+}
+async function addKudos(){
+  if (!session) return;
+  const { data, error } = await sb.from("kudos")
+    .insert({ user_id: session.user.id, kudos_date: todayIso() }).select("id,kudos_date,source,title,details").single();
+  if (error) { alert("Could not add kudos: " + error.message); return; }
+  if (!kudosList) kudosList = [];
+  kudosList.unshift(data); renderKudos();
+  const first = $("kudosBody").querySelector(".kcardk .ktitle"); if (first) first.focus();
+}
+function scheduleKudosSave(k){
+  clearTimeout(kudosTimers[k.id]);
+  kudosTimers[k.id] = setTimeout(async () => {
+    await sb.from("kudos").update({ kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details }).eq("id", k.id);
+  }, 700);
+}
+function deleteKudos(k){
+  const idx = kudosList.findIndex(x => x.id === k.id); if (idx < 0) return;
+  kudosList.splice(idx, 1); renderKudos();
+  sb.from("kudos").delete().eq("id", k.id);
+  showUndo("Kudos deleted", async () => {
+    const { data } = await sb.from("kudos")
+      .insert({ user_id: session.user.id, kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details })
+      .select("id,kudos_date,source,title,details").single();
+    if (data) { kudosList.splice(Math.min(idx, kudosList.length), 0, data); renderKudos(); }
+  });
+}
+function renderKudos(){
+  const body = $("kudosBody");
+  if (!kudosList) return;
+  if (!kudosList.length) { body.innerHTML = '<div class="muted-empty">No kudos yet — click <b>+ Add kudos</b> to log praise or recognition.</div>'; return; }
+  body.innerHTML = ""; const list = document.createElement("div"); list.className = "klist";
+  kudosList.forEach(k => {
+    const card = document.createElement("div"); card.className = "kcardk";
+    const top = document.createElement("div"); top.className = "ktop";
+    const dlab = document.createElement("span"); dlab.className = "kdlab"; dlab.textContent = "Date";
+    const date = document.createElement("input"); date.type = "date"; date.className = "kdate"; date.value = k.kudos_date || "";
+    date.addEventListener("change", () => { k.kudos_date = date.value; scheduleKudosSave(k); });
+    const src = document.createElement("input"); src.type = "text"; src.className = "ksource"; src.placeholder = "From / source (e.g. Jennifer Damewood)"; src.value = k.source || "";
+    src.addEventListener("input", () => { k.source = src.value; scheduleKudosSave(k); });
+    const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "ibtn del"; delBtn.textContent = "🗑"; delBtn.title = "Delete kudos";
+    delBtn.addEventListener("click", () => deleteKudos(k));
+    top.appendChild(dlab); top.appendChild(date); top.appendChild(src);
+    const spacer = document.createElement("span"); spacer.style.flex = "1 1 auto"; top.appendChild(spacer); top.appendChild(delBtn);
+    card.appendChild(top);
+    const title = document.createElement("input"); title.type = "text"; title.className = "ktitle"; title.placeholder = "What it was for (short summary)"; title.value = k.title || "";
+    title.addEventListener("input", () => { k.title = title.value; scheduleKudosSave(k); });
+    card.appendChild(title);
+    const detWrap = makeRich(k.details, "Details / the quote…", (html) => { k.details = html; scheduleKudosSave(k); });
+    detWrap.querySelector(".richtext").classList.add("kdetails");
+    card.appendChild(detWrap);
+    list.appendChild(card);
+  });
+  body.appendChild(list);
+}
+
+// ============ COMPLETED ARCHIVE ============
+let completedCache = null;
+async function loadCompleted(){
+  const body = $("completedBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading completed tasks…</div>';
+  const { data, error } = await sb.from("completed_tasks")
+    .select("week_ending,task,project,priority,progress,note,due_date,items,started_on,completed_on")
+    .order("week_ending", { ascending:false }).order("position");
+  if (error) { body.innerHTML = '<div class="muted-empty">Could not load: '+esc(error.message)+'</div>'; return; }
+  completedCache = data || [];
+  renderCompleted();
+}
+function daysBetween(a, b){
+  if (!a || !b) return null;
+  const pa = a.split("-"), pb = b.split("-");
+  const da = Date.UTC(+pa[0], +pa[1]-1, +pa[2]), db = Date.UTC(+pb[0], +pb[1]-1, +pb[2]);
+  return Math.round((db - da) / 86400000);
+}
+function completedDates(r){
+  const bits = [];
+  if (r.started_on) bits.push("Started " + shortDate(r.started_on));
+  if (r.completed_on) bits.push("Completed " + shortDate(r.completed_on));
+  if (!bits.length) return "";
+  const d = daysBetween(r.started_on, r.completed_on);
+  const dur = (d !== null && d >= 0) ? ' <span class="cdur">'+(d===0?"same day":d+" day"+(d===1?"":"s"))+'</span>' : "";
+  return '<div class="cdates">'+bits.join(" → ")+dur+'</div>';
+}
+$("completedSearch").addEventListener("input", renderCompleted);
+$("completedCsv").addEventListener("click", exportCompletedCSV);
+function filteredCompleted(){
+  if (!completedCache) return [];
+  const q = $("completedSearch").value.trim().toLowerCase();
+  return q ? completedCache.filter(r =>
+    (r.task||"").toLowerCase().includes(q) || (r.project||"").toLowerCase().includes(q) || (r.note||"").toLowerCase().includes(q)
+  ) : completedCache;
+}
+function renderCompleted(){
+  const body = $("completedBody");
+  if (!completedCache) return;
+  const q = $("completedSearch").value.trim().toLowerCase();
+  const rows = filteredCompleted();
+  $("completedCount").textContent = rows.length + (rows.length===1?" task":" tasks");
+  if (!completedCache.length) { body.innerHTML = '<div class="muted-empty">No completed tasks yet. Mark a task <b>Done</b> and save — it’ll be archived here.</div>'; return; }
+  if (!rows.length) { body.innerHTML = '<div class="muted-empty">No completed tasks match “'+esc(q)+'”.</div>'; return; }
+  // group by week
+  const groups = [];
+  rows.forEach(r => {
+    let g = groups[groups.length-1];
+    if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); }
+    g.items.push(r);
+  });
+  let flat = 0;
+  body.innerHTML = groups.map(g =>
+    '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
+    g.items.map(r => {
+      const ri = flat++;
+      return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
+        (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
+        '</div>' + completedDates(r) +
+        (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
+      '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
+    }).join("") + '</div>'
+  ).join("");
+  body.querySelectorAll(".recall").forEach(b => b.addEventListener("click", () => recallCompleted(rows[+b.dataset.ri])));
+}
+function recallCompleted(r){
+  if (!r) return;
+  const row = blankRow();
+  row.task = r.task || ""; row.project = r.project || ""; row.pri = r.priority || "Med";
+  row.status = "On Track";
+  row.prog = (typeof r.progress === "number") ? r.progress : 0;
+  row.note = r.note || "";
+  row.due = r.due_date || "";
+  row.started = r.started_on || todayIso();
+  row.completed = "";
+  row.items = normItems(r.items);
+  row._open = true;
+  state.rows = state.rows.filter(x => !isBlankRow(x));
+  state.rows.push(row);
+  showTab("week");
+  renderRows();
+  saveWeek(true);
+  setSave("ok", "Recalled into " + (prettyDate(state.week) || state.week));
+  showUndo("Task recalled", () => {
+    const ix = state.rows.indexOf(row);
+    if (ix >= 0) { state.rows.splice(ix, 1); if (!state.rows.length) state.rows = [blankRow()]; renderRows(); saveWeek(true); }
+  });
+}
+
+// ============ HISTORY ============
+async function loadHistory(){
+  const body = $("historyBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading history…</div>';
+  const { data, error } = await sb.from("kpi_weekly")
+    .select("week_ending,total_tasks,done,at_risk,blocked,completion_rate,avg_progress")
+    .order("week_ending", { ascending:false });
+  if (error) { body.innerHTML = '<div class="muted-empty">Could not load history: '+esc(error.message)+'</div>'; return; }
+  if (!data || !data.length) { body.innerHTML = '<div class="muted-empty">No saved weeks yet. Add tasks in <b>This week</b> and they’ll appear here.</div>'; return; }
+  const list = document.createElement("div"); list.className = "hlist";
+  data.forEach(r => {
+    const row = document.createElement("div"); row.className = "hrow";
+    row.innerHTML =
+      '<div class="wk">'+ (prettyDate(r.week_ending)||r.week_ending) +'</div>' +
+      '<span class="badge tot">'+ r.total_tasks +' tasks</span>' +
+      '<span class="badge done">'+ r.done +' done · '+ (r.completion_rate||0) +'%</span>' +
+      (r.at_risk ? '<span class="badge risk">'+ r.at_risk +' at risk</span>' : '') +
+      (r.blocked ? '<span class="badge blk">'+ r.blocked +' blocked</span>' : '') +
+      '<span class="meta">avg '+ (r.avg_progress||0) +'%</span>' +
+      '<span class="spacer"></span>';
+    const open = document.createElement("button"); open.className = "btn ghost sm"; open.textContent = "Open";
+    open.addEventListener("click", () => { state.week = r.week_ending; showTab("week"); loadWeek(); });
+    row.appendChild(open); list.appendChild(row);
+  });
+  body.innerHTML = ""; body.appendChild(list);
+}
+
+// ============ KPIs ============
+async function loadKpis(){
+  refreshChartColors();
+  const body = $("kpiBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
+  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }] = await Promise.all([
+    sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
+    sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
+    sb.from("completed_tasks").select("started_on,completed_on,due_date"),
+    sb.from("kpi_by_project").select("project,total_tasks,done"),
+    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false })
+  ]);
+  if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
+  if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+
+  // cycle time (start → complete), from completed tasks
+  const comps = comp || [];
+  const cyc = comps.map(r => daysBetween(r.started_on, r.completed_on)).filter(d => d != null && d >= 0).sort((a,b)=>a-b);
+  const avgCyc = cyc.length ? Math.round(cyc.reduce((a,b)=>a+b,0)/cyc.length) : null;
+  const medCyc = cyc.length ? cyc[Math.floor(cyc.length/2)] : null;
+  const projects = (proj || []).slice().sort((a,b)=>(b.total_tasks-a.total_tasks)||(b.done-a.done)).slice(0,8);
+
+  const weeks = wk.map(r => (r.week_ending||"").slice(5));
+  CHART_DATA = [];
+  const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
+    lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
+    lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
+  const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
+    lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
+  const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);
+  const totalTasks = wk.reduce((a,r)=>a+(+r.total_tasks||0),0);
+  const overallRate = totalTasks ? Math.round(100*totalDone/totalTasks) : 0;
+  const latest = wk[wk.length-1];
+  const carryNow = (co||[]).filter(r => r.week_ending===latest.week_ending && +r.prior_weeks_seen>0 && r.status!=="Done").length;
+  const aging = (co||[]).filter(r => r.status!=="Done" && +r.prior_weeks_seen>0)
+                        .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
+
+  body.innerHTML =
+    '<div class="kgrid">' +
+      kcard("Completion & throughput", "Tasks completed per week and % completion rate.",
+        '<div class="stat-row">' + stat(overallRate+"%","overall completion") + stat(totalDone,"tasks done (all weeks)") + stat(wk.length,"weeks tracked") + '</div>' +
+        barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0), tipCompletion) +
+        legend([["Done / week",COLORS.done],["Completion %",COLORS.accent]])) +
+      kcard("Blocked & at-risk trend", "Count of blocked and at-risk tasks across weeks.",
+        stackedChart(weeks, wk.map(r=>+r.at_risk||0), wk.map(r=>+r.blocked||0), tipTrend) +
+        legend([["At risk",COLORS.atrisk],["Blocked",COLORS.blocked]])) +
+      kcard("Average progress / velocity", "Mean progress % of all tasks, per week.",
+        '<div class="stat-row">' + stat((latest.avg_progress||0)+"%","latest week avg") + '</div>' +
+        lineChart(weeks, wk.map(r=>+r.avg_progress||0), COLORS.accent, 100, tipProgress)) +
+      kcard("Carryover / aging", "Open tasks repeating from earlier weeks (oldest first).",
+        '<div class="stat-row">' + stat(carryNow,"carried into latest week") + '</div>' + agingList(aging)) +
+      kcard("Cycle time", "How long tasks take from Start to Done.",
+        cyc.length
+          ? '<div class="stat-row">' + stat(avgCyc+"d","avg to complete") + stat(medCyc+"d","median") + stat(cyc.length,"measured") + '</div>'
+          : '<p class="desc" style="margin:0">Set <b>Start</b> and <b>Done</b> dates on completed tasks to measure cycle time.</p>') +
+      kcard("By project", "Tasks and completion grouped by project / area.",
+        projects.length ? projBars(projects) : '<p class="desc" style="margin:0">Tag tasks with a project to see this breakdown.</p>') +
+      kcard("Kudos &amp; recognition", "Praise logged on the Kudos tab.",
+        (kud && kud.length)
+          ? '<div class="stat-row">' + stat(kud.length, "total kudos") + '</div>' +
+            '<ul class="agelist">' + kud.slice(0,5).map(k =>
+              '<li><span>'+esc(k.title || "(kudos)")+(k.source&&k.source.trim()?' <span class="badge tot">'+esc(k.source)+'</span>':'')+'</span>'
+              + '<span class="wks">'+(k.kudos_date?shortDate(k.kudos_date):"")+'</span></li>').join("") + '</ul>'
+          : '<p class="desc" style="margin:0">Log praise on the <b>Kudos</b> tab and it’ll appear here.</p>') +
+    '</div>';
+  wireCharts();
+}
+function hbar(pct){
+  return '<div class="hbar"><div class="hbar-fill" style="width:'+Math.max(0,Math.min(100,pct))+'%"></div></div>';
+}
+function projBars(rows){
+  const max = Math.max(1, ...rows.map(r => +r.total_tasks||0));
+  return '<div class="pbars">' + rows.map(r => {
+    const total = +r.total_tasks||0, done = +r.done||0;
+    const pct = total ? Math.round(100*done/total) : 0;
+    return '<div class="pbar"><div class="pl"><span class="pn">'+esc(r.project)+'</span>'
+      + '<span class="pc">'+done+'/'+total+' · '+pct+'%</span></div>'
+      + '<div class="track"><div class="fill" style="width:'+(total/max*100)+'%"></div></div></div>';
+  }).join("") + '</div>';
+}
+function kcard(title, desc, inner, extra){ return '<div class="kcard"><h3>'+title+'</h3><p class="desc">'+desc+'</p>'+inner+(extra||"")+'</div>'; }
+function stat(n, l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function legend(items){ return '<div class="legend">'+items.map(([t,c])=>'<span><i style="background:'+c+'"></i>'+t+'</span>').join("")+'</div>'; }
+function agingList(rows){
+  if (!rows.length) return '<p class="desc" style="margin-top:8px">No carryover — nothing repeating from earlier weeks. 🎉</p>';
+  return '<ul class="agelist">'+rows.map(r =>
+    '<li><span>'+esc(r.task)+' <span class="badge '+(r.status==="Blocked"?"blk":r.status==="At Risk"?"risk":"tot")+'">'+r.status+'</span></span>'
+    + '<span class="wks">'+r.prior_weeks_seen+'× prior</span></li>').join("")+'</ul>';
+}
+
+// ---- tiny inline-SVG charts (no chart library) ----
+const CW = 520, CH = 170, PADL = 30, PADB = 22, PADT = 12, PADR = 12;
+function xPos(i, n){ return PADL + (n<=1 ? (CW-PADL-PADR)/2 : i*(CW-PADL-PADR)/(n-1)); }
+function bandX(i, n){ const w=(CW-PADL-PADR)/n; return PADL + i*w + w*0.5; }
+function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
+function axis(maxLabel){
+  return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
+       + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>';
+}
+function xLabels(labels){ const n = labels.length;
+  return labels.map((l,i) => '<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join(""); }
+function yOf(v, max){ const h = CH-PADB-PADT; return CH-PADB - (max?Math.min(v,max)/max:0)*h; }
+// ---- interactive hover: register per-week data + geometry, draw hover columns ----
+let CHART_DATA = [];
+function regChart(rows, xs, series){ const c = CHART_DATA.length; CHART_DATA.push({ rows: rows||[], xs: xs||[], series: series||[] }); return c; }
+function hoverBands(c, n){
+  const full = CW-PADL-PADR, w = full/n; let out = "";
+  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  return out;
+}
+function hoverBandsAt(c, xs){
+  const n = xs.length; let out = "";
+  for (let i=0;i<n;i++){
+    const left = i===0 ? PADL : (xs[i-1]+xs[i])/2;
+    const right = i===n-1 ? (CW-PADR) : (xs[i]+xs[i+1])/2;
+    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  }
+  return out;
+}
+function cguide(){ return '<line class="cguide" x1="0" x2="0" y1="'+PADT+'" y2="'+(CH-PADB)+'" style="display:none"></line>'; }
+function cfocus(series){ return (series||[]).map(s => '<circle class="cfocus" r="5" fill="'+s.color+'" stroke="#fff" stroke-width="1.5" style="display:none"></circle>').join(""); }
+function chartTip(){ let t=document.getElementById("chartTip"); if(!t){ t=document.createElement("div"); t.id="chartTip"; t.className="chart-tip"; document.body.appendChild(t); } return t; }
+function moveTip(e){
+  const t=chartTip(), pad=14, w=t.offsetWidth, h=t.offsetHeight;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if (x+w > window.innerWidth-8) x = e.clientX-w-pad;
+  if (y+h > window.innerHeight-8) y = e.clientY-h-pad;
+  t.style.left=x+"px"; t.style.top=y+"px";
+}
+function tipLine(l){ return (typeof l === "string") ? '<span>'+esc(l)+'</span>' : '<span><i style="background:'+(l.c||"#888")+'"></i>'+esc(l.t)+'</span>'; }
+function wireCharts(){
+  const t=chartTip();
+  document.querySelectorAll("#kpiBody svg.chart").forEach(svg => {
+    const firstHb = svg.querySelector(".hb"); if (!firstHb) return;
+    const data = CHART_DATA[+firstHb.dataset.c]; if (!data || !data.xs.length) return;
+    const idxAt = (clientX) => {
+      const r = svg.getBoundingClientRect(); if (!r.width) return 0;
+      const lx = (clientX - r.left) / r.width * CW;
+      let best=0, bd=Infinity;
+      data.xs.forEach((x,i) => { const d=Math.abs(x-lx); if (d<bd){ bd=d; best=i; } });
+      return best;
+    };
+    const show = (e) => {
+      const i = idxAt(e.clientX); const row = data.rows[i]; if (!row) return;
+      t.innerHTML = '<b>'+esc(row.label)+'</b>' + (row.lines||[]).map(tipLine).join("")
+        + (row.week ? '<span class="tip-hint">Click to open this week in the editor</span>' : "");
+      t.classList.add("show"); moveTip(e);
+      const g = svg.querySelector(".cguide");
+      if (g && data.xs[i] != null) { g.setAttribute("x1", data.xs[i]); g.setAttribute("x2", data.xs[i]); g.style.display=""; }
+      svg.querySelectorAll(".cfocus").forEach((f, si) => {
+        const s = data.series[si];
+        if (s && s.cy[i] != null) { f.setAttribute("cx", data.xs[i]); f.setAttribute("cy", s.cy[i]); f.style.display=""; }
+        else f.style.display = "none";
+      });
+      svg.querySelectorAll(".hb").forEach((b, bi) => b.classList.toggle("on", bi===i));
+    };
+    const hide = () => {
+      t.classList.remove("show");
+      const g = svg.querySelector(".cguide"); if (g) g.style.display="none";
+      svg.querySelectorAll(".cfocus").forEach(f => f.style.display="none");
+      svg.querySelectorAll(".hb").forEach(b => b.classList.remove("on"));
+    };
+    const drill = (e) => {
+      const i = idxAt(e.clientX); const row = data.rows[i]; if (!row || !row.week) return;
+      hide(); state.week = row.week; showTab("week"); loadWeek();
+    };
+    svg.addEventListener("pointerenter", show);
+    svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerdown", show);
+    svg.addEventListener("pointerleave", hide);
+    svg.addEventListener("pointercancel", hide);
+    svg.addEventListener("click", drill);
+  });
+}
+function lineChart(labels, vals, color, fixedMax, tipRows){
+  const max = fixedMax || Math.max(1, ...vals); const n = labels.length;
+  const xs = vals.map((v,i)=> xPos(i,n)); const cy = vals.map(v=>yOf(v,max));
+  const pts = xs.map((x,i)=> x+","+cy[i]).join(" ");
+  const dots = xs.map((x,i)=> '<circle class="pt" cx="'+x+'" cy="'+cy[i]+'" r="3" fill="'+color+'"/>').join("");
+  const series = [{cy, color}]; const c = regChart(tipRows, xs, series);
+  return svgOpen() + axis(max+(fixedMax===100?"%":"")) + '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>' + dots + cguide() + cfocus(series) + xLabels(labels) + hoverBandsAt(c,xs) + '</svg>';
+}
+function barLineChart(labels, bars, line, tipRows){
+  const bmax = Math.max(1, ...bars); const lmax = 100; const n = labels.length; const bw = (CW-PADL-PADR)/n * 0.5;
+  const xs = bars.map((v,i)=> bandX(i,n));
+  const rects = bars.map((v,i)=> { const x=xs[i]-bw/2, y=yOf(v,bmax);
+    return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+(CH-PADB-y)+'" rx="2" fill="'+COLORS.done+'" opacity="0.85"/>'; }).join("");
+  const cyL = line.map(v=>yOf(v,lmax));
+  const pts = xs.map((x,i)=> x+","+cyL[i]).join(" ");
+  const dots = xs.map((x,i)=> '<circle class="pt" cx="'+x+'" cy="'+cyL[i]+'" r="3" fill="'+COLORS.accent+'"/>').join("");
+  const series = [{cy:cyL, color:COLORS.accent}]; const c = regChart(tipRows, xs, series);
+  return svgOpen() + axis(bmax) + rects + '<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>' + dots + cguide() + cfocus(series) + xLabels(labels) + hoverBands(c,n) + '</svg>';
+}
+function stackedChart(labels, risk, blocked, tipRows){
+  const n = labels.length; const max = Math.max(1, ...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0))); const bw = (CW-PADL-PADR)/n * 0.5;
+  const xs = labels.map((_,i)=> bandX(i,n));
+  const bars = labels.map((_,i) => {
+    const x = xs[i]-bw/2;
+    const hR = (risk[i]||0)/max*(CH-PADB-PADT); const hB = (blocked[i]||0)/max*(CH-PADB-PADT);
+    const yB = CH-PADB-hB; const yR = yB-hR;
+    return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
+         + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>';
+  }).join("");
+  const c = regChart(tipRows, xs, []);
+  return svgOpen() + axis(max) + bars + cguide() + xLabels(labels) + hoverBands(c,n) + '</svg>';
+}
+
+// ============ THEME ============
+// ============ PRINT KUDOS TOGGLE ============
+let printKudosOn = false;
+try { printKudosOn = localStorage.getItem("tracker_print_kudos") === "1"; } catch(e){}
+$("printKudos").checked = printKudosOn;
+$("printKudos").addEventListener("change", () => {
+  printKudosOn = $("printKudos").checked;
+  try { localStorage.setItem("tracker_print_kudos", printKudosOn ? "1" : "0"); } catch(e){}
+  renderWeekKudos();
+});
+async function renderWeekKudos(){
+  const el = $("weekKudos");
+  if (!el) return;
+  if (!printKudosOn || !session) { el.classList.remove("show"); el.innerHTML = ""; return; }
+  let list = kudosList;
+  if (!list) {
+    const { data } = await sb.from("kudos")
+      .select("kudos_date,source,title,details")
+      .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+    list = data || [];
+  }
+  if (!list.length) { el.classList.remove("show"); el.innerHTML = ""; return; }
+  el.innerHTML = '<h2 class="wk-h">Kudos &amp; recognition</h2>' + list.map(k =>
+    '<div class="wk-item"><div class="wk-meta">' + (k.kudos_date ? shortDate(k.kudos_date) : "")
+      + (k.source && k.source.trim() ? ' · <b>'+esc(k.source)+'</b>' : '') + '</div>'
+    + (k.title && k.title.trim() ? '<div class="wk-title">'+esc(k.title)+'</div>' : '')
+    + (htmlToText(k.details).trim() ? '<div class="wk-det">'+richDisplay(k.details)+'</div>' : '')
+    + '</div>').join("");
+  el.classList.add("show");
+}
+
+(function initTheme(){
+  let theme = "light";
+  try { theme = localStorage.getItem("tracker_theme") || "light"; } catch(e){}
+  const apply = (t) => {
+    if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+    $("themeToggle").textContent = (t === "dark") ? "☀️" : "🌙";
+  };
+  apply(theme);
+  $("themeToggle").addEventListener("click", () => {
+    theme = (theme === "dark") ? "light" : "dark";
+    try { localStorage.setItem("tracker_theme", theme); } catch(e){}
+    apply(theme);
+  });
+})();
+
+// ============ boot ============
+(function init(){
+  applySession(LOCAL_SESSION);
 })();
 </script>
 </body>

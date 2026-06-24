@@ -24,20 +24,24 @@ print-friendly executive styling with the system font stack.
 
 ### Distributable standalone — **Weekly Task Tracker**
 
-`weekly-task-tracker.html` is the same browser-only app, **rebranded as “Weekly Task Tracker”
-for sharing with other people**. It's a single self-contained file with no account, server, or
-setup — hand it to anyone and they just open it:
+`weekly-task-tracker.html` is a **single self-contained file** you can hand to anyone — no
+account, server, or setup. It has **all the cloud app's features except AI** (and except the
+features that fundamentally need a server: cross-device sign-in sync and the shared dashboard).
+Everything runs locally, with the whole data layer backed by the browser's `localStorage`:
 
 ### → https://azjester.github.io/work/weekly-task-tracker.html
 
-- **To distribute:** send the **`weekly-task-tracker.html`** file directly (email, Teams,
-  shared drive) or share the link above. Each person opens it in any modern browser — even
-  straight from their Desktop (`file://`), fully offline.
-- **Each user's data is their own**, saved to *their* browser's `localStorage` (key
-  `weekly_task_tracker_v1`); nothing is shared or sent anywhere.
-- Same **Copy as text / Download Markdown / Print → PDF** exports. (Cloud-only features — sign-in
-  sync, the KPI dashboard, AI summaries, and the shared dashboard — are **not** in this
-  standalone build, since those require the Supabase backend.)
+- **Full feature set, offline:** daily entry (carry-forward, collapse, **✎ Log today**, Alt+↑/↓
+  jump), action items with reorder, rich-text comments & links, projects/due dates/sorting,
+  **History**, **Completed archive + ↩ Recall**, **Kudos**, and an **interactive KPIs tab**
+  (hover tooltips + click-to-open-week) — all computed in-browser from your saved weeks.
+- **Exports:** Copy as text · Download Markdown · Print → PDF · CSV (history, completed, kudos).
+- **To distribute:** send the **`weekly-task-tracker.html`** file directly (email, Teams, shared
+  drive) or share the link above. Each person opens it in any modern browser — even straight
+  from their Desktop (`file://`), fully offline. Their data lives only in *their* browser
+  (`localStorage` key `weekly_task_tracker_v1`); nothing is shared or sent anywhere.
+- **Not included** (need a backend): AI summaries / note import, cross-device cloud sync, and
+  the shareable read-only dashboard. For those, use the cloud `tracker.html` below.
 
 ### Cloud version (saves to a database + KPIs)
 
