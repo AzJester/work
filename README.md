@@ -108,9 +108,10 @@ them and run KPIs**, use the cloud-backed version:
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Per-recipient share links** — create multiple labelled read-only links (one per person)
   from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
-  **⚡ Shorten** turns a link into a short `is.gd`/`tinyurl` URL that's easy to paste into an
-  email or chat (the shortening runs in a Supabase Edge Function, `shorten`, which only
-  shortens your own dashboard links).
+  Every **new link is automatically shortened** to a tidy `is.gd`/`tinyurl` URL that's easy to
+  paste into an email or chat (older links keep a manual **⚡ Shorten** button). The shortening
+  runs in a Supabase Edge Function (`shorten`) that only shortens your own dashboard links; if
+  the shortener is ever unavailable, the full link is used instead.
 - **Exec summary header** — the shared dashboard opens with the latest week at a glance
   (tasks · done % · at-risk · blocked · avg progress · weeks tracked).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
