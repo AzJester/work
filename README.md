@@ -108,10 +108,14 @@ them and run KPIs**, use the cloud-backed version:
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Per-recipient share links** — create multiple labelled read-only links (one per person)
   from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
+  **⚡ Shorten** turns a link into a short `is.gd`/`tinyurl` URL that's easy to paste into an
+  email or chat (the shortening runs in a Supabase Edge Function, `shorten`, which only
+  shortens your own dashboard links).
 - **Exec summary header** — the shared dashboard opens with the latest week at a glance
   (tasks · done % · at-risk · blocked · avg progress · weeks tracked).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
-  the page only carries a public *publishable* key (safe to expose).
+  the page only carries a public *publishable* key (safe to expose). The signed-in email is
+  **masked** in the header (e.g. `sh•••@gmail.com`) so it doesn't leak in screen-shares.
 
 **One-time setup (≈30 seconds, once):** so login works instantly on a static page, open the
 Supabase project → **Authentication → Providers → Email** and turn **off** *“Confirm email.”*

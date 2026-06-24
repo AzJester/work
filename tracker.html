@@ -892,11 +892,20 @@ $("authForm").addEventListener("submit", async (e) => {
 $("signout").addEventListener("click", async () => { await sb.auth.signOut(); });
 sb.auth.onAuthStateChange((_e, sess) => { applySession(sess); });
 
+// hide the full email in the header (screen-shares / screenshots) — keep it recognizable to the owner
+function maskEmail(e){
+  e = String(e || "");
+  const at = e.indexOf("@");
+  if (at < 1) return e ? "•••" : "";
+  const local = e.slice(0, at), dom = e.slice(at);
+  const shown = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 2);
+  return shown + "•••" + dom;
+}
 function applySession(sess){
   session = sess;
   if (session && session.user) {
     $("gate").hidden = true; $("app").hidden = false; $("whoLine").hidden = false;
-    $("userEmail").textContent = session.user.email;
+    $("userEmail").textContent = maskEmail(session.user.email);
     if (!state.week) state.week = isoDate(comingFriday());
     loadWeek();
     renderWeekKudos();
@@ -1870,7 +1879,7 @@ $("shareAdd").addEventListener("click", async () => {
 async function loadShares(){
   const list = $("shareList");
   list.innerHTML = '<div class="share-loading"><span class="spin"></span> Loading…</div>';
-  const { data, error } = await sb.from("shares").select("token,label,created_at")
+  const { data, error } = await sb.from("shares").select("token,label,created_at,short_url")
     .eq("revoked", false).order("created_at", { ascending:true });
   if (error) { list.innerHTML = '<div class="share-loading">Error: '+esc(error.message)+'</div>'; return; }
   if (!data || !data.length) { list.innerHTML = '<div class="share-loading">No links yet — click <b>+ New link</b> to create one.</div>'; return; }
@@ -1883,7 +1892,9 @@ async function loadShares(){
       clearTimeout(shareTimers[s.token]);
       shareTimers[s.token] = setTimeout(() => { sb.from("shares").update({ label: label.value }).eq("token", s.token); }, 600);
     });
-    const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true; url.value = shareUrlFor(s.token);
+    const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true;
+    url.value = s.short_url || shareUrlFor(s.token);
+    if (s.short_url) url.title = "Short link · long link: " + shareUrlFor(s.token);
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "btn ghost sm"; copy.textContent = "Copy";
     copy.addEventListener("click", () => {
       url.select();
@@ -1891,13 +1902,33 @@ async function loadShares(){
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url.value).then(done, () => { try { document.execCommand("copy"); done(); } catch(e){} });
       else { try { document.execCommand("copy"); done(); } catch(e){} }
     });
+    row.appendChild(label); row.appendChild(url); row.appendChild(copy);
+    if (!s.short_url) {
+      const shortBtn = document.createElement("button"); shortBtn.type = "button"; shortBtn.className = "btn ghost sm"; shortBtn.textContent = "⚡ Shorten";
+      shortBtn.title = "Create a short, shareable link";
+      shortBtn.addEventListener("click", async () => {
+        shortBtn.disabled = true; const orig = shortBtn.textContent; shortBtn.textContent = "…";
+        try {
+          const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(s.token) } });
+          let msg = er ? (er.message || "Request failed.") : (d && d.error);
+          if (er) { try { const b = await er.context.json(); if (b && b.error) msg = b.error; } catch(_){} }
+          if (msg) throw new Error(msg);
+          await sb.from("shares").update({ short_url: d.short }).eq("token", s.token);
+          loadShares();
+        } catch (e) {
+          shortBtn.disabled = false; shortBtn.textContent = orig;
+          alert("Could not shorten the link: " + (e.message || e));
+        }
+      });
+      row.appendChild(shortBtn);
+    }
     const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "btn ghost sm danger"; revoke.textContent = "Revoke";
     revoke.addEventListener("click", async () => {
       if (!confirm("Revoke this link" + (s.label ? ' for “'+s.label+'”' : "") + "? It stops working immediately.")) return;
       await sb.from("shares").update({ revoked: true }).eq("token", s.token);
       loadShares();
     });
-    row.appendChild(label); row.appendChild(url); row.appendChild(copy); row.appendChild(revoke);
+    row.appendChild(revoke);
     list.appendChild(row);
   });
 }
