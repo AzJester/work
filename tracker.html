@@ -1778,12 +1778,13 @@ async function loadKpis(){
   refreshChartColors();
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }] = await Promise.all([
+  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }, { data: texp }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
     sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
     sb.from("completed_tasks").select("started_on,completed_on,due_date"),
     sb.from("kpi_by_project").select("project,total_tasks,done"),
-    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false })
+    sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false }),
+    sb.from("task_export").select("week_ending,task,status")
   ]);
   if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
   if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
@@ -1798,10 +1799,27 @@ async function loadKpis(){
   const weeks = wk.map(r => (r.week_ending||"").slice(5));
   CHART_DATA = [];
   const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  // map each week → its At Risk / Blocked task names (for the trend tooltip)
+  const flagsByWeek = {};
+  (texp || []).forEach(t => {
+    if (t.status !== "At Risk" && t.status !== "Blocked") return;
+    const f = (flagsByWeek[t.week_ending] = flagsByWeek[t.week_ending] || { risk:[], blocked:[] });
+    const nm = ((t.task||"").trim() || "(untitled)").slice(0,46);
+    (t.status === "At Risk" ? f.risk : f.blocked).push(nm);
+  });
+  function trendLines(r){
+    const f = flagsByWeek[r.week_ending] || { risk:[], blocked:[] };
+    const lines = [];
+    if (f.risk.length){ lines.push({ t:f.risk.length+" at risk", c:COLORS.atrisk });
+      f.risk.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.risk.length>4) lines.push("   +"+(f.risk.length-4)+" more"); }
+    if (f.blocked.length){ lines.push({ t:f.blocked.length+" blocked", c:COLORS.blocked });
+      f.blocked.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.blocked.length>4) lines.push("   +"+(f.blocked.length-4)+" more"); }
+    if (!lines.length) lines.push("No blocked or at-risk tasks 🎉");
+    return lines;
+  }
   const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
-  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
-    lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending, lines: trendLines(r) }));
   const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
   const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);

@@ -366,10 +366,30 @@ function render(data){
                   .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
 
   const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
+  // map each week → the actual At Risk / Blocked task names (for the trend tooltip)
+  const flagsByWeek = {};
+  reports.forEach(rep => {
+    const risk = [], blocked = [];
+    (rep.tasks||[]).forEach(t => {
+      const nm = ((t.task||"").trim() || "(untitled)").slice(0,46);
+      if (t.status === "At Risk") risk.push(nm);
+      else if (t.status === "Blocked") blocked.push(nm);
+    });
+    flagsByWeek[rep.week_ending] = { risk, blocked };
+  });
+  function trendLines(r){
+    const f = flagsByWeek[r.week_ending] || { risk:[], blocked:[] };
+    const lines = [];
+    if (f.risk.length){ lines.push({ t:f.risk.length+" at risk", c:COLORS.atrisk });
+      f.risk.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.risk.length>4) lines.push("   +"+(f.risk.length-4)+" more"); }
+    if (f.blocked.length){ lines.push({ t:f.blocked.length+" blocked", c:COLORS.blocked });
+      f.blocked.slice(0,4).forEach(n=>lines.push("– "+n)); if (f.blocked.length>4) lines.push("   +"+(f.blocked.length-4)+" more"); }
+    if (!lines.length) lines.push("No blocked or at-risk tasks 🎉");
+    return lines;
+  }
   const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
-  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
-    lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending, lines: trendLines(r) }));
   const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
 
