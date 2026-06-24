@@ -252,8 +252,10 @@
   .cgroup { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow-sm); }
   .cgh { font-weight:700; font-size:14px; padding:12px 16px; background:var(--th-bg); border-bottom:1px solid var(--line); }
   .cgh .cgn { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--green); background:var(--green-bg); border-radius:999px; padding:2px 9px; margin-left:6px; }
-  .crow { padding:10px 15px; border-bottom:1px solid var(--line); }
+  .crow { padding:10px 15px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:10px; }
   .crow:last-child { border-bottom:0; }
+  .crow .ctmain { flex:1 1 auto; min-width:0; }
+  .crow .recall { flex:0 0 auto; }
   .crow .ct { font-size:14px; font-weight:600; }
   .crow .tag-proj { font-family:var(--disp); font-size:11px; font-weight:600; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; margin-left:4px; }
   .crow .cdates { font-family:var(--mono); font-size:11.5px; color:var(--mut); margin-top:3px; font-weight:400; }
@@ -1648,7 +1650,7 @@ async function loadCompleted(){
   const body = $("completedBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading completed tasks…</div>';
   const { data, error } = await sb.from("completed_tasks")
-    .select("week_ending,task,project,priority,note,due_date,started_on,completed_on")
+    .select("week_ending,task,project,priority,progress,note,due_date,items,started_on,completed_on")
     .order("week_ending", { ascending:false }).order("position");
   if (error) { body.innerHTML = '<div class="muted-empty">Could not load: '+esc(error.message)+'</div>'; return; }
   completedCache = data || [];
@@ -1693,16 +1695,42 @@ function renderCompleted(){
     if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); }
     g.items.push(r);
   });
+  let flat = 0;
   body.innerHTML = groups.map(g =>
     '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
-    g.items.map(r =>
-      '<div class="crow"><div class="ct">'+esc(r.task) +
+    g.items.map(r => {
+      const ri = flat++;
+      return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
         (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
-        completedDates(r) +
+        '</div>' + completedDates(r) +
         (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
-      '</div></div>'
-    ).join("") + '</div>'
+      '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
+    }).join("") + '</div>'
   ).join("");
+  body.querySelectorAll(".recall").forEach(b => b.addEventListener("click", () => recallCompleted(rows[+b.dataset.ri])));
+}
+function recallCompleted(r){
+  if (!r) return;
+  const row = blankRow();
+  row.task = r.task || ""; row.project = r.project || ""; row.pri = r.priority || "Med";
+  row.status = "On Track";
+  row.prog = (typeof r.progress === "number") ? r.progress : 0;
+  row.note = r.note || "";
+  row.due = r.due_date || "";
+  row.started = r.started_on || todayIso();
+  row.completed = "";
+  row.items = normItems(r.items);
+  row._open = true;
+  state.rows = state.rows.filter(x => !isBlankRow(x));
+  state.rows.push(row);
+  showTab("week");
+  renderRows();
+  saveWeek(true);
+  setSave("ok", "Recalled into " + (prettyDate(state.week) || state.week));
+  showUndo("Task recalled", () => {
+    const ix = state.rows.indexOf(row);
+    if (ix >= 0) { state.rows.splice(ix, 1); if (!state.rows.length) state.rows = [blankRow()]; renderRows(); saveWeek(true); }
+  });
 }
 
 // ============ HISTORY ============
