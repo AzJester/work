@@ -62,6 +62,9 @@ them and run KPIs**, use the cloud-backed version:
     finished. A **Show done** toggle reveals/reopens them in the editor.
 - **Completed** tab — a searchable archive of every finished task across all weeks, with the
   week, project, and start → completion dates (and how long it took). **⬇ CSV** to export it.
+  **↩ Recall** any archived task to bring it back into the current week as an active task
+  (with its notes and action items) — handy when something done needs revisiting (one-click
+  **Undo** if you mis-tap).
 - **KPIs** tab — computed across all your weeks:
   - **Completion & throughput** — tasks done per week and % completion rate
   - **Blocked & at-risk trend** — stacked counts over time
