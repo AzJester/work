@@ -22,6 +22,23 @@ and export — nothing to install, no account, no server:
 One file, **zero external dependencies** (no CDNs, web fonts, or network calls); light,
 print-friendly executive styling with the system font stack.
 
+### Distributable standalone — **Weekly Task Tracker**
+
+`weekly-task-tracker.html` is the same browser-only app, **rebranded as “Weekly Task Tracker”
+for sharing with other people**. It's a single self-contained file with no account, server, or
+setup — hand it to anyone and they just open it:
+
+### → https://azjester.github.io/work/weekly-task-tracker.html
+
+- **To distribute:** send the **`weekly-task-tracker.html`** file directly (email, Teams,
+  shared drive) or share the link above. Each person opens it in any modern browser — even
+  straight from their Desktop (`file://`), fully offline.
+- **Each user's data is their own**, saved to *their* browser's `localStorage` (key
+  `weekly_task_tracker_v1`); nothing is shared or sent anywhere.
+- Same **Copy as text / Download Markdown / Print → PDF** exports. (Cloud-only features — sign-in
+  sync, the KPI dashboard, AI summaries, and the shared dashboard — are **not** in this
+  standalone build, since those require the Supabase backend.)
+
 ### Cloud version (saves to a database + KPIs)
 
 `status.html` is browser-only. When you need your reports **stored so you can refer back to
@@ -233,6 +250,7 @@ retains release authority over the use of force.
 | File | Purpose |
 |------|---------|
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
+| `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `index.html` | The standalone LDAWIF site (the whole app). |

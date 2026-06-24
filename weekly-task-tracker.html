@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weekly Task Tracker</title>
+<meta name="description" content="A self-contained weekly task status tracker — record your tasks, status, priority, and progress, then export a clean report (Markdown, copy-to-text, or print/PDF) to submit to leadership at the close of each week." />
+<style>
+  :root {
+    --bg:#EEF1F7; --card:#FFFFFF; --line:#E7EAF1; --line-2:#D5DAE4;
+    --ink:#151A24; --ink-2:#454F63; --mut:#8A93A6;
+    --accent:#4F46E5; --accent-2:#6366F1; --accent-ink:#FFFFFF; --accent-soft:#EEEFFE; --ring:rgba(99,102,241,0.30);
+    --green:#0F8A4F; --green-bg:#E5F6EC;
+    --amber:#9A6700; --amber-bg:#FBF1D9;
+    --red:#C2362B; --red-bg:#FCEBE9;
+    --slate:#475467; --slate-bg:#EDF0F5;
+    --radius:14px;
+    --shadow-sm:0 1px 2px rgba(20,28,50,0.05), 0 1px 1px rgba(20,28,50,0.04);
+    --shadow:0 4px 14px -6px rgba(22,30,55,0.16), 0 2px 5px -3px rgba(22,30,55,0.10);
+    --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; }
+  body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 520px at 88% -8%, rgba(99,102,241,0.10), transparent 60%),
+      radial-gradient(900px 500px at -5% 10%, rgba(79,70,229,0.07), transparent 55%),
+      var(--bg);
+    background-attachment:fixed; }
+  .wrap { max-width:1080px; margin:0 auto; padding:26px clamp(14px,3vw,32px) 64px; }
+
+  /* ---- Masthead ---- */
+  .mast { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .brand { display:flex; align-items:center; gap:13px; }
+  .brand .mark { width:42px; height:42px; border-radius:12px; flex:0 0 auto;
+    background:linear-gradient(145deg, var(--accent-2), var(--accent)); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; letter-spacing:-0.02em;
+    box-shadow:0 8px 18px -6px rgba(79,70,229,0.55); }
+  .brand .mark svg { width:27px; height:27px; display:block; }
+  .mast h1 { margin:0; font-size:22px; font-weight:800; letter-spacing:-0.02em; }
+  .mast .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
+  .mast .saved { font-family:var(--mono); font-size:11px; color:var(--mut); white-space:nowrap;
+    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 12px; box-shadow:var(--shadow-sm); }
+  .mast .saved.flash { color:var(--green); }
+
+  /* ---- Report header card ---- */
+  .head { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:18px; box-shadow:var(--shadow); }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut); }
+  .field input { font:inherit; color:var(--ink); background:#FBFCFE; border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; transition:border-color .15s, box-shadow .15s; }
+  .field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+
+  /* ---- Action bar ---- */
+  .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .actions .spacer { flex:1 1 auto; }
+  .btn { font-family:var(--disp); font-size:13px; font-weight:600; letter-spacing:0.01em;
+    color:var(--accent-ink); background:linear-gradient(180deg, var(--accent-2), var(--accent)); border:1px solid var(--accent); padding:9px 16px; border-radius:10px;
+    cursor:pointer; white-space:nowrap; box-shadow:0 6px 16px -8px rgba(79,70,229,0.6); transition:transform .12s, box-shadow .2s, filter .2s; }
+  .btn:hover { filter:brightness(1.05); transform:translateY(-1px); } .btn:active { transform:translateY(0); }
+  .btn:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
+  .btn.ghost { color:var(--ink-2); background:var(--card); border-color:var(--line-2); box-shadow:var(--shadow-sm); }
+  .btn.ghost:hover { color:var(--accent); border-color:var(--accent); filter:none; }
+  .btn.sm { font-size:12px; padding:6px 12px; border-radius:8px; }
+  .btn.danger.ghost:hover { color:var(--red); border-color:var(--red); }
+
+  /* ---- Table ---- */
+  .tcard { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); }
+  table.tasks { width:100%; border-collapse:collapse; }
+  table.tasks thead th { font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mut);
+    text-align:left; padding:12px 14px; background:#F6F7FB; border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.tasks tbody td { padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  table.tasks tbody tr:last-child td { border-bottom:0; }
+  .col-num { width:34px; color:var(--mut); font-family:var(--mono); font-size:12px; text-align:right; }
+  .col-status { width:138px; } .col-pri { width:96px; } .col-prog { width:150px; } .col-act { width:96px; }
+
+  .cell-input { width:100%; font:inherit; color:var(--ink); background:transparent; border:1px solid transparent;
+    border-radius:6px; padding:6px 7px; resize:none; }
+  .cell-input:hover { border-color:var(--line); }
+  .cell-input:focus { outline:none; border-color:var(--accent); background:#FBFCFE; }
+  textarea.cell-input { min-height:34px; line-height:1.35; overflow:hidden; }
+
+  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px;
+    padding:5px 10px; cursor:pointer; -webkit-appearance:none; appearance:none; text-align:left;
+    background-image:none; }
+  select.chip:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  select.chip.s-ontrack { color:var(--green); background:var(--green-bg); border-color:#BFE6CD; }
+  select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
+  select.chip.s-blocked { color:var(--red); background:var(--red-bg); border-color:#F2C6C2; }
+  select.chip.s-done { color:var(--slate); background:var(--slate-bg); border-color:#D3DAE5; }
+
+  select.pri { font:inherit; font-size:13px; color:var(--ink-2); background:#FBFCFE; border:1px solid var(--line-2);
+    border-radius:7px; padding:6px 8px; cursor:pointer; }
+  select.pri:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+
+  .prog { display:flex; align-items:center; gap:8px; }
+  .prog input[type=range] { flex:1 1 auto; accent-color:var(--accent); cursor:pointer; min-width:0; }
+  .prog .pv { font-family:var(--mono); font-size:12px; color:var(--ink-2); width:38px; text-align:right; }
+
+  .rowbtns { display:flex; gap:4px; }
+  .ibtn { font-family:var(--disp); font-size:13px; line-height:1; color:var(--mut); background:transparent;
+    border:1px solid var(--line); border-radius:6px; width:26px; height:26px; cursor:pointer; padding:0; }
+  .ibtn:hover { color:var(--ink); border-color:var(--line-2); background:#F8FAFD; }
+  .ibtn.del:hover { color:var(--red); border-color:var(--red); }
+  .ibtn:disabled { opacity:.35; cursor:default; }
+  .ibtn:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+
+  .tfoot { padding:12px; border-top:1px solid var(--line); background:#FBFCFE; }
+  .empty { padding:34px 16px; text-align:center; color:var(--mut); font-size:14px; }
+
+  .hint { margin:16px 2px 0; font-size:12.5px; color:var(--mut); }
+  .hint b { color:var(--ink-2); font-weight:600; }
+
+  @media (max-width:720px) {
+    .head { grid-template-columns:1fr; }
+    .col-prog, .col-pri { display:none; }
+    table.tasks thead { display:none; }
+    table.tasks, table.tasks tbody, table.tasks tr, table.tasks td { display:block; width:100%; }
+    table.tasks tbody tr { border-bottom:8px solid var(--bg); padding:6px 4px; }
+    table.tasks tbody td { border:0; padding:5px 6px; }
+    .col-num { display:inline-block; }
+  }
+
+  /* ---- Print: clean one-pager ---- */
+  @media print {
+    @page { margin:14mm; }
+    body { background:#fff; font-size:11pt; }
+    .wrap { max-width:none; padding:0; }
+    .actions, .tfoot, .hint, .mast .saved, .rowbtns, .col-act { display:none !important; }
+    .head, .tcard { border:0; border-radius:0; padding:0; }
+    .head { display:block; margin-bottom:10pt; }
+    .head .field { display:inline-block; margin-right:24pt; }
+    .head .field input { border:0; padding:0; background:transparent; font-weight:600; }
+    .head .field label { display:block; }
+    table.tasks { border:1px solid #999; }
+    table.tasks thead th { background:#f0f0f0; color:#000; border-bottom:1px solid #999; }
+    table.tasks tbody td { border-bottom:1px solid #ccc; }
+    .cell-input, select.chip, select.pri { border:0 !important; background:transparent !important; padding:2px 0 !important; -webkit-appearance:none; appearance:none; }
+    select.chip { font-weight:700; padding-left:0; }
+    .prog input[type=range] { display:none; }
+    .prog .pv { width:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><ellipse cx="12" cy="7.5" rx="7" ry="3"/><circle cx="12" cy="5" r="3.2"/><circle cx="7.5" cy="6.5" r="2.4"/><circle cx="16.5" cy="6.5" r="2.4"/><circle cx="9.7" cy="4.6" r="1.8"/><circle cx="14.3" cy="4.6" r="1.8"/><path d="M10 9.5q-.6 3 .4 4.5-1 1.6-.8 3.5h4.8q.2-1.9-.8-3.5 1-1.5.4-4.5z"/><ellipse cx="12" cy="18.5" rx="5.2" ry="1.7"/><circle cx="6.8" cy="18.3" r="1.1"/><circle cx="17.2" cy="18.3" r="1.1"/></svg></div>
+      <div>
+        <h1>Weekly Task Tracker</h1>
+        <div class="tag">Task status report · for leadership</div>
+      </div>
+    </div>
+    <div class="saved" id="saved" aria-live="polite">Saved locally</div>
+  </header>
+
+  <section class="head">
+    <div class="field">
+      <label for="who">Prepared by</label>
+      <input id="who" type="text" placeholder="Your name · title" autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="week">Week ending</label>
+      <input id="week" type="date" />
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn" id="add" type="button">+ Add task</button>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="copy" type="button">Copy as text</button>
+    <button class="btn ghost" id="md" type="button">Download Markdown</button>
+    <button class="btn ghost" id="print" type="button">Print / PDF</button>
+  </div>
+
+  <div class="tcard">
+    <table class="tasks">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th>Task</th>
+          <th class="col-status">Status</th>
+          <th class="col-pri">Priority</th>
+          <th class="col-prog">Progress</th>
+          <th>Update this week</th>
+          <th class="col-act">Row</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="tfoot">
+      <button class="btn ghost sm danger" id="clear" type="button">Clear &amp; start new week</button>
+    </div>
+  </div>
+
+  <p class="hint">
+    Everything is saved <b>in this browser only</b> (no account, no server). Use
+    <b>Copy as text</b> for email/Slack, <b>Download Markdown</b> for docs/wikis, or
+    <b>Print / PDF</b> for a clean one-pager. <b>Clear &amp; start new week</b> rolls the
+    date forward and clears updates so you can begin the next report.
+  </p>
+  <p class="hint" style="margin-top:8px">
+    Need your reports <b>saved to a database</b> so you can refer back to them and run KPIs?
+    Use the <a href="tracker.html" style="color:#2563EB;font-weight:600">cloud version &rarr;</a>
+  </p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "weekly_task_tracker_v1";
+  var STATUSES = [
+    { v:"On Track", cls:"s-ontrack" },
+    { v:"At Risk",  cls:"s-atrisk" },
+    { v:"Blocked",  cls:"s-blocked" },
+    { v:"Done",     cls:"s-done" }
+  ];
+  var PRIORITIES = ["High", "Med", "Low"];
+
+  var rowsEl   = document.getElementById("rows");
+  var whoEl    = document.getElementById("who");
+  var weekEl   = document.getElementById("week");
+  var savedEl  = document.getElementById("saved");
+
+  // ---- date helpers ----
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  function isoDate(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+  function comingFriday(from){
+    var d = from ? new Date(from) : new Date();
+    // 5 = Friday; advance to the next Friday (today counts if it's Friday)
+    var delta = (5 - d.getDay() + 7) % 7;
+    d.setDate(d.getDate() + delta);
+    return d;
+  }
+  function prettyDate(iso){
+    if (!iso) return "";
+    var p = iso.split("-");
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    return d.toLocaleDateString(undefined, { year:"numeric", month:"long", day:"numeric" });
+  }
+
+  // ---- state ----
+  function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"" }; }
+
+  var state = { who:"", week:"", rows:[] };
+
+  function load(){
+    var raw;
+    try { raw = localStorage.getItem(KEY); } catch(e) { raw = null; }
+    if (raw) {
+      try {
+        var s = JSON.parse(raw);
+        state.who  = typeof s.who === "string" ? s.who : "";
+        state.week = typeof s.week === "string" ? s.week : "";
+        state.rows = Array.isArray(s.rows) ? s.rows : [];
+      } catch(e) { /* fall through to defaults */ }
+    }
+    if (!state.week) state.week = isoDate(comingFriday());
+    if (!state.rows.length) state.rows = [ blankRow(), blankRow(), blankRow() ];
+    // normalize rows
+    state.rows = state.rows.map(function (r) {
+      r = r || {};
+      return {
+        task:   typeof r.task === "string" ? r.task : "",
+        status: STATUSES.some(function(s){return s.v===r.status;}) ? r.status : "On Track",
+        pri:    PRIORITIES.indexOf(r.pri) >= 0 ? r.pri : "Med",
+        prog:   Math.max(0, Math.min(100, parseInt(r.prog, 10) || 0)),
+        note:   typeof r.note === "string" ? r.note : ""
+      };
+    });
+  }
+
+  var saveTimer = null;
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+    savedEl.textContent = "Saved locally";
+    savedEl.classList.add("flash");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){ savedEl.classList.remove("flash"); }, 700);
+  }
+
+  function statusClass(v){
+    for (var i=0;i<STATUSES.length;i++) if (STATUSES[i].v===v) return STATUSES[i].cls;
+    return "s-ontrack";
+  }
+
+  function autosize(ta){ ta.style.height = "auto"; ta.style.height = (ta.scrollHeight) + "px"; }
+
+  // ---- rendering ----
+  function render(){
+    whoEl.value = state.who;
+    weekEl.value = state.week;
+    rowsEl.innerHTML = "";
+
+    if (!state.rows.length) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 7; td.className = "empty";
+      td.textContent = "No tasks yet — click “+ Add task” to start your report.";
+      tr.appendChild(td); rowsEl.appendChild(tr);
+      return;
+    }
+
+    state.rows.forEach(function (row, i) {
+      var tr = document.createElement("tr");
+
+      // # number
+      var tdNum = document.createElement("td");
+      tdNum.className = "col-num"; tdNum.textContent = (i+1);
+      tr.appendChild(tdNum);
+
+      // Task
+      var tdTask = document.createElement("td");
+      var task = document.createElement("textarea");
+      task.className = "cell-input"; task.rows = 1; task.placeholder = "What you worked on";
+      task.value = row.task;
+      task.addEventListener("input", function(){ row.task = task.value; autosize(task); save(); });
+      tdTask.appendChild(task); tr.appendChild(tdTask);
+
+      // Status
+      var tdStatus = document.createElement("td"); tdStatus.className = "col-status";
+      var sel = document.createElement("select");
+      sel.className = "chip " + statusClass(row.status);
+      STATUSES.forEach(function (s) {
+        var o = document.createElement("option"); o.value = s.v; o.textContent = s.v;
+        if (s.v === row.status) o.selected = true; sel.appendChild(o);
+      });
+      sel.addEventListener("change", function(){
+        row.status = sel.value;
+        sel.className = "chip " + statusClass(row.status);
+        save();
+      });
+      tdStatus.appendChild(sel); tr.appendChild(tdStatus);
+
+      // Priority
+      var tdPri = document.createElement("td"); tdPri.className = "col-pri";
+      var pri = document.createElement("select"); pri.className = "pri";
+      PRIORITIES.forEach(function (p) {
+        var o = document.createElement("option"); o.value = p; o.textContent = p;
+        if (p === row.pri) o.selected = true; pri.appendChild(o);
+      });
+      pri.addEventListener("change", function(){ row.pri = pri.value; save(); });
+      tdPri.appendChild(pri); tr.appendChild(tdPri);
+
+      // Progress
+      var tdProg = document.createElement("td"); tdProg.className = "col-prog";
+      var wrap = document.createElement("div"); wrap.className = "prog";
+      var rng = document.createElement("input");
+      rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog;
+      var pv = document.createElement("span"); pv.className = "pv"; pv.textContent = row.prog + "%";
+      rng.addEventListener("input", function(){
+        row.prog = parseInt(rng.value, 10) || 0; pv.textContent = row.prog + "%"; save();
+      });
+      wrap.appendChild(rng); wrap.appendChild(pv);
+      tdProg.appendChild(wrap); tr.appendChild(tdProg);
+
+      // Update / note
+      var tdNote = document.createElement("td");
+      var note = document.createElement("textarea");
+      note.className = "cell-input"; note.rows = 1; note.placeholder = "Progress, next step, blocker…";
+      note.value = row.note;
+      note.addEventListener("input", function(){ row.note = note.value; autosize(note); save(); });
+      tdNote.appendChild(note); tr.appendChild(tdNote);
+
+      // Row actions
+      var tdAct = document.createElement("td"); tdAct.className = "col-act";
+      var grp = document.createElement("div"); grp.className = "rowbtns";
+      var up = mkIbtn("▲", "Move up", function(){ moveRow(i, -1); });
+      var dn = mkIbtn("▼", "Move down", function(){ moveRow(i, 1); });
+      var del = mkIbtn("✕", "Delete task", function(){ state.rows.splice(i,1); save(); render(); });
+      del.classList.add("del");
+      up.disabled = (i === 0);
+      dn.disabled = (i === state.rows.length - 1);
+      grp.appendChild(up); grp.appendChild(dn); grp.appendChild(del);
+      tdAct.appendChild(grp); tr.appendChild(tdAct);
+
+      rowsEl.appendChild(tr);
+
+      // size textareas to content after they're in the DOM
+      autosize(task); autosize(note);
+    });
+  }
+
+  function mkIbtn(label, title, fn){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "ibtn"; b.textContent = label;
+    b.title = title; b.setAttribute("aria-label", title);
+    b.addEventListener("click", fn);
+    return b;
+  }
+
+  function moveRow(i, dir){
+    var j = i + dir;
+    if (j < 0 || j >= state.rows.length) return;
+    var tmp = state.rows[i]; state.rows[i] = state.rows[j]; state.rows[j] = tmp;
+    save(); render();
+  }
+
+  // ---- export builders ----
+  function filledRows(){
+    return state.rows.filter(function (r) {
+      return (r.task && r.task.trim()) || (r.note && r.note.trim());
+    });
+  }
+
+  function buildMarkdown(){
+    var lines = [];
+    lines.push("# Weekly Status — Week ending " + (prettyDate(state.week) || state.week));
+    if (state.who && state.who.trim()) lines.push("**Prepared by:** " + state.who.trim());
+    lines.push("");
+    lines.push("| # | Task | Status | Priority | Progress | Update |");
+    lines.push("|---|------|--------|----------|----------|--------|");
+    var rs = filledRows();
+    rs.forEach(function (r, i) {
+      lines.push("| " + (i+1) +
+        " | " + mdCell(r.task) +
+        " | " + mdCell(r.status) +
+        " | " + mdCell(r.pri) +
+        " | " + r.prog + "%" +
+        " | " + mdCell(r.note) + " |");
+    });
+    if (!rs.length) lines.push("| – | _No tasks recorded_ |  |  |  |  |");
+    lines.push("");
+    return lines.join("\n");
+  }
+  function mdCell(s){
+    return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n+/g, " ").trim();
+  }
+
+  function buildText(){
+    var out = [];
+    out.push("WEEKLY STATUS — Week ending " + (prettyDate(state.week) || state.week));
+    if (state.who && state.who.trim()) out.push("Prepared by: " + state.who.trim());
+    out.push("");
+    var rs = filledRows();
+    if (!rs.length) { out.push("(No tasks recorded.)"); return out.join("\n"); }
+    rs.forEach(function (r, i) {
+      out.push((i+1) + ". " + (r.task ? r.task.trim() : "(untitled)") +
+        "  [" + r.status + " · " + r.pri + " · " + r.prog + "%]");
+      if (r.note && r.note.trim()) out.push("   " + r.note.trim().replace(/\r?\n+/g, " "));
+    });
+    out.push("");
+    return out.join("\n");
+  }
+
+  function download(filename, text){
+    var blob = new Blob([text], { type:"text/markdown;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function flashBtn(btn, msg){
+    var orig = btn.textContent;
+    btn.textContent = msg; btn.disabled = true;
+    setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1100);
+  }
+
+  // ---- wire up ----
+  whoEl.addEventListener("input", function(){ state.who = whoEl.value; save(); });
+  weekEl.addEventListener("change", function(){ state.week = weekEl.value; save(); });
+
+  document.getElementById("add").addEventListener("click", function(){
+    state.rows.push(blankRow()); save(); render();
+    // focus the new row's task field
+    var inputs = rowsEl.querySelectorAll("textarea.cell-input");
+    if (inputs.length) inputs[(state.rows.length-1)*2].focus();
+  });
+
+  document.getElementById("md").addEventListener("click", function(){
+    download("weekly-task-tracker-" + (state.week || isoDate(new Date())) + ".md", buildMarkdown());
+  });
+
+  document.getElementById("copy").addEventListener("click", function(){
+    var btn = this, text = buildText();
+    function ok(){ flashBtn(btn, "Copied ✓"); }
+    function fallback(){
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); ok(); } catch(e){ flashBtn(btn, "Copy failed"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, fallback);
+    } else { fallback(); }
+  });
+
+  document.getElementById("print").addEventListener("click", function(){ window.print(); });
+
+  document.getElementById("clear").addEventListener("click", function(){
+    if (!confirm("Start a new week? This clears all tasks/updates and rolls the week-ending date forward.")) return;
+    // roll forward one week from the current week-ending date
+    var base = state.week ? new Date(state.week + "T00:00:00") : new Date();
+    base.setDate(base.getDate() + 7);
+    state.week = isoDate(comingFriday(base));
+    state.rows = [ blankRow(), blankRow(), blankRow() ];
+    save(); render();
+  });
+
+  // ---- init ----
+  load();
+  render();
+  save();
+})();
+</script>
+</body>
+</html>
