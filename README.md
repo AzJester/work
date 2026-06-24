@@ -73,6 +73,8 @@ them and run KPIs**, use the cloud-backed version:
   - **Cycle time** — avg/median days from Start to Done
   - **By project** — tasks and completion grouped by project/area
   - **Kudos & recognition** — count and recent praise from the Kudos tab
+  - **Interactive** — hover (or tap) any trend chart for a crosshair, highlighted point, and a
+    tooltip of that week's exact figures; **click a week to open it in the editor**.
 - Same **Copy / Markdown / Print-PDF** exports for the week, plus **⬇ Download all as CSV**
   (full history) on the History tab.
 - **Kudos** tab — log praise & recognition (date, source, what it was for, and the quote);
