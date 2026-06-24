@@ -352,6 +352,8 @@
   .modal-body .ai-rendered code { font-family:var(--mono); font-size:12.5px; background:var(--input-bg); padding:1px 5px; border-radius:5px; }
   .modal-body .ai-load { text-align:center; color:var(--mut); padding:40px 0; }
   .modal-body .ai-err { color:var(--red); background:var(--red-bg); border:1px solid var(--line-2); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.5; }
+  .ai-dash { font-size:11.5px; color:var(--mut); white-space:nowrap; align-self:center; }
+  .ai-dash.on { color:var(--green); }
   #notesInput, #tnInput { min-height:150px; }
   .tn-summary { font-size:13.5px; line-height:1.5; color:var(--ink); background:var(--accent-soft); border:1px solid var(--line-2); border-radius:10px; padding:10px 12px; margin:6px 0 4px; }
   .np-head { font-size:13px; color:var(--mut); margin:14px 0 8px; }
@@ -677,8 +679,11 @@
         <button class="btn ghost sm" id="aiEdit" type="button" hidden>Edit</button>
         <button class="btn ghost sm" id="aiCopy" type="button" hidden>Copy</button>
         <button class="btn ghost sm" id="aiRegen" type="button" hidden>Regenerate</button>
+        <button class="btn sm" id="aiSend" type="button" hidden title="Publish this summary to the leadership dashboard you share">📌 Send to dashboard</button>
+        <button class="btn ghost sm" id="aiUnpublish" type="button" hidden title="Remove this week's summary from the shared dashboard">Remove</button>
         <span class="spacer" style="flex:1 1 auto"></span>
-        <button class="btn sm" id="aiDone" type="button">Done</button>
+        <span class="ai-dash" id="aiDash"></span>
+        <button class="btn ghost sm" id="aiDone" type="button">Done</button>
       </div>
     </div>
   </div>
@@ -780,7 +785,7 @@ function esc(s){ return String(s==null?"":s); }
 
 // ---------- app state ----------
 let session = null;
-let state = { who:"", week:"", rows:[], notes:"" };
+let state = { who:"", week:"", rows:[], notes:"", ai:"" };
 let reportId = null;
 let saveTimer = null;
 let sortMode = "status";
@@ -1052,12 +1057,13 @@ async function loadWeek(){
   setSave("busy", "Loading…");
   try {
     const { data: reps, error } = await sb.from("reports")
-      .select("id, prepared_by, meeting_notes").eq("week_ending", state.week).limit(1);
+      .select("id, prepared_by, meeting_notes, ai_summary").eq("week_ending", state.week).limit(1);
     if (error) throw error;
     if (reps && reps.length) {
       reportId = reps[0].id;
       state.who = reps[0].prepared_by || state.who || "";
       state.notes = reps[0].meeting_notes || "";
+      state.ai = reps[0].ai_summary || "";
       const { data: ts, error: e2 } = await sb.from("tasks")
         .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on").eq("report_id", reportId).order("position");
       if (e2) throw e2;
@@ -1071,6 +1077,7 @@ async function loadWeek(){
     } else {
       reportId = null;
       state.notes = "";
+      state.ai = "";
       const carried = await fetchCarryForward(state.week);
       if (carried) {
         state.rows = carried.rows;
@@ -1096,7 +1103,7 @@ async function saveWeek(explicit){
   setSave("busy", "Saving…");
   try {
     const { data: rep, error } = await sb.from("reports")
-      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who, meeting_notes: state.notes || "" },
+      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who, meeting_notes: state.notes || "", ai_summary: state.ai || "" },
               { onConflict: "user_id,week_ending" })
       .select("id").single();
     if (error) throw error;
@@ -1123,15 +1130,15 @@ async function saveWeek(explicit){
 
 $("del").addEventListener("click", async () => {
   if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
-  const snap = { who: state.who, week: state.week, notes: state.notes,
+  const snap = { who: state.who, week: state.week, notes: state.notes, ai: state.ai,
     rows: state.rows.map(r => ({ ...r, items:(r.items||[]).map(x=>({...x})) })) };
   setSave("busy", "Deleting…");
   const { error } = await sb.from("reports").delete().eq("id", reportId);
   if (error) { setSave("err", "Delete failed: " + error.message); return; }
-  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ]; state.notes = "";
+  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ]; state.notes = ""; state.ai = "";
   renderRows(); setSave("", "Week deleted");
   showUndo("Week deleted", async () => {
-    state.who = snap.who; state.week = snap.week; state.rows = snap.rows; state.notes = snap.notes;
+    state.who = snap.who; state.week = snap.week; state.rows = snap.rows; state.notes = snap.notes; state.ai = snap.ai;
     $("who").value = state.who; $("week").value = state.week;
     renderRows(); await saveWeek(true);
   });
@@ -2210,6 +2217,43 @@ $("aiCopy").addEventListener("click", async function(){
   const ok = await copyRich(html, aiMarkdown);
   if (ok) { btn.textContent = "Copied ✓"; setTimeout(() => btn.textContent = "Copy", 1100); }
 });
+// Publish the current summary to the shared leadership dashboard (stored on this week's report)
+$("aiSend").addEventListener("click", async function(){
+  if (!session) return;
+  const btn = this; btn.disabled = true; btn.textContent = "Sending…";
+  state.ai = aiMarkdown || "";
+  await saveWeek(true);
+  btn.disabled = false;
+  updateAiDash();
+  btn.textContent = "Sent ✓";
+  setTimeout(updateAiDash, 1400);
+});
+$("aiUnpublish").addEventListener("click", async function(){
+  if (!session) return;
+  const btn = this; btn.disabled = true;
+  state.ai = "";
+  await saveWeek(true);
+  btn.disabled = false;
+  updateAiDash();
+  $("aiDash").textContent = "Removed from dashboard"; $("aiDash").className = "ai-dash";
+});
+// reflect whether this week's drafted summary is currently published to the dashboard
+function updateAiDash(){
+  const send = $("aiSend"), un = $("aiUnpublish"), d = $("aiDash");
+  if (!send || !d) return;
+  const pub = (state.ai || "").trim(), cur = (aiMarkdown || "").trim();
+  send.hidden = false;
+  if (pub && pub === cur) {
+    send.textContent = "Update dashboard"; if (un) un.hidden = false;
+    d.textContent = "✓ On your dashboard"; d.className = "ai-dash on";
+  } else if (pub) {
+    send.textContent = "📌 Update dashboard"; if (un) un.hidden = false;
+    d.textContent = "On dashboard · older draft"; d.className = "ai-dash on";
+  } else {
+    send.textContent = "📌 Send to dashboard"; if (un) un.hidden = true;
+    d.textContent = ""; d.className = "ai-dash";
+  }
+}
 
 // minimal, safe markdown → HTML (headings, bold/italic, lists, links, code)
 function mdInline(s){
@@ -2266,7 +2310,8 @@ function renderAiView(){
 async function draftSummary(){
   openAi(); aiMode = "preview";
   $("aiBody").innerHTML = '<div class="ai-load"><span class="spin"></span> Drafting your weekly summary…</div>';
-  ["aiEdit","aiCopy","aiRegen"].forEach(id => $(id).hidden = true);
+  ["aiEdit","aiCopy","aiRegen","aiSend","aiUnpublish"].forEach(id => $(id).hidden = true);
+  $("aiDash").textContent = ""; $("aiDash").className = "ai-dash";
   try {
     const tasks = state.rows
       .filter(r => (r.task && r.task.trim()) || htmlToText(r.note).trim() || (r.items && r.items.length))
@@ -2290,6 +2335,7 @@ async function draftSummary(){
     aiMarkdown = (data && data.summary) || "(The model returned an empty summary.)";
     ["aiEdit","aiCopy","aiRegen"].forEach(id => $(id).hidden = false);
     renderAiView();
+    updateAiDash();
   } catch (e) {
     $("aiBody").innerHTML = '<div class="ai-err"><b>Couldn’t generate the summary.</b><br>' + escHtml(e.message || String(e))
       + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';

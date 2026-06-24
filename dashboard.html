@@ -133,6 +133,28 @@
   /* weekly reports (read-only) */
   h2.sec { font-family:var(--serif); font-size:18px; font-weight:600; margin:0 0 14px; letter-spacing:0; display:flex; align-items:center; gap:9px; }
   h2.sec::before { content:""; width:4px; height:17px; border-radius:3px; background:linear-gradient(180deg, var(--accent), var(--accent-2)); flex:0 0 auto; }
+  /* published executive summary — featured block under the hero */
+  .execsum { background:var(--card); border:1px solid var(--line-2); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 24px; margin:0 0 20px; }
+  .execsum-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    margin:0 0 11px; padding-bottom:11px; border-bottom:1px solid var(--line); }
+  .execsum-head h2 { font-family:var(--serif); font-size:21px; font-weight:600; margin:0; color:var(--ink); letter-spacing:-.01em; }
+  .execsum-wk { font-family:var(--mono); font-size:11.5px; color:var(--mut); }
+  .execsum-body { font-size:14.5px; line-height:1.62; color:var(--ink-2); }
+  .execsum-body h4 { font-size:14.5px; color:var(--ink); margin:15px 0 5px; letter-spacing:-.01em; }
+  .execsum-body h4:first-child { margin-top:0; }
+  .execsum-body p { margin:0 0 9px; } .execsum-body p:last-child { margin-bottom:0; }
+  .execsum-body ul, .execsum-body ol { margin:5px 0 10px; padding-left:22px; }
+  .execsum-body li { margin:3px 0; }
+  .execsum-body strong { color:var(--ink); }
+  .execsum-body a { color:var(--accent); text-decoration:underline; }
+  .execsum-body code { font-family:var(--mono); font-size:12.5px; background:var(--th-bg); padding:1px 5px; border-radius:5px; }
+  /* per-week summary inside a report block */
+  .rep-summary { font-size:13px; line-height:1.55; color:var(--ink-2); background:var(--accent-soft); border-top:1px solid var(--line); padding:13px 16px; }
+  .rep-summary h4 { font-size:13px; color:var(--ink); margin:10px 0 4px; } .rep-summary h4:first-child { margin-top:0; }
+  .rep-summary p { margin:0 0 7px; } .rep-summary p:last-child { margin-bottom:0; }
+  .rep-summary ul, .rep-summary ol { margin:4px 0 7px; padding-left:20px; } .rep-summary li { margin:2px 0; }
+  .rep-summary strong { color:var(--ink); } .rep-summary a { color:var(--accent); text-decoration:underline; }
+  .rep-summary code { font-family:var(--mono); font-size:12px; background:var(--card); padding:1px 5px; border-radius:5px; }
   .rep { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:14px; box-shadow:var(--shadow-sm); }
   .rep > summary { list-style:none; cursor:pointer; padding:14px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .rep > summary::-webkit-details-marker { display:none; }
@@ -306,6 +328,33 @@ function sanitizeHtml(html){
   return root.innerHTML;
 }
 function richDisplay(s){ s = fixDoubled(s); return looksHtml(s) ? sanitizeHtml(s) : esc(s).replace(/\r?\n/g,"<br>"); }
+// minimal, safe markdown → HTML (mirrors the tracker's AI-summary renderer) for published exec summaries
+function mdInline(s){
+  s = esc(s);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  return s;
+}
+function mdToHtml(md){
+  const lines = String(md||"").replace(/\r\n/g,"\n").split("\n");
+  let html = "", list = null;
+  const closeList = () => { if (list) { html += "</"+list+">"; list = null; } };
+  lines.forEach(raw => {
+    const line = raw.replace(/\s+$/,"");
+    if (!line.trim()) { closeList(); return; }
+    let m;
+    if ((m = line.match(/^#{1,6}\s+(.*)$/)))      { closeList(); html += "<h4>"+mdInline(m[1])+"</h4>"; return; }
+    if ((m = line.match(/^\s*[-*•]\s+(.*)$/)))     { if (list!=="ul"){ closeList(); html+="<ul>"; list="ul"; } html += "<li>"+mdInline(m[1])+"</li>"; return; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/)))   { if (list!=="ol"){ closeList(); html+="<ol>"; list="ol"; } html += "<li>"+mdInline(m[1])+"</li>"; return; }
+    closeList(); html += "<p>"+mdInline(line)+"</p>";
+  });
+  closeList();
+  return html;
+}
+function summaryHtml(md){ return sanitizeHtml(mdToHtml(md)); }
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
 function statusChipCls(s){ return s==="On Track"?"s-ontrack":s==="At Risk"?"s-atrisk":s==="Blocked"?"s-blocked":"s-done"; }
@@ -471,6 +520,17 @@ function render(data){
       '</div>' +
     '</div>';
 
+  // featured executive summary — the latest week's published AI summary, if any
+  const latestRep = reports.find(r => r.week_ending === latest.week_ending) || reports[0];
+  const execSummaryHtml = (latestRep && (latestRep.ai_summary||"").trim())
+    ? '<section class="execsum">' +
+        '<div class="execsum-head"><h2>Executive summary</h2>' +
+          '<span class="execsum-wk">week ending '+(prettyDate(latestRep.week_ending)||esc(latestRep.week_ending)) +
+          (prepBy ? ' · '+esc(prepBy) : '')+'</span></div>' +
+        '<div class="execsum-body">'+summaryHtml(latestRep.ai_summary)+'</div>' +
+      '</section>'
+    : '';
+
   // reports are newest-first; show only the chosen number of recent weeks
   const lim = weeksLimit();
   const shownReports = isFinite(lim) ? reports.slice(0, lim) : reports;
@@ -478,7 +538,7 @@ function render(data){
     ? '<p class="desc" style="margin:-6px 0 14px">Showing the latest '+shownReports.length+' of '+reports.length+' weeks. Use <b>Weeks</b> (top right) to show more.</p>' : '';
   const repHtml = '<h2 class="sec">Weekly reports</h2>' + moreNote + shownReports.map((r,idx) => reportBlock(r, idx===0)).join("");
 
-  $("root").innerHTML = execHtml + '<section id="kpiSection">' + kpis + '</section>' + kudosHtml + repHtml;
+  $("root").innerHTML = execHtml + execSummaryHtml + '<section id="kpiSection">' + kpis + '</section>' + kudosHtml + repHtml;
   wireCharts();
 }
 function eTile(label, num, unit, sub, tone, trend){
@@ -513,6 +573,8 @@ function reportBlock(r, open){
     + '<td class="col-pri">'+esc(t.priority)+'</td>'
     + '<td class="prog-cell">'+(+t.progress||0)+'%</td></tr>').join("")
     : '<tr><td colspan="4" style="color:var(--mut)">No tasks recorded.</td></tr>';
+  const sumHtml = (r.ai_summary && r.ai_summary.trim())
+    ? '<div class="rep-summary">'+summaryHtml(r.ai_summary)+'</div>' : '';
   return '<details class="rep" id="rep-'+esc(r.week_ending)+'"'+(open?' open':'')+'>' +
     '<summary><span class="wk">'+(prettyDate(r.week_ending)||esc(r.week_ending))+'</span>' +
       '<span class="badge tot">'+tasks.length+' tasks</span>' +
@@ -520,7 +582,7 @@ function reportBlock(r, open){
       (risk? '<span class="badge risk">'+risk+' at risk</span>':'') +
       (blk? '<span class="badge blk">'+blk+' blocked</span>':'') +
       '<span class="spacer"></span>' + (r.prepared_by? '<span class="meta">'+esc(r.prepared_by)+'</span>':'') +
-    '</summary>' +
+    '</summary>' + sumHtml +
     '<table class="tasks"><thead><tr><th>Task</th><th>Status</th><th class="col-pri">Priority</th><th class="prog-cell">Progress</th></tr></thead>' +
     '<tbody>'+rows+'</tbody></table></details>';
 }
