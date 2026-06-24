@@ -639,8 +639,9 @@ function applyOrders(rows, orders){
   });
 }
 function reportWeek(db){ const m={}; db.reports.forEach(r=>m[r.id]=r.week_ending); return m; }
+function liveTasks(db){ const wk=reportWeek(db); return db.tasks.filter(t=>wk[t.report_id] !== undefined); } // inner-join task→report (ignore any orphans)
 function computeCompleted(db){ const wk=reportWeek(db);
-  return db.tasks.filter(t=>t.status==="Done").map(t=>({ week_ending:wk[t.report_id], task:t.task, project:t.project,
+  return liveTasks(db).filter(t=>t.status==="Done").map(t=>({ week_ending:wk[t.report_id], task:t.task, project:t.project,
     priority:t.priority, progress:t.progress, note:t.note, due_date:t.due_date, items:t.items, position:t.position,
     started_on:t.started_on, completed_on:t.completed_on })); }
 function computeKpiWeekly(db){ return db.reports.map(rep => { const ts=db.tasks.filter(t=>t.report_id===rep.id);
@@ -651,14 +652,14 @@ function computeKpiWeekly(db){ return db.reports.map(rep => { const ts=db.tasks.
       avg_progress: total?Math.round(ts.reduce((a,t)=>a+(+t.progress||0),0)/total):0 };
   }).filter(r=>r.total_tasks>0); }
 function computeCarryover(db){ const wk=reportWeek(db);
-  const occ=db.tasks.map(t=>({ week:wk[t.report_id], title:(t.task||"").trim().toLowerCase(), task:t.task, status:t.status })).filter(o=>o.title);
+  const occ=liveTasks(db).map(t=>({ week:wk[t.report_id], title:(t.task||"").trim().toLowerCase(), task:t.task, status:t.status })).filter(o=>o.title);
   return occ.map(o => ({ week_ending:o.week, task:o.task, status:o.status,
     prior_weeks_seen: new Set(occ.filter(x=>x.title===o.title && x.week < o.week).map(x=>x.week)).size })); }
 function computeByProject(db){ const m={};
-  db.tasks.forEach(t=>{ const p=(t.project||"").trim(); if(!p) return; (m[p]=m[p]||{project:p,total_tasks:0,done:0}); m[p].total_tasks++; if(t.status==="Done") m[p].done++; });
+  liveTasks(db).forEach(t=>{ const p=(t.project||"").trim(); if(!p) return; (m[p]=m[p]||{project:p,total_tasks:0,done:0}); m[p].total_tasks++; if(t.status==="Done") m[p].done++; });
   return Object.values(m); }
 function computeTaskExport(db){ const rep={}; db.reports.forEach(r=>rep[r.id]=r);
-  return db.tasks.map(t=>{ const r=rep[t.report_id]||{}; return { week_ending:r.week_ending, prepared_by:r.prepared_by,
+  return liveTasks(db).map(t=>{ const r=rep[t.report_id]||{}; return { week_ending:r.week_ending, prepared_by:r.prepared_by,
     task:t.task, project:t.project, status:t.status, priority:t.priority, progress:t.progress, due_date:t.due_date,
     started_on:t.started_on, completed_on:t.completed_on, note:t.note, items:t.items, position:t.position }; }); }
 function viewRows(db, table){
@@ -693,7 +694,12 @@ function localRun(q){
       return { data: q.sel ? data : null, error:null };
     }
     if (q.action==="update"){ arr.filter(r=>matchFilters(r,q.filters)).forEach(r=>Object.assign(r,q.payload)); dbSave(db); return { data:null, error:null }; }
-    if (q.action==="delete"){ db[q.table] = arr.filter(r=>!matchFilters(r,q.filters)); dbSave(db); return { data:null, error:null }; }
+    if (q.action==="delete"){
+      const removed = arr.filter(r=>matchFilters(r,q.filters));
+      db[q.table] = arr.filter(r=>!matchFilters(r,q.filters));
+      if (q.table==="reports" && removed.length){ const ids=new Set(removed.map(r=>r.id)); db.tasks = db.tasks.filter(t=>!ids.has(t.report_id)); } // FK cascade
+      dbSave(db); return { data:null, error:null };
+    }
     return { data:null, error:{message:"Unsupported"} };
   } catch(e){ return { data:null, error:{message:String((e&&e.message)||e)} }; }
 }
