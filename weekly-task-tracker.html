@@ -258,6 +258,7 @@
   .crow .recall { flex:0 0 auto; }
   .crow .ct { font-size:14px; font-weight:600; }
   .crow .tag-proj { font-family:var(--disp); font-size:11px; font-weight:600; color:var(--slate); background:var(--slate-bg); border-radius:999px; padding:2px 8px; margin-left:4px; }
+  .crow .cwk { font-family:var(--mono); font-size:11px; color:var(--mut); margin-left:6px; }
   .crow .cdates { font-family:var(--mono); font-size:11.5px; color:var(--mut); margin-top:3px; font-weight:400; }
   .crow .cdates .cdur { color:var(--accent); }
   .crow .cn { font-size:13px; color:var(--ink-2); font-weight:400; margin-top:4px; white-space:pre-line; }
@@ -581,6 +582,16 @@
     <section class="view" id="v-completed" hidden>
       <div class="cbar">
         <input id="completedSearch" type="search" placeholder="Search completed tasks…" aria-label="Search completed tasks" />
+        <label class="sortlab">Sort
+          <select id="completedSort">
+            <option value="week-desc">Newest week</option>
+            <option value="week-asc">Oldest week</option>
+            <option value="completed-desc">Recently completed</option>
+            <option value="cycle-desc">Longest to finish</option>
+            <option value="project">Project A–Z</option>
+            <option value="task">Task A–Z</option>
+          </select>
+        </label>
         <span class="cbar-count" id="completedCount"></span>
         <button class="btn ghost sm" id="completedCsv" type="button">⬇ CSV</button>
       </div>
@@ -1523,7 +1534,7 @@ async function exportAllCSV(btn){
   downloadCSV("weekly-tracker-history-"+todayIso()+".csv", rows);
 }
 function exportCompletedCSV(){
-  const rows = filteredCompleted();
+  const rows = sortedCompleted().rows;
   const header = ["Week ending","Task","Project","Priority","Started","Completed","Days","Comments"];
   const out = [header].concat(rows.map(r => {
     const d = daysBetween(r.started_on, r.completed_on);
@@ -1673,6 +1684,11 @@ function completedDates(r){
 }
 $("completedSearch").addEventListener("input", renderCompleted);
 $("completedCsv").addEventListener("click", exportCompletedCSV);
+try { const cs = localStorage.getItem("tracker_completed_sort"); if (cs) $("completedSort").value = cs; } catch(e){}
+$("completedSort").addEventListener("change", () => {
+  try { localStorage.setItem("tracker_completed_sort", $("completedSort").value); } catch(e){}
+  renderCompleted();
+});
 function filteredCompleted(){
   if (!completedCache) return [];
   const q = $("completedSearch").value.trim().toLowerCase();
@@ -1680,33 +1696,49 @@ function filteredCompleted(){
     (r.task||"").toLowerCase().includes(q) || (r.project||"").toLowerCase().includes(q) || (r.note||"").toLowerCase().includes(q)
   ) : completedCache;
 }
+function cycleDays(r){ const d = daysBetween(r.started_on, r.completed_on); return (d==null||d<0) ? -1 : d; }
+function sortedCompleted(){
+  const rows = filteredCompleted().slice();
+  const s = ($("completedSort") && $("completedSort").value) || "week-desc";
+  const txt = (v) => String(v||"").toLowerCase();
+  const cmps = {
+    "week-desc":      (a,b)=> txt(b.week_ending).localeCompare(txt(a.week_ending)) || (a.position-b.position),
+    "week-asc":       (a,b)=> txt(a.week_ending).localeCompare(txt(b.week_ending)) || (a.position-b.position),
+    "completed-desc": (a,b)=> txt(b.completed_on).localeCompare(txt(a.completed_on)) || txt(a.task).localeCompare(txt(b.task)),
+    "cycle-desc":     (a,b)=> cycleDays(b)-cycleDays(a) || txt(a.task).localeCompare(txt(b.task)),
+    "project":        (a,b)=> txt(a.project).localeCompare(txt(b.project)) || txt(a.task).localeCompare(txt(b.task)),
+    "task":           (a,b)=> txt(a.task).localeCompare(txt(b.task)),
+  };
+  rows.sort(cmps[s] || cmps["week-desc"]);
+  return { rows, grouped: s === "week-desc" || s === "week-asc" };
+}
+function completedRowHtml(r, ri, grouped){
+  return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
+    (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
+    (!grouped ? ' <span class="cwk">'+(prettyDate(r.week_ending)||esc(r.week_ending))+'</span>' : '') +
+    '</div>' + completedDates(r) +
+    (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
+  '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
+}
 function renderCompleted(){
   const body = $("completedBody");
   if (!completedCache) return;
   const q = $("completedSearch").value.trim().toLowerCase();
-  const rows = filteredCompleted();
+  const { rows, grouped } = sortedCompleted();
   $("completedCount").textContent = rows.length + (rows.length===1?" task":" tasks");
   if (!completedCache.length) { body.innerHTML = '<div class="muted-empty">No completed tasks yet. Mark a task <b>Done</b> and save — it’ll be archived here.</div>'; return; }
   if (!rows.length) { body.innerHTML = '<div class="muted-empty">No completed tasks match “'+esc(q)+'”.</div>'; return; }
-  // group by week
-  const groups = [];
-  rows.forEach(r => {
-    let g = groups[groups.length-1];
-    if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); }
-    g.items.push(r);
-  });
   let flat = 0;
-  body.innerHTML = groups.map(g =>
-    '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
-    g.items.map(r => {
-      const ri = flat++;
-      return '<div class="crow"><div class="ctmain"><div class="ct">'+esc(r.task) +
-        (r.project && r.project.trim()? ' <span class="tag-proj">'+esc(r.project)+'</span>':'') +
-        '</div>' + completedDates(r) +
-        (htmlToText(r.note).trim()? '<div class="cn">'+escHtml(htmlToText(r.note))+'</div>':'') +
-      '</div><button class="btn ghost sm recall" type="button" data-ri="'+ri+'" title="Bring this task back into the current week to work on it again">↩ Recall</button></div>';
-    }).join("") + '</div>'
-  ).join("");
+  if (grouped) {
+    const groups = [];
+    rows.forEach(r => { let g = groups[groups.length-1]; if (!g || g.week !== r.week_ending) { g = { week:r.week_ending, items:[] }; groups.push(g); } g.items.push(r); });
+    body.innerHTML = groups.map(g =>
+      '<div class="cgroup"><div class="cgh">'+(prettyDate(g.week)||g.week)+' <span class="cgn">'+g.items.length+' done</span></div>' +
+      g.items.map(r => completedRowHtml(r, flat++, true)).join("") + '</div>'
+    ).join("");
+  } else {
+    body.innerHTML = '<div class="cgroup">' + rows.map(r => completedRowHtml(r, flat++, false)).join("") + '</div>';
+  }
   body.querySelectorAll(".recall").forEach(b => b.addEventListener("click", () => recallCompleted(rows[+b.dataset.ri])));
 }
 function recallCompleted(r){
