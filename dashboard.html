@@ -79,8 +79,9 @@
   .stat .n { font-size:26px; font-weight:800; letter-spacing:-0.02em; } .stat .l { font-size:10.5px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
   svg.chart { width:100%; height:auto; display:block; }
   svg.chart .pt { transition:r .1s; }
-  svg.chart .hb { fill:#000; fill-opacity:0; cursor:crosshair; }
-  svg.chart .hb:hover { fill:var(--accent); fill-opacity:.07; }
+  svg.chart { touch-action:pan-y; }
+  svg.chart .hb { fill:#000; fill-opacity:0; pointer-events:all; cursor:crosshair; }
+  svg.chart .hb:hover, svg.chart .hb.on { fill:var(--accent); fill-opacity:.07; }
   svg.chart .cguide { stroke:var(--line-2); stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
   svg.chart .cfocus { pointer-events:none; }
   .chart-tip { position:fixed; z-index:60; pointer-events:none; background:#1F2937; color:#fff; font-size:11.5px;
@@ -474,30 +475,41 @@ function tipLine(l){ return (typeof l === "string")
   : '<span><i style="background:'+(l.c||"#888")+'"></i>'+esc(l.t)+'</span>'; }
 function wireCharts(){
   const t=chartTip();
-  document.querySelectorAll("svg.chart .hb").forEach(b => {
-    const data = CHART_DATA[+b.dataset.c], i = +b.dataset.i;
-    const svg = b.ownerSVGElement;
+  document.querySelectorAll("svg.chart").forEach(svg => {
+    const firstHb = svg.querySelector(".hb"); if (!firstHb) return;
+    const data = CHART_DATA[+firstHb.dataset.c]; if (!data || !data.xs.length) return;
+    const idxAt = (clientX) => {
+      const r = svg.getBoundingClientRect(); if (!r.width) return 0;
+      const lx = (clientX - r.left) / r.width * CW;   // client px -> viewBox x
+      let best=0, bd=Infinity;
+      data.xs.forEach((x,i) => { const d=Math.abs(x-lx); if (d<bd){ bd=d; best=i; } });
+      return best;
+    };
     const show = (e) => {
-      const row = data && data.rows[i]; if (!row) return;
+      const i = idxAt(e.clientX); const row = data.rows[i]; if (!row) return;
       t.innerHTML = '<b>'+esc(row.label)+'</b>' + (row.lines||[]).map(tipLine).join("");
       t.classList.add("show"); moveTip(e);
-      if (svg && data.xs[i] != null) {
-        const g = svg.querySelector(".cguide");
-        if (g) { g.setAttribute("x1", data.xs[i]); g.setAttribute("x2", data.xs[i]); g.style.display=""; }
-        svg.querySelectorAll(".cfocus").forEach((f, si) => {
-          const s = data.series[si];
-          if (s && s.cy[i] != null) { f.setAttribute("cx", data.xs[i]); f.setAttribute("cy", s.cy[i]); f.style.display=""; }
-          else f.style.display = "none";
-        });
-      }
+      const g = svg.querySelector(".cguide");
+      if (g && data.xs[i] != null) { g.setAttribute("x1", data.xs[i]); g.setAttribute("x2", data.xs[i]); g.style.display=""; }
+      svg.querySelectorAll(".cfocus").forEach((f, si) => {
+        const s = data.series[si];
+        if (s && s.cy[i] != null) { f.setAttribute("cx", data.xs[i]); f.setAttribute("cy", s.cy[i]); f.style.display=""; }
+        else f.style.display = "none";
+      });
+      svg.querySelectorAll(".hb").forEach((b, bi) => b.classList.toggle("on", bi===i));
     };
     const hide = () => {
       t.classList.remove("show");
-      if (svg) { const g = svg.querySelector(".cguide"); if (g) g.style.display="none"; svg.querySelectorAll(".cfocus").forEach(f => f.style.display="none"); }
+      const g = svg.querySelector(".cguide"); if (g) g.style.display="none";
+      svg.querySelectorAll(".cfocus").forEach(f => f.style.display="none");
+      svg.querySelectorAll(".hb").forEach(b => b.classList.remove("on"));
     };
-    b.addEventListener("mouseenter", show);
-    b.addEventListener("mousemove", moveTip);
-    b.addEventListener("mouseleave", hide);
+    // pointer events cover mouse, touch and pen (mouseenter/move don't fire on touch)
+    svg.addEventListener("pointerenter", show);
+    svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerdown", show);
+    svg.addEventListener("pointerleave", hide);
+    svg.addEventListener("pointercancel", hide);
   });
 }
 function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
