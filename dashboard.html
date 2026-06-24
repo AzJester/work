@@ -448,6 +448,16 @@ function hoverBands(c, n){
   for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"></rect>';
   return out;
 }
+// hover columns centered on arbitrary point x-positions (line charts use xPos spacing, not even bands)
+function hoverBandsAt(c, xs){
+  const n = xs.length; let out = "";
+  for (let i=0;i<n;i++){
+    const left = i===0 ? PADL : (xs[i-1]+xs[i])/2;
+    const right = i===n-1 ? (CW-PADR) : (xs[i]+xs[i+1])/2;
+    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  }
+  return out;
+}
 // crosshair guide + per-series focus markers, positioned on hover
 function cguide(){ return '<line class="cguide" x1="0" x2="0" y1="'+PADT+'" y2="'+(CH-PADB)+'" style="display:none"></line>'; }
 function cfocus(series){ return (series||[]).map(s => '<circle class="cfocus" r="5" fill="'+s.color+'" stroke="#fff" stroke-width="1.5" style="display:none"></circle>').join(""); }
@@ -502,7 +512,7 @@ function lineChart(labels, vals, color, fixedMax, tipRows){
   const dots=xs.map((x,i)=>'<circle class="pt" cx="'+x+'" cy="'+cy[i]+'" r="3" fill="'+color+'"/>').join("");
   const series=[{cy, color}];
   const c=regChart(tipRows, xs, series);
-  return svgOpen()+axis(max+(fixedMax===100?"%":""))+cguide()+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+cfocus(series)+xLabels(labels)+hoverBands(c,n)+'</svg>';
+  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBandsAt(c,xs)+'</svg>';
 }
 function barLineChart(labels, bars, line, tipRows){
   const bmax=Math.max(1,...bars); const lmax=100; const n=labels.length; const bw=(CW-PADL-PADR)/n*0.5;
@@ -514,7 +524,7 @@ function barLineChart(labels, bars, line, tipRows){
   const dots=xs.map((x,i)=>'<circle class="pt" cx="'+x+'" cy="'+cyL[i]+'" r="3" fill="'+COLORS.accent+'"/>').join("");
   const series=[{cy:cyL, color:COLORS.accent}];
   const c=regChart(tipRows, xs, series);
-  return svgOpen()+axis(bmax)+cguide()+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+cfocus(series)+xLabels(labels)+hoverBands(c,n)+'</svg>';
+  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBands(c,n)+'</svg>';
 }
 function stackedChart(labels, risk, blocked, tipRows){
   const n=labels.length; const max=Math.max(1,...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0))); const bw=(CW-PADL-PADR)/n*0.5;
@@ -524,7 +534,7 @@ function stackedChart(labels, risk, blocked, tipRows){
     return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
          + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>'; }).join("");
   const c=regChart(tipRows, xs, []);
-  return svgOpen()+axis(max)+cguide()+bars+xLabels(labels)+hoverBands(c,n)+'</svg>';
+  return svgOpen()+axis(max)+bars+cguide()+xLabels(labels)+hoverBands(c,n)+'</svg>';
 }
 </script>
 </body>
