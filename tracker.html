@@ -56,8 +56,7 @@
   .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); }
   .mast .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
   .who-line { display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2);
-    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 8px 6px 14px; box-shadow:var(--shadow-sm); }
-  .who-line .em { font-weight:700; color:var(--ink); }
+    background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 8px; box-shadow:var(--shadow-sm); }
 
   .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--accent-ink);
     background:linear-gradient(180deg, var(--accent-2), var(--accent));
@@ -468,7 +467,6 @@
       </div>
     </div>
     <div class="who-line" id="whoLine" hidden>
-      <span>Signed in as <span class="em" id="userEmail"></span></span>
       <button class="btn ghost sm" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
       <button class="btn ghost sm" id="shareToggle" type="button">Share dashboard ▾</button>
       <button class="btn ghost sm" id="signout" type="button">Sign out</button>
@@ -892,20 +890,10 @@ $("authForm").addEventListener("submit", async (e) => {
 $("signout").addEventListener("click", async () => { await sb.auth.signOut(); });
 sb.auth.onAuthStateChange((_e, sess) => { applySession(sess); });
 
-// hide the full email in the header (screen-shares / screenshots) — keep it recognizable to the owner
-function maskEmail(e){
-  e = String(e || "");
-  const at = e.indexOf("@");
-  if (at < 1) return e ? "•••" : "";
-  const local = e.slice(0, at), dom = e.slice(at);
-  const shown = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 2);
-  return shown + "•••" + dom;
-}
 function applySession(sess){
   session = sess;
   if (session && session.user) {
     $("gate").hidden = true; $("app").hidden = false; $("whoLine").hidden = false;
-    $("userEmail").textContent = maskEmail(session.user.email);
     if (!state.week) state.week = isoDate(comingFriday());
     loadWeek();
     renderWeekKudos();
