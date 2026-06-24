@@ -1861,9 +1861,16 @@ $("shareToggle").addEventListener("click", () => {
   if (!bar.hidden) { bar.hidden = true; return; }
   bar.hidden = false; loadShares();
 });
-$("shareAdd").addEventListener("click", async () => {
+$("shareAdd").addEventListener("click", async function () {
+  const btn = this; const orig = btn.textContent; btn.disabled = true; btn.textContent = "Creating…";
   const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "" }).select("token,label").single();
-  if (error) { alert("Could not create link: " + error.message); return; }
+  if (error) { btn.disabled = false; btn.textContent = orig; alert("Could not create link: " + error.message); return; }
+  // auto-shorten the new link; if the shortener is unavailable, fall back to the full link
+  try {
+    const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(data.token) } });
+    if (!er && d && d.short) await sb.from("shares").update({ short_url: d.short }).eq("token", data.token);
+  } catch (_) {}
+  btn.disabled = false; btn.textContent = orig;
   loadShares();
 });
 async function loadShares(){
