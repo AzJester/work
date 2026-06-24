@@ -111,8 +111,11 @@ them and run KPIs**, use the cloud-backed version:
   kudos into a polished executive narrative (Accomplishments · Risks & blockers · Next week).
   The draft renders **formatted** (headings, bold, bullets) so it reads like the finished
   report; toggle **Edit** to tweak the wording, and **Copy** puts rich text on the clipboard
-  for a clean paste into email. The Anthropic call runs server-side in a Supabase **Edge
-  Function** (`weekly-summary`) so the API key never reaches the browser.
+  for a clean paste into email. **📌 Send to dashboard** publishes the (edited) summary to your
+  shared leadership dashboard — it shows as a featured **Executive summary** panel for the latest
+  week and as a per-week summary inside each weekly report; **Remove** un-publishes it. The
+  Anthropic call runs server-side in a Supabase **Edge Function** (`weekly-summary`) so the API
+  key never reaches the browser.
   - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
     (Edge Functions → Secrets). It uses your Anthropic API credits.
   - **Models:** the weekly summary runs on **Opus 4.8** (`claude-opus-4-8`) for a more
