@@ -601,6 +601,14 @@
 
     <!-- ---- KPIs ---- -->
     <section class="view" id="v-kpis" hidden>
+      <div class="htoolbar" style="justify-content:flex-end; margin-bottom:14px">
+        <label class="sortlab">Weeks shown
+          <select id="kpiWeeks">
+            <option value="4">Last 4</option><option value="8">Last 8</option>
+            <option value="12">Last 12</option><option value="all" selected>All</option>
+          </select>
+        </label>
+      </div>
       <div id="kpiBody"></div>
     </section>
   </main>
@@ -1559,6 +1567,11 @@ $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
 $("tab-kudos").addEventListener("click", () => showTab("kudos"));
 $("tab-kpis").addEventListener("click", () => showTab("kpis"));
+try { const kw = localStorage.getItem("tracker_kpi_weeks"); if (kw) $("kpiWeeks").value = kw; } catch(e){}
+$("kpiWeeks").addEventListener("change", () => {
+  try { localStorage.setItem("tracker_kpi_weeks", $("kpiWeeks").value); } catch(e){}
+  loadKpis();
+});
 $("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
 
 // ============ KUDOS ============
@@ -1752,7 +1765,7 @@ async function loadKpis(){
   refreshChartColors();
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wk, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }, { data: texp }] = await Promise.all([
+  const [{ data: wkRaw, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }, { data: texp }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
     sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
     sb.from("completed_tasks").select("started_on,completed_on,due_date"),
@@ -1761,7 +1774,10 @@ async function loadKpis(){
     sb.from("task_export").select("week_ending,task,status")
   ]);
   if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
-  if (!wk || !wk.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+  if (!wkRaw || !wkRaw.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
+  const kwv = ($("kpiWeeks") && $("kpiWeeks").value) || "all";
+  const kwN = kwv === "all" ? Infinity : (parseInt(kwv,10) || Infinity);
+  const wk = isFinite(kwN) ? wkRaw.slice(-kwN) : wkRaw;
 
   // cycle time (start → complete), from completed tasks
   const comps = comp || [];
