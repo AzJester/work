@@ -132,9 +132,10 @@ From the cloud tracker, **Share dashboard ▾** gives you a secret link your lea
 with **no login** — a read-only view at `dashboard.html`:
 
 - **KPIs** — the same completion, blocked/at-risk, velocity, and carryover charts.
-  **Interactive** — hover any chart for a crosshair guide, a highlighted data point, and a
-  tooltip with that week's exact figures (colour-keyed to each series). Stat numbers and the
-  exec-summary tiles show plain-English explanations on hover.
+  **Interactive** — hover (or tap, on touch) any chart for a crosshair guide, a highlighted
+  data point, and a tooltip with that week's exact figures (colour-keyed to each series).
+  **Click a week to drill down** — it opens and scrolls to that week's full report. Stat
+  numbers and the exec-summary tiles show plain-English explanations on hover.
 - **Weekly reports** — each week's status table, expandable, newest first.
 - **Print / PDF** — matches the tracker's clean report: borderless tables, status shown as
   colored text (not filled pills), each task kept whole, and a section per page. A **“KPIs in
