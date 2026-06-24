@@ -80,8 +80,11 @@
   svg.chart { width:100%; height:auto; display:block; }
   svg.chart .pt { transition:r .1s; }
   svg.chart { touch-action:pan-y; }
-  svg.chart .hb { fill:#000; fill-opacity:0; pointer-events:all; cursor:crosshair; }
+  svg.chart .hb { fill:#000; fill-opacity:0; pointer-events:all; cursor:pointer; }
   svg.chart .hb:hover, svg.chart .hb.on { fill:var(--accent); fill-opacity:.07; }
+  .chart-tip .tip-hint { display:block; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,.15); color:#9AA3B2; font-size:10.5px; }
+  .rep.flash { animation:repflash 1.3s ease-out; }
+  @keyframes repflash { 0%,15% { background:var(--accent-soft); } 100% { background:var(--card); } }
   svg.chart .cguide { stroke:var(--line-2); stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
   svg.chart .cfocus { pointer-events:none; }
   .chart-tip { position:fixed; z-index:60; pointer-events:none; background:#1F2937; color:#fff; font-size:11.5px;
@@ -347,11 +350,11 @@ function render(data){
                   .sort((a,b)=>b.prior_weeks_seen-a.prior_weeks_seen).slice(0,8);
 
   const wkLabel = (r) => prettyDate(r.week_ending) || String(r.week_ending||"");
-  const tipCompletion = wk.map(r => ({ label: wkLabel(r),
+  const tipCompletion = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.done||0)+" of "+(+r.total_tasks||0)+" tasks done", c:COLORS.done}, {t:(+r.completion_rate||0)+"% completion", c:COLORS.accent} ] }));
-  const tipTrend = wk.map(r => ({ label: wkLabel(r),
+  const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.at_risk||0)+" at risk", c:COLORS.atrisk}, {t:(+r.blocked||0)+" blocked", c:COLORS.blocked} ] }));
-  const tipProgress = wk.map(r => ({ label: wkLabel(r),
+  const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
 
   const kpis =
@@ -415,7 +418,7 @@ function reportBlock(r, open){
     + '<td class="col-pri">'+esc(t.priority)+'</td>'
     + '<td class="prog-cell">'+(+t.progress||0)+'%</td></tr>').join("")
     : '<tr><td colspan="4" style="color:var(--mut)">No tasks recorded.</td></tr>';
-  return '<details class="rep"'+(open?' open':'')+'>' +
+  return '<details class="rep" id="rep-'+esc(r.week_ending)+'"'+(open?' open':'')+'>' +
     '<summary><span class="wk">'+(prettyDate(r.week_ending)||esc(r.week_ending))+'</span>' +
       '<span class="badge tot">'+tasks.length+' tasks</span>' +
       (done? '<span class="badge done">'+done+' done</span>':'') +
@@ -487,7 +490,9 @@ function wireCharts(){
     };
     const show = (e) => {
       const i = idxAt(e.clientX); const row = data.rows[i]; if (!row) return;
-      t.innerHTML = '<b>'+esc(row.label)+'</b>' + (row.lines||[]).map(tipLine).join("");
+      const canDrill = row.week && document.getElementById("rep-"+row.week);
+      t.innerHTML = '<b>'+esc(row.label)+'</b>' + (row.lines||[]).map(tipLine).join("")
+        + (canDrill ? '<span class="tip-hint">Click to open this week’s report</span>' : "");
       t.classList.add("show"); moveTip(e);
       const g = svg.querySelector(".cguide");
       if (g && data.xs[i] != null) { g.setAttribute("x1", data.xs[i]); g.setAttribute("x2", data.xs[i]); g.style.display=""; }
@@ -504,12 +509,22 @@ function wireCharts(){
       svg.querySelectorAll(".cfocus").forEach(f => f.style.display="none");
       svg.querySelectorAll(".hb").forEach(b => b.classList.remove("on"));
     };
+    // click/tap a column to drill down to that week's full report
+    const drill = (e) => {
+      const i = idxAt(e.clientX); const row = data.rows[i]; if (!row || !row.week) return;
+      const rep = document.getElementById("rep-"+row.week); if (!rep) return;
+      rep.open = true;
+      rep.scrollIntoView({ behavior:"smooth", block:"start" });
+      rep.classList.add("flash"); setTimeout(() => rep.classList.remove("flash"), 1300);
+      hide();
+    };
     // pointer events cover mouse, touch and pen (mouseenter/move don't fire on touch)
     svg.addEventListener("pointerenter", show);
     svg.addEventListener("pointermove", show);
     svg.addEventListener("pointerdown", show);
     svg.addEventListener("pointerleave", hide);
     svg.addEventListener("pointercancel", hide);
+    svg.addEventListener("click", drill);
   });
 }
 function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
