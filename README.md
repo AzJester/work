@@ -115,7 +115,7 @@ them and run KPIs**, use the cloud-backed version:
   (tasks · done % · at-risk · blocked · avg progress · weeks tracked).
 - **Privacy** — your data is isolated to your account by Postgres **Row Level Security**;
   the page only carries a public *publishable* key (safe to expose). The signed-in email is
-  **masked** in the header (e.g. `sh•••@gmail.com`) so it doesn't leak in screen-shares.
+  **not shown anywhere** in the header, so nothing leaks in screen-shares or screenshots.
 
 **One-time setup (≈30 seconds, once):** so login works instantly on a static page, open the
 Supabase project → **Authentication → Providers → Email** and turn **off** *“Confirm email.”*
