@@ -395,6 +395,8 @@
     .who-line { flex-wrap:wrap; }
     table.tasks thead { display:none; }
     table.tasks, table.tasks tbody, table.tasks tr, table.tasks td { display:block; }
+    /* the block-display rule above re-shows [hidden] rows; keep collapsed tasks collapsed */
+    table.tasks tr.detail[hidden] { display:none !important; }
     table.tasks tr:not(.detail) { padding:12px 12px 2px; }
     table.tasks tr:not(.detail) td { border:0 !important; padding:4px 0; }
     table.tasks tr:not(.detail):hover td { background:transparent; }
