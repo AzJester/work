@@ -1172,7 +1172,7 @@ function renderRows(){
     STATUSES.forEach(s => { const o = document.createElement("option"); o.value = s.v; o.textContent = s.v; if (s.v===row.status) o.selected = true; sel.appendChild(o); });
     sel.addEventListener("change", () => {
       row.status = sel.value; sel.className = "chip " + statusClass(row.status);
-      if (row.status === "Done") { if (!row.completed) row.completed = todayIso(); }
+      if (row.status === "Done") { if (!row.completed) row.completed = todayIso(); row.prog = 100; }
       else { row.completed = ""; }
       if (completedInput) completedInput.value = row.completed || "";
       if (dueInput) markOverdue(dueInput, row);
