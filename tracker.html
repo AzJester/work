@@ -765,7 +765,8 @@ $("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); i
 
 // ============ RICH TEXT (long-form fields: comments + kudos details) ============
 function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
-function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
+function looksHtml(s){ return /<[a-z!\/][\s\S]*>|&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i.test(s||""); }
+function fixDoubled(s){ return String(s==null?"":s).replace(/&amp;(#?[a-z0-9]+;)/gi, "&$1"); }  // heal double-escaped entities (e.g. &amp;nbsp; → &nbsp;)
 function plainToHtml(s){ return escHtml(s).replace(/\r?\n/g, "<br>"); }
 const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1,
                      H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,CODE:1 };
@@ -800,7 +801,7 @@ function htmlToText(s){
   return doc.body.textContent.replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 function rtCurrent(el){ const h = el.innerHTML.trim(); return (h===""||h==="<br>"||h==="<div><br></div>") ? "" : sanitizeHtml(h); }
-function richDisplay(s){ return looksHtml(s) ? sanitizeHtml(s) : plainToHtml(s); }
+function richDisplay(s){ s = fixDoubled(s); return looksHtml(s) ? sanitizeHtml(s) : plainToHtml(s); }
 function rtPlaceholder(el){ el.classList.toggle("empty", el.textContent.trim()===""); }
 function rtLinkify(el){
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
@@ -834,7 +835,7 @@ function makeRich(value, placeholder, onChange){
   const bar = document.createElement("div"); bar.className = "rt-bar";
   const el = document.createElement("div");
   el.className = "cell-input richtext"; el.contentEditable = "true"; el.dataset.ph = placeholder || "";
-  el.innerHTML = sanitizeHtml(looksHtml(value) ? value : plainToHtml(value || ""));
+  value = fixDoubled(value || ""); el.innerHTML = sanitizeHtml(looksHtml(value) ? value : plainToHtml(value));
   rtPlaceholder(el);
   RT_BTNS.forEach(([cmd, label, title]) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "rt-btn"; b.title = title; b.innerHTML = label;

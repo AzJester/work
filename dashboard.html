@@ -253,7 +253,8 @@ window.addEventListener("afterprint", () => {
 });
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
 // rich-text display: sanitize stored HTML (allowlist) or escape plain text — public page, so this is the XSS guard
-function looksHtml(s){ return /<[a-z!\/][\s\S]*>/i.test(s||""); }
+function looksHtml(s){ return /<[a-z!\/][\s\S]*>|&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i.test(s||""); }
+function fixDoubled(s){ return String(s==null?"":s).replace(/&amp;(#?[a-z0-9]+;)/gi, "&$1"); }  // heal double-escaped entities
 const RT_ALLOWED = { B:1,STRONG:1,I:1,EM:1,U:1,A:1,UL:1,OL:1,LI:1,BR:1,DIV:1,P:1,SPAN:1 };
 function sanitizeHtml(html){
   const doc = new DOMParser().parseFromString("<div>"+(html||"")+"</div>", "text/html");
@@ -276,7 +277,7 @@ function sanitizeHtml(html){
   })(root);
   return root.innerHTML;
 }
-function richDisplay(s){ return looksHtml(s) ? sanitizeHtml(s) : esc(s).replace(/\r?\n/g,"<br>"); }
+function richDisplay(s){ s = fixDoubled(s); return looksHtml(s) ? sanitizeHtml(s) : esc(s).replace(/\r?\n/g,"<br>"); }
 function prettyDate(iso){ if(!iso) return ""; const p=String(iso).split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]);
   return d.toLocaleDateString(undefined,{ year:"numeric", month:"long", day:"numeric" }); }
 function statusChipCls(s){ return s==="On Track"?"s-ontrack":s==="At Risk"?"s-atrisk":s==="Blocked"?"s-blocked":"s-done"; }
