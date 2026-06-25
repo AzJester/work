@@ -1,0 +1,784 @@
+<!-- core-roadmaps.html — self-contained interactive roadmap for the CORE Platform.
+     Built from the "CORE Roadmaps v0.4 Draft" leadership briefing (Astrion · June 2026).
+     One file, white background, zero external dependencies: no CDNs, web fonts, or
+     network calls. Personal progress tracking persists to this browser's localStorage. -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="CORE Roadmaps — an interactive leadership view of the three roadmaps driving Astrion's CORE platform forward: Project Horizon MVP, Hardware to Dev, and Engine to Market." />
+<title>CORE Roadmaps · Interactive</title>
+<style>
+  :root{
+    --paper:#ffffff; --paper-2:#faf9fd;
+    --ink:#1b1430; --ink-2:#403a57; --mut:#7b768f;
+    --indigo:#4a2c8f; --indigo-2:#5d3fb5; --indigo-soft:#f3f0fb; --indigo-line:#e7e2f3;
+    --blue:#1f9bd7; --blue-ink:#0f6fa0; --blue-soft:#e4f3fb;
+    --green:#138a52; --green-soft:#e3f6ec;
+    --amber:#b3760a; --amber-soft:#fbefd7;
+    --line:#e9e7f0; --line-2:#dcd9e8;
+    --disp:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --radius:14px; --radius-sm:10px;
+    --shadow-sm:0 1px 2px rgba(27,20,48,.06), 0 1px 1px rgba(27,20,48,.04);
+    --shadow:0 10px 30px -14px rgba(40,24,90,.22), 0 4px 10px -6px rgba(40,24,90,.12);
+    --ring:0 0 0 3px rgba(31,155,215,.35);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink-2);
+    font-family:var(--disp); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px}
+  h1,h2,h3{color:var(--ink); margin:0; line-height:1.12; text-wrap:balance; letter-spacing:-.01em}
+  a{color:var(--blue-ink)}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--blue); margin:0;
+  }
+  .mut{color:var(--mut)}
+
+  /* ---------- Header ---------- */
+  header.brand{border-bottom:1px solid var(--line); background:linear-gradient(180deg,var(--paper-2),var(--paper))}
+  .brand-inner{padding:30px 0 26px; display:grid; grid-template-columns:1fr auto; gap:24px; align-items:end}
+  .brand-org{font-family:var(--disp); font-weight:800; letter-spacing:.32em; font-size:15px; color:var(--ink); margin:0 0 4px}
+  .brand-unit{font-family:var(--mono); font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--blue); margin:0 0 22px}
+  h1.title{font-size:clamp(38px,6vw,68px); font-weight:850; letter-spacing:-.025em}
+  .subtitle{font-size:clamp(16px,2vw,20px); color:var(--ink-2); margin:14px 0 0; max-width:46ch}
+  .meta{display:flex; flex-direction:column; gap:10px; align-items:flex-end; text-align:right}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+  .chip{font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--ink-2);
+        background:var(--indigo-soft); border:1px solid var(--indigo-line); border-radius:999px; padding:5px 11px; white-space:nowrap}
+  .tagline{font-style:italic; color:var(--blue-ink); font-size:13.5px; font-weight:600}
+
+  /* ---------- Sticky nav ---------- */
+  nav.bar{position:sticky; top:0; z-index:40; background:rgba(255,255,255,.92);
+          backdrop-filter:saturate(1.4) blur(8px); border-bottom:1px solid var(--line)}
+  .bar-inner{display:flex; align-items:center; gap:14px; padding:10px 0; flex-wrap:wrap}
+  .segs{display:flex; gap:4px; flex-wrap:wrap; background:var(--indigo-soft); padding:4px; border-radius:12px; border:1px solid var(--indigo-line)}
+  .seg{appearance:none; border:0; background:transparent; cursor:pointer; font-family:var(--disp);
+       font-size:13.5px; font-weight:650; color:var(--ink-2); padding:7px 13px; border-radius:9px; line-height:1;
+       display:inline-flex; align-items:center; gap:8px; transition:background .15s,color .15s,box-shadow .15s}
+  .seg .n{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--blue); letter-spacing:.04em}
+  .seg:hover{background:#fff}
+  .seg[aria-current="true"]{background:var(--indigo); color:#fff; box-shadow:var(--shadow-sm)}
+  .seg[aria-current="true"] .n{color:#cdbdf3}
+  .bar-spacer{flex:1 1 auto}
+  .track-stat{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--mut); white-space:nowrap}
+  .track-stat strong{color:var(--ink); font-variant-numeric:tabular-nums; font-weight:750}
+  .linkbtn{appearance:none; background:none; border:0; cursor:pointer; font:inherit; font-size:12.5px;
+           color:var(--blue-ink); text-decoration:underline; text-underline-offset:2px; padding:4px 2px}
+  .linkbtn:hover{color:var(--indigo)}
+
+  /* ---------- Sections ---------- */
+  main{padding:34px 0 10px}
+  section.view{display:none; animation:fade .35s ease both}
+  section.view.active{display:block}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  .view-head{margin-bottom:22px}
+  .view-head h2{font-size:clamp(28px,4vw,44px); font-weight:820; margin-top:6px}
+  .lede{font-size:clamp(15px,1.7vw,18px); color:var(--ink-2); max-width:72ch; margin:12px 0 0}
+  .note{font-style:italic; color:var(--mut); font-size:13.5px; margin:26px 0 0; padding-top:16px; border-top:1px dashed var(--line-2)}
+
+  /* status pill */
+  .pill{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-weight:700;
+        font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; padding:5px 12px; border-radius:999px; white-space:nowrap}
+  .pill .dot{width:8px; height:8px; border-radius:50%}
+  .pill.s-inprogress{background:var(--green-soft); color:var(--green)} .pill.s-inprogress .dot{background:var(--green)}
+  .pill.s-next{background:var(--blue-soft); color:var(--blue-ink)} .pill.s-next .dot{background:var(--blue)}
+  .pill.s-proposed{background:var(--amber-soft); color:var(--amber)} .pill.s-proposed .dot{background:var(--amber)}
+
+  /* ---------- Overview rail ---------- */
+  .rail{display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin:26px 0 4px; position:relative}
+  .station{position:relative; padding:0 16px}
+  .station:not(:last-child)::after{content:""; position:absolute; top:24px; right:-1px; width:2px; bottom:0;
+        background:linear-gradient(var(--line-2),transparent 60%)}
+  .station-top{display:flex; align-items:center; gap:12px; margin-bottom:14px; position:relative}
+  .stnode{width:48px; height:48px; flex:0 0 auto; border-radius:50%; display:grid; place-items:center;
+          font-family:var(--mono); font-weight:800; font-size:17px; color:#fff; background:var(--indigo); box-shadow:var(--shadow-sm)}
+  .station.is-inprogress .stnode{background:var(--green)}
+  .station.is-next .stnode{background:var(--blue)}
+  .station.is-proposed .stnode{background:var(--amber)}
+  .railline{height:3px; border-radius:3px; background:var(--line-2); position:relative; margin:0 24px 22px}
+  .railline > span{position:absolute; left:0; top:0; bottom:0; border-radius:3px;
+        background:linear-gradient(90deg,var(--green),var(--blue) 55%,var(--amber)); width:58%}
+  .scard{display:flex; flex-direction:column; height:100%; border:1px solid var(--line); border-radius:var(--radius);
+         background:var(--paper); box-shadow:var(--shadow-sm); padding:18px 18px 16px; transition:transform .16s,box-shadow .16s,border-color .16s}
+  .scard:hover{transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--indigo-line)}
+  .scard h3{font-size:20px; font-weight:780; margin:0 0 4px}
+  .scard .blurb{font-size:14px; color:var(--ink-2); margin:8px 0 12px}
+  .glance{list-style:none; margin:0 0 14px; padding:0; display:flex; flex-direction:column; gap:7px}
+  .glance li{position:relative; padding-left:18px; font-size:13.5px; color:var(--ink-2)}
+  .glance li::before{content:""; position:absolute; left:0; top:8px; width:7px; height:7px; border-radius:2px; background:var(--blue); transform:rotate(45deg)}
+  .enables{margin-top:auto; background:var(--indigo-soft); border:1px solid var(--indigo-line); border-radius:var(--radius-sm); padding:10px 12px}
+  .enables .lab{font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--indigo-2); font-weight:700}
+  .enables p{margin:4px 0 0; font-size:12.5px; color:var(--ink-2)}
+  .open-link{margin-top:14px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; appearance:none; border:0; cursor:pointer;
+             background:none; font:inherit; font-weight:700; font-size:13.5px; color:var(--indigo); padding:4px 0}
+  .open-link:hover{color:var(--blue-ink)}
+  .open-link .arw{transition:transform .15s}
+  .open-link:hover .arw{transform:translateX(3px)}
+
+  /* ---------- Roadmap detail ---------- */
+  .rm-headrow{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:8px}
+  .rm-subtitle{font-size:15.5px; color:var(--blue-ink); font-weight:650; margin:8px 0 0}
+  .progress-box{display:flex; align-items:center; gap:16px; margin:20px 0 6px; padding:14px 16px;
+                background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius)}
+  .ring{--p:0; width:54px; height:54px; flex:0 0 auto; border-radius:50%;
+        background:conic-gradient(var(--indigo) calc(var(--p)*1%), var(--indigo-line) 0); display:grid; place-items:center}
+  .ring i{width:40px; height:40px; border-radius:50%; background:var(--paper-2); display:grid; place-items:center;
+          font-style:normal; font-family:var(--mono); font-weight:800; font-size:13px; color:var(--indigo); font-variant-numeric:tabular-nums}
+  .progress-box .pt{flex:1 1 auto}
+  .progress-box .pt b{color:var(--ink); font-weight:750}
+  .progress-box .ptlabel{font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut)}
+  .seg6{display:flex; gap:4px; margin-top:8px}
+  .seg6 span{height:6px; flex:1; border-radius:3px; background:var(--indigo-line)}
+  .seg6 span.done{background:var(--green)} .seg6 span.doing{background:linear-gradient(90deg,var(--blue) 55%,var(--indigo-line) 0)}
+
+  .phases{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px}
+  .phase{position:relative; border:1px solid var(--line); border-radius:var(--radius); background:var(--paper);
+         box-shadow:var(--shadow-sm); padding:18px 18px 16px; display:flex; flex-direction:column;
+         border-left:4px solid var(--indigo-line); transition:box-shadow .16s,border-color .16s,transform .16s}
+  .phase:hover{box-shadow:var(--shadow); transform:translateY(-2px)}
+  .phase.st-doing{border-left-color:var(--blue)}
+  .phase.st-done{border-left-color:var(--green)}
+  .phase-top{display:flex; align-items:flex-start; gap:13px}
+  .pnum{width:38px; height:38px; flex:0 0 auto; border-radius:50%; background:var(--indigo); color:#fff;
+        font-family:var(--mono); font-weight:800; font-size:16px; display:grid; place-items:center}
+  .phase.st-done .pnum{background:var(--green)} .phase.st-doing .pnum{background:var(--blue)}
+  .phase h3{margin:0; color:var(--ink); font-size:16.5px; font-weight:760; line-height:1.2; padding-top:5px; letter-spacing:0}
+  .phase .desc{margin:12px 0 0; font-size:14px; color:var(--ink-2)}
+  .punch-toggle{appearance:none; border:1px solid var(--indigo-line); background:var(--indigo-soft); color:var(--indigo-2);
+                cursor:pointer; font:inherit; font-size:12px; font-weight:650; border-radius:8px; padding:6px 10px; margin-top:13px;
+                display:inline-flex; align-items:center; gap:7px; align-self:flex-start}
+  .punch-toggle:hover{background:#fff}
+  .punch-toggle .car{transition:transform .18s}
+  .punch-toggle[aria-expanded="true"] .car{transform:rotate(90deg)}
+  .punch-list{margin:0; padding:0; list-style:none; overflow:hidden; max-height:0; transition:max-height .28s ease}
+  .punch-list ul{list-style:none; margin:12px 0 2px; padding:12px 0 0; border-top:1px dashed var(--line-2); display:flex; flex-direction:column; gap:8px}
+  .punch-list li{position:relative; padding-left:20px; font-size:13px; color:var(--ink-2)}
+  .punch-list li::before{content:""; position:absolute; left:2px; top:6px; width:9px; height:9px; border-radius:2px;
+        border:2px solid var(--amber); transform:rotate(45deg)}
+  .punch-foot{font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); margin-top:13px}
+
+  /* phase state control */
+  .state{margin-top:14px; display:flex; align-items:center; gap:8px}
+  .state-btn{appearance:none; cursor:pointer; font:inherit; font-family:var(--mono); font-size:11px; font-weight:700;
+             letter-spacing:.08em; text-transform:uppercase; border-radius:999px; padding:6px 12px; display:inline-flex; align-items:center; gap:7px;
+             border:1px solid var(--line-2); background:#fff; color:var(--mut); transition:all .14s}
+  .state-btn .sd{width:9px; height:9px; border-radius:50%; border:2px solid currentColor}
+  .state-btn:hover{border-color:var(--indigo-line); color:var(--ink-2)}
+  .phase.st-doing .state-btn{background:var(--blue-soft); color:var(--blue-ink); border-color:transparent}
+  .phase.st-doing .state-btn .sd{background:var(--blue); border-color:var(--blue)}
+  .phase.st-done .state-btn{background:var(--green-soft); color:var(--green); border-color:transparent}
+  .phase.st-done .state-btn .sd{background:var(--green); border-color:var(--green)}
+  .state .hint{font-size:11px; color:var(--mut)}
+
+  .rm-nav{display:flex; justify-content:space-between; gap:12px; margin-top:30px}
+  .navbtn{appearance:none; cursor:pointer; font:inherit; font-weight:650; font-size:14px; color:var(--ink-2);
+          background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:11px 16px;
+          display:inline-flex; align-items:center; gap:9px; transition:border-color .15s,box-shadow .15s,color .15s}
+  .navbtn:hover{border-color:var(--indigo-line); box-shadow:var(--shadow-sm); color:var(--indigo)}
+  .navbtn .nlab{font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); display:block}
+  .navbtn .nname{font-weight:700; color:var(--ink)}
+  .navbtn:disabled{opacity:.35; cursor:default; box-shadow:none; border-color:var(--line)}
+  .navbtn.right{text-align:right}
+
+  /* ---------- Punchlist ---------- */
+  .tag{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-weight:700; font-size:11.5px;
+       letter-spacing:.12em; text-transform:uppercase; color:var(--amber); background:var(--amber-soft); padding:5px 12px; border-radius:999px}
+  .pgroups{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:22px}
+  .pgroup{border:1px solid var(--line); border-radius:var(--radius); background:var(--paper); box-shadow:var(--shadow-sm); padding:18px; display:flex; flex-direction:column}
+  .pgroup-top{display:flex; align-items:center; gap:12px}
+  .pgroup h3{margin:0; color:var(--ink); font-size:16px; font-weight:760; line-height:1.18; letter-spacing:0}
+  .checks{list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column; gap:4px}
+  .checks li{margin:0}
+  .check{display:flex; gap:11px; align-items:flex-start; cursor:pointer; padding:7px 8px; border-radius:9px; transition:background .12s}
+  .check:hover{background:var(--indigo-soft)}
+  .check input{appearance:none; -webkit-appearance:none; margin:2px 0 0; flex:0 0 auto; width:18px; height:18px; border-radius:5px;
+               border:2px solid var(--line-2); background:#fff; cursor:pointer; position:relative; transition:background .12s,border-color .12s}
+  .check input:checked{background:var(--green); border-color:var(--green)}
+  .check input:checked::after{content:""; position:absolute; left:4.5px; top:1px; width:5px; height:9px;
+               border:solid #fff; border-width:0 2.5px 2.5px 0; transform:rotate(42deg)}
+  .check input:focus-visible{box-shadow:var(--ring); outline:none}
+  .check span{font-size:13.5px; color:var(--ink-2); line-height:1.45}
+  .check input:checked + span{color:var(--mut); text-decoration:line-through; text-decoration-color:var(--line-2)}
+  .pgcount{margin-left:auto; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--mut); font-variant-numeric:tabular-nums}
+
+  /* ---------- Footer ---------- */
+  footer{margin-top:46px; border-top:1px solid var(--line); background:var(--paper-2)}
+  .foot-inner{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; padding:20px 0 14px}
+  .foot-inner .l b{font-family:var(--disp); font-weight:800; letter-spacing:.18em; color:var(--indigo); font-size:13px}
+  .foot-inner .l span{font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--mut)}
+  .foot-inner .r{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut)}
+  .foot-sub{padding:0 0 22px; font-size:11.5px; color:var(--mut)}
+  .foot-sub a{color:var(--blue-ink)}
+
+  /* ---------- Focus / a11y ---------- */
+  :focus-visible{outline:none; box-shadow:var(--ring); border-radius:8px}
+  .seg:focus-visible, .navbtn:focus-visible, .open-link:focus-visible, .state-btn:focus-visible,
+  .punch-toggle:focus-visible, .linkbtn:focus-visible{box-shadow:var(--ring)}
+  .skip{position:absolute; left:-9999px; top:0; background:var(--indigo); color:#fff; padding:10px 16px; border-radius:0 0 8px 0; z-index:60}
+  .skip:focus{left:0}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:900px){
+    .phases,.pgroups{grid-template-columns:repeat(2,1fr)}
+    .rail{grid-template-columns:1fr; gap:14px}
+    .station{padding:0}
+    .station:not(:last-child)::after{display:none}
+    .railline{display:none}
+    .brand-inner{grid-template-columns:1fr}
+    .meta{align-items:flex-start; text-align:left} .chips{justify-content:flex-start}
+  }
+  @media (max-width:620px){
+    .wrap{padding:0 16px}
+    .phases,.pgroups{grid-template-columns:1fr}
+    .rm-nav{flex-direction:column}
+    .navbtn{justify-content:flex-start} .navbtn.right{text-align:left}
+    .bar-inner{gap:10px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *{animation-duration:.001ms !important; transition-duration:.001ms !important}
+  }
+
+  /* ---------- Print ---------- */
+  @media print{
+    :root{--shadow:none; --shadow-sm:none}
+    nav.bar,.bar,.open-link,.state,.punch-toggle,.rm-nav,.linkbtn,.track-stat,.skip{display:none !important}
+    body{font-size:11.5px}
+    section.view{display:block !important; animation:none; break-inside:avoid; padding-bottom:8px}
+    section.view + section.view{break-before:page}
+    .phases,.pgroups,.rail{break-inside:avoid}
+    .punch-list{max-height:none !important}
+    .phase,.scard,.pgroup{box-shadow:none; border:1px solid #ccc}
+    header.brand,footer{background:#fff}
+    .scard:hover,.phase:hover{transform:none}
+    a{color:inherit; text-decoration:none}
+  }
+</style>
+
+<a class="skip" href="#mainview">Skip to content</a>
+
+<header class="brand">
+  <div class="wrap brand-inner">
+    <div>
+      <p class="brand-org">A S T R I O N</p>
+      <p class="brand-unit">CORE Platform · Product Owner</p>
+      <p class="eyebrow">Roadmaps · Overview</p>
+      <h1 class="title">CORE Roadmaps</h1>
+      <p class="subtitle">A leadership view of the three roadmaps driving CORE forward.</p>
+    </div>
+    <div class="meta">
+      <div class="chips">
+        <span class="chip">Unclassified // Internal Planning</span>
+        <span class="chip">v0.4 Draft</span>
+        <span class="chip">June 2026</span>
+      </div>
+      <p class="tagline">Engineering Delivered. Guaranteed Excellence.</p>
+    </div>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Roadmap views">
+  <div class="wrap bar-inner">
+    <div class="segs" id="segs" role="tablist" aria-label="Choose a view"></div>
+    <span class="bar-spacer"></span>
+    <div class="track-stat" title="Phases you have marked complete, saved in this browser">
+      <span>Tracked progress</span>
+      <strong id="globalStat">0 / 18</strong>
+    </div>
+    <button class="linkbtn" id="resetBtn" type="button">Reset tracking</button>
+  </div>
+</nav>
+
+<main class="wrap" id="mainview">
+  <div id="views"></div>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div class="l"><b>ASTRION</b> <span>· CORE PLATFORM</span></div>
+    <div class="r">For Planning Use · Senior Leadership Briefing</div>
+  </div>
+  <div class="wrap foot-sub">
+    Interactive edition of <em>CORE Roadmaps v0.4 Draft</em>. Single self-contained file — no
+    accounts, servers, or network calls. Phase tracking and punchlist checks are saved only in
+    <em>this</em> browser (<code>localStorage</code>). Print or “Save as PDF” renders all three roadmaps and the punchlist.
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================ DATA (from CORE_Roadmaps v0.4) ============================ */
+  var META = {
+    overviewLede: "How CORE matures from a demo platform into a standing dev foundation and an engine pipeline to market.",
+    timelineNote: "Timelines are a by-product of these roadmaps. Each is set once the roadmap is complete."
+  };
+
+  var STATUS = {
+    inprogress:{key:"inprogress", label:"In progress"},
+    next:      {key:"next",       label:"Next"},
+    proposed:  {key:"proposed",   label:"Proposed"}
+  };
+
+  var ROADMAPS = [
+    {
+      id:"rm01", num:"01", key:"PROJECT HORIZON MVP", name:"Project Horizon MVP",
+      status:STATUS.inprogress,
+      summary:"Build CORE on hardware we already own, host Project Horizon on it and prove it in a board demo. Six phases are tracked in Jira, with the August demo as the delivery anchor.",
+      glance:[
+        "Six phases tracked in Jira",
+        "Platform built on hardware we own",
+        "Hosts the first engine",
+        "Board demo is the delivery anchor"
+      ],
+      phases:[
+        {t:"Stand Up the Platform", d:"Deploy the platform and establish secure sign-on and the identity foundation."},
+        {t:"Add Shared Services", d:"Add network management, storage and a secure internal library for software images."},
+        {t:"Automate Delivery", d:"Stand up source control and a pipeline so software ships the same way every time."},
+        {t:"Host the Product", d:"Deploy Project Horizon onto the platform and confirm it runs at the user target."},
+        {t:"Secure and Prove", d:"Harden the platform, run compliance scans toward authorization and turn on monitoring."},
+        {t:"Demo to the Board", d:"Final integration, rehearsal and the board demo."}
+      ],
+      note:"Phase 0 mobilization (scope, hardware and access) precedes Phase 1. Delivery anchor: August demo."
+    },
+    {
+      id:"rm02", num:"02", key:"HARDWARE TO DEV", name:"Hardware to Dev",
+      status:STATUS.next,
+      subtitle:"Astrion's enabler for prototyping and customer demos.",
+      summary:"Turn the demo hardware into a standing development foundation that runs OTAs, demos, onboarded engine work and prototyping on hardware Astrion owns. It drives forward momentum on Astrion Tactical Edge, FrameWatch, MEAT OTA and COLOSSUS. It also sets the foundation for DevSecOps and CI/CD.",
+      glance:[
+        "Inherits the PH MVP hardware",
+        "Adds surge and prototype nodes",
+        "Refits NASA end-of-life servers",
+        "Builds a deployable demo kit",
+        "Moves to the new building server room"
+      ],
+      enables:"Astrion Tactical Edge, FrameWatch, MEAT OTA, COLOSSUS and demos. Foundation for DevSecOps and CI/CD.",
+      phases:[
+        {t:"Inherit the Demo Hardware", d:"Use the servers built for the Project Horizon demo as the base of the CORE dev environment."},
+        {t:"Add Surge and Prototype Capacity", d:"Pull in two modular nodes to support prototyping and the surge of incoming dev work."},
+        {t:"Refit NASA Hardware", d:"Rebuild end-of-life NASA program servers with current CPUs, RAM, storage and GPU. Large cost and time savings against new-hardware pricing and lead times."},
+        {t:"Stand Up the Dev Foundation", d:"Set Astrion up to run OTAs, demos, onboarded engine work and prototyping on owned hardware."},
+        {t:"Build a Deployable Kit", d:"Detach the two small nodes from step 2 so they travel to events and demos to show Astrion capability on demand."},
+        {t:"Plan the Facility Move", d:"Move the hardware from BLDG 1100 HSV to a new building server room within this window."}
+      ],
+      note:"Phase order and grouping to be confirmed with the team as the hardware refit firms up."
+    },
+    {
+      id:"rm03", num:"03", key:"ENGINE TO MARKET", name:"Engine to Market",
+      status:STATUS.proposed,
+      summary:"How a proven engine moves from CORE onto contract and into the customer's hands. Six phases carry it from a packaged build to a fielded, sustained capability in the DoD market.",
+      glance:[
+        "Six phases, package to fielded",
+        "Authorization is the gate",
+        "Punchlist to G-TEAD and DoD"
+      ],
+      phases:[
+        {t:"Package for Any Environment", d:"Wrap the proven engine as hardened containers and Helm charts that deploy unchanged on CORE, government cloud or the tactical edge.",
+         punchTitle:"Package & Portability", punch:["Hardened containers and Helm charts","Runs on any compliant runtime","Edge-to-cloud, DDIL-tolerant"]},
+        {t:"Earn the Authorization", d:"Harden images to Iron Bank standard, produce SBOMs and STIG evidence and drive an RMF package to an ATO or inheritable cATO at the target Impact Level.",
+         punchTitle:"Security & Authorization", punch:["Iron Bank images, SBOM, STIGs","ATO or inheritable cATO","IL4–IL6, NSA-approved crypto"]},
+        {t:"Conform to Open Architecture", d:"Expose government-approved, non-proprietary APIs and integrate with the common data layer so the engine plugs into the stack instead of replacing it.",
+         punchTitle:"Open-Architecture Fit", punch:["Gov-approved, non-proprietary APIs","MOSA-conformant, no lock-in","Joins the common data layer"]},
+        {t:"Prove It With the User", d:"Demonstrate the engine in a soldier-led event such as a G-TEAD Accelerated Capability Event or Project Convergence, at TRL 6+ and under contested conditions.",
+         punchTitle:"Operational Proof", punch:["TRL 6+ (7+ for ACE events)","Soldier-led demo in theater","Tested under cyber and EW"]},
+        {t:"Get on Contract", d:"Onboard to the buying path: G-TEAD Marketplace, an OTA or a CSO, with a route to a program of record and FMS or DCS lanes for allied sales.",
+         punchTitle:"Acquisition & Contract", punch:["SAM.gov, CAGE and NAICS set","G-TEAD (xTech / DEP) or OTA/CSO","PoR transition + FMS/DCS path"]},
+        {t:"Sustain and Scale", d:"Deliver continuous capability drops under cATO, stand up the support model and scale across units and partners while feeding lessons back into CORE.",
+         punchTitle:"Sustainment & Scale", punch:["Continuous capability drops","Support and SLA model defined","Pricing fit for 21–30 day buys"]}
+      ],
+      note:"Proposed phases for team review. Card count and order firm up as the target contract and customer are selected."
+    }
+  ];
+
+  var PUNCHLIST = {
+    eyebrow:"Roadmap 03 · Market-Readiness Punchlist",
+    title:"Market-Readiness Punchlist",
+    tag:"G-TEAD (Army) / DoD",
+    lede:"The conditions and actions that move a CORE-proven engine onto contract and into the field, grouped under the six Engine to Market phases.",
+    note:"Punchlist for team working sessions. Confirm owners, gates and target Impact Level as the contract path is chosen."
+  };
+
+  /* ============================ STATE (localStorage) ============================ */
+  var LS_KEY = "core_roadmaps_v1";
+  var TOTAL_PHASES = ROADMAPS.reduce(function(n,r){return n + r.phases.length;}, 0);
+  var state = load();
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if(raw){ var o = JSON.parse(raw); return {phases:o.phases||{}, punch:o.punch||{}}; }
+    }catch(e){}
+    return {phases:{}, punch:{}};
+  }
+  function save(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function phaseState(rmId, i){ return state.phases[rmId+"-"+i] || "todo"; }
+  function cyclePhase(rmId, i){
+    var k = rmId+"-"+i, cur = state.phases[k]||"todo";
+    var nx = cur==="todo" ? "doing" : (cur==="doing" ? "done" : "todo");
+    if(nx==="todo") delete state.phases[k]; else state.phases[k]=nx;
+    save();
+  }
+  function punchChecked(rmIdx, i){ return !!state.punch["p"+rmIdx+"-"+i]; }
+  function togglePunch(rmIdx, i, on){
+    var k = "p"+rmIdx+"-"+i;
+    if(on) state.punch[k]=true; else delete state.punch[k];
+    save();
+  }
+
+  /* ============================ HELPERS ============================ */
+  function h(tag, attrs, kids){
+    var el = document.createElement(tag);
+    if(attrs) for(var k in attrs){
+      if(k==="class") el.className = attrs[k];
+      else if(k==="html") el.innerHTML = attrs[k];
+      else if(k==="text") el.textContent = attrs[k];
+      else if(k.slice(0,2)==="on") el.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+      else if(attrs[k]!=null && attrs[k]!==false) el.setAttribute(k, attrs[k]);
+    }
+    if(kids!=null){
+      (Array.isArray(kids)?kids:[kids]).forEach(function(c){
+        if(c==null||c===false) return;
+        el.appendChild(typeof c==="string" ? document.createTextNode(c) : c);
+      });
+    }
+    return el;
+  }
+  function statusPill(st){
+    return h("span",{class:"pill s-"+st.key}, [h("span",{class:"dot"}), st.label]);
+  }
+  function doneCount(rm){
+    var d=0; for(var i=0;i<rm.phases.length;i++){ if(phaseState(rm.id,i)==="done") d++; } return d;
+  }
+  function doingCount(rm){
+    var d=0; for(var i=0;i<rm.phases.length;i++){ if(phaseState(rm.id,i)==="doing") d++; } return d;
+  }
+
+  /* ============================ VIEWS ============================ */
+  var viewsEl = document.getElementById("views");
+  var VIEWS = ["overview","rm01","rm02","rm03","punchlist"];
+  var sections = {};
+
+  function buildOverview(){
+    var sec = h("section",{class:"view", id:"view-overview", role:"tabpanel", "aria-label":"Overview"});
+    sec.appendChild(h("div",{class:"view-head"},[
+      h("p",{class:"eyebrow", text:"Three Roadmaps at a Glance"}),
+      h("h2",{text:"How CORE matures, end to end"}),
+      h("p",{class:"lede", text:META.overviewLede})
+    ]));
+
+    var railline = h("div",{class:"railline"},[h("span")]);
+    sec.appendChild(railline);
+
+    var rail = h("div",{class:"rail"});
+    ROADMAPS.forEach(function(rm){
+      var card = h("div",{class:"scard"});
+      var blurb = rm.glance && rm.glance[0] ? rm.summary : rm.summary;
+      card.appendChild(h("div",{class:"station-top"},[
+        h("div",{class:"stnode", text:rm.num}),
+        h("div",{},[ h("h3",{text:rm.name}), statusPill(rm.status) ])
+      ]));
+      card.appendChild(h("p",{class:"blurb", text:rm.summary}));
+      var ul = h("ul",{class:"glance"});
+      rm.glance.forEach(function(g){ ul.appendChild(h("li",{text:g})); });
+      card.appendChild(ul);
+      if(rm.enables){
+        card.appendChild(h("div",{class:"enables"},[
+          h("div",{class:"lab", text:"Enables"}),
+          h("p",{text:rm.enables})
+        ]));
+      }
+      card.appendChild(h("button",{class:"open-link", type:"button",
+        onclick:function(){ go(rm.id); }},
+        [ "Open roadmap ", h("span",{class:"arw", "aria-hidden":"true", text:"→"}) ]));
+
+      var station = h("div",{class:"station is-"+rm.status.key},[card]);
+      rail.appendChild(station);
+    });
+    sec.appendChild(rail);
+    sec.appendChild(h("p",{class:"note", text:META.timelineNote}));
+    return sec;
+  }
+
+  function buildRoadmap(rm, idx){
+    var sec = h("section",{class:"view", id:"view-"+rm.id, role:"tabpanel", "aria-label":rm.name});
+
+    var head = h("div",{class:"view-head"});
+    head.appendChild(h("p",{class:"eyebrow", text:"Roadmap "+rm.num+" · "+rm.key}));
+    head.appendChild(h("div",{class:"rm-headrow"},[ h("h2",{text:rm.name}), statusPill(rm.status) ]));
+    if(rm.subtitle) head.appendChild(h("p",{class:"rm-subtitle", text:rm.subtitle}));
+    head.appendChild(h("p",{class:"lede", text:rm.summary}));
+    if(rm.enables){
+      head.appendChild(h("div",{class:"enables", style:"margin-top:16px"},[
+        h("div",{class:"lab", text:"Enables"}),
+        h("p",{text:rm.enables})
+      ]));
+    }
+    sec.appendChild(head);
+
+    // progress box
+    var ring = h("div",{class:"ring"},[h("i")]);
+    var seg6 = h("div",{class:"seg6"});
+    rm.phases.forEach(function(){ seg6.appendChild(h("span")); });
+    var ptext = h("div",{class:"pt"},[
+      h("div",{class:"ptlabel", text:"Your tracking · saved in this browser"}),
+      h("div",{class:"ptline"}),
+      seg6
+    ]);
+    var pbox = h("div",{class:"progress-box"},[ring, ptext]);
+    sec.appendChild(pbox);
+    sec._ring = ring; sec._seg6 = seg6; sec._ptline = ptext.querySelector(".ptline");
+
+    // phases
+    var grid = h("div",{class:"phases"});
+    rm.phases.forEach(function(p,i){
+      grid.appendChild(buildPhase(rm, idx, p, i, sec));
+    });
+    sec.appendChild(grid);
+
+    // roadmap nav
+    var prev = ROADMAPS[idx-1], next = ROADMAPS[idx+1];
+    var nav = h("div",{class:"rm-nav"});
+    nav.appendChild(prev
+      ? h("button",{class:"navbtn", type:"button", onclick:function(){go(prev.id);}},
+          [ h("span",{"aria-hidden":"true", text:"←"}), h("span",{},[h("span",{class:"nlab",text:"Previous"}), h("span",{class:"nname",text:prev.name})]) ])
+      : h("button",{class:"navbtn", type:"button", disabled:"disabled"},
+          [ h("span",{"aria-hidden":"true", text:"←"}), h("span",{},[h("span",{class:"nlab",text:"Start"}), h("span",{class:"nname",text:"Overview"})]) ]));
+    nav.appendChild(next
+      ? h("button",{class:"navbtn right", type:"button", onclick:function(){go(next.id);}},
+          [ h("span",{},[h("span",{class:"nlab",text:"Next"}), h("span",{class:"nname",text:next.name})]), h("span",{"aria-hidden":"true", text:"→"}) ])
+      : h("button",{class:"navbtn right", type:"button", onclick:function(){go("punchlist");}},
+          [ h("span",{},[h("span",{class:"nlab",text:"Next"}), h("span",{class:"nname",text:"Market-Readiness Punchlist"})]), h("span",{"aria-hidden":"true", text:"→"}) ]));
+    sec.appendChild(nav);
+
+    sec.appendChild(h("p",{class:"note", text:rm.note}));
+    return sec;
+  }
+
+  function buildPhase(rm, rmIdx, p, i, sec){
+    var card = h("div",{class:"phase"});
+    card.dataset.rm = rm.id; card.dataset.i = i;
+
+    card.appendChild(h("div",{class:"phase-top"},[
+      h("div",{class:"pnum", text:String(i+1)}),
+      h("h3",{text:p.t})
+    ]));
+    card.appendChild(h("p",{class:"desc", text:p.d}));
+
+    // punchlist (roadmap 03)
+    if(p.punch){
+      var listWrap = h("div",{class:"punch-list"});
+      var ul = h("ul");
+      p.punch.forEach(function(item){ ul.appendChild(h("li",{text:item})); });
+      listWrap.appendChild(ul);
+      listWrap.appendChild(h("div",{class:"punch-foot", text:"Market-readiness · "+p.punchTitle}));
+      var toggle = h("button",{class:"punch-toggle", type:"button", "aria-expanded":"false",
+        onclick:function(){
+          var open = toggle.getAttribute("aria-expanded")==="true";
+          toggle.setAttribute("aria-expanded", String(!open));
+          listWrap.style.maxHeight = open ? "0px" : (listWrap.scrollHeight + 24)+"px";
+        }},
+        [ h("span",{class:"car","aria-hidden":"true", text:"▸"}), "Market-readiness conditions" ]);
+      card.appendChild(toggle);
+      card.appendChild(listWrap);
+    }
+
+    // state control
+    var btn = h("button",{class:"state-btn", type:"button",
+      onclick:function(){ cyclePhase(rm.id, i); refreshPhase(card, rm, i); refreshProgress(sec, rm); refreshGlobal(); refreshSegLabels(); }
+    });
+    var hint = h("span",{class:"hint", text:"click to update"});
+    card.appendChild(h("div",{class:"state"},[btn, hint]));
+    card._stateBtn = btn;
+
+    refreshPhase(card, rm, i);
+    return card;
+  }
+
+  var STATE_LABEL = {todo:"Not started", doing:"In progress", done:"Done"};
+  function refreshPhase(card, rm, i){
+    var st = phaseState(rm.id, i);
+    card.classList.remove("st-todo","st-doing","st-done");
+    card.classList.add("st-"+st);
+    var btn = card._stateBtn;
+    btn.innerHTML = "";
+    btn.appendChild(h("span",{class:"sd","aria-hidden":"true"}));
+    btn.appendChild(document.createTextNode(STATE_LABEL[st]));
+    btn.setAttribute("aria-label", "Phase "+(i+1)+", "+rm.phases[i].t+": "+STATE_LABEL[st]+". Click to change.");
+  }
+
+  function refreshProgress(sec, rm){
+    var done = doneCount(rm), doing = doingCount(rm), n = rm.phases.length;
+    var pct = Math.round(((done + 0.5*doing)/n)*100);
+    if(sec._ring){
+      sec._ring.style.setProperty("--p", pct);
+      sec._ring.querySelector("i").textContent = pct + "%";
+    }
+    if(sec._ptline){
+      sec._ptline.innerHTML = "<b>"+done+" of "+n+"</b> phases complete"
+        + (doing? " · <b>"+doing+"</b> in progress" : "");
+    }
+    if(sec._seg6){
+      var spans = sec._seg6.children;
+      for(var i=0;i<spans.length;i++){
+        var st = phaseState(rm.id, i);
+        spans[i].className = st==="done" ? "done" : (st==="doing" ? "doing" : "");
+      }
+    }
+  }
+
+  function refreshSegLabels(){
+    // update the small count chip on each roadmap segment button
+    ROADMAPS.forEach(function(rm){
+      var el = document.getElementById("segcount-"+rm.id);
+      if(el){ var d = doneCount(rm); el.textContent = d ? d+"/"+rm.phases.length : ""; }
+    });
+  }
+
+  function refreshGlobal(){
+    var done = 0;
+    ROADMAPS.forEach(function(rm){ done += doneCount(rm); });
+    document.getElementById("globalStat").textContent = done + " / " + TOTAL_PHASES;
+  }
+
+  function buildPunchlist(){
+    var sec = h("section",{class:"view", id:"view-punchlist", role:"tabpanel", "aria-label":"Market-Readiness Punchlist"});
+    sec.appendChild(h("div",{class:"view-head"},[
+      h("p",{class:"eyebrow", text:PUNCHLIST.eyebrow}),
+      h("div",{class:"rm-headrow"},[ h("h2",{text:PUNCHLIST.title}), h("span",{class:"tag", text:PUNCHLIST.tag}) ]),
+      h("p",{class:"lede", text:PUNCHLIST.lede})
+    ]));
+
+    var rm3 = ROADMAPS[2], rm3idx = 2;
+    var groups = h("div",{class:"pgroups"});
+    rm3.phases.forEach(function(p, gi){
+      var grp = h("div",{class:"pgroup"});
+      var count = h("span",{class:"pgcount"});
+      grp.appendChild(h("div",{class:"pgroup-top"},[
+        h("div",{class:"pnum", text:String(gi+1)}),
+        h("h3",{text:p.punchTitle}),
+        count
+      ]));
+      var ul = h("ul",{class:"checks"});
+      var items = p.punch;
+      var updateCount = function(){
+        var c=0; for(var k=0;k<items.length;k++){ if(punchChecked(rm3idx, gi*10+k)) c++; }
+        count.textContent = c + "/" + items.length;
+        grp.classList.toggle("complete", c===items.length);
+      };
+      items.forEach(function(item, k){
+        var idK = gi*10+k;
+        var cb = h("input",{type:"checkbox"});
+        cb.checked = punchChecked(rm3idx, idK);
+        cb.addEventListener("change", function(){ togglePunch(rm3idx, idK, cb.checked); updateCount(); });
+        var label = h("label",{class:"check"},[ cb, h("span",{text:item}) ]);
+        ul.appendChild(h("li",{},[label]));
+      });
+      grp.appendChild(ul);
+      updateCount();
+      groups.appendChild(grp);
+    });
+    sec.appendChild(groups);
+    sec.appendChild(h("p",{class:"note", text:PUNCHLIST.note}));
+    return sec;
+  }
+
+  /* ============================ NAV / ROUTER ============================ */
+  var LABELS = {overview:"Overview", rm01:"01", rm02:"02", rm03:"03", punchlist:"Punchlist"};
+  var current = "overview";
+
+  function buildSegs(){
+    var segs = document.getElementById("segs");
+    function seg(view, nText, label, withCount){
+      var kids = [];
+      if(nText) kids.push(h("span",{class:"n", text:nText}));
+      kids.push(document.createTextNode(label));
+      if(withCount) kids.push(h("span",{class:"n", id:"segcount-"+view, style:"color:var(--green)"}));
+      var b = h("button",{class:"seg", type:"button", role:"tab", "data-view":view, id:"seg-"+view,
+        "aria-controls":"view-"+view, "aria-selected":"false",
+        onclick:function(){ go(view); }}, kids);
+      segs.appendChild(b);
+    }
+    seg("overview", "", "Overview", false);
+    ROADMAPS.forEach(function(rm){ seg(rm.id, rm.num, rm.name, true); });
+    seg("punchlist", "", "Punchlist", false);
+  }
+
+  function go(view){
+    if(VIEWS.indexOf(view)<0) view = "overview";
+    current = view;
+    VIEWS.forEach(function(v){
+      var on = (v===view);
+      sections[v].classList.toggle("active", on);
+      var seg = document.getElementById("seg-"+v);
+      if(seg){ seg.setAttribute("aria-current", on?"true":"false"); seg.setAttribute("aria-selected", on?"true":"false"); }
+    });
+    // refresh progress for the shown roadmap
+    ROADMAPS.forEach(function(rm,i){ if(rm.id===view) refreshProgress(sections[view], rm); });
+    if(("#"+view) !== location.hash){
+      try{ history.replaceState(null, "", "#"+view); }catch(e){ location.hash = view; }
+    }
+    // move focus to the panel for screen readers without yanking the scroll on first paint
+    var top = document.querySelector("nav.bar");
+    if(top){ window.scrollTo({top:0, behavior:(view===current?"smooth":"auto")}); }
+    document.title = (view==="overview"? "CORE Roadmaps" :
+                      view==="punchlist"? "Market-Readiness Punchlist · CORE" :
+                      (sections[view]? "CORE · " + (ROADMAPS.filter(function(r){return r.id===view;})[0]||{}).name : "CORE Roadmaps")) + " · Interactive";
+  }
+
+  /* keyboard: ←/→ switch views when not typing in a field */
+  document.addEventListener("keydown", function(e){
+    var tag = (e.target && e.target.tagName) || "";
+    if(/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+    if(e.key==="ArrowRight" || e.key==="ArrowLeft"){
+      var i = VIEWS.indexOf(current);
+      if(i<0) return;
+      var ni = e.key==="ArrowRight" ? Math.min(VIEWS.length-1, i+1) : Math.max(0, i-1);
+      if(ni!==i){
+        var inTabs = e.target && e.target.classList && e.target.classList.contains("seg");
+        go(VIEWS[ni]); e.preventDefault();
+        if(inTabs){ var nb = document.getElementById("seg-"+VIEWS[ni]); if(nb) nb.focus(); }
+      }
+    }
+  });
+
+  window.addEventListener("hashchange", function(){
+    var v = location.hash.replace("#","");
+    if(VIEWS.indexOf(v)>=0 && v!==current) go(v);
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!confirm("Clear all phase tracking and punchlist checks saved in this browser?")) return;
+    state = {phases:{}, punch:{}}; save();
+    // rebuild views to reflect cleared state
+    render();
+    go(current);
+  });
+
+  /* ============================ RENDER ============================ */
+  function render(){
+    viewsEl.innerHTML = "";
+    sections = {};
+    sections.overview = buildOverview();
+    ROADMAPS.forEach(function(rm,i){ sections[rm.id] = buildRoadmap(rm, i); });
+    sections.punchlist = buildPunchlist();
+    VIEWS.forEach(function(v){ viewsEl.appendChild(sections[v]); });
+    ROADMAPS.forEach(function(rm){ refreshProgress(sections[rm.id], rm); });
+    refreshGlobal();
+    refreshSegLabels();
+  }
+
+  buildSegs();
+  render();
+  var initial = location.hash.replace("#","");
+  go(VIEWS.indexOf(initial)>=0 ? initial : "overview");
+
+})();
+</script>
