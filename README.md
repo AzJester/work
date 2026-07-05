@@ -186,7 +186,7 @@ HUD design, with the ambient C-UAS radar engagement playing behind the hero, off
 leadership headshots served as optimized files from `astrion-division/assets/`, and the
 prototype's accessibility/cross-browser/content issues fixed:
 
-### → https://azjester.github.io/work/astrion-division/
+### → https://azjester.github.io/work/astrion-division/ldawif/
 
 Marked `noindex` while under review.
 
