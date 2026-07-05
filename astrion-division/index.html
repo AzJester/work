@@ -395,8 +395,8 @@
     background: rgba(4,5,9,.88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     cursor: pointer; animation: patchfade .35s ease; }
   .patch-overlay figure { margin: 0; text-align: center; animation: patchpop .45s cubic-bezier(.2,.9,.3,1.2); }
-  .patch-overlay img { width: min(68vmin, 560px); height: auto; display: block; margin: 0 auto;
-    filter: drop-shadow(0 0 44px rgba(41,170,225,.35)); }
+  .patch-overlay img { max-width: min(86vw, 520px); max-height: 74vh; width: auto; height: auto;
+    display: block; margin: 0 auto; filter: drop-shadow(0 0 44px rgba(41,170,225,.35)); }
   .patch-overlay figcaption { font-family: var(--mono); font-size: 11.5px; letter-spacing: .22em;
     text-transform: uppercase; color: var(--sky); margin-top: 22px; }
   .patch-overlay figcaption b { display: block; font-weight: normal; color: var(--mono-dim); margin-top: 8px; font-size: 10px; }
@@ -819,11 +819,10 @@
     }
   })();
 
-  /* ---- easter egg: reveal the division patch ----
-     Triggers: type "ldawif" anywhere, or tap the hero eyebrow 5 times quickly.
-     Swap the img src below when the final easter-egg image arrives. */
+  /* ---- easter egg: reveal the division poster ----
+     Triggers: type "ldawif" anywhere, or tap the hero eyebrow 5 times quickly. */
   (function(){
-    var EGG_SRC = 'assets/ldawif-patch.jpg';
+    var EGG_SRC = 'assets/easter-egg.jpg';
     var open = false, buf = '', taps = 0, tapT = 0, lastFocus = null;
     function dismiss(){
       var o = document.querySelector('.patch-overlay');
@@ -840,7 +839,7 @@
       o.setAttribute('role', 'dialog');
       o.setAttribute('aria-label', 'LDAWIF division patch. Click, tap, or press Escape to close.');
       o.tabIndex = -1;
-      o.innerHTML = '<figure><img src="' + EGG_SRC + '" alt="LDAWIF division patch: a ghost over a shamrock and crossed lightning bolts, ringed by Layered Defense, Autonomous Warfare, Integrated Fires">' +
+      o.innerHTML = '<figure><img src="' + EGG_SRC + '" alt="LDAWIF poster: the six division leaders in black suits and sunglasses walking beneath the LDAWIF ghost patch">' +
         '<figcaption>// CLEARANCE GRANTED · LDAWIF<b>CLICK OR PRESS ESC TO CLOSE</b></figcaption></figure>';
       o.addEventListener('click', dismiss);
       document.body.appendChild(o);
