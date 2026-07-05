@@ -751,9 +751,12 @@
       var base = Math.random()*TAU, n = 2 + (Math.random()*3|0);
       for(var i=0;i<n;i++){
         contacts.push({ ang: base + (Math.random()-0.5)*0.6, rng: 0.90 + Math.random()*0.08,
-          vin: 0.045 + Math.random()*0.03, lit:0, state:'in' });
+          vin: 0.030 + Math.random()*0.022, lit:0, state:'in' });
       }
     }
+    // intercept beams alternate between brand red and green
+    var beamHue = 0;
+    function fireTracer(c, spd){ tracers.push({ t:0, spd:spd, tgt:c, hue:(beamHue++ % 2) }); }
     var el = { threat:document.getElementById('cf-threat'), track:document.getElementById('cf-track'),
                kill:document.getElementById('cf-kill') };
 
@@ -790,9 +793,11 @@
         var tr=tracers[t], c=tr.tgt; if(!c) continue;
         var tx=cx+Math.cos(c.ang)*c.rng*R, ty=cy+Math.sin(c.ang)*c.rng*R;
         var p=Math.min(1,tr.t), ix=cx+(tx-cx)*p, iy=cy+(ty-cy)*p;
+        var redBeam = tr.hue===0;
         ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ix,iy);
-        ctx.strokeStyle='rgba(140,224,255,0.9)'; ctx.lineWidth=1.4; ctx.shadowColor='#29AAE1'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
-        ctx.beginPath(); ctx.arc(ix,iy,2.2,0,TAU); ctx.fillStyle='#dff4ff'; ctx.fill();
+        ctx.strokeStyle = redBeam ? 'rgba(252,84,66,0.9)' : 'rgba(30,216,114,0.9)';
+        ctx.lineWidth=1.6; ctx.shadowColor = redBeam ? '#FC5442' : '#1ED872'; ctx.shadowBlur=9; ctx.stroke(); ctx.shadowBlur=0;
+        ctx.beginPath(); ctx.arc(ix,iy,2.4,0,TAU); ctx.fillStyle = redBeam ? '#ffddd8' : '#dcffe9'; ctx.fill();
       }
 
       for(var i=0;i<contacts.length;i++){
@@ -847,7 +852,7 @@
     function step(now){
       var dt = Math.min(0.05,(now-last)/1000); last=now;
       sweep += sweepSpeed*dt; if(sweep>Math.PI) sweep-=TAU;
-      if(contacts.length < 14 && Math.random() < dt*1.1) spawnSwarm();
+      if(contacts.length < 14 && Math.random() < dt*0.85) spawnSwarm();
 
       var inbound=0, tracked=0;
       for(var i=contacts.length-1;i>=0;i--){
@@ -855,7 +860,7 @@
         c.rng -= c.vin*dt;
         var d=Math.abs(Math.atan2(Math.sin(sweep-c.ang),Math.cos(sweep-c.ang)));
         if(d<0.06) c.lit=1; else c.lit=Math.max(0,c.lit-dt*0.75);
-        if(c.state==='in'){ inbound++; if(c.rng<=engageR){ c.state='lock'; tracers.push({t:0,spd:2.4,tgt:c}); } }
+        if(c.state==='in'){ inbound++; if(c.rng<=engageR){ c.state='lock'; fireTracer(c, 1.5); } }
         if(c.state==='lock'){ tracked++; }
         if(c.rng<0.05){ contacts.splice(i,1); }
       }
@@ -872,7 +877,7 @@
           tracers.splice(t,1);
         }
       }
-      for(var k=kills.length-1;k>=0;k--){ kills[k].r+=dt*90; kills[k].a-=dt*1.6; if(kills[k].a<=0) kills.splice(k,1); }
+      for(var k=kills.length-1;k>=0;k--){ kills[k].r+=dt*70; kills[k].a-=dt*1.15; if(kills[k].a<=0) kills.splice(k,1); }
       for(var q2=pings.length-1;q2>=0;q2--){ pings[q2].r+=dt*80; pings[q2].a-=dt*2.4; if(pings[q2].a<=0) pings.splice(q2,1); }
 
       draw();
@@ -890,7 +895,7 @@
       var c=nearestContact(x,y,Math.max(28,R*0.09));
       if(c){
         c.state='lock';
-        tracers.push({t:0,spd:3.6,tgt:c});
+        fireTracer(c, 2.1);
         var p=contactXY(c);
         pings.push({x:p[0],y:p[1],r:6,a:1,hit:true});
         var h=document.getElementById('scopehint'); if(h) h.classList.add('off');
@@ -913,7 +918,7 @@
       var buildStatic = function(){
         contacts=[]; tracers=[]; kills=[];
         for(var i=0;i<9;i++){ contacts.push({ang:(i/9)*TAU+0.2, rng:0.5+(i%5)*0.09, vin:0, lit:0.85, state:(i%4===0?'lock':'in')}); }
-        for(var j=0;j<contacts.length;j++){ if(contacts[j].state==='lock') tracers.push({t:0.6,spd:0,tgt:contacts[j]}); }
+        for(var j=0;j<contacts.length;j++){ if(contacts[j].state==='lock') tracers.push({t:0.6,spd:0,tgt:contacts[j],hue:(beamHue++ % 2)}); }
         kills.push({x:cx+R*0.2,y:cy-R*0.15,r:14,a:.6});
         kills.push({x:cx-R*0.26,y:cy+R*0.09,r:20,a:.4});
       };
