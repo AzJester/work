@@ -1034,6 +1034,7 @@
     if(eb){
       eb.addEventListener('click', function(){
         var now = Date.now();
+        if(now - tapT < 120) return; // some devices double-fire click for one physical tap
         if(now - tapT > 2500) taps = 0;
         tapT = now;
         if(++taps >= 5){ taps = 0; reveal(); }
