@@ -161,6 +161,8 @@
     mask-clip: content-box, border-box;
     mask-composite: exclude; }
   .btn-ghost:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
+  .btn.pending { cursor: default; color: var(--mono-dim); }
+  .btn.pending:hover { color: var(--mono-dim); text-shadow: none; transform: none; }
   /* outlines are clipped away by clip-path, so focus rings go inset */
   .btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px currentColor; }
   .btn .arr { transition: transform .15s ease; }
@@ -598,14 +600,16 @@
           <p class="eyebrow">Work with the division</p>
           <h2>Bring us a hard mission problem.</h2>
           <p>Program offices, primes, and technology partners: start with a conversation about where you need capability proven, not just promised.</p>
-          <a href="mailto:LDAWIF@astrion.us?subject=Division%20inquiry" class="btn btn-primary">Start a conversation <span class="arr">&rarr;</span></a>
+          <!-- Division mailbox not yet provisioned. When it is, restore:
+               <a href="mailto:ADDRESS?subject=Division%20inquiry" class="btn btn-primary">Start a conversation <span class="arr">&rarr;</span></a> -->
+          <span class="btn btn-ghost pending" aria-disabled="true">Contact mailbox pending</span>
         </div>
         <div class="panel hud reveal">
           <img class="crest" src="assets/ldawif-patch.jpg" alt="LDAWIF division patch" width="800" height="800" loading="lazy" decoding="async">
           <div class="row"><span class="k">FOR</span><span class="v">Customers &amp; teaming partners</span></div>
           <div class="row"><span class="k">MISSION AREAS</span><span class="v">Defense · Autonomy · Fires</span></div>
           <div class="row"><span class="k">READINESS</span><span class="v">Validated lab to field</span></div>
-          <div class="row"><span class="k">CONTACT</span><span class="v">LDAWIF@astrion.us</span></div>
+          <div class="row"><span class="k">CONTACT</span><span class="v" style="color:var(--mono-dim);">Division mailbox pending</span></div>
         </div>
       </div>
     </div>
