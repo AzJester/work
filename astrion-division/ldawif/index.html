@@ -167,7 +167,7 @@
   /* target-lock brackets: corner marks snap onto interactive elements on hover,
      echoing the radar's lock indicator (top-left / bottom-right, like .telem) */
   .btn { position: relative; }
-  .btn::after, .card::after, .pillar::after { content: ""; position: absolute; inset: 5px;
+  .btn::after, .card::after, .pillar::after, .cap::after { content: ""; position: absolute; inset: 5px;
     pointer-events: none; opacity: 0; transform: scale(1.15);
     transition: transform .16s ease, opacity .16s ease;
     background:
@@ -176,8 +176,9 @@
       linear-gradient(currentColor, currentColor) right bottom / 13px 2px no-repeat,
       linear-gradient(currentColor, currentColor) right bottom / 2px 13px no-repeat; }
   .card::after, .pillar::after { color: var(--sky); }
+  .cap::after { color: rgba(255,255,255,.9); }
   .btn:hover::after, .btn:focus-visible::after,
-  .card:hover::after, .pillar:hover::after { opacity: .85; transform: scale(1); }
+  .card:hover::after, .pillar:hover::after, .cap:hover::after { opacity: .85; transform: scale(1); }
   .btn.pending:hover::after { opacity: 0; }
   /* outlines are clipped away by clip-path, so focus rings go inset */
   .btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px currentColor; }
@@ -307,10 +308,51 @@
   .enabler .eyebrow { color: var(--supernova); }
   .enabler .eyebrow::before { background: var(--supernova); box-shadow: 0 0 10px rgba(255,175,46,.6); }
   .caps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .cap { background: rgba(255,255,255,.07); padding: 16px; }
+  .cap { background: rgba(255,255,255,.07); padding: 16px; transition: transform .18s ease; }
+  .cap:hover { transform: translateY(-4px); }
   .cap.hud::before { background: rgba(255,255,255,.22); }
   .cap b { display: block; font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; margin-bottom: 5px; color: #fff; }
   .cap span { font-size: 12.5px; color: rgba(255,255,255,.74); }
+  .enabler .mono-note { color: rgba(255,255,255,.72); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; margin-top: 16px; }
+
+  /* ModelOps health console: confidence sparkline with a drift->retrain->recover cycle */
+  .mops { background: rgba(10,8,20,.5); padding: 14px 14px 10px; margin-bottom: 12px; }
+  .mops.hud::before { background: rgba(255,255,255,.25); }
+  .mops-bar { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: .16em; color: #fff; text-transform: uppercase;
+    padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.14); }
+  .mops-bar #mops-ver { color: var(--supernova); }
+  .mops-scope { position: relative; height: 108px; margin: 10px 0 8px; }
+  .mops-scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .mops-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
+  .mchip { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 4px 9px; color: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.28); clip-path: var(--notch-sm); }
+  .mchip.state-ok { color: var(--refraction); border-color: rgba(30,216,114,.55); }
+  .mchip.state-warn { color: var(--supernova); border-color: rgba(255,175,46,.6); }
+  .mchip.state-info { color: #9ad9f5; border-color: rgba(41,170,225,.6); }
+
+  /* model lifecycle loop */
+  .lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 18px; }
+  .lifecycle .lc { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    color: rgba(255,255,255,.62); border: 1px solid rgba(255,255,255,.28); padding: 4px 9px; clip-path: var(--notch-sm);
+    animation: lcpulse 10s linear infinite; }
+  .lifecycle .lc:nth-child(1) { animation-delay: 0s; }
+  .lifecycle .lc:nth-child(3) { animation-delay: 2s; }
+  .lifecycle .lc:nth-child(5) { animation-delay: 4s; }
+  .lifecycle .lc:nth-child(7) { animation-delay: 6s; }
+  .lifecycle .lc:nth-child(9) { animation-delay: 8s; }
+  .lifecycle .lca { color: rgba(255,255,255,.4); font-size: 12px; }
+  .lifecycle .lca.loop { color: var(--supernova); font-size: 15px; }
+  @keyframes lcpulse { 0%, 15% { color: #fff; border-color: var(--supernova); }
+    19%, 100% { color: rgba(255,255,255,.62); border-color: rgba(255,255,255,.28); } }
+
+  /* cross-links between the kill chain's DECIDE node and this section */
+  .chainlink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--supernova);
+    border: 1px solid rgba(255,175,46,.45); padding: 5px 10px; clip-path: var(--notch-sm); }
+  .chainlink:hover { color: #fff; border-color: var(--supernova); }
+  .node .spine:hover { color: #fff; border-color: var(--supernova); }
+  #chain { scroll-margin-top: 90px; }
 
   /* ---------------- PROOF ---------------- */
   .proof { background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -422,7 +464,8 @@
     .rail .pulse, .status .dot { animation: none; }
     .rail .pulse { left: 100%; background: var(--refraction); }
     .reveal { opacity: 1 !important; transform: none !important; }
-    .btn::after, .card::after, .pillar::after, .node .dot, .telem em { transition: none; }
+    .btn::after, .card::after, .pillar::after, .cap::after, .node .dot, .telem em, .cap { transition: none; }
+    .lifecycle .lc { animation: none; }
     .scope-hint { display: none; }
   }
   /* hidden state gated on the js class so content stays visible without JavaScript */
@@ -488,14 +531,14 @@
       </div>
 
       <!-- SIGNATURE: sensor-to-shooter signal chain (a real sequence, so it earns numbering) -->
-      <div class="track reveal">
+      <div class="track reveal" id="chain">
         <div class="track-label">// Sensor-to-shooter · the flow we build and validate end to end</div>
         <div class="rail">
           <span class="line" aria-hidden="true"></span><span class="pulse" aria-hidden="true"></span>
           <ol class="nodes">
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">01 · SENSE</span><span class="nh">Layered Defense</span><p>Detect and track threats in depth across the electromagnetic and physical battlespace.</p></li>
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">02 · ASSESS</span><span class="nh">Data to decision</span><p>Fuse sensor data into a trusted picture the operator can act on.</p></li>
-            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">03 · DECIDE</span><span class="nh">AI &amp; ModelOps</span><p>Models that stay reliable, governed, and human-supervised from lab to field.<span class="spine">THE SPINE</span></p></li>
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">03 · DECIDE</span><span class="nh">AI &amp; ModelOps</span><p>Models that stay reliable, governed, and human-supervised from lab to field.<a class="spine" href="#enabler">THE SPINE &darr;</a></p></li>
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">04 · EFFECT</span><span class="nh">Integrated Fires</span><p>Synchronized effects delivered across domains and services.</p></li>
           </ol>
         </div>
@@ -543,13 +586,32 @@
           <p class="eyebrow">The connective spine</p>
           <h2>AI and ModelOps run beneath all three.</h2>
           <p>A model that wins a demo and drifts in the field is a liability. We treat AI as a system that has to be maintained, monitored, and accountable, not a one-time deliverable. That discipline is what lets autonomy and fires be trusted at the edge.</p>
-          <p style="color:rgba(255,255,255,.72); font-family:var(--mono); font-size:13px; letter-spacing:.06em; margin-top:16px;">// We deliver proof, not promises.</p>
+          <p class="mono-note">// We deliver proof, not promises.</p>
+          <div class="lifecycle" role="img" aria-label="Model lifecycle loop: lab, range, field, monitor, retrain, and back around">
+            <span class="lc">Lab</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Range</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Field</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Monitor</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Retrain</span><span class="lca loop" aria-hidden="true">&#10227;</span>
+          </div>
+          <a class="chainlink" href="#chain">&uarr; See the spine live in the kill chain</a>
         </div>
-        <div class="caps reveal">
-          <div class="cap hud"><b>MODEL ASSURANCE</b><span>Testing, red-teaming, and evidence for models before they ship.</span></div>
-          <div class="cap hud"><b>DEPLOY + MONITOR</b><span>Pipelines that catch drift and degradation in production.</span></div>
-          <div class="cap hud"><b>HUMAN OVERSIGHT</b><span>Decision authority stays with people, by design and by record.</span></div>
-          <div class="cap hud"><b>DATA GOVERNANCE</b><span>Traceable data from source to decision, audit-ready.</span></div>
+        <div class="capcol reveal">
+          <div class="mops hud" role="img" aria-label="Simulated model-health console: confidence holds steady, drifts below threshold, drift is detected, the model retrains, redeploys as a new version, and recovers.">
+            <div class="mops-bar">
+              <span>MODELOPS · LIVE HEALTH</span>
+              <span id="mops-ver">MODEL v4.2</span>
+            </div>
+            <div class="mops-scope"><canvas id="mops"></canvas></div>
+            <div class="mops-foot">
+              <span class="mchip state-ok" id="mops-state">MONITORING</span>
+              <span class="mchip">EVAL PASSED</span>
+              <span class="mchip">HUMAN-ON-THE-LOOP</span>
+              <span class="mchip">AUDIT READY</span>
+            </div>
+          </div>
+          <div class="caps">
+            <div class="cap hud"><b>MODEL ASSURANCE</b><span>Testing, red-teaming, and evidence for models before they ship.</span></div>
+            <div class="cap hud"><b>DEPLOY + MONITOR</b><span>Pipelines that catch drift and degradation in production.</span></div>
+            <div class="cap hud"><b>HUMAN OVERSIGHT</b><span>Decision authority stays with people, by design and by record.</span></div>
+            <div class="cap hud"><b>DATA GOVERNANCE</b><span>Traceable data from source to decision, audit-ready.</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -942,6 +1004,92 @@
         }).observe(wrap);
       } else { start(); }
     }
+  })();
+
+  /* ---- ModelOps health console: drift -> detect -> retrain -> redeploy -> recover ---- */
+  (function(){
+    var canvas = document.getElementById('mops');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var wrap = canvas.parentElement;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W=1,H=1,DPR=1;
+    var N=110, buf=[], THRESH=0.85;
+    for(var i=0;i<N;i++) buf.push(0.9);
+    var stateEl=document.getElementById('mops-state'), verEl=document.getElementById('mops-ver');
+    var ver=2, phase='healthy', phaseT=0, conf=0.9, retrainP=0;
+    function setState(txt, cls){ if(stateEl){ stateEl.textContent=txt; stateEl.className='mchip '+cls; } }
+    function tickSim(dt){
+      phaseT+=dt;
+      if(phase==='healthy'){
+        conf=0.90+Math.sin(phaseT*1.3)*0.015+(Math.random()-0.5)*0.012;
+        if(phaseT>6+Math.random()*4){ phase='drift'; phaseT=0; }
+      } else if(phase==='drift'){
+        conf-=dt*0.04+(Math.random()-0.5)*0.008;
+        if(conf<THRESH && stateEl && stateEl.textContent!=='DRIFT DETECTED') setState('DRIFT DETECTED','state-warn');
+        if(conf<0.70){ phase='retrain'; phaseT=0; retrainP=0; setState('RETRAINING','state-warn'); }
+      } else if(phase==='retrain'){
+        conf=0.70+(Math.random()-0.5)*0.01;
+        retrainP=Math.min(1,phaseT/2.6);
+        if(retrainP>=1){ phase='redeploy'; phaseT=0; ver++; if(verEl) verEl.textContent='MODEL v4.'+ver; setState('REDEPLOYING','state-info'); }
+      } else if(phase==='redeploy'){
+        conf=0.70;
+        if(phaseT>0.9){ phase='recover'; phaseT=0; }
+      } else {
+        conf+=dt*0.09;
+        if(conf>=0.90){ conf=0.90; phase='healthy'; phaseT=0; setState('NOMINAL','state-ok'); }
+      }
+      buf.push(Math.max(0.6,Math.min(0.98,conf))); if(buf.length>N) buf.shift();
+    }
+    function yOf(v){ return H-10-((v-0.55)/0.45)*(H-22); }
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=1;
+      for(var g=0;g<3;g++){ var gy=8+g*(H-18)/2; ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+      ctx.strokeStyle='rgba(255,175,46,0.5)'; ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(0,yOf(THRESH)); ctx.lineTo(W,yOf(THRESH)); ctx.stroke(); ctx.setLineDash([]);
+      var cur=buf[buf.length-1];
+      var col=cur>=THRESH?'#1ED872':'#FFAF2E';
+      ctx.lineWidth=1.8; ctx.beginPath();
+      for(var i=0;i<buf.length;i++){ var x=i*(W/(N-1)), vy=yOf(buf[i]); i?ctx.lineTo(x,vy):ctx.moveTo(x,vy); }
+      ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+      ctx.beginPath(); ctx.arc(W-2,yOf(cur),2.5,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+      ctx.font='9px monospace'; ctx.fillStyle='rgba(255,255,255,0.8)';
+      ctx.fillText('CONF '+cur.toFixed(2), 6, 11);
+      if(phase==='retrain'||phase==='redeploy'){
+        var pw=W*(phase==='redeploy'?1:retrainP);
+        ctx.fillStyle='rgba(41,170,225,0.25)'; ctx.fillRect(0,H-4,pw,3);
+        ctx.fillStyle='#29AAE1'; ctx.fillRect(0,H-4,pw,1.5);
+        ctx.fillStyle='#9ad9f5';
+        ctx.fillText(phase==='redeploy'?'REDEPLOYING':'RETRAINING '+Math.round(retrainP*100)+'%', 6, H-8);
+      }
+    }
+    function resize(){
+      DPR=Math.min(window.devicePixelRatio||1,2);
+      var r=wrap.getBoundingClientRect();
+      W=Math.max(1,r.width); H=Math.max(1,r.height);
+      canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      draw();
+    }
+    if(window.ResizeObserver){ new ResizeObserver(resize).observe(wrap); }
+    else { window.addEventListener('resize', resize); }
+    resize();
+    if(reduce){ setState('NOMINAL','state-ok'); draw(); return; }
+    var last=performance.now(), acc=0, running=false, raf;
+    function step(now){
+      if(!running) return;
+      var dt=Math.min(0.06,(now-last)/1000); last=now;
+      acc+=dt;
+      while(acc>0.085){ tickSim(0.085); acc-=0.085; }
+      draw();
+      raf=requestAnimationFrame(step);
+    }
+    var start=function(){ if(!running){ running=true; last=performance.now(); raf=requestAnimationFrame(step); } };
+    var stop=function(){ if(running){ running=false; cancelAnimationFrame(raf); } };
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting?start():stop(); }); }).observe(wrap);
+    } else { start(); }
   })();
 
   /* ---- reveal-time flourishes: stat count-ups + heading decrypt ---- */
