@@ -179,6 +179,17 @@ How it stays safe: the page only ever calls one **token-gated, read-only** datab
 (`shared_dashboard`) that returns *only* the link owner's data. No write access is exposed, and
 every table stays protected by Row Level Security — the share link is the single, revocable door.
 
+## Astrion Division Landing Page (team review build)
+
+A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` — same
+HUD design, with the ambient C-UAS radar engagement playing behind the hero, official
+leadership headshots served as optimized files from `astrion-division/assets/`, and the
+prototype's accessibility/cross-browser/content issues fixed:
+
+### → https://azjester.github.io/work/astrion-division/
+
+Marked `noindex` while under review.
+
 ## LDAWIF — All-Domain Kill Web
 
 A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·
