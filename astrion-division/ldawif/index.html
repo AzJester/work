@@ -400,9 +400,9 @@
   .contact h2 { font-size: clamp(28px, 4.1vw, 46px); margin: 8px 0 16px; letter-spacing: -.015em; }
   .contact p { color: var(--ink-dim); font-size: 17px; margin: 0 0 26px; max-width: 48ch; }
   .contact .panel { background: var(--panel); padding: 28px; }
-  /* division crest: screen blend drops the patch's black field into the panel */
-  .contact .panel .crest { display: block; width: 158px; height: 158px; margin: 0 auto 18px;
-    mix-blend-mode: screen; filter: drop-shadow(0 0 18px rgba(41,170,225,.18)); }
+  /* division poker chip: transparent PNG drops straight onto the panel */
+  .contact .panel .chip { display: block; width: 176px; height: 176px; margin: 0 auto 18px;
+    filter: drop-shadow(0 0 18px rgba(41,170,225,.18)); }
   .contact .panel .row { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .contact .panel .row:last-child { border-bottom: none; }
   .contact .panel .k { color: var(--mono-dim); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
@@ -699,7 +699,7 @@
           <span class="btn btn-ghost pending" aria-disabled="true">Contact mailbox pending</span>
         </div>
         <div class="panel hud reveal">
-          <img class="crest" src="assets/ldawif-patch.jpg" alt="LDAWIF division patch" width="800" height="800" loading="lazy" decoding="async">
+          <img class="chip" src="assets/ldawif-poker.png" alt="LDAWIF division poker chip" width="400" height="400" loading="lazy" decoding="async">
           <div class="row"><span class="k">FOR</span><span class="v">Customers &amp; teaming partners</span></div>
           <div class="row"><span class="k">MISSION AREAS</span><span class="v">Defense · Autonomy · Fires</span></div>
           <div class="row"><span class="k">READINESS</span><span class="v">Validated lab to field</span></div>
