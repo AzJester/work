@@ -127,14 +127,9 @@
     border-bottom: 1px solid var(--line);
   }
   .nav-in { display: flex; align-items: center; gap: 22px; height: 68px; }
-  .logo { display: inline-flex; align-items: center; gap: 11px; font-weight: bold; letter-spacing: .06em; }
-  /* drop-shadow (not box-shadow): glows survive the clip-path */
-  .logo .mark { width: 27px; height: 27px; flex: none; position: relative;
-    background: linear-gradient(135deg, var(--sky), var(--force)); clip-path: var(--notch-sm);
-    filter: drop-shadow(0 0 9px rgba(41,170,225,.4)); }
-  .logo .mark::after { content:""; position:absolute; inset:7px; border:2px solid rgba(255,255,255,.9);
-    border-right-color:transparent; border-bottom-color:transparent; }
-  .logo .name { font-size: 18px; }
+  .logo { display: inline-flex; align-items: center; }
+  /* white knockout Astrion logo reads cleanly on the near-black nav */
+  .logo img { height: 30px; width: auto; display: block; }
   .nav-links { margin-left: auto; display: flex; align-items: center; gap: 28px; }
   .nav-links a.link { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
   .nav-links a.link:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
@@ -494,9 +489,9 @@
 <!-- NAV -->
 <header class="nav">
   <div class="wrap nav-in">
-    <!-- Swap for official Astrion logo SVG. Keep clear space = logotype x-height. -->
+    <!-- Official Astrion wordmark (white knockout for the dark nav). Keep clear space = logotype x-height. -->
     <a class="logo" href="https://astrion.us" aria-label="Astrion home">
-      <span class="mark" aria-hidden="true"></span><span class="name">ASTRION</span>
+      <img src="assets/astrion-logo.png" alt="Astrion" width="176" height="30" decoding="async">
     </a>
     <nav class="nav-links" aria-label="Primary">
       <a class="link" href="#capabilities">Capabilities</a>
