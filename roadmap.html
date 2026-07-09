@@ -12,8 +12,8 @@
     --bg-wash:radial-gradient(1100px 460px at 50% -8%, rgba(0,115,234,0.06), rgba(0,115,234,0) 62%);
     --ink:#2b2d34; --ink-2:#5f6472; --mut:#9296a5;
     --accent:#0073ea; --accent-2:#0060b9; --accent-soft:#e6f1fd; --ring:rgba(0,115,234,0.30);
-    --s-planned:#c4c4c4; --s-progress:#fdab3d; --s-complete:#00c875; --s-risk:#e2445c;
-    --s-blocked:#8a3ffc; --s-onhold:#5f6b7a; --s-milestone:#0073ea;
+    --s-planned:#94a3b8; --s-progress:#f59e0b; --s-complete:#12a56b; --s-risk:#e0485a;
+    --s-blocked:#7c5cf0; --s-onhold:#64748b; --s-milestone:#0073ea;
     --ok:#00854d; --ok-bg:#e4f7ee; --err:#c2362b; --err-bg:#fdecea; --info:#0060b9; --info-bg:#e6f1fd;
     --input-bg:#ffffff;
     --radius:12px; --radius-sm:8px; --radius-lg:14px; --pill:999px;
@@ -158,14 +158,23 @@
     border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
   .item input[type="date"]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .item .dash { color:var(--mut); }
+  .notes-body { padding:12px 16px 16px; }
+  .rm-notes { width:100%; min-height:76px; resize:vertical; font-family:inherit; font-size:13.5px; line-height:1.5; color:var(--ink);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; }
+  .rm-notes::placeholder { color:var(--mut); }
+  .rm-notes:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .item input.note-inp { flex:1 1 100%; order:2; font-size:12.5px; color:var(--ink-2); background:var(--input-bg);
+    border:1px solid var(--line); border-radius:7px; padding:6px 10px; margin-left:22px; }
+  .item input.note-inp::placeholder { color:var(--mut); }
+  .item input.note-inp:focus { outline:none; color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   select.chip { font-family:var(--disp); appearance:none; -webkit-appearance:none; border:none; border-radius:var(--pill);
     padding:6px 14px; font-weight:700; font-size:12px; color:#fff; cursor:pointer;
-    box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.28); transition:filter .15s, transform .1s; }
+    box-shadow:var(--shadow-sm); transition:filter .15s, transform .1s; }
   select.chip:hover { filter:brightness(1.05); }
   select.chip:active { transform:scale(0.97); }
   select.chip:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
   select.chip.s-planned { background:var(--s-planned); color:#3a3a44; }
-  select.chip.s-progress { background:var(--s-progress); }
+  select.chip.s-progress { background:var(--s-progress); color:#3f2a00; }
   select.chip.s-complete { background:var(--s-complete); }
   select.chip.s-risk { background:var(--s-risk); }
   select.chip.s-blocked { background:var(--s-blocked); }
@@ -385,6 +394,17 @@
     </div>
   </div>
 
+  <!-- roadmap notes -->
+  <div class="card editor-card app-only editor-view" id="notesCard">
+    <div class="card-head">
+      <h2>Notes</h2>
+      <span class="mono">context for this roadmap</span>
+    </div>
+    <div class="notes-body">
+      <textarea id="rmNotes" class="rm-notes" placeholder="Notes, context, links, open questions… (saved with this roadmap)"></textarea>
+    </div>
+  </div>
+
   <!-- editor -->
   <div class="card editor-card app-only editor-view" id="editorCard">
     <div class="card-head">
@@ -470,8 +490,8 @@ const STATUSES = [
   { v:"on_hold",     label:"On hold",     cls:"s-onhold"   },
 ];
 const STATUS_SET = new Set(STATUSES.map(s => s.v));
-const STATUS_COLOR = { planned:"#c4c4c4", in_progress:"#fdab3d", complete:"#00c875", at_risk:"#e2445c", blocked:"#8a3ffc", on_hold:"#5f6b7a" };
-const STATUS_TEXT  = { planned:"#3a3a44", in_progress:"#ffffff", complete:"#ffffff", at_risk:"#ffffff", blocked:"#ffffff", on_hold:"#ffffff" };
+const STATUS_COLOR = { planned:"#94a3b8", in_progress:"#f59e0b", complete:"#12a56b", at_risk:"#e0485a", blocked:"#7c5cf0", on_hold:"#64748b" };
+const STATUS_TEXT  = { planned:"#3a3a44", in_progress:"#3f2a00", complete:"#ffffff", at_risk:"#ffffff", blocked:"#ffffff", on_hold:"#ffffff" };
 const MILE_BLUE = "#0073ea";
 const GROUP_COLORS = ["#0073ea","#00c875","#a25ddc","#fdab3d","#e2445c","#00d2d2","#ff642e","#579bfc","#037f4c","#9d50dd"];
 
@@ -546,6 +566,7 @@ function normalizeRoadmap(raw){
     id: raw.id || uid("rm"),
     title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
     subtitle: String(raw.subtitle || ""),
+    notes: String(raw.notes || ""),
     templateType: raw.templateType || "custom",
     // The natural-language description + template hint used to build this roadmap
     // via ✨ Build from description, kept so it can be revisited and refined.
@@ -654,9 +675,11 @@ function isDark(){ return document.documentElement.getAttribute("data-theme") ==
 function pal(){
   return isDark()
     ? { bg:"#1a212b", headerBand:"rgba(255,255,255,0.025)", laneAlt:"rgba(255,255,255,0.035)", grid:"#2b333f",
-        ink:"#e7ebf2", ink2:"#aeb6c4", mut:"#7e8796", today:"#4aa3ff", plannedOutline:"#4a5563", sheen:"#ffffff" }
+        ink:"#e7ebf2", ink2:"#aeb6c4", mut:"#7e8796", today:"#4aa3ff",
+        plannedFill:"rgba(148,163,184,0.14)", plannedStroke:"#5b6472", barStroke:"rgba(255,255,255,0.14)", elapsed:"rgba(0,0,0,0.24)", noteDot:"#aeb6c4" }
     : { bg:"#ffffff", headerBand:"rgba(20,28,50,0.022)", laneAlt:"rgba(20,28,50,0.028)", grid:"#e9ecf3",
-        ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea", plannedOutline:"#b9bcc9", sheen:"#ffffff" };
+        ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea",
+        plannedFill:"rgba(148,163,184,0.16)", plannedStroke:"#aab2c0", barStroke:"rgba(20,28,50,0.12)", elapsed:"rgba(0,0,0,0.16)", noteDot:"#8a90a0" };
 }
 const GA = { PADL:184, PADR:26, PADT:56, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
 // literal font stacks (no spaces) so PNG export — a detached SVG with no CSS vars — still renders text
@@ -802,8 +825,10 @@ function renderGantt(){
     if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:CW, height:box.h.toFixed(1), fill:P.laneAlt });
     out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:CW, y2:box.top.toFixed(1), stroke:P.grid, "stroke-width":1 });
     const lane = lanes[i];
-    out += svgEl("rect", { x:16, y:(box.top+8).toFixed(1), width:5, height:(box.h-16).toFixed(1), rx:2.5, fill:lane.color });
-    out += svgEl("text", { x:30, y:(box.top + box.h/2).toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+    // small lane dot for identity (keeps lane colour off the plot so status is the only bar colour)
+    const nameCy = box.top + box.h/2;
+    out += svgEl("circle", { cx:24, cy:nameCy.toFixed(1), r:4.5, fill:lane.color });
+    out += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
   });
 
   // today line + chip (drawn under items)
@@ -817,45 +842,57 @@ function renderGantt(){
     out += svgEl("text", { x:ccx.toFixed(1), y:(cy+ch/2+0.5).toFixed(1), fill:"#ffffff", "font-size":10, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.12em", "dominant-baseline":"middle" }, "TODAY");
   }
 
-  // items
+  // items. Each item is wrapped in a <g> carrying a <title> (native hover tooltip
+  // with the full label + note), so long labels and notes are always reachable.
   laneBox.forEach((box, i) => {
     box.lay.placed.forEach(v => {
       const it = v.it;
       const yTop = box.top + GA.lanePadTop + v.row*GA.rowUnit;
+      const note = (it.note || "").trim();
+      let g = "";
       if (it.kind === "milestone"){
-        const cx = xi(it.date), cy = yTop + GA.barH/2, r = 8;
+        const cx = xi(it.date), cy = yTop + GA.barH/2, r = 7;
         const col = STATUS_COLOR[it.status] || MILE_BLUE;
         const filled = it.status !== "planned";
-        // moat (opaque background casing) so the diamond never blends into a bar behind it;
-        // a white inner keyline on filled milestones keeps completed ones distinct on same-colour bars
-        out += mdiamond(cx, cy, r+3.5, { fill:P.bg });
-        out += mdiamond(cx, cy, r, { fill: filled ? col : P.bg, stroke:col, "stroke-width":2 });
-        if (filled) out += mdiamond(cx, cy, r-2.6, { fill:"none", stroke:"#ffffff", "stroke-width":1.4, "stroke-opacity":0.92 });
+        // moat (opaque casing) so the diamond never blends into a bar behind it; clean
+        // filled-vs-outlined distinction (no inner keyline) for a sharper marker
+        g += mdiamond(cx, cy, r+3, { fill:P.bg });
+        g += mdiamond(cx, cy, r, { fill: filled ? col : P.bg, stroke:col, "stroke-width":1.75 });
         const rightSpace = (GA.PADL+plotW) - cx;
         const labelRight = rightSpace > 120;
         const lx = labelRight ? cx + r + 6 : cx - r - 6;
-        out += svgEl("text", { x:lx.toFixed(1), y:(cy).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":600,
+        const labFill = it.status === "planned" ? P.mut : P.ink2;
+        g += svgEl("text", { x:lx.toFixed(1), y:(cy).toFixed(1), fill:labFill, "font-size":12, "font-family":F_SANS, "font-weight":600,
           "dominant-baseline":"middle", "text-anchor": labelRight ? "start" : "end" }, esc(it.label || "Milestone"));
+        if (note){ g += svgEl("circle", { cx:(cx).toFixed(1), cy:(cy - r - 3).toFixed(1), r:1.9, fill:P.noteDot }); }
       } else {
         let bx = xi(it.start), bxe = xi(it.end);
         let bw = Math.max(9, bxe - bx);
-        const col = STATUS_COLOR[it.status] || "#c4c4c4";
-        out += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:bw.toFixed(1), height:GA.barH, rx:7, fill:col,
-          stroke: it.status==="planned" ? P.plannedOutline : "none", "stroke-width": it.status==="planned"?1:0 });
-        if (it.status !== "planned"){
-          out += svgEl("rect", { x:(bx+1).toFixed(1), y:(yTop+1.5).toFixed(1), width:Math.max(1,bw-2).toFixed(1), height:(GA.barH*0.42).toFixed(1), rx:5, fill:P.sheen, "fill-opacity":0.18 });
+        const planned = it.status === "planned";
+        const col = STATUS_COLOR[it.status] || "#94a3b8";
+        // flat bar: solid fill (ghost outline for planned), hairline border, no gloss/shadow
+        g += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:bw.toFixed(1), height:GA.barH, rx:4,
+          fill: planned ? P.plannedFill : col, stroke: planned ? P.plannedStroke : P.barStroke, "stroke-width": planned ? 1.25 : 1 });
+        // elapsed-time shading on in-progress bars (start → today, clamped inside the bar)
+        if (it.status === "in_progress" && showToday){
+          const ex = Math.min(Math.max(x(todayMs), bx), bxe);
+          if (ex > bx + 0.75) g += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:(ex-bx).toFixed(1), height:GA.barH, rx:4, fill:P.elapsed });
         }
         const lab = it.label || "";
         if (lab){
           if (fitsInside(lab, bw)){
-            out += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:STATUS_TEXT[it.status]||"#3a3a44",
+            g += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill: planned ? P.ink2 : (STATUS_TEXT[it.status]||"#3a3a44"),
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           } else {
-            out += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
+            g += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           }
         }
+        if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: planned ? P.noteDot : "#ffffff", "fill-opacity": planned ? 1 : 0.85 }); }
       }
+      const tip = it.label || (it.kind==="milestone" ? "Milestone" : "");
+      const titleTxt = note ? (tip + " — " + note) : tip;
+      out += svgEl("g", {}, g + svgEl("title", {}, esc(titleTxt)));
     });
   });
 
@@ -996,6 +1033,7 @@ function renderEditor(){
         + '<button class="icon-btn" data-role="up" title="Move up">↑</button>'
         + '<button class="icon-btn" data-role="down" title="Move down">↓</button>'
         + '<button class="icon-btn" data-role="del" title="Delete">✕</button>'
+        + '<input class="note-inp" data-role="note" type="text" placeholder="Add a note or comment (optional)" value="'+esc(it.note||"")+'" />'
         + '</div>';
     });
     laneEl.innerHTML =
@@ -1035,6 +1073,7 @@ function onEditorInput(e){
   else if (role === "start"){ it.start = e.target.value; save(); renderGantt(); }
   else if (role === "end"){ it.end = e.target.value; save(); renderGantt(); }
   else if (role === "date"){ it.date = e.target.value; save(); renderGantt(); }
+  else if (role === "note"){ it.note = e.target.value; save(); renderGantt(); }
 }
 function onEditorChange(e){
   const role = e.target.dataset.role; if (!role) return;
@@ -1081,6 +1120,7 @@ function fullRender(){ renderGantt(); if (!readOnly) renderEditor(); }
 function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
+  { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
   if (readOnly) return;
   const pk = $("rmPicker"); pk.innerHTML = "";
   Object.values(store.roadmaps)
@@ -1145,15 +1185,40 @@ function exportPng(){
   if (!svg){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
   const vb = svg.viewBox.baseVal; const w = vb.width || svg.clientWidth, h = vb.height || svg.clientHeight;
   const scale = 2;
-  const clone = svg.cloneNode(true);
-  clone.setAttribute("width", w); clone.setAttribute("height", h);
-  const xml = new XMLSerializer().serializeToString(clone);
-  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  const P = pal();
+  const pad = 24;
+  const hasSub = !!(doc.subtitle && doc.subtitle.trim());
+  const headerH = hasSub ? 80 : 60;
+  const legendH = 46;
+  const totalH = Math.round(headerH + h + legendH);
+
+  // Header band: roadmap title + subtitle (left), date range (right) — so a shared
+  // PNG reads as a finished deliverable rather than a bare chart.
+  let hdr = svgEl("rect", { x:0, y:0, width:w, height:totalH, fill:P.bg });
+  hdr += svgEl("text", { x:pad, y:37, "font-family":F_SANS, "font-size":22, "font-weight":800, fill:P.ink }, esc(doc.title || "Roadmap"));
+  if (hasSub) hdr += svgEl("text", { x:pad, y:61, "font-family":F_SANS, "font-size":13.5, fill:P.ink2 }, esc(doc.subtitle));
+  hdr += svgEl("text", { x:(w-pad).toFixed(1), y:37, "text-anchor":"end", "font-family":F_MONO, "font-size":12.5, fill:P.mut }, esc($("tlRange").textContent || ""));
+  hdr += svgEl("line", { x1:pad, y1:(headerH-1), x2:(w-pad).toFixed(1), y2:(headerH-1), stroke:P.grid, "stroke-width":1 });
+
+  // Legend row (statuses + milestone) baked in beneath the timeline.
+  const ly = headerH + h + legendH/2;
+  let leg = ""; let lx = pad;
+  STATUSES.forEach(s => {
+    leg += svgEl("rect", { x:lx.toFixed(1), y:(ly-6).toFixed(1), width:12, height:12, rx:3, fill:STATUS_COLOR[s.v] });
+    leg += svgEl("text", { x:(lx+18).toFixed(1), y:ly.toFixed(1), "font-family":F_SANS, "font-size":12, fill:P.ink2, "dominant-baseline":"middle" }, esc(s.label));
+    lx += 18 + s.label.length*7 + 20;
+  });
+  leg += mdiamond(lx+6, ly, 6, { fill:MILE_BLUE });
+  leg += svgEl("text", { x:(lx+18).toFixed(1), y:ly.toFixed(1), "font-family":F_SANS, "font-size":12, fill:P.ink2, "dominant-baseline":"middle" }, "Milestone");
+
+  const composed = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+totalH+'" viewBox="0 0 '+w+' '+totalH+'">'
+    + hdr + '<g transform="translate(0,'+headerH+')">' + svg.innerHTML + '</g>' + leg + '</svg>';
+  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(composed);
   const img = new Image();
   img.onload = () => {
-    const cv = document.createElement("canvas"); cv.width = w*scale; cv.height = h*scale;
+    const cv = document.createElement("canvas"); cv.width = w*scale; cv.height = totalH*scale;
     const ctx = cv.getContext("2d");
-    ctx.fillStyle = pal().bg; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = P.bg; ctx.fillRect(0,0,cv.width,cv.height);
     ctx.setTransform(scale,0,0,scale,0,0); ctx.drawImage(img,0,0);
     try { download(slug(doc.title)+"-roadmap.png", dataUrlToBlob(cv.toDataURL("image/png"))); }
     catch(e){ topNote("err","PNG export failed: "+(e.message||e)); }
@@ -1310,7 +1375,7 @@ async function shareFlow(){
 /* ---------- read-only shared view (?s=token) ---------- */
 async function initShared(token){
   readOnly = true; document.body.classList.add("readonly");
-  $("titleIn").readOnly = true; $("subIn").readOnly = true;
+  $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   try {
     const client = await getSb();
     const { data, error } = await client.rpc("shared_roadmap", { p_token: token });
@@ -1346,6 +1411,7 @@ function wire(){
   // title / subtitle
   $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
   $("subIn").addEventListener("input", e => { doc.subtitle = e.target.value; save(); });
+  $("rmNotes").addEventListener("input", e => { doc.notes = e.target.value; save(); });
   // view mode
   $("segOverview").addEventListener("click", () => setMode("overview"));
   $("segEditor").addEventListener("click", () => setMode("editor"));
