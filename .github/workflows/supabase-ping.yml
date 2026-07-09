@@ -1,0 +1,41 @@
+name: Supabase keep-alive
+
+# Free Supabase projects pause after ~7 days of inactivity. This hits the
+# project's REST API once a day so the database stays warm. It uses only the
+# public *publishable* key (the same one already shipped in the client HTML),
+# so there is no secret to configure. Row Level Security still protects data —
+# the request just needs to reach Postgres to count as activity.
+
+on:
+  schedule:
+    - cron: "23 6 * * *"   # daily at 06:23 UTC
+  workflow_dispatch: {}     # allow manual runs from the Actions tab
+
+concurrency:
+  group: supabase-ping
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          URL="https://hqqwlkmggwgaoiyzgrhy.supabase.co"
+          KEY="sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u"
+          # a real table query so the request reaches Postgres (PostgREST -> DB)
+          code=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
+            -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            "$URL/rest/v1/reports?select=id&limit=1" || echo "000")
+          echo "reports query -> HTTP $code"
+          # fallback: the REST root also introspects the schema from the DB
+          root=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
+            -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" "$URL/rest/v1/" || echo "000")
+          echo "rest root -> HTTP $root"
+          if [ "$code" = "000" ] && [ "$root" = "000" ]; then
+            echo "::error::No response from Supabase (both requests failed)"
+            exit 1
+          fi
+          echo "Supabase responded — activity registered, project stays warm."
