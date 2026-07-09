@@ -201,8 +201,9 @@ cloud sync and shareable links.
   time — so you can track several programs side by side. Click a card to open it; **Editor** tab
   edits the active one. Toggle views from the header.
 - **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
-  (Planned · In progress · Complete · At risk · Blocked · On hold) and milestone diamonds, with a
-  legend. Sliding light/dark toggle.
+  (Planned · In progress · Complete · At risk · Blocked · On hold) and outlined milestone diamonds,
+  with a legend. **Zoom** the time axis 50–300% and scroll horizontally. Sliding light/dark toggle.
+  New phases and milestones are added after the lane's last item so they don't overlap.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
   date), each with one of six status chips. Lanes get cycling group colors.
 - **Saved in your browser** — multiple roadmaps persist to `localStorage` (key
@@ -358,6 +359,7 @@ retains release authority over the use of force.
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
 | `.github/workflows/pages.yml` | Publishes the site to GitHub Pages on push to `main`. |
+| `.github/workflows/supabase-ping.yml` | Daily scheduled job that pings the Supabase REST API (public publishable key) so the free project doesn't pause from inactivity. |
 | `embed-snippet.html` | Optional `<a><img></a>` if you ever want to link to the site from elsewhere. |
 
 > **Animated banner:** use `poster.gif` as a regular `<img>` wherever you want motion

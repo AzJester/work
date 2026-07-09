@@ -123,7 +123,12 @@
   .tl-scroll { width:100%; overflow-x:auto; padding:10px 6px 6px; }
   .tl-scroll::-webkit-scrollbar { height:10px; }
   .tl-scroll::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:999px; border:3px solid var(--card); }
-  svg.gantt { display:block; width:100%; height:auto; min-width:660px; }
+  svg.gantt { display:block; width:100%; height:auto; }
+  .tl-tools { display:flex; align-items:center; gap:12px; }
+  .zoomer { display:inline-flex; align-items:center; background:var(--bg); border:1px solid var(--line-2); border-radius:8px; padding:2px; gap:1px; }
+  .zbtn { font-family:var(--disp); font-size:14px; font-weight:700; color:var(--ink-2); background:transparent; border:none; border-radius:6px; padding:3px 9px; cursor:pointer; line-height:1.1; }
+  .zbtn:hover { color:var(--accent); background:var(--card); }
+  .zbtn.zlabel { font-family:var(--mono); font-size:11px; font-weight:600; min-width:46px; text-align:center; }
   .legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:11px 16px 13px; border-top:1px solid var(--line); background:var(--bg); }
   .legend .li { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
   .legend .sw { width:22px; height:11px; border-radius:var(--pill); display:inline-block; }
@@ -176,7 +181,7 @@
   body.mode-overview .editor-view { display:none !important; }
   #overviewTitle { display:none; }
   body.mode-overview #overviewTitle { display:block; }
-  .ov-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:16px; }
+  .ov-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%,300px),1fr)); gap:16px; }
   .rm-card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm);
     padding:16px 16px 14px 18px; cursor:pointer; display:flex; flex-direction:column; gap:10px; overflow:hidden;
     transition:box-shadow .15s, transform .1s, border-color .15s; }
@@ -259,6 +264,7 @@
     body { background:#fff; }
     .toolbar, .editor-card, .add-lane, .draft-banner, .theme-switch, .mast-tools, .app-only { display:none !important; }
     body.mode-overview #tlCard { display:block !important; }
+    body.mode-overview #editorTitle { display:block !important; }
     .wrap { max-width:none; padding:0; }
     .card { border:none; box-shadow:none; }
     .card .card-head { border-bottom:1px solid #e2e2e2; }
@@ -352,7 +358,14 @@
   <div class="card editor-view" id="tlCard">
     <div class="card-head">
       <h2>Timeline</h2>
-      <span class="mono" id="tlRange"></span>
+      <div class="tl-tools">
+        <span class="mono" id="tlRange"></span>
+        <div class="zoomer app-only" role="group" aria-label="Zoom timeline">
+          <button id="zoomOut" class="zbtn" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+          <button id="zoomReset" class="zbtn zlabel" type="button" title="Reset zoom">100%</button>
+          <button id="zoomIn" class="zbtn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+        </div>
+      </div>
     </div>
     <div id="draftBanner" class="draft-banner app-only">
       <span class="grow"><b>Draft from your description.</b> Review and edit below, or discard to restore your previous roadmap.</span>
@@ -489,6 +502,7 @@ function uid(prefix){ _seq++; return prefix + "_" + Date.now().toString(36) + _s
 let store = { version:1, activeId:null, roadmaps:{} };
 let doc = null;                 // active roadmap
 let mode = "editor";            // "editor" | "overview"
+let zoom = 1;                   // timeline horizontal zoom (0.5–3)
 let saveTimer = null;
 let session = null;             // supabase auth session (cloud)
 let sb = null;                  // lazily-created supabase client
@@ -640,7 +654,7 @@ function pal(){
     : { bg:"#ffffff", headerBand:"rgba(20,28,50,0.022)", laneAlt:"rgba(20,28,50,0.028)", grid:"#e9ecf3",
         ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea", plannedOutline:"#b9bcc9", sheen:"#ffffff" };
 }
-const GA = { CW:1160, PADL:184, PADR:26, PADT:56, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
+const GA = { PADL:184, PADR:26, PADT:56, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
 // literal font stacks (no spaces) so PNG export — a detached SVG with no CSS vars — still renders text
 const F_SANS = "-apple-system,Roboto,Helvetica,Arial,sans-serif";
 const F_MONO = "ui-monospace,Menlo,Consolas,monospace";
@@ -688,6 +702,12 @@ function svgEl(tag, attrs, inner){
   s += inner==null ? "/>" : ">"+inner+"</"+tag+">";
   return s;
 }
+// a rotated square (diamond marker) centred at (cx,cy) with the given half-size
+function mdiamond(cx, cy, half, attrs){
+  return svgEl("rect", Object.assign({ x:(cx-half).toFixed(1), y:(cy-half).toFixed(1),
+    width:(half*2).toFixed(1), height:(half*2).toFixed(1), rx:2.5,
+    transform:"rotate(45 "+cx.toFixed(1)+" "+cy.toFixed(1)+")" }, attrs));
+}
 function fitsInside(label, widthPx){ return (String(label).length * 6.7 + 18) <= widthPx; }
 
 function renderGantt(){
@@ -701,7 +721,12 @@ function renderGantt(){
   }
   const P = pal();
   const { t0, t1 } = computeDomain(lanes);
-  const plotW = GA.CW - GA.PADL - GA.PADR;
+  // horizontal zoom: render the SVG at an explicit pixel width so rows keep a constant height
+  // while the time axis stretches; .tl-scroll then scrolls when the timeline exceeds the viewport.
+  const scrollEl = document.querySelector(".tl-scroll");
+  const cwv = (scrollEl && scrollEl.clientWidth) || 0;
+  const CW = Math.max(480, Math.round((cwv > 0 ? cwv - 12 : 1160) * zoom));
+  const plotW = CW - GA.PADL - GA.PADR;
   const span = Math.max(1, t1 - t0);
   const x = ms => GA.PADL + (ms - t0) / span * plotW;
   const xi = iso => x(msOf(iso));
@@ -719,9 +744,9 @@ function renderGantt(){
 
   let out = "";
   // background + header band
-  out += svgEl("rect", { x:0, y:0, width:GA.CW, height:CH, fill:P.bg, rx:4 });
-  out += svgEl("rect", { x:0, y:0, width:GA.CW, height:bandBot, fill:P.headerBand });
-  out += svgEl("line", { x1:0, y1:bandBot, x2:GA.CW, y2:bandBot, stroke:P.grid, "stroke-width":1 });
+  out += svgEl("rect", { x:0, y:0, width:CW, height:CH, fill:P.bg, rx:4 });
+  out += svgEl("rect", { x:0, y:0, width:CW, height:bandBot, fill:P.headerBand });
+  out += svgEl("line", { x1:0, y1:bandBot, x2:CW, y2:bandBot, stroke:P.grid, "stroke-width":1 });
 
   // month gridlines + labels
   let m = new Date(t0); let prevYear = null;
@@ -741,8 +766,8 @@ function renderGantt(){
 
   // lane backgrounds + names + dividers
   laneBox.forEach((box, i) => {
-    if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:GA.CW, height:box.h.toFixed(1), fill:P.laneAlt });
-    out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:GA.CW, y2:box.top.toFixed(1), stroke:P.grid, "stroke-width":1 });
+    if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:CW, height:box.h.toFixed(1), fill:P.laneAlt });
+    out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:CW, y2:box.top.toFixed(1), stroke:P.grid, "stroke-width":1 });
     const lane = lanes[i];
     out += svgEl("rect", { x:16, y:(box.top+8).toFixed(1), width:5, height:(box.h-16).toFixed(1), rx:2.5, fill:lane.color });
     out += svgEl("text", { x:30, y:(box.top + box.h/2).toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
@@ -768,12 +793,11 @@ function renderGantt(){
         const cx = xi(it.date), cy = yTop + GA.barH/2, r = 8;
         const col = STATUS_COLOR[it.status] || MILE_BLUE;
         const filled = it.status !== "planned";
-        // soft halo
-        out += svgEl("rect", { x:(cx-r-3).toFixed(1), y:(cy-r-3).toFixed(1), width:(r+3)*2, height:(r+3)*2, rx:3,
-          transform:"rotate(45 "+cx.toFixed(1)+" "+cy.toFixed(1)+")", fill:col, "fill-opacity":0.16 });
-        out += svgEl("rect", { x:(cx-r).toFixed(1), y:(cy-r).toFixed(1), width:r*2, height:r*2, rx:2.5,
-          transform:"rotate(45 "+cx.toFixed(1)+" "+cy.toFixed(1)+")",
-          fill: filled ? col : P.bg, stroke: col, "stroke-width":2.25 });
+        // moat (opaque background casing) so the diamond never blends into a bar behind it;
+        // a white inner keyline on filled milestones keeps completed ones distinct on same-colour bars
+        out += mdiamond(cx, cy, r+3.5, { fill:P.bg });
+        out += mdiamond(cx, cy, r, { fill: filled ? col : P.bg, stroke:col, "stroke-width":2 });
+        if (filled) out += mdiamond(cx, cy, r-2.6, { fill:"none", stroke:"#ffffff", "stroke-width":1.4, "stroke-opacity":0.92 });
         const rightSpace = (GA.PADL+plotW) - cx;
         const labelRight = rightSpace > 120;
         const lx = labelRight ? cx + r + 6 : cx - r - 6;
@@ -802,7 +826,7 @@ function renderGantt(){
     });
   });
 
-  host.innerHTML = '<svg class="gantt" viewBox="0 0 '+GA.CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
+  host.innerHTML = '<svg class="gantt" style="width:'+CW+'px;min-width:0" viewBox="0 0 '+CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
   const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()]+" "+d.getFullYear(); };
   $("tlRange").textContent = fmt(t0) + " – " + fmt(t1 - 864e5);
 }
@@ -905,7 +929,7 @@ function setMode(m){
   $("segOverview").setAttribute("aria-pressed", mode === "overview" ? "true" : "false");
   $("segEditor").setAttribute("aria-pressed", mode === "editor" ? "true" : "false");
   store.mode = mode; saveNow();
-  if (mode === "overview") renderOverview(); else fullRender();
+  if (mode === "overview"){ renderGantt(); renderOverview(); } else fullRender();
 }
 function openRoadmap(id){ switchTo(id); setMode("editor"); }
 
@@ -959,6 +983,13 @@ function renderEditor(){
 /* ---------- editor event delegation ---------- */
 function findLane(id){ return doc.lanes.find(l => l.id===id); }
 function findItem(lane, id){ return lane.items.find(it => it.id===id); }
+// Where a newly-added item should begin so it doesn't overlap existing ones:
+// the end of the lane's latest dated item (sequential), or today if the lane is empty.
+function laneNextStart(lane){
+  let mx = null;
+  lane.items.forEach(it => { if (!itemValid(it)) return; const e = msOf(itemEnd(it)); mx = (mx===null) ? e : Math.max(mx, e); });
+  return mx === null ? todayIso() : toIso(new Date(mx));
+}
 
 function onEditorInput(e){
   const role = e.target.dataset.role; if (!role) return;
@@ -1000,8 +1031,8 @@ function onEditorClick(e){
   if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
   if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
   if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
-  if (role === "addBar"){ const t = todayIso(); lane.items.push(normItem({ kind:"bar", label:"", start:t, end:addWeeksIso(t,3), status:"planned" })); save(); fullRender(); return; }
-  if (role === "addMile"){ lane.items.push(normItem({ kind:"milestone", label:"", date:todayIso(), status:"planned" })); save(); fullRender(); return; }
+  if (role === "addBar"){ const s = laneNextStart(lane); lane.items.push(normItem({ kind:"bar", label:"", start:s, end:addWeeksIso(s,3), status:"planned" })); save(); fullRender(); return; }
+  if (role === "addMile"){ lane.items.push(normItem({ kind:"milestone", label:"", date:laneNextStart(lane), status:"planned" })); save(); fullRender(); return; }
   const itemEl = btn.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
   const ii = lane.items.indexOf(it);
@@ -1051,6 +1082,7 @@ function deleteRoadmapById(id){
   const d = store.roadmaps[id]; if (!d) return;
   if (!confirm("Delete roadmap “"+(d.title||"Untitled")+"”? This can't be undone.")) return;
   delete store.roadmaps[id];
+  if (draftSnapshot && draftSnapshot.draftId === id){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
   if (store.activeId === id){ store.activeId = Object.keys(store.roadmaps)[0]; doc = store.roadmaps[store.activeId]; }
   saveNow(); syncHeader();
   if (mode === "overview") renderOverview(); else fullRender();
@@ -1133,7 +1165,7 @@ async function generateFromDescription(){
     const draft = normalizeRoadmap(raw);
     if (!draft.lanes.length) throw new Error("The model didn't return any lanes. Try adding more detail to your description.");
     draft.id = uid("rm"); if (draft.templateType==="custom" && hint) draft.templateType = hint;
-    draftSnapshot = { prevActiveId: store.activeId };
+    draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id };
     store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
     saveNow(); syncHeader(); setMode("editor"); fullRender();
     $("draftBanner").classList.add("show");
@@ -1146,10 +1178,15 @@ async function generateFromDescription(){
 }
 function keepDraft(){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
 function discardDraft(){
-  if (!draftSnapshot) { $("draftBanner").classList.remove("show"); return; }
-  const drafted = store.activeId;
-  if (store.roadmaps[draftSnapshot.prevActiveId]){ delete store.roadmaps[drafted]; store.activeId = draftSnapshot.prevActiveId; doc = store.roadmaps[store.activeId]; }
-  draftSnapshot = null; saveNow(); syncHeader(); fullRender(); $("draftBanner").classList.remove("show");
+  const snap = draftSnapshot; draftSnapshot = null;
+  $("draftBanner").classList.remove("show");
+  if (!snap || !snap.draftId) return;
+  // only ever delete the exact draft we created, and only if the roadmap to restore still exists
+  if (store.roadmaps[snap.draftId] && store.roadmaps[snap.prevActiveId]){
+    delete store.roadmaps[snap.draftId];
+    store.activeId = snap.prevActiveId; doc = store.roadmaps[snap.prevActiveId];
+    saveNow(); syncHeader(); fullRender();
+  }
 }
 
 /* ---------- Cloud auth + sync ---------- */
@@ -1252,7 +1289,11 @@ function applyTheme(t){
   if (btn) btn.setAttribute("aria-checked", t === "dark" ? "true" : "false");
 }
 function initTheme(){ let t = "light"; try { t = localStorage.getItem(THEME_KEY) || (matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light"); } catch(_){} applyTheme(t); }
-function toggleTheme(){ const t = isDark() ? "light":"dark"; applyTheme(t); try { localStorage.setItem(THEME_KEY, t); } catch(_){} if (mode === "overview") renderOverview(); else renderGantt(); }
+function toggleTheme(){ const t = isDark() ? "light":"dark"; applyTheme(t); try { localStorage.setItem(THEME_KEY, t); } catch(_){} renderGantt(); if (mode === "overview") renderOverview(); }
+
+/* ---------- timeline zoom ---------- */
+function clampZoom(z){ return Math.min(3, Math.max(0.5, Math.round(z*20)/20)); }
+function setZoom(z){ zoom = clampZoom(z); const l = $("zoomReset"); if (l) l.textContent = Math.round(zoom*100)+"%"; renderGantt(); }
 
 /* =========================================================================
    Wire up
@@ -1305,6 +1346,13 @@ function wire(){
   $("cloudModal").addEventListener("click", e => { if (e.target === $("cloudModal")) closeCloud(); });
   // theme
   $("themeBtn").addEventListener("click", toggleTheme);
+  // zoom
+  $("zoomIn").addEventListener("click", () => setZoom(zoom + 0.25));
+  $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.25));
+  $("zoomReset").addEventListener("click", () => setZoom(1));
+  // re-fit the timeline to the viewport on resize (zoom is relative to available width)
+  let rzTimer = null;
+  window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(() => { renderGantt(); if (mode === "overview") renderOverview(); }, 150); });
   // resilience
   window.addEventListener("beforeunload", saveNow);
 }
