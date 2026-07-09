@@ -248,6 +248,11 @@ cloud sync and shareable links.
     tool-use so the model returns exactly this shape (the client normalizes/repairs it too).
   - If the function isn't deployed the page degrades gracefully — the button shows a clear note
     and the offline paths keep working.
+- **AI narrative (`roadmap-summary`)** — powers the **✨ Write narrative** button in the
+  *Progress summary* card: it turns the computed progress facts into a short prose exec summary.
+  Deploy `supabase functions deploy roadmap-summary`; it reuses the **same** `ANTHROPIC_API_KEY`
+  and `ALLOWED_EMAILS` secrets as `build-roadmap` (set once, covers both). See its
+  [README](supabase/functions/roadmap-summary/README.md). The free computed summary shows without it.
 - **Cloud sync + share** — provision two tables + a token-gated read function (RLS on):
   ```sql
   create table roadmaps (

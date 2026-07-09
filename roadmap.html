@@ -174,6 +174,12 @@
   .summary-body .sum-row b { color:var(--ink); font-weight:700; }
   .summary-body .sum-row.warn b { color:var(--err); }
   .summary-body .sum-empty { color:var(--mut); }
+  .card-head .sum-actions { display:flex; align-items:center; gap:8px; }
+  .summary-narrative { margin:0 16px 16px; padding:12px 14px; border-radius:8px; background:var(--accent-soft);
+    border:1px solid var(--line-2); font-size:14px; line-height:1.6; color:var(--ink); }
+  .summary-narrative .nar-lbl { display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:5px; }
+  .summary-narrative.err { background:var(--err-bg); border-color:transparent; color:var(--err); }
   .rm-notes { width:100%; min-height:76px; resize:vertical; font-family:inherit; font-size:13.5px; line-height:1.5; color:var(--ink);
     background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; }
   .rm-notes::placeholder { color:var(--mut); }
@@ -442,9 +448,13 @@
   <div class="card editor-view" id="summaryCard" hidden>
     <div class="card-head">
       <h2>Progress summary</h2>
-      <button id="summaryCopy" class="btn ghost sm app-only" type="button">Copy</button>
+      <div class="sum-actions">
+        <button id="summaryAiBtn" class="btn sm app-only" type="button" hidden>✨ Write narrative</button>
+        <button id="summaryCopy" class="btn ghost sm app-only" type="button">Copy</button>
+      </div>
     </div>
     <div class="summary-body" id="summaryBody"></div>
+    <div class="summary-narrative" id="summaryNarrative" hidden></div>
   </div>
 
   <!-- roadmap notes -->
@@ -816,6 +826,7 @@ function fitsInside(label, widthPx){ return (String(label).length * 6.7 + 18) <=
 
 /* ---------- auto progress summary (computed from the roadmap, no AI) ---------- */
 let lastSummaryText = "";
+let lastSummaryFacts = null;
 function renderSummary(){
   const card = $("summaryCard"); if (!card) return;
   const body = $("summaryBody");
@@ -871,6 +882,41 @@ function renderSummary(){
   if (onHold.length)    tl.push("On hold: " + onHold.join(", "));
   tl.push("Overdue: " + (overdue.length ? overdue.length + " (" + labelsOf(overdue).join(", ") + ")" : "none"));
   lastSummaryText = tl.join("\n");
+  // Structured facts the AI narrative phrases (numbers are computed here, not by the model).
+  lastSummaryFacts = {
+    title: doc.title || "Untitled", subtitle: doc.subtitle || "", timeframe: range,
+    totalItems: total, percentComplete: pct, completeCount: complete,
+    counts: STATUSES.reduce((o, s) => { o[s.v] = by[s.v]; return o; }, {}),
+    inProgress: inProg, atRisk, blocked, onHold,
+    nextMilestones: nextMiles.map(m => ({ label: m.label || "Milestone", date: fmtD(m.date) })),
+    overdue: labelsOf(overdue),
+  };
+}
+async function generateNarrative(){
+  const out = $("summaryNarrative"); if (!out) return;
+  if (!session){
+    out.hidden = false; out.className = "summary-narrative err";
+    out.innerHTML = 'Please <b>sign in</b> to generate an AI narrative — it runs on the owner’s API key.';
+    return;
+  }
+  if (!lastSummaryFacts) return;
+  const btn = $("summaryAiBtn"); const orig = btn.textContent; btn.disabled = true; btn.textContent = "Writing…";
+  out.hidden = false; out.className = "summary-narrative";
+  out.innerHTML = '<span class="nar-lbl">Narrative</span><span class="spin"></span> Asking Claude to summarize…';
+  try {
+    const client = await getSb();
+    const { data, error } = await client.functions.invoke("roadmap-summary", { body:{ facts:lastSummaryFacts, today:todayIso() } });
+    if (error){ let msg = error.message || "Request failed."; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){} throw new Error(msg); }
+    if (data && data.error) throw new Error(data.error);
+    const text = data && data.summary ? data.summary : "";
+    if (!text) throw new Error("Empty summary returned.");
+    out.className = "summary-narrative";
+    out.innerHTML = '<span class="nar-lbl">Narrative</span>' + esc(text);
+  } catch(e){
+    out.className = "summary-narrative err";
+    out.innerHTML = '<b>Couldn’t generate a narrative.</b> ' + esc(e.message || String(e))
+      + '<br><br>This runs in a Supabase Edge Function named <b>roadmap-summary</b> — deploy it (it uses the same <b>ANTHROPIC_API_KEY</b> and <b>ALLOWED_EMAILS</b> lock as the AI builder).';
+  } finally { btn.disabled = false; btn.textContent = orig; }
 }
 function renderGantt(){
   renderSummary();
@@ -1252,7 +1298,7 @@ function syncHeader(){
 /* =========================================================================
    Roadmap CRUD (local)
    ========================================================================= */
-function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); }
+function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); { const n = $("summaryNarrative"); if (n){ n.hidden = true; n.innerHTML = ""; } } store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); }
 function newRoadmap(){
   const d = normalizeRoadmap({ title:"Untitled roadmap", templateType:"custom", lanes:[{ name:"Phase 1", items:[] }] });
   store.roadmaps[d.id] = d; switchTo(d.id); $("titleIn").focus(); $("titleIn").select();
@@ -1446,7 +1492,7 @@ function reflectCloudUi(){
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
   $("cloudEmail").hidden = !on; $("cloudEmail").textContent = on ? (session.user.email||"") : "";
   // AI + publish + save/open/share are owner-only (they run on the owner's key / write data)
-  ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   reflectPublicBtn();
 }
 function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
@@ -1668,6 +1714,7 @@ function wire(){
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
   $("expPng").addEventListener("click", exportPng);
   $("printBtn").addEventListener("click", () => window.print());
+  $("summaryAiBtn").addEventListener("click", generateNarrative);
   $("summaryCopy").addEventListener("click", () => {
     if (!lastSummaryText) return;
     try { navigator.clipboard.writeText(lastSummaryText); } catch(_){ }
