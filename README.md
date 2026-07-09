@@ -179,6 +179,80 @@ How it stays safe: the page only ever calls one **token-gated, read-only** datab
 (`shared_dashboard`) that returns *only* the link owner's data. No write access is exposed, and
 every table stays protected by Row Level Security — the share link is the single, revocable door.
 
+## Roadmap Builder
+
+A standalone page for building **project roadmaps** — pick a starter template, fill out a form,
+or describe the project in plain language and let Claude draft it — then edit lanes, milestones,
+statuses and dates on a clean Monday-style timeline. Works offline out of the box; sign-in adds
+cloud sync and shareable links.
+
+### → https://azjester.github.io/work/roadmap.html
+
+- **Two ways to build:**
+  - **Templates / form** — five starter roadmaps (**Software Dev (Agile/SDLC)**, **Product
+    Development**, **Business Dev / GTM Campaign**, **Data &amp; Analytics program**, **Hiring /
+    team build**) pre-fill phases and milestones dated relative to today. Add/edit/reorder
+    lanes, phases (bars), and milestones (diamonds) inline. No account, no server.
+  - **✨ Build from description** — type what you're planning (phases, rough dates) and Claude
+    returns a structured roadmap you can edit or discard. Runs server-side in a Supabase Edge
+    Function (`build-roadmap`) so the API key never reaches the browser.
+- **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** line, color-coded status
+  (Planned · In progress · Complete · At risk) and milestone diamonds, with a legend. Dark mode.
+- **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
+  date), each with a status chip. Lanes get cycling group colors.
+- **Saved in your browser** — multiple roadmaps persist to `localStorage` (key
+  `roadmap_builder_v1`); a picker switches between them (New / Duplicate / Delete).
+- **Exports** — **JSON** (round-trips via Import), **PNG** (the timeline as an image), and
+  **Print / PDF** (timeline only, light theme).
+- **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
+  (`roadmap.html?s=<token>`) for anyone to view without a login, reusing the same token-gated,
+  read-only pattern as the leadership dashboard.
+
+**One-time setup (only for the AI and cloud features — the template/form path needs none):**
+
+- **AI (`build-roadmap`)** — deploy a Supabase Edge Function named `build-roadmap` and set an
+  `ANTHROPIC_API_KEY` secret (reuses the same key/model env as `extract-tasks`; override the
+  model with `ANTHROPIC_MODEL`). Like `extract-tasks`/`weekly-summary`, the **function source is
+  not in this repo** — it lives in your Supabase project. Contract:
+  - **Request** `{ prompt, today: "YYYY-MM-DD", templateHint }`
+  - **Response** `{ roadmap: { title, subtitle?, lanes: [ { name, items: [
+    {kind:"bar", label, start:"YYYY-MM-DD", end:"YYYY-MM-DD", status},
+    {kind:"milestone", label, date:"YYYY-MM-DD", status} ] } ] } }`
+  - `status` ∈ `planned | in_progress | complete | at_risk`. Use Claude tool-use with a strict
+    `input_schema` so the model returns exactly this shape (the client normalizes/repairs it too).
+  - If the function isn't deployed the page degrades gracefully — the button shows a clear note
+    and the offline paths keep working.
+- **Cloud sync + share** — provision two tables + a token-gated read function (RLS on):
+  ```sql
+  create table roadmaps (
+    id text primary key, user_id uuid not null references auth.users(id) default auth.uid(),
+    title text, subtitle text, template_type text, doc jsonb not null,
+    created_at timestamptz default now(), updated_at timestamptz default now());
+  alter table roadmaps enable row level security;
+  create policy "own roadmaps" on roadmaps for all
+    using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+  create table roadmap_shares (
+    token uuid primary key default gen_random_uuid(),
+    roadmap_id text not null references roadmaps(id) on delete cascade,
+    user_id uuid not null default auth.uid(), label text, revoked boolean default false,
+    created_at timestamptz default now());
+  alter table roadmap_shares enable row level security;
+  create policy "own shares" on roadmap_shares for all
+    using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+  -- token-gated, read-only: returns just the shared roadmap's doc
+  create or replace function shared_roadmap(p_token uuid)
+  returns table (doc jsonb) language sql security definer set search_path = public as $$
+    select r.doc from roadmap_shares s join roadmaps r on r.id = s.roadmap_id
+    where s.token = p_token and s.revoked = false;
+  $$;
+  grant execute on function shared_roadmap(uuid) to anon, authenticated;
+  ```
+
+The page loads the `@supabase/supabase-js` client from a CDN **only** when you use a cloud/AI
+feature; the template, form, and export paths make **no network calls**.
+
 ## Astrion Division Landing Page (team review build)
 
 A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` — same
@@ -273,6 +347,7 @@ retains release authority over the use of force.
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
+| `roadmap.html` | The **Roadmap Builder** — build project roadmaps from templates, a form, or a plain-language description; edit lanes/milestones/statuses on a timeline; export JSON/PNG/PDF; optional cloud sync + read-only share links. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |

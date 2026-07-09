@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Roadmap Builder</title>
+<meta name="description" content="Build clean project roadmaps — from a template, a form, or a plain-language description. Add lanes, milestones, statuses and dates, then export or share a professional timeline." />
+<style>
+  :root {
+    --bg:#f6f7fb; --card:#ffffff; --line:#e6e9ef; --line-2:#d0d4e4;
+    --ink:#323338; --ink-2:#676879; --mut:#9699a6;
+    --accent:#0073ea; --accent-2:#0060b9; --accent-soft:#e6f1fd; --ring:rgba(0,115,234,0.28);
+    --s-planned:#c4c4c4; --s-progress:#fdab3d; --s-complete:#00c875; --s-risk:#e2445c; --s-milestone:#0073ea;
+    --ok:#00854d; --ok-bg:#e4f7ee; --err:#c2362b; --err-bg:#fdecea; --info:#0060b9; --info-bg:#e6f1fd;
+    --input-bg:#ffffff;
+    --radius:10px; --radius-sm:6px; --pill:999px;
+    --shadow-sm:0 1px 2px rgba(20,28,50,0.06), 0 1px 1px rgba(20,28,50,0.04);
+    --shadow:0 6px 20px -8px rgba(22,30,55,0.18), 0 2px 6px -3px rgba(22,30,55,0.10);
+    --shadow-lg:0 24px 60px -28px rgba(22,30,55,0.40);
+    --disp:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono","Segoe UI Mono","Roboto Mono",Menlo,Consolas,monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg:#12161d; --card:#1b212b; --line:#2b333f; --line-2:#39424f;
+    --ink:#e7ebf2; --ink-2:#aeb6c4; --mut:#7e8796;
+    --accent:#4aa3ff; --accent-2:#2b8bff; --accent-soft:#14243b; --ring:rgba(74,163,255,0.35);
+    --ok:#46d08a; --ok-bg:#12271d; --err:#ff8275; --err-bg:#2c1714; --info:#8ab8ff; --info-bg:#14243b;
+    --input-bg:#222a35;
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
+    --shadow:0 8px 22px -10px rgba(0,0,0,0.6);
+    --shadow-lg:0 24px 60px -28px rgba(0,0,0,0.7);
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; }
+  body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
+    background:var(--bg); }
+  .wrap { max-width:1240px; margin:0 auto; padding:22px clamp(12px,3vw,30px) 72px; }
+  a { color:var(--accent); }
+
+  /* ---------- masthead ---------- */
+  .mast { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .brand { display:flex; align-items:flex-start; gap:14px; min-width:0; flex:1 1 420px; }
+  .brand .mark { width:44px; height:44px; border-radius:12px; flex:0 0 auto; margin-top:4px;
+    background:linear-gradient(145deg, #4aa3ff, var(--accent)); color:#fff;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 8px 18px -6px rgba(0,115,234,0.55); }
+  .brand .mark svg { width:26px; height:26px; display:block; }
+  .titlewrap { min-width:0; flex:1 1 auto; }
+  .eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); margin:2px 0 4px; }
+  input.title-in { font-family:var(--disp); font-weight:800; font-size:26px; letter-spacing:-0.02em; color:var(--ink);
+    border:1px solid transparent; background:transparent; border-radius:8px; padding:2px 6px; margin-left:-6px; width:100%; }
+  input.title-in:hover { border-color:var(--line); }
+  input.title-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+  input.sub-in { font-family:var(--disp); font-size:14px; color:var(--ink-2); border:1px solid transparent; background:transparent;
+    border-radius:6px; padding:2px 6px; margin-left:-6px; width:100%; margin-top:2px; }
+  input.sub-in:hover { border-color:var(--line); }
+  input.sub-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+
+  /* ---------- buttons ---------- */
+  .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:#fff;
+    background:var(--accent); border:1px solid var(--accent); padding:8px 14px; border-radius:8px; cursor:pointer; white-space:nowrap;
+    box-shadow:var(--shadow-sm); transition:transform .1s, filter .15s, box-shadow .15s; }
+  .btn:hover { filter:brightness(1.06); transform:translateY(-1px); }
+  .btn:active { transform:translateY(0); }
+  .btn:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
+  .btn:disabled { opacity:.5; cursor:default; transform:none; filter:none; }
+  .btn.ghost { color:var(--ink-2); background:var(--card); border-color:var(--line-2); }
+  .btn.ghost:hover { color:var(--accent); border-color:var(--accent); filter:none; }
+  .btn.sm { font-size:12px; padding:6px 10px; }
+  .btn.danger { color:var(--err); background:var(--card); border-color:var(--line-2); }
+  .btn.danger:hover { border-color:var(--err); filter:none; }
+  .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0;
+    border-radius:7px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); cursor:pointer; font-size:14px; }
+  .icon-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .icon-btn:disabled { opacity:.35; cursor:default; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:10px 12px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
+  .toolbar .sep { width:1px; align-self:stretch; background:var(--line); margin:2px 2px; }
+  .toolbar .grow { flex:1 1 auto; }
+  select.sel, input.txt { font-family:var(--disp); font-size:13px; color:var(--ink); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:8px; padding:7px 10px; cursor:pointer; }
+  select.sel:focus, input.txt:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .cloud-email { font-size:12px; color:var(--ink-2); font-family:var(--mono); }
+
+  /* ---------- cards ---------- */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm); margin-bottom:16px; }
+  .card .card-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  .card .card-head h2 { margin:0; font-size:13px; font-weight:700; letter-spacing:0.02em; color:var(--ink); text-transform:uppercase; }
+  .card .card-head .mono { font-family:var(--mono); font-size:11px; color:var(--mut); }
+
+  /* ---------- timeline ---------- */
+  .tl-scroll { width:100%; overflow-x:auto; padding:8px 4px 4px; }
+  svg.gantt { display:block; width:100%; height:auto; min-width:640px; }
+  .legend { display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:10px 16px 14px; border-top:1px solid var(--line); }
+  .legend .li { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
+  .legend .sw { width:22px; height:11px; border-radius:var(--pill); display:inline-block; }
+  .legend .dia { width:12px; height:12px; transform:rotate(45deg); border-radius:2px; display:inline-block; }
+  .legend .today-sw { width:0; height:15px; border-left:2px dashed var(--accent); display:inline-block; }
+  .tl-empty { padding:38px 16px; text-align:center; color:var(--mut); font-size:14px; }
+
+  /* ---------- editor ---------- */
+  .lane { border:1px solid var(--line); border-radius:var(--radius); margin:12px 16px; overflow:hidden; }
+  .lane-head { display:flex; align-items:center; gap:8px; padding:9px 10px; background:var(--bg); border-bottom:1px solid var(--line); }
+  .lane-head .dot { width:12px; height:12px; border-radius:4px; flex:0 0 auto; }
+  .lane-head input.lane-name { flex:1 1 auto; min-width:80px; font-family:var(--disp); font-weight:700; font-size:14px; color:var(--ink);
+    background:transparent; border:1px solid transparent; border-radius:6px; padding:5px 8px; }
+  .lane-head input.lane-name:hover { border-color:var(--line-2); }
+  .lane-head input.lane-name:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+  .items { padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
+  .item { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:6px; border-radius:8px; }
+  .item:hover { background:var(--bg); }
+  .item .drag { color:var(--mut); font-size:13px; cursor:default; }
+  .item select.kind { font-size:12px; padding:5px 8px; border-radius:7px; border:1px solid var(--line-2); background:var(--input-bg); color:var(--ink-2); }
+  .item input.lbl { flex:1 1 220px; min-width:140px; font-size:13.5px; color:var(--ink); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:7px; padding:7px 10px; }
+  .item input.lbl:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .item input[type="date"] { font-family:var(--disp); font-size:12.5px; color:var(--ink); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
+  .item input[type="date"]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .item .dash { color:var(--mut); }
+  select.chip { font-family:var(--disp); appearance:none; -webkit-appearance:none; border:none; border-radius:var(--pill);
+    padding:6px 13px; font-weight:700; font-size:12px; color:#fff; cursor:pointer; }
+  select.chip:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
+  select.chip.s-planned { background:var(--s-planned); color:#3a3a44; }
+  select.chip.s-progress { background:var(--s-progress); }
+  select.chip.s-complete { background:var(--s-complete); }
+  select.chip.s-risk { background:var(--s-risk); }
+  .add-row { display:flex; gap:8px; padding:2px 10px 10px; }
+  .btn.add { color:var(--ink-2); background:transparent; border:1px dashed var(--line-2); font-weight:600; }
+  .btn.add:hover { color:var(--accent); border-color:var(--accent); filter:none; }
+  .add-lane { margin:4px 16px 16px; }
+
+  /* ---------- draft banner ---------- */
+  .draft-banner { display:none; align-items:center; gap:12px; margin:0 16px 12px; padding:10px 14px; border-radius:10px;
+    background:var(--accent-soft); border:1px solid var(--accent); color:var(--info); font-size:13.5px; }
+  .draft-banner.show { display:flex; }
+  .draft-banner .grow { flex:1 1 auto; }
+
+  /* ---------- notes / feedback ---------- */
+  .note { font-size:13px; border-radius:8px; padding:9px 12px; margin-top:10px; }
+  .note.err { color:var(--err); background:var(--err-bg); }
+  .note.ok { color:var(--ok); background:var(--ok-bg); }
+  .note.info { color:var(--info); background:var(--info-bg); }
+  .note.hide { display:none; }
+  .spin { display:inline-block; width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;
+    border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  /* ---------- modal ---------- */
+  .modal { position:fixed; inset:0; background:rgba(10,14,22,0.5); display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:50; }
+  .modal[hidden] { display:none; }
+  .modal-card { width:100%; max-width:560px; background:var(--card); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow-lg); max-height:90vh; display:flex; flex-direction:column; }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--line); }
+  .modal-head h3 { margin:0; font-size:16px; font-weight:700; }
+  .modal-body { padding:16px 18px; overflow:auto; }
+  .modal-foot { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:14px 18px; border-top:1px solid var(--line); }
+  .modal-body label.fld { display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--mut); margin:2px 0 6px; }
+  .modal-body textarea, .modal-body input.txt { width:100%; font-family:var(--disp); font-size:14px; color:var(--ink);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:9px; padding:10px 12px; }
+  .modal-body textarea { min-height:140px; resize:vertical; line-height:1.5; }
+  .modal-body textarea:focus, .modal-body input.txt:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .modal-body .row { margin-bottom:14px; }
+  .cloud-list { display:flex; flex-direction:column; gap:8px; }
+  .cloud-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; }
+  .cloud-row .grow { flex:1 1 auto; min-width:0; }
+  .cloud-row .nm { font-weight:600; font-size:14px; }
+  .cloud-row .mt { font-size:12px; color:var(--mut); }
+  .share-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .share-row input { flex:1 1 auto; font-family:var(--mono); font-size:12px; }
+
+  /* ---------- read-only mode ---------- */
+  body.readonly .app-only { display:none !important; }
+
+  /* ---------- print ---------- */
+  @media print {
+    :root { --bg:#fff; --card:#fff; }
+    .toolbar, .editor-card, .add-lane, .draft-banner, .theme-btn, .app-only { display:none !important; }
+    .wrap { max-width:none; padding:0; }
+    .card { border:none; box-shadow:none; }
+    .tl-scroll { overflow:visible; }
+    svg.gantt { min-width:0; }
+    @page { margin:14mm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- masthead -->
+  <div class="mast">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/>
+          <circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <div class="titlewrap">
+        <div class="eyebrow" id="eyebrow">Roadmap Builder</div>
+        <input id="titleIn" class="title-in" type="text" placeholder="Untitled roadmap" />
+        <input id="subIn" class="sub-in" type="text" placeholder="Add a subtitle (optional)" />
+      </div>
+    </div>
+    <button id="themeBtn" class="icon-btn theme-btn app-only" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+  </div>
+
+  <!-- toolbar -->
+  <div class="toolbar app-only" id="toolbar">
+    <select id="rmPicker" class="sel" title="Switch roadmap"></select>
+    <button id="rmNew" class="btn ghost sm">＋ New</button>
+    <button id="rmDup" class="btn ghost sm">Duplicate</button>
+    <button id="rmDel" class="btn danger sm">Delete</button>
+    <div class="sep"></div>
+    <select id="tmplPicker" class="sel" title="Start from a template">
+      <option value="">Start from template…</option>
+      <option value="software">Software Dev (Agile/SDLC)</option>
+      <option value="product">Product Development</option>
+      <option value="gtm">Business Dev / GTM Campaign</option>
+      <option value="data">Data &amp; Analytics program</option>
+      <option value="hiring">Hiring / team build</option>
+    </select>
+    <button id="aiBtn" class="btn sm">✨ Build from description</button>
+    <div class="grow"></div>
+    <button id="expJson" class="btn ghost sm">Export JSON</button>
+    <button id="impJson" class="btn ghost sm">Import</button>
+    <button id="expPng" class="btn ghost sm">PNG</button>
+    <button id="printBtn" class="btn ghost sm">Print</button>
+    <div class="sep"></div>
+    <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
+    <span id="cloudEmail" class="cloud-email" hidden></span>
+    <button id="cloudSave" class="btn ghost sm" hidden>Save to cloud</button>
+    <button id="cloudOpen" class="btn ghost sm" hidden>Open</button>
+    <button id="shareBtn" class="btn ghost sm" hidden>Share</button>
+    <input id="fileIn" type="file" accept="application/json,.json" hidden />
+  </div>
+
+  <!-- global feedback -->
+  <div id="topNote" class="note info hide app-only" role="status"></div>
+
+  <!-- timeline -->
+  <div class="card" id="tlCard">
+    <div class="card-head">
+      <h2>Timeline</h2>
+      <span class="mono" id="tlRange"></span>
+    </div>
+    <div id="draftBanner" class="draft-banner app-only">
+      <span class="grow"><b>Draft from your description.</b> Review and edit below, or discard to restore your previous roadmap.</span>
+      <button id="draftKeep" class="btn sm">Keep</button>
+      <button id="draftDiscard" class="btn ghost sm">Discard</button>
+    </div>
+    <div class="tl-scroll"><div id="gantt"></div></div>
+    <div class="legend">
+      <span class="li"><span class="sw" style="background:var(--s-planned)"></span>Planned</span>
+      <span class="li"><span class="sw" style="background:var(--s-progress)"></span>In progress</span>
+      <span class="li"><span class="sw" style="background:var(--s-complete)"></span>Complete</span>
+      <span class="li"><span class="sw" style="background:var(--s-risk)"></span>At risk</span>
+      <span class="li"><span class="dia" style="background:var(--s-milestone)"></span>Milestone</span>
+      <span class="li"><span class="today-sw"></span>Today</span>
+    </div>
+  </div>
+
+  <!-- editor -->
+  <div class="card editor-card app-only" id="editorCard">
+    <div class="card-head">
+      <h2>Lanes &amp; items</h2>
+      <span class="mono">bars = phases · diamonds = milestones</span>
+    </div>
+    <div id="editor"></div>
+    <button id="addLane" class="btn add add-lane">＋ Add lane</button>
+  </div>
+
+</div>
+
+<!-- AI modal -->
+<div id="aiModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>✨ Build a roadmap from a description</h3>
+      <button id="aiClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <label class="fld">Describe the project, phases, and any known dates</label>
+        <textarea id="aiText" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch."></textarea>
+      </div>
+      <div class="row">
+        <label class="fld">Template hint (optional)</label>
+        <select id="aiHint" class="sel" style="width:100%">
+          <option value="">No hint — infer from my description</option>
+          <option value="software">Software Dev (Agile/SDLC)</option>
+          <option value="product">Product Development</option>
+          <option value="gtm">Business Dev / GTM Campaign</option>
+          <option value="data">Data &amp; Analytics program</option>
+          <option value="hiring">Hiring / team build</option>
+        </select>
+      </div>
+      <div id="aiNote" class="note info hide"></div>
+    </div>
+    <div class="modal-foot">
+      <button id="aiCancel" class="btn ghost">Cancel</button>
+      <button id="aiGen" class="btn">Generate roadmap</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud modal -->
+<div id="cloudModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="cloudTitle">Sign in to sync</h3>
+      <button id="cloudClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body" id="cloudBody"></div>
+    <div class="modal-foot" id="cloudFoot"></div>
+  </div>
+</div>
+
+<script type="module">
+/* =========================================================================
+   Roadmap Builder — single-file, no-build. Local-first (localStorage);
+   Supabase (cloud sync / share / AI) is lazy-loaded only when needed so the
+   template/form path works fully offline.
+   ========================================================================= */
+
+const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
+const SUPABASE_KEY  = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
+const LS_KEY = "roadmap_builder_v1";
+const THEME_KEY = "roadmap_theme";
+
+const STATUSES = [
+  { v:"planned",     label:"Planned",     cls:"s-planned"  },
+  { v:"in_progress", label:"In progress", cls:"s-progress" },
+  { v:"complete",    label:"Complete",    cls:"s-complete" },
+  { v:"at_risk",     label:"At risk",     cls:"s-risk"     },
+];
+const STATUS_SET = new Set(STATUSES.map(s => s.v));
+const STATUS_COLOR = { planned:"#c4c4c4", in_progress:"#fdab3d", complete:"#00c875", at_risk:"#e2445c" };
+const STATUS_TEXT  = { planned:"#3a3a44", in_progress:"#ffffff", complete:"#ffffff", at_risk:"#ffffff" };
+const MILE_BLUE = "#0073ea";
+const GROUP_COLORS = ["#0073ea","#00c875","#a25ddc","#fdab3d","#e2445c","#00d2d2","#ff642e","#579bfc","#037f4c","#9d50dd"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ---------- date helpers (timezone-safe: never new Date("YYYY-MM-DD")) ---------- */
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+function pad2(n){ return String(n).padStart(2,"0"); }
+function toIso(dt){ return dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate()); }
+function todayIso(){ return toIso(new Date()); }
+function isIso(s){ return typeof s==="string" && ISO_RE.test(s); }
+function dateOf(iso){ const [y,m,d] = iso.split("-").map(Number); return new Date(y, m-1, d); }
+function msOf(iso){ return dateOf(iso).getTime(); }
+function firstOfMonth(iso){ const [y,m] = iso.split("-").map(Number); return new Date(y, m-1, 1); }
+function addMonths(dt, n){ return new Date(dt.getFullYear(), dt.getMonth()+n, 1); }
+function addWeeksIso(iso, w){ const d = dateOf(iso); d.setDate(d.getDate()+w*7); return toIso(d); }
+function addDaysIso(iso, n){ const d = dateOf(iso); d.setDate(d.getDate()+n); return toIso(d); }
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ---------- ids ---------- */
+let _seq = 0;
+function uid(prefix){ _seq++; return prefix + "_" + Date.now().toString(36) + _seq.toString(36) + Math.floor(Math.random()*1e6).toString(36); }
+
+/* =========================================================================
+   State
+   ========================================================================= */
+let store = { version:1, activeId:null, roadmaps:{} };
+let doc = null;                 // active roadmap
+let saveTimer = null;
+let session = null;             // supabase auth session (cloud)
+let sb = null;                  // lazily-created supabase client
+let draftSnapshot = null;       // {prevActiveId} for AI-draft discard
+let readOnly = false;
+
+/* =========================================================================
+   Normalisation — accepts local docs and AI output; repairs shape.
+   ========================================================================= */
+function normStatus(v){ return STATUS_SET.has(v) ? v : "planned"; }
+function normItem(raw){
+  if (!raw || typeof raw !== "object") return null;
+  const kind = raw.kind === "milestone" ? "milestone" : "bar";
+  const label = String(raw.label || "").trim();
+  const status = normStatus(raw.status);
+  const note = String(raw.note || "");
+  if (kind === "milestone"){
+    const date = isIso(raw.date) ? raw.date : (isIso(raw.start) ? raw.start : "");
+    return { id: raw.id || uid("it"), kind, label, date, status, note };
+  }
+  let start = isIso(raw.start) ? raw.start : "";
+  let end   = isIso(raw.end)   ? raw.end   : "";
+  if (start && end && msOf(end) < msOf(start)){ const t = start; start = end; end = t; }
+  return { id: raw.id || uid("it"), kind, label, start, end, status, note };
+}
+function normLane(raw, i){
+  const lane = { id:(raw && raw.id) || uid("lane"), name:String((raw && raw.name) || "Untitled lane").trim(),
+    color:(raw && raw.color) || GROUP_COLORS[i % GROUP_COLORS.length], items:[] };
+  const items = raw && Array.isArray(raw.items) ? raw.items : [];
+  lane.items = items.map(normItem).filter(Boolean);
+  return lane;
+}
+function normalizeRoadmap(raw){
+  raw = raw || {};
+  const now = new Date().toISOString();
+  const lanes = (Array.isArray(raw.lanes) ? raw.lanes : []).map(normLane);
+  let range = null;
+  if (raw.range && isIso(raw.range.start) && isIso(raw.range.end)) range = { start:raw.range.start, end:raw.range.end };
+  return {
+    schema:"roadmap.v1",
+    id: raw.id || uid("rm"),
+    title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
+    subtitle: String(raw.subtitle || ""),
+    templateType: raw.templateType || "custom",
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || now,
+    range,
+    lanes,
+  };
+}
+
+/* =========================================================================
+   Local persistence
+   ========================================================================= */
+function loadStore(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+    if (raw && raw.roadmaps && typeof raw.roadmaps === "object"){
+      store = { version:1, activeId:raw.activeId || null, roadmaps:{} };
+      Object.values(raw.roadmaps).forEach(d => { const n = normalizeRoadmap(d); store.roadmaps[n.id] = n; });
+      if (!store.roadmaps[store.activeId]) store.activeId = Object.keys(store.roadmaps)[0] || null;
+    }
+  } catch(_){ /* start fresh */ }
+  if (!store.activeId || !store.roadmaps[store.activeId]){
+    const d = normalizeRoadmap({ title:"My roadmap", templateType:"custom", lanes:[] });
+    store.roadmaps[d.id] = d; store.activeId = d.id;
+  }
+  doc = store.roadmaps[store.activeId];
+}
+function persist(){
+  if (readOnly) return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch(_){}
+}
+function save(){
+  if (readOnly || !doc) return;
+  doc.updatedAt = new Date().toISOString();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 400);
+}
+function saveNow(){ clearTimeout(saveTimer); persist(); }
+
+/* =========================================================================
+   Templates — dates as week offsets from today
+   ========================================================================= */
+function bar(label, wStart, wEnd, status){ const t = todayIso(); return { kind:"bar", label, start:addWeeksIso(t, wStart), end:addWeeksIso(t, wEnd), status }; }
+function mile(label, wAt, status){ const t = todayIso(); return { kind:"milestone", label, date:addWeeksIso(t, wAt), status:status||"planned" }; }
+
+const TEMPLATES = {
+  software: () => ({ title:"Software Delivery Roadmap", subtitle:"Agile / SDLC", templateType:"software", lanes:[
+    { name:"Discovery",    items:[ bar("Research & scope", -2, 2, "complete"), mile("Kickoff", -2, "complete") ] },
+    { name:"Design",       items:[ bar("UX & architecture", 2, 6, "in_progress"), mile("Design sign-off", 6, "planned") ] },
+    { name:"Build",        items:[ bar("Sprint 1", 6, 8, "planned"), bar("Sprint 2", 8, 10, "planned"), bar("Sprint 3", 10, 12, "planned"), mile("Alpha", 10, "planned") ] },
+    { name:"QA / Hardening", items:[ bar("Test & fix", 12, 15, "planned"), mile("Beta", 13, "planned"), mile("Code freeze", 15, "planned") ] },
+    { name:"Launch",       items:[ bar("Release & rollout", 15, 17, "planned"), mile("GA", 16, "planned") ] },
+  ]}),
+  product: () => ({ title:"Product Development Roadmap", subtitle:"Concept to launch", templateType:"product", lanes:[
+    { name:"Concept",    items:[ bar("Ideation & concept", -3, 0, "complete"), mile("Concept approved", 0, "complete") ] },
+    { name:"Validation", items:[ bar("Market & user validation", 0, 4, "in_progress") ] },
+    { name:"Design",     items:[ bar("Industrial / product design", 4, 8, "planned") ] },
+    { name:"Prototype",  items:[ bar("Build prototype", 8, 12, "planned"), mile("Prototype ready", 12, "planned") ] },
+    { name:"Testing",    items:[ bar("Validation testing", 12, 16, "planned") ] },
+    { name:"Pilot",      items:[ bar("Limited pilot", 16, 20, "planned"), mile("Pilot start", 16, "planned") ] },
+    { name:"Launch",     items:[ bar("Ramp & GA", 20, 24, "planned"), mile("GA", 23, "planned") ] },
+  ]}),
+  gtm: () => ({ title:"GTM Campaign Roadmap", subtitle:"Business development", templateType:"gtm", lanes:[
+    { name:"Research",    items:[ bar("Market & ICP research", -2, 1, "complete") ] },
+    { name:"Positioning", items:[ bar("Messaging & positioning", 1, 3, "in_progress") ] },
+    { name:"Collateral",  items:[ bar("Content & sales assets", 3, 6, "planned"), mile("Campaign launch", 6, "planned") ] },
+    { name:"Pipeline",    items:[ bar("Outreach & pipeline build", 6, 12, "planned"), mile("First MQLs", 8, "planned") ] },
+    { name:"Demos",       items:[ bar("Demos & evaluations", 10, 16, "planned"), mile("First demo", 10, "planned") ] },
+    { name:"Close",       items:[ bar("Close & onboard", 14, 20, "planned"), mile("First close", 17, "planned") ] },
+  ]}),
+  data: () => ({ title:"Data & Analytics Roadmap", subtitle:"Program milestones", templateType:"data", lanes:[
+    { name:"Data inventory",  items:[ bar("Catalog sources", -3, 2, "in_progress"), mile("Inventory complete", 2, "planned") ] },
+    { name:"Source of truth", items:[ bar("Define source of truth", 2, 6, "planned"), mile("Source of truth defined", 6, "planned") ] },
+    { name:"Pipeline",        items:[ bar("Build ingestion & models", 6, 12, "planned") ] },
+    { name:"Dashboard",       items:[ bar("Build dashboards", 10, 16, "planned"), mile("Dashboard live", 15, "planned") ] },
+    { name:"Go-live",         items:[ bar("Rollout & training", 16, 19, "planned") ] },
+  ]}),
+  hiring: () => ({ title:"Hiring Roadmap", subtitle:"Team build", templateType:"hiring", lanes:[
+    { name:"Requisition", items:[ bar("Open & approve req", -1, 1, "complete"), mile("Req open", 0, "complete") ] },
+    { name:"Sourcing",    items:[ bar("Source candidates", 1, 5, "in_progress") ] },
+    { name:"Screening",   items:[ bar("Phone screens", 3, 6, "planned") ] },
+    { name:"Interviews",  items:[ bar("Interview loops", 5, 9, "planned"), mile("Slate to leadership", 8, "planned") ] },
+    { name:"Offer",       items:[ bar("Offer & negotiation", 9, 11, "planned"), mile("Offer accepted", 10, "planned") ] },
+    { name:"Onboarding",  items:[ bar("Onboard & ramp", 11, 15, "planned"), mile("Start date", 12, "planned") ] },
+  ]}),
+};
+function applyTemplate(type){
+  const fn = TEMPLATES[type];
+  if (!fn) return;
+  const hasContent = doc.lanes.some(l => l.items.length) || doc.lanes.length > 1;
+  if (hasContent && !confirm("Replace the current roadmap with the “"+ ($("tmplPicker").selectedOptions[0].textContent) +"” template? This can't be undone.")) return;
+  const built = normalizeRoadmap(fn());
+  built.id = doc.id; built.createdAt = doc.createdAt;   // keep same slot
+  store.roadmaps[doc.id] = built; doc = built;
+  saveNow(); syncHeader(); fullRender();
+}
+
+/* =========================================================================
+   Gantt (inline SVG) — literal hex so PNG export needs no colour baking
+   ========================================================================= */
+function isDark(){ return document.documentElement.getAttribute("data-theme") === "dark"; }
+function pal(){
+  return isDark()
+    ? { bg:"#1b212b", laneAlt:"rgba(255,255,255,0.035)", grid:"#2b333f", ink:"#e7ebf2", ink2:"#aeb6c4", mut:"#7e8796", today:"#4aa3ff" }
+    : { bg:"#ffffff", laneAlt:"rgba(20,28,50,0.028)", grid:"#e9ecf3", ink:"#323338", ink2:"#676879", mut:"#9699a6", today:"#0073ea" };
+}
+const GA = { CW:1160, PADL:184, PADR:26, PADT:54, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
+// literal font stacks (no spaces) so PNG export — a detached SVG with no CSS vars — still renders text
+const F_SANS = "-apple-system,Roboto,Helvetica,Arial,sans-serif";
+const F_MONO = "ui-monospace,Menlo,Consolas,monospace";
+
+function itemStart(it){ return it.kind === "milestone" ? it.date : it.start; }
+function itemEnd(it){ return it.kind === "milestone" ? it.date : it.end; }
+function itemValid(it){
+  if (it.kind === "milestone") return isIso(it.date);
+  return isIso(it.start) && isIso(it.end);
+}
+function packLane(lane){
+  // milestones get a 1-day width so a milestone sitting inside a bar's span lands on its own
+  // sub-row instead of overlapping the bar; touching bars (sprint→sprint) still share a row.
+  const valid = lane.items.filter(itemValid).map(it => ({ it, s:msOf(itemStart(it)),
+    e: it.kind === "milestone" ? msOf(itemEnd(it)) + 864e5 : msOf(itemEnd(it)) }));
+  valid.sort((a,b) => a.s - b.s || a.e - b.e);
+  const rowEnd = [];
+  valid.forEach(v => {
+    let r = rowEnd.findIndex(end => end <= v.s);
+    if (r === -1){ r = rowEnd.length; rowEnd.push(v.e); }
+    else rowEnd[r] = Math.max(rowEnd[r], v.e);
+    v.row = r;
+  });
+  return { placed:valid, rows:Math.max(1, rowEnd.length) };
+}
+function computeDomain(lanes){
+  let mn = null, mx = null;
+  lanes.forEach(l => l.items.forEach(it => {
+    if (!itemValid(it)) return;
+    const s = msOf(itemStart(it)), e = msOf(itemEnd(it));
+    mn = (mn===null) ? s : Math.min(mn, s);
+    mx = (mx===null) ? e : Math.max(mx, e);
+  }));
+  let startDt, endDt;
+  if (doc.range){ startDt = firstOfMonth(doc.range.start); endDt = addMonths(firstOfMonth(doc.range.end), 1); }
+  else if (mn===null){ const t = todayIso(); startDt = firstOfMonth(t); endDt = addMonths(startDt, 3); }
+  else { startDt = firstOfMonth(toIso(new Date(mn))); endDt = addMonths(firstOfMonth(toIso(new Date(mx))), 1); }
+  if (endDt.getTime() - startDt.getTime() < 32*864e5) endDt = addMonths(startDt, 2);   // >= ~2 months
+  return { t0:startDt.getTime(), t1:endDt.getTime() };
+}
+function svgEl(tag, attrs, inner){
+  let s = "<"+tag;
+  for (const k in attrs) s += " "+k+'="'+attrs[k]+'"';
+  s += inner==null ? "/>" : ">"+inner+"</"+tag+">";
+  return s;
+}
+function fitsInside(label, widthPx){ return (String(label).length * 6.7 + 18) <= widthPx; }
+
+function renderGantt(){
+  const host = $("gantt");
+  const lanes = doc.lanes;
+  const anyItems = lanes.some(l => l.items.some(itemValid));
+  if (!lanes.length || !anyItems){
+    host.innerHTML = '<div class="tl-empty">No dated items yet. Add a lane and some phases or milestones below, or pick a template.</div>';
+    $("tlRange").textContent = "";
+    return;
+  }
+  const P = pal();
+  const { t0, t1 } = computeDomain(lanes);
+  const plotW = GA.CW - GA.PADL - GA.PADR;
+  const span = Math.max(1, t1 - t0);
+  const x = ms => GA.PADL + (ms - t0) / span * plotW;
+  const xi = iso => x(msOf(iso));
+
+  // lane layout
+  const layout = lanes.map(l => packLane(l));
+  let y = GA.PADT;
+  const laneBox = layout.map((lay, i) => {
+    const h = GA.lanePadTop + lay.rows*GA.rowUnit + GA.lanePadBot;
+    const box = { top:y, h, lay };
+    y += h; return box;
+  });
+  const CH = y + GA.PADB;
+
+  let out = "";
+  // background
+  out += svgEl("rect", { x:0, y:0, width:GA.CW, height:CH, fill:P.bg, rx:4 });
+
+  // month gridlines + labels
+  let m = new Date(t0); let prevYear = null;
+  const gridTop = GA.PADT - 6, gridBot = CH - GA.PADB;
+  while (m.getTime() <= t1){
+    const gx = x(m.getTime());
+    out += svgEl("line", { x1:gx.toFixed(1), y1:gridTop, x2:gx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1 });
+    if (m.getTime() < t1){
+      let lbl = MONTHS[m.getMonth()];
+      if (prevYear !== m.getFullYear()){ lbl += " ’" + String(m.getFullYear()).slice(2); prevYear = m.getFullYear(); }
+      out += svgEl("text", { x:(gx+7).toFixed(1), y:GA.PADT-24, fill:P.mut, "font-size":12, "font-family":F_SANS, "font-weight":600 }, esc(lbl));
+    }
+    m = addMonths(m, 1);
+  }
+  // left gutter label
+  out += svgEl("text", { x:16, y:GA.PADT-24, fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
+
+  // lane backgrounds + names + dividers
+  laneBox.forEach((box, i) => {
+    if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:GA.CW, height:box.h.toFixed(1), fill:P.laneAlt });
+    out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:GA.CW, y2:box.top.toFixed(1), stroke:P.grid, "stroke-width":1 });
+    const lane = lanes[i];
+    out += svgEl("rect", { x:16, y:(box.top+8).toFixed(1), width:5, height:(box.h-16).toFixed(1), rx:2.5, fill:lane.color });
+    out += svgEl("text", { x:30, y:(box.top + box.h/2).toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+  });
+
+  // today line (drawn under items)
+  const todayMs = msOf(todayIso());
+  const showToday = todayMs >= t0 && todayMs <= t1;
+  if (showToday){
+    const tx = x(todayMs);
+    out += svgEl("line", { x1:tx.toFixed(1), y1:GA.PADT-6, x2:tx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.today, "stroke-width":2, "stroke-dasharray":"4 4" });
+    out += svgEl("text", { x:tx.toFixed(1), y:GA.PADT-40, fill:P.today, "font-size":10.5, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.1em" }, "TODAY");
+  }
+
+  // items
+  laneBox.forEach((box, i) => {
+    box.lay.placed.forEach(v => {
+      const it = v.it;
+      const yTop = box.top + GA.lanePadTop + v.row*GA.rowUnit;
+      if (it.kind === "milestone"){
+        const cx = xi(it.date), cy = yTop + GA.barH/2, r = 8;
+        const col = STATUS_COLOR[it.status] || MILE_BLUE;
+        const filled = it.status === "complete" || it.status === "in_progress" || it.status === "at_risk";
+        out += svgEl("rect", { x:(cx-r).toFixed(1), y:(cy-r).toFixed(1), width:r*2, height:r*2, rx:2.5,
+          transform:"rotate(45 "+cx.toFixed(1)+" "+cy.toFixed(1)+")",
+          fill: filled ? col : P.bg, stroke: col, "stroke-width":2 });
+        const rightSpace = (GA.PADL+plotW) - cx;
+        const labelRight = rightSpace > 120;
+        const lx = labelRight ? cx + r + 6 : cx - r - 6;
+        out += svgEl("text", { x:lx.toFixed(1), y:(cy).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":600,
+          "dominant-baseline":"middle", "text-anchor": labelRight ? "start" : "end" }, esc(it.label || "Milestone"));
+      } else {
+        let bx = xi(it.start), bxe = xi(it.end);
+        let bw = Math.max(9, bxe - bx);
+        const col = STATUS_COLOR[it.status] || "#c4c4c4";
+        out += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:bw.toFixed(1), height:GA.barH, rx:6, fill:col,
+          stroke: it.status==="planned" ? P.grid : "none", "stroke-width": it.status==="planned"?1:0 });
+        const lab = it.label || "";
+        if (lab){
+          if (fitsInside(lab, bw)){
+            out += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:STATUS_TEXT[it.status]||"#3a3a44",
+              "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
+          } else {
+            out += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
+              "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
+          }
+        }
+      }
+    });
+  });
+
+  host.innerHTML = '<svg class="gantt" viewBox="0 0 '+GA.CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
+  const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()]+" "+d.getFullYear(); };
+  $("tlRange").textContent = fmt(t0) + " – " + fmt(t1 - 864e5);
+}
+
+/* =========================================================================
+   Editor
+   ========================================================================= */
+function statusSelect(cls, value){
+  let o = "";
+  STATUSES.forEach(s => { o += '<option value="'+s.v+'"'+(s.v===value?" selected":"")+'>'+s.label+'</option>'; });
+  return '<select class="chip '+cls+'" data-role="status">'+o+'</select>';
+}
+function renderEditor(){
+  const host = $("editor");
+  host.innerHTML = "";
+  doc.lanes.forEach((lane, li) => {
+    const laneEl = document.createElement("div");
+    laneEl.className = "lane"; laneEl.dataset.lane = lane.id;
+    let itemsHtml = "";
+    lane.items.forEach(it => {
+      const st = STATUSES.find(s => s.v===it.status) || STATUSES[0];
+      const kindSel = '<select class="kind" data-role="kind"><option value="bar"'+(it.kind==="bar"?" selected":"")+'>Phase (bar)</option><option value="milestone"'+(it.kind==="milestone"?" selected":"")+'>Milestone</option></select>';
+      const dates = it.kind === "milestone"
+        ? '<input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" />'
+        : '<input type="date" data-role="start" value="'+esc(it.start||"")+'" title="Start" /><span class="dash">→</span><input type="date" data-role="end" value="'+esc(it.end||"")+'" title="End" />';
+      itemsHtml += '<div class="item" data-item="'+it.id+'">'
+        + '<span class="drag" title="'+(it.kind==="milestone"?"Milestone":"Phase")+'">'+(it.kind==="milestone"?"◆":"☲")+'</span>'
+        + kindSel
+        + '<input class="lbl" data-role="label" type="text" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
+        + dates
+        + statusSelect(st.cls, it.status)
+        + '<button class="icon-btn" data-role="up" title="Move up">↑</button>'
+        + '<button class="icon-btn" data-role="down" title="Move down">↓</button>'
+        + '<button class="icon-btn" data-role="del" title="Delete">✕</button>'
+        + '</div>';
+    });
+    laneEl.innerHTML =
+      '<div class="lane-head">'
+      + '<span class="dot" style="background:'+lane.color+'"></span>'
+      + '<input class="lane-name" data-role="laneName" type="text" value="'+esc(lane.name)+'" placeholder="Lane name" />'
+      + '<button class="icon-btn" data-role="laneUp" title="Move lane up">↑</button>'
+      + '<button class="icon-btn" data-role="laneDown" title="Move lane down">↓</button>'
+      + '<button class="icon-btn" data-role="laneColor" title="Change colour">🎨</button>'
+      + '<button class="icon-btn" data-role="laneDel" title="Delete lane">✕</button>'
+      + '</div>'
+      + '<div class="items">'+itemsHtml+'</div>'
+      + '<div class="add-row"><button class="btn add sm" data-role="addBar">＋ Phase</button><button class="btn add sm" data-role="addMile">＋ Milestone</button></div>';
+    host.appendChild(laneEl);
+  });
+}
+
+/* ---------- editor event delegation ---------- */
+function findLane(id){ return doc.lanes.find(l => l.id===id); }
+function findItem(lane, id){ return lane.items.find(it => it.id===id); }
+
+function onEditorInput(e){
+  const role = e.target.dataset.role; if (!role) return;
+  const laneEl = e.target.closest("[data-lane]"); if (!laneEl) return;
+  const lane = findLane(laneEl.dataset.lane); if (!lane) return;
+  if (role === "laneName"){ lane.name = e.target.value; save(); renderGantt(); return; }
+  const itemEl = e.target.closest("[data-item]"); if (!itemEl) return;
+  const it = findItem(lane, itemEl.dataset.item); if (!it) return;
+  if (role === "label"){ it.label = e.target.value; save(); renderGantt(); }
+  else if (role === "start"){ it.start = e.target.value; save(); renderGantt(); }
+  else if (role === "end"){ it.end = e.target.value; save(); renderGantt(); }
+  else if (role === "date"){ it.date = e.target.value; save(); renderGantt(); }
+}
+function onEditorChange(e){
+  const role = e.target.dataset.role; if (!role) return;
+  const laneEl = e.target.closest("[data-lane]"); if (!laneEl) return;
+  const lane = findLane(laneEl.dataset.lane); if (!lane) return;
+  if (role === "status"){
+    const itemEl = e.target.closest("[data-item]"); const it = itemEl && findItem(lane, itemEl.dataset.item); if (!it) return;
+    it.status = normStatus(e.target.value);
+    const s = STATUSES.find(x => x.v===it.status);
+    e.target.className = "chip " + (s ? s.cls : "s-planned");
+    save(); renderGantt(); return;
+  }
+  if (role === "kind"){
+    const itemEl = e.target.closest("[data-item]"); const it = itemEl && findItem(lane, itemEl.dataset.item); if (!it) return;
+    if (e.target.value === "milestone"){ it.kind = "milestone"; it.date = it.start || todayIso(); }
+    else { it.kind = "bar"; it.start = it.date || todayIso(); it.end = it.end || addWeeksIso(it.start, 2); }
+    save(); fullRender(); return;
+  }
+}
+function onEditorClick(e){
+  const btn = e.target.closest("button[data-role]"); if (!btn) return;
+  const role = btn.dataset.role;
+  const laneEl = btn.closest("[data-lane]"); if (!laneEl) return;
+  const lane = findLane(laneEl.dataset.lane); if (!lane) return;
+  const li = doc.lanes.indexOf(lane);
+  if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items?")) return; doc.lanes.splice(li,1); save(); fullRender(); return; }
+  if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
+  if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
+  if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
+  if (role === "addBar"){ const t = todayIso(); lane.items.push(normItem({ kind:"bar", label:"", start:t, end:addWeeksIso(t,3), status:"planned" })); save(); fullRender(); return; }
+  if (role === "addMile"){ lane.items.push(normItem({ kind:"milestone", label:"", date:todayIso(), status:"planned" })); save(); fullRender(); return; }
+  const itemEl = btn.closest("[data-item]"); if (!itemEl) return;
+  const it = findItem(lane, itemEl.dataset.item); if (!it) return;
+  const ii = lane.items.indexOf(it);
+  if (role === "del"){ lane.items.splice(ii,1); save(); fullRender(); }
+  else if (role === "up" && ii>0){ lane.items.splice(ii,1); lane.items.splice(ii-1,0,it); save(); fullRender(); }
+  else if (role === "down" && ii<lane.items.length-1){ lane.items.splice(ii,1); lane.items.splice(ii+1,0,it); save(); fullRender(); }
+}
+
+/* =========================================================================
+   Header sync + full render
+   ========================================================================= */
+function fullRender(){ renderGantt(); if (!readOnly) renderEditor(); }
+function syncHeader(){
+  $("titleIn").value = doc.title;
+  $("subIn").value = doc.subtitle;
+  if (readOnly) return;
+  const pk = $("rmPicker"); pk.innerHTML = "";
+  Object.values(store.roadmaps)
+    .sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""))
+    .forEach(d => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; pk.appendChild(o); });
+  $("rmDel").disabled = Object.keys(store.roadmaps).length <= 1;
+}
+
+/* =========================================================================
+   Roadmap CRUD (local)
+   ========================================================================= */
+function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); }
+function newRoadmap(){
+  const d = normalizeRoadmap({ title:"Untitled roadmap", templateType:"custom", lanes:[{ name:"Phase 1", items:[] }] });
+  store.roadmaps[d.id] = d; switchTo(d.id); $("titleIn").focus(); $("titleIn").select();
+}
+function duplicateRoadmap(){
+  const copy = normalizeRoadmap(JSON.parse(JSON.stringify(doc)));
+  copy.id = uid("rm"); copy.title = doc.title + " (copy)"; const now = new Date().toISOString(); copy.createdAt = now; copy.updatedAt = now;
+  // fresh ids for lanes/items
+  copy.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
+  store.roadmaps[copy.id] = copy; switchTo(copy.id);
+}
+function deleteRoadmap(){
+  if (Object.keys(store.roadmaps).length <= 1) return;
+  if (!confirm("Delete roadmap “"+doc.title+"”? This can't be undone.")) return;
+  delete store.roadmaps[doc.id];
+  store.activeId = Object.keys(store.roadmaps)[0];
+  doc = store.roadmaps[store.activeId]; saveNow(); syncHeader(); fullRender();
+}
+
+/* =========================================================================
+   Export / import
+   ========================================================================= */
+function slug(s){ return (String(s||"roadmap").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "roadmap"); }
+function download(name, blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+function exportJson(){ download(slug(doc.title)+".roadmap.json", new Blob([JSON.stringify(doc,null,2)], { type:"application/json" })); }
+function importJsonFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const raw = JSON.parse(rd.result);
+      if (!raw || raw.schema !== "roadmap.v1") { if (!confirm("This file isn't a roadmap.v1 export. Try to import anyway?")) return; }
+      const d = normalizeRoadmap(raw); d.id = uid("rm"); d.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
+      store.roadmaps[d.id] = d; switchTo(d.id); topNote("ok", "Imported “"+d.title+"”.");
+    } catch(e){ topNote("err", "Couldn't read that file: " + (e.message||e)); }
+  };
+  rd.readAsText(file);
+}
+function exportPng(){
+  const svg = $("gantt").querySelector("svg");
+  if (!svg){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
+  const vb = svg.viewBox.baseVal; const w = vb.width || svg.clientWidth, h = vb.height || svg.clientHeight;
+  const scale = 2;
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("width", w); clone.setAttribute("height", h);
+  const xml = new XMLSerializer().serializeToString(clone);
+  const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas"); cv.width = w*scale; cv.height = h*scale;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = pal().bg; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.setTransform(scale,0,0,scale,0,0); ctx.drawImage(img,0,0);
+    try { download(slug(doc.title)+"-roadmap.png", dataUrlToBlob(cv.toDataURL("image/png"))); }
+    catch(e){ topNote("err","PNG export failed: "+(e.message||e)); }
+  };
+  img.onerror = () => topNote("err","Couldn't render the timeline to an image.");
+  img.src = url;
+}
+function dataUrlToBlob(durl){ const [meta,b64] = durl.split(","); const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new Blob([arr], { type:(meta.match(/:(.*?);/)||[])[1] || "image/png" }); }
+
+let noteTimer = null;
+function topNote(kind, msg){
+  const n = $("topNote"); n.className = "note "+kind+" app-only"; n.textContent = msg;
+  clearTimeout(noteTimer); noteTimer = setTimeout(() => n.classList.add("hide"), 5000);
+}
+
+/* =========================================================================
+   Supabase (lazy) — cloud sync, share, AI
+   ========================================================================= */
+async function getSb(){
+  if (sb) return sb;
+  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  return sb;
+}
+
+/* ---------- AI: build-roadmap edge function ---------- */
+function openAi(){ $("aiNote").className = "note info hide"; $("aiModal").hidden = false; $("aiText").focus(); }
+function closeAi(){ $("aiModal").hidden = true; }
+async function generateFromDescription(){
+  const prompt = $("aiText").value.trim();
+  if (!prompt){ $("aiText").focus(); return; }
+  const hint = $("aiHint").value || null;
+  const note = $("aiNote"); const btn = $("aiGen"); const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "Generating…";
+  note.className = "note info"; note.innerHTML = '<span class="spin"></span> Asking Claude to draft your roadmap…';
+  try {
+    const client = await getSb();
+    const { data, error } = await client.functions.invoke("build-roadmap", { body:{ prompt, today:todayIso(), templateHint:hint } });
+    if (error){ let msg = error.message || "Request failed."; try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){} throw new Error(msg); }
+    if (data && data.error) throw new Error(data.error);
+    const raw = data && data.roadmap ? data.roadmap : data;
+    const draft = normalizeRoadmap(raw);
+    if (!draft.lanes.length) throw new Error("The model didn't return any lanes. Try adding more detail to your description.");
+    draft.id = uid("rm"); if (draft.templateType==="custom" && hint) draft.templateType = hint;
+    draftSnapshot = { prevActiveId: store.activeId };
+    store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
+    saveNow(); syncHeader(); fullRender();
+    $("draftBanner").classList.add("show");
+    closeAi();
+  } catch(e){
+    note.className = "note err";
+    note.innerHTML = '<b>Couldn’t build that roadmap.</b><br>' + esc(e.message||String(e))
+      + '<br><br>The natural-language builder runs in a Supabase Edge Function named <b>build-roadmap</b>. If it isn’t deployed yet (or you’re offline), that’s expected — the template and form paths work without it. Deploy the function and set an <b>ANTHROPIC_API_KEY</b> secret in your Supabase project to enable this.';
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+function keepDraft(){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
+function discardDraft(){
+  if (!draftSnapshot) { $("draftBanner").classList.remove("show"); return; }
+  const drafted = store.activeId;
+  if (store.roadmaps[draftSnapshot.prevActiveId]){ delete store.roadmaps[drafted]; store.activeId = draftSnapshot.prevActiveId; doc = store.roadmaps[store.activeId]; }
+  draftSnapshot = null; saveNow(); syncHeader(); fullRender(); $("draftBanner").classList.remove("show");
+}
+
+/* ---------- Cloud auth + sync ---------- */
+function cloudModal(title, bodyHtml, footHtml){ $("cloudTitle").textContent = title; $("cloudBody").innerHTML = bodyHtml; $("cloudFoot").innerHTML = footHtml; $("cloudModal").hidden = false; }
+function closeCloud(){ $("cloudModal").hidden = true; }
+function reflectCloudUi(){
+  const on = !!session;
+  $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
+  $("cloudEmail").hidden = !on; $("cloudEmail").textContent = on ? (session.user.email||"") : "";
+  ["cloudSave","cloudOpen","shareBtn"].forEach(id => $(id).hidden = !on);
+}
+async function cloudSignInFlow(){
+  if (session){ const client = await getSb(); await client.auth.signOut(); session = null; reflectCloudUi(); topNote("info","Signed out."); return; }
+  cloudModal("Sign in to sync",
+    '<div class="row"><label class="fld">Email</label><input id="ciEmail" class="txt" type="email" autocomplete="username" /></div>'
+    + '<div class="row"><label class="fld">Password</label><input id="ciPass" class="txt" type="password" autocomplete="current-password" /></div>'
+    + '<div id="ciNote" class="note info hide"></div>',
+    '<button id="ciCancel" class="btn ghost">Cancel</button><button id="ciGo" class="btn">Sign in</button>');
+  $("ciCancel").onclick = closeCloud;
+  $("ciGo").onclick = async () => {
+    const email = $("ciEmail").value.trim(), password = $("ciPass").value;
+    const nt = $("ciNote"); if (!email || !password){ nt.className="note err"; nt.textContent="Enter your email and password."; return; }
+    nt.className = "note info"; nt.innerHTML = '<span class="spin"></span> Signing in…';
+    try {
+      const client = await getSb();
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      session = data.session; reflectCloudUi(); closeCloud(); topNote("ok","Signed in as "+email+".");
+    } catch(e){ nt.className="note err"; nt.textContent = "Sign-in failed: " + (e.message||e); }
+  };
+}
+async function cloudSave(){
+  if (!session) return;
+  try {
+    const client = await getSb();
+    const { error } = await client.from("roadmaps").upsert({
+      id:doc.id, user_id:session.user.id, title:doc.title, subtitle:doc.subtitle,
+      template_type:doc.templateType, doc:doc, updated_at:new Date().toISOString()
+    }, { onConflict:"id" });
+    if (error) throw error;
+    topNote("ok","Saved to cloud.");
+  } catch(e){ topNote("err","Cloud save failed: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."); }
+}
+async function cloudOpen(){
+  if (!session) return;
+  cloudModal("Your cloud roadmaps", '<div id="clNote" class="note info"><span class="spin"></span> Loading…</div><div id="clList" class="cloud-list"></div>', '<button id="clClose" class="btn ghost">Close</button>');
+  $("clClose").onclick = closeCloud;
+  try {
+    const client = await getSb();
+    const { data, error } = await client.from("roadmaps").select("id,title,subtitle,updated_at,doc").order("updated_at",{ ascending:false });
+    if (error) throw error;
+    $("clNote").className = "note info hide";
+    if (!data || !data.length){ $("clList").innerHTML = '<div class="tl-empty">No cloud roadmaps yet. Use <b>Save to cloud</b> first.</div>'; return; }
+    $("clList").innerHTML = data.map(r => '<div class="cloud-row"><div class="grow"><div class="nm">'+esc(r.title||"Untitled")+'</div><div class="mt">updated '+esc((r.updated_at||"").slice(0,10))+'</div></div><button class="btn sm" data-open="'+esc(r.id)+'">Open</button></div>').join("");
+    $("clList").querySelectorAll("[data-open]").forEach(b => b.onclick = () => {
+      const rec = data.find(x => x.id===b.dataset.open); if (!rec) return;
+      const d = normalizeRoadmap(rec.doc || rec); store.roadmaps[d.id] = d; switchTo(d.id); closeCloud(); topNote("ok","Opened from cloud.");
+    });
+  } catch(e){ $("clNote").className="note err"; $("clNote").textContent = "Couldn't load: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."; }
+}
+async function shareFlow(){
+  if (!session) return;
+  cloudModal("Share this roadmap (read-only)", '<div id="shNote" class="note info"><span class="spin"></span> Preparing…</div><div id="shArea"></div>', '<button id="shClose" class="btn ghost">Close</button>');
+  $("shClose").onclick = closeCloud;
+  try {
+    const client = await getSb();
+    await cloudSave();   // ensure the current doc exists in the cloud
+    const { data, error } = await client.from("roadmap_shares").insert({ user_id:session.user.id, roadmap_id:doc.id, label:"" }).select("token").single();
+    if (error) throw error;
+    const link = new URL("roadmap.html", location.href).href + "?s=" + data.token;
+    $("shNote").className = "note info hide";
+    $("shArea").innerHTML = '<label class="fld">Anyone with this link can view (read-only)</label><div class="share-row"><input id="shUrl" class="txt" type="text" readonly value="'+esc(link)+'" /><button id="shCopy" class="btn sm">Copy</button></div>';
+    $("shCopy").onclick = () => { const el = $("shUrl"); el.select(); try { navigator.clipboard.writeText(el.value); } catch(_){ document.execCommand("copy"); } $("shCopy").textContent = "Copied ✓"; setTimeout(()=>$("shCopy").textContent="Copy",1200); };
+  } catch(e){ $("shNote").className="note err"; $("shNote").textContent = "Couldn't create a share link: "+(e.message||e)+" — the roadmap_shares table / shared_roadmap RPC may not be provisioned yet (see README)."; }
+}
+
+/* ---------- read-only shared view (?s=token) ---------- */
+async function initShared(token){
+  readOnly = true; document.body.classList.add("readonly");
+  $("titleIn").readOnly = true; $("subIn").readOnly = true;
+  try {
+    const client = await getSb();
+    const { data, error } = await client.rpc("shared_roadmap", { p_token: token });
+    if (error) throw error;
+    if (!data) throw new Error("This share link is unknown or has been revoked.");
+    doc = normalizeRoadmap(data.doc || data);
+    $("eyebrow").textContent = "Shared roadmap · read-only";
+    syncHeader(); renderGantt();
+  } catch(e){
+    $("gantt").innerHTML = '<div class="tl-empty"><b>Couldn’t load this shared roadmap.</b><br>'+esc(e.message||String(e))+'</div>';
+  }
+}
+
+/* =========================================================================
+   Theme
+   ========================================================================= */
+function applyTheme(t){ document.documentElement.setAttribute("data-theme", t); $("themeBtn").textContent = t==="dark" ? "☀️" : "🌙"; }
+function initTheme(){ let t = "light"; try { t = localStorage.getItem(THEME_KEY) || (matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light"); } catch(_){} applyTheme(t); }
+function toggleTheme(){ const t = isDark() ? "light":"dark"; applyTheme(t); try { localStorage.setItem(THEME_KEY, t); } catch(_){} renderGantt(); }
+
+/* =========================================================================
+   Wire up
+   ========================================================================= */
+function wire(){
+  // title / subtitle
+  $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
+  $("subIn").addEventListener("input", e => { doc.subtitle = e.target.value; save(); });
+  // picker + CRUD
+  $("rmPicker").addEventListener("change", e => switchTo(e.target.value));
+  $("rmNew").addEventListener("click", newRoadmap);
+  $("rmDup").addEventListener("click", duplicateRoadmap);
+  $("rmDel").addEventListener("click", deleteRoadmap);
+  // template
+  $("tmplPicker").addEventListener("change", e => { const v = e.target.value; if (v) applyTemplate(v); e.target.value = ""; });
+  // editor delegation
+  const ed = $("editor");
+  ed.addEventListener("input", onEditorInput);
+  ed.addEventListener("change", onEditorChange);
+  ed.addEventListener("click", onEditorClick);
+  $("addLane").addEventListener("click", () => { doc.lanes.push(normLane({ name:"New lane", items:[] }, doc.lanes.length)); save(); fullRender(); });
+  // export/import/png/print
+  $("expJson").addEventListener("click", exportJson);
+  $("impJson").addEventListener("click", () => $("fileIn").click());
+  $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
+  $("expPng").addEventListener("click", exportPng);
+  $("printBtn").addEventListener("click", () => window.print());
+  // AI
+  $("aiBtn").addEventListener("click", openAi);
+  $("aiClose").addEventListener("click", closeAi);
+  $("aiCancel").addEventListener("click", closeAi);
+  $("aiGen").addEventListener("click", generateFromDescription);
+  $("aiModal").addEventListener("click", e => { if (e.target === $("aiModal")) closeAi(); });
+  $("draftKeep").addEventListener("click", keepDraft);
+  $("draftDiscard").addEventListener("click", discardDraft);
+  // cloud
+  $("cloudBtn").addEventListener("click", cloudSignInFlow);
+  $("cloudSave").addEventListener("click", cloudSave);
+  $("cloudOpen").addEventListener("click", cloudOpen);
+  $("shareBtn").addEventListener("click", shareFlow);
+  $("cloudClose").addEventListener("click", closeCloud);
+  $("cloudModal").addEventListener("click", e => { if (e.target === $("cloudModal")) closeCloud(); });
+  // theme
+  $("themeBtn").addEventListener("click", toggleTheme);
+  // resilience
+  window.addEventListener("beforeunload", saveNow);
+}
+
+/* =========================================================================
+   Boot
+   ========================================================================= */
+(function init(){
+  initTheme();
+  wire();
+  const token = new URLSearchParams(location.search).get("s");
+  if (token){ initShared(token); return; }
+  loadStore();
+  syncHeader();
+  fullRender();
+})();
+</script>
+</body>
+</html>
