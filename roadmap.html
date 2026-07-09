@@ -306,6 +306,19 @@
   .pub-url { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px;
     background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; }
   .pub-url[hidden] { display:none !important; }   /* display:flex above otherwise overrides the hidden attribute */
+  /* ---------- dropdown menus ---------- */
+  .menu { position:relative; display:inline-flex; }
+  .menu-btn[aria-expanded="true"] { border-color:var(--accent); color:var(--accent); }
+  .menu-list { position:absolute; top:calc(100% + 6px); right:0; z-index:30; min-width:184px; padding:6px;
+    background:var(--card); border:1px solid var(--line-2); border-radius:12px; box-shadow:var(--shadow-lg); display:flex; flex-direction:column; gap:2px; }
+  .menu-list[hidden] { display:none; }
+  .menu-item { display:block; width:100%; text-align:left; font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink);
+    background:transparent; border:none; border-radius:8px; padding:8px 10px; cursor:pointer; white-space:nowrap; }
+  .menu-item:hover { background:var(--bg); color:var(--accent); }
+  .menu-item.danger { color:var(--err); }
+  .menu-item.danger:hover { background:var(--err-bg); color:var(--err); }
+  .menu-item:disabled { opacity:.4; cursor:default; }
+  .menu-item:disabled:hover { background:transparent; color:var(--ink); }
   .stat-chips { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
   .stat-chips[hidden] { display:none !important; }
   .stat-chip { flex:0 1 auto; min-width:112px; padding:9px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow-sm); }
@@ -403,8 +416,13 @@
   <div class="toolbar app-only editor-view" id="toolbar">
     <select id="rmPicker" class="sel" title="Switch roadmap"></select>
     <button id="rmNew" class="btn ghost sm">＋ New</button>
-    <button id="rmDup" class="btn ghost sm">Duplicate</button>
-    <button id="rmDel" class="btn danger sm">Delete</button>
+    <div class="menu" data-menu>
+      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More roadmap actions">⋯</button>
+      <div class="menu-list" role="menu" hidden>
+        <button class="menu-item" data-act="dup" role="menuitem">Duplicate roadmap</button>
+        <button class="menu-item danger" data-act="del" role="menuitem">Delete roadmap</button>
+      </div>
+    </div>
     <div class="sep"></div>
     <select id="tmplPicker" class="sel" title="Start from a template">
       <option value="">Start from template…</option>
@@ -416,17 +434,27 @@
     </select>
     <button id="aiBtn" class="btn sm" hidden>✨ Build from description</button>
     <div class="grow"></div>
-    <button id="expJson" class="btn ghost sm">Export JSON</button>
-    <button id="impJson" class="btn ghost sm">Import</button>
-    <button id="expPng" class="btn ghost sm">PNG</button>
-    <button id="printBtn" class="btn ghost sm">Print</button>
-    <div class="sep"></div>
+    <div class="menu" data-menu>
+      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">Export ▾</button>
+      <div class="menu-list" role="menu" hidden>
+        <button class="menu-item" data-act="png" role="menuitem">PNG image</button>
+        <button class="menu-item" data-act="html" role="menuitem">HTML page</button>
+        <button class="menu-item" data-act="json" role="menuitem">JSON</button>
+        <button class="menu-item" data-act="import" role="menuitem">Import JSON…</button>
+        <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
+      </div>
+    </div>
+    <div class="menu" id="cloudMenu" data-menu hidden>
+      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">☁ Cloud ▾</button>
+      <div class="menu-list" role="menu" hidden>
+        <button class="menu-item" data-act="save" role="menuitem">Save to cloud</button>
+        <button class="menu-item" data-act="open" role="menuitem">Open from cloud…</button>
+        <button class="menu-item" data-act="share" role="menuitem">Share link…</button>
+        <button class="menu-item" id="publicItem" data-act="public" role="menuitem">🌐 Make public</button>
+      </div>
+    </div>
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
-    <button id="publicBtn" class="btn ghost sm" hidden>🌐 Make public</button>
-    <button id="cloudSave" class="btn ghost sm" hidden>Save to cloud</button>
-    <button id="cloudOpen" class="btn ghost sm" hidden>Open</button>
-    <button id="shareBtn" class="btn ghost sm" hidden>Share</button>
     <input id="fileIn" type="file" accept="application/json,.json" hidden />
   </div>
 
@@ -1443,7 +1471,7 @@ function syncHeader(){
   Object.values(store.roadmaps)
     .sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""))
     .forEach(d => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; pk.appendChild(o); });
-  $("rmDel").disabled = Object.keys(store.roadmaps).length <= 1;
+  { const delItem = document.querySelector('.menu-item[data-act="del"]'); if (delItem) delItem.disabled = Object.keys(store.roadmaps).length <= 1; }
   const n = Object.keys(store.roadmaps).length;
   $("segCount").textContent = n;
   $("ovSub").textContent = n + (n === 1 ? " roadmap" : " roadmaps");
@@ -1485,6 +1513,78 @@ function deleteRoadmap(){ deleteRoadmapById(doc.id); }
 function slug(s){ return (String(s||"roadmap").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "roadmap"); }
 function download(name, blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 function exportJson(){ download(slug(doc.title)+".roadmap.json", new Blob([JSON.stringify(doc,null,2)], { type:"application/json" })); }
+async function exportHtml(){
+  const svg = $("gantt").querySelector("svg");
+  if (!svg){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
+  const P = pal();
+  const logo = await getLogoDataUrl();
+  const svgClone = svg.cloneNode(true);
+  svgClone.setAttribute("style", "width:100%;height:auto;display:block");
+  const chips = ($("statChips") && !$("statChips").hidden) ? $("statChips").innerHTML : "";
+  const summary = $("summaryBody") ? $("summaryBody").innerHTML : "";
+  const range = $("tlRange") ? ($("tlRange").textContent || "") : "";
+  const callouts = (doc.callouts || []).filter(c => (c.title || "").trim() || (c.body || "").trim());
+  const calloutsHtml = callouts.length
+    ? '<div class="exp-h">Notes &amp; analysis</div><div class="exp-co-grid">'
+      + callouts.map(c => '<div class="exp-co">' + (c.title ? '<div class="exp-co-t">' + esc(c.title) + '</div>' : '')
+        + (c.body ? '<div class="exp-co-b">' + esc(c.body).replace(/\n/g, "<br>") + '</div>' : '') + '</div>').join("")
+      + '</div>' : "";
+  const legend = STATUSES.map(s => '<span class="lg"><span class="lg-sw" style="background:' + STATUS_COLOR[s.v] + '"></span>' + esc(s.label) + '</span>').join("")
+    + '<span class="lg"><span class="lg-di" style="background:' + MILE_BLUE + '"></span>Milestone</span>';
+  const F = "-apple-system,Roboto,Helvetica,Arial,sans-serif", M = "ui-monospace,Menlo,Consolas,monospace";
+  const css = `:root{color-scheme:${isDark()?"dark":"light"}}
+*{box-sizing:border-box}
+body{margin:0;background:${P.bg};color:${P.ink};font-family:${F};-webkit-font-smoothing:antialiased}
+.w{max-width:1120px;margin:0 auto;padding:30px 26px 44px}
+.hd{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px}
+.hd img{width:56px;height:56px;object-fit:contain;flex:0 0 auto}
+.eb{font:700 10.5px ${M};letter-spacing:.16em;text-transform:uppercase;color:${P.mut}}
+h1{margin:2px 0 5px;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.sub{color:${P.ink2};font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}
+.stat-chip{padding:9px 14px;border:1px solid ${P.grid};border-radius:12px;background:${P.bg}}
+.stat-chip .sc-lbl{display:block;font:700 10px ${M};letter-spacing:.12em;text-transform:uppercase;color:${P.mut};margin-bottom:3px}
+.stat-chip .sc-val{font-size:14px;font-weight:700;color:${P.ink}}
+.stat-chip.warn .sc-val{color:${P.err||"#e0485a"}}
+.tlh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid ${P.grid};padding-bottom:8px;margin-bottom:12px;font:700 12px ${M};letter-spacing:.08em;color:${P.ink2}}
+.tlh .rg{color:${P.mut};font-weight:400}
+.tl svg{width:100%;height:auto;display:block}
+.lg-row{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 6px;font-size:12.5px;color:${P.ink2}}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.lg-sw{width:22px;height:11px;border-radius:6px;display:inline-block}
+.lg-di{width:11px;height:11px;transform:rotate(45deg);display:inline-block;border-radius:2px}
+.exp-h{font:700 13px ${F};text-transform:uppercase;letter-spacing:.06em;color:${P.ink2};margin:26px 0 10px}
+.summary-body{font-size:13.5px;line-height:1.6;color:${P.ink}}
+.summary-body .sum-head{font-size:15px;font-weight:800}
+.summary-body .sum-head .sum-pct{color:${P.today}}
+.summary-body .sum-bar{height:8px;border-radius:999px;background:${P.grid};overflow:hidden;margin:8px 0 12px;max-width:420px}
+.summary-body .sum-bar>span{display:block;height:100%;background:#12a56b;border-radius:999px}
+.summary-body .sum-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.summary-body .sum-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${P.ink2};background:${P.bg};border:1px solid ${P.grid};border-radius:999px;padding:2px 9px}
+.summary-body .sum-dot{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.summary-body .sum-row{margin:3px 0;color:${P.ink2}}
+.summary-body .sum-row b{color:${P.ink};font-weight:700}
+.summary-body .sum-row.warn b{color:${P.err||"#e0485a"}}
+.exp-co-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.exp-co{border:1px solid ${P.grid};border-radius:12px;padding:14px 16px}
+.exp-co-t{font-size:15px;font-weight:800;color:${P.ink};margin-bottom:6px}
+.exp-co-b{font-size:13.5px;line-height:1.6;color:${P.ink2}}
+.ft{margin-top:30px;padding-top:14px;border-top:1px solid ${P.grid};color:${P.mut};font:12px ${M};text-align:center}`;
+  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + esc(doc.title || "Roadmap") + '</title><style>' + css + '</style></head><body><div class="w">'
+    + '<div class="hd">' + (logo ? '<img src="' + logo + '" alt="">' : '')
+    + '<div><div class="eb">Roadmap</div><h1>' + esc(doc.title || "Untitled") + '</h1>'
+    + (doc.subtitle ? '<div class="sub">' + esc(doc.subtitle) + '</div>' : '') + '</div></div>'
+    + (chips ? '<div class="chips">' + chips + '</div>' : '')
+    + '<div class="tlh"><span>TIMELINE</span><span class="rg">' + esc(range) + '</span></div>'
+    + '<div class="tl">' + svgClone.outerHTML + '</div>'
+    + '<div class="lg-row">' + legend + '</div>'
+    + (summary ? '<div class="exp-h">Progress summary</div><div class="summary-body">' + summary + '</div>' : '')
+    + calloutsHtml
+    + '<div class="ft">' + esc(doc.title || "Roadmap") + ' · exported from Roadmap Builder</div>'
+    + '</div></body></html>';
+  download(slug(doc.title) + "-roadmap.html", new Blob([html], { type:"text/html" }));
+}
 function importJsonFile(file){
   const rd = new FileReader();
   rd.onload = () => {
@@ -1646,17 +1746,15 @@ function reflectCloudUi(){
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
   // Signed-in state is shown by the ☁ Sign out button; don't display the account email.
   $("cloudEmail").hidden = true; $("cloudEmail").textContent = "";
-  // AI + publish + save/open/share are owner-only (they run on the owner's key / write data)
-  ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  // Cloud menu (save/open/share/publish) + AI actions are owner-only.
+  ["cloudMenu","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   reflectPublicBtn();
 }
 function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
 function reflectPublicBtn(){
-  const b = $("publicBtn"); if (!b) return;
+  const b = $("publicItem");
   const pub = !!(doc && doc.public);
-  b.textContent = pub ? "🌐 Public ✓" : "🌐 Make public";
-  b.classList.toggle("on", pub);
-  b.title = pub ? "This roadmap is public — anyone can view it read-only. Click to make it private." : "Publish this roadmap so anyone can view it read-only.";
+  if (b) b.textContent = pub ? "🌐 Make private" : "🌐 Make public";
   // Show the shareable public link on the page while a public roadmap is open (owner only).
   const bar = $("publicUrlBar");
   if (bar){
@@ -1837,6 +1935,23 @@ function setZoom(z){ zoom = clampZoom(z); const l = $("zoomReset"); if (l) l.tex
 /* =========================================================================
    Wire up
    ========================================================================= */
+/* ---------- dropdown menus ---------- */
+function closeMenus(){
+  document.querySelectorAll(".menu-list").forEach(l => l.hidden = true);
+  document.querySelectorAll(".menu-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
+}
+function runMenuAction(act){
+  const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), print:() => window.print(),
+    dup:duplicateRoadmap, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic };
+  (map[act] || function(){})();
+}
+function onMenuDocClick(e){
+  const btn = e.target.closest(".menu-btn");
+  if (btn){ const list = btn.nextElementSibling; const willOpen = list && list.hidden; closeMenus(); if (list && willOpen){ list.hidden = false; btn.setAttribute("aria-expanded", "true"); } return; }
+  const item = e.target.closest(".menu-item");
+  if (item){ closeMenus(); runMenuAction(item.dataset.act); return; }
+  closeMenus();   // outside click
+}
 function wire(){
   // title / subtitle
   $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
@@ -1855,8 +1970,6 @@ function wire(){
   // picker + CRUD
   $("rmPicker").addEventListener("change", e => switchTo(e.target.value));
   $("rmNew").addEventListener("click", newRoadmap);
-  $("rmDup").addEventListener("click", duplicateRoadmap);
-  $("rmDel").addEventListener("click", deleteRoadmap);
   // template
   $("tmplPicker").addEventListener("change", e => { const v = e.target.value; if (v) applyTemplate(v); e.target.value = ""; });
   // editor delegation
@@ -1865,12 +1978,12 @@ function wire(){
   ed.addEventListener("change", onEditorChange);
   ed.addEventListener("click", onEditorClick);
   $("addLane").addEventListener("click", () => { doc.lanes.push(normLane({ name:"New lane", items:[] }, doc.lanes.length)); save(); fullRender(); });
-  // export/import/png/print
-  $("expJson").addEventListener("click", exportJson);
-  $("impJson").addEventListener("click", () => $("fileIn").click());
+  // export / import / png / print / html run via the Export menu (runMenuAction);
+  // the hidden file input is triggered by the menu's Import item.
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
-  $("expPng").addEventListener("click", exportPng);
-  $("printBtn").addEventListener("click", () => window.print());
+  // dropdown menus (Export, Cloud, roadmap ⋯)
+  document.addEventListener("click", onMenuDocClick);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenus(); });
   $("summaryAiBtn").addEventListener("click", generateNarrative);
   $("summaryCopy").addEventListener("click", () => {
     if (!lastSummaryText) return;
@@ -1888,15 +2001,11 @@ function wire(){
   // cloud
   $("cloudBtn").addEventListener("click", cloudSignInFlow);
   $("ownerSignIn").addEventListener("click", cloudSignInFlow);
-  $("publicBtn").addEventListener("click", togglePublic);
   $("publicUrlCopy").addEventListener("click", () => {
     const el = $("publicUrl"); el.select();
     try { navigator.clipboard.writeText(el.value); } catch(_){ try { document.execCommand("copy"); } catch(__){} }
     const b = $("publicUrlCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
   });
-  $("cloudSave").addEventListener("click", cloudSave);
-  $("cloudOpen").addEventListener("click", cloudOpen);
-  $("shareBtn").addEventListener("click", shareFlow);
   $("cloudClose").addEventListener("click", closeCloud);
   $("cloudModal").addEventListener("click", e => { if (e.target === $("cloudModal")) closeCloud(); });
   // theme
