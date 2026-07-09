@@ -349,7 +349,12 @@
     svg.gantt { width:100% !important; height:auto !important; min-width:0 !important; }
     #summaryCard, .summary-narrative { break-inside:avoid; }
     .site-footer { border-color:#ddd; color:#666; margin-top:16px; }
-    @page { size:landscape; margin:12mm; }
+    /* Let the timeline fit the page width (portrait by default) — the printout flows
+       header → chips → timeline → summary → analysis down the page, like the reference.
+       Don't force landscape: when the print destination is portrait the browser rotates
+       the whole page 90° instead, which is what produced the sideways output. */
+    .stat-chips { break-inside:avoid; }
+    @page { margin:12mm; }
   }
 </style>
 </head>
@@ -630,6 +635,7 @@ let session = null;             // supabase auth session (cloud)
 let sb = null;                  // lazily-created supabase client
 let draftSnapshot = null;       // {prevActiveId} for AI-draft discard
 let readOnly = false;
+let printing = false;           // true during a print job → render callouts as static prose
 
 /* =========================================================================
    Normalisation — accepts local docs and AI output; repairs shape.
@@ -1394,7 +1400,7 @@ function renderCallouts(){
   const card = $("calloutsCard"); if (!card) return;
   const body = $("calloutsBody");
   const list = (doc && Array.isArray(doc.callouts)) ? doc.callouts : [];
-  const editable = !readOnly;
+  const editable = !readOnly && !printing;   // render clean static prose while printing
   const hasContent = list.some(c => (c.title || "").trim() || (c.body || "").trim());
   if (!editable && !hasContent){ card.hidden = true; body.innerHTML = ""; return; }
   card.hidden = false;
@@ -1638,7 +1644,8 @@ function closeCloud(){ $("cloudModal").hidden = true; }
 function reflectCloudUi(){
   const on = !!session;
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
-  $("cloudEmail").hidden = !on; $("cloudEmail").textContent = on ? (session.user.email||"") : "";
+  // Signed-in state is shown by the ☁ Sign out button; don't display the account email.
+  $("cloudEmail").hidden = true; $("cloudEmail").textContent = "";
   // AI + publish + save/open/share are owner-only (they run on the owner's key / write data)
   ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   reflectPublicBtn();
@@ -1901,6 +1908,9 @@ function wire(){
   // re-fit the timeline to the viewport on resize (zoom is relative to available width)
   let rzTimer = null;
   window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(() => { renderGantt(); if (mode === "overview") renderOverview(); }, 150); });
+  // print: render the analysis cards as clean static prose (no editing chrome)
+  window.addEventListener("beforeprint", () => { printing = true; renderCallouts(); });
+  window.addEventListener("afterprint", () => { printing = false; renderCallouts(); });
   // resilience
   window.addEventListener("beforeunload", saveNow);
 }
