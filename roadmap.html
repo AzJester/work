@@ -159,6 +159,19 @@
   .item input[type="date"]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .item .dash { color:var(--mut); }
   .notes-body { padding:12px 16px 16px; }
+  .summary-body { padding:14px 16px 16px; font-size:13.5px; line-height:1.6; color:var(--ink); }
+  .summary-body .sum-head { font-size:15px; font-weight:800; letter-spacing:-0.01em; }
+  .summary-body .sum-head .sum-pct { color:var(--accent); }
+  .summary-body .sum-bar { height:8px; border-radius:999px; background:var(--line); overflow:hidden; margin:8px 0 12px; max-width:420px; }
+  .summary-body .sum-bar > span { display:block; height:100%; background:var(--s-complete); border-radius:999px; }
+  .summary-body .sum-chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+  .summary-body .sum-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-2);
+    background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:2px 9px; }
+  .summary-body .sum-dot { width:8px; height:8px; border-radius:2px; flex:0 0 auto; }
+  .summary-body .sum-row { margin:3px 0; color:var(--ink-2); }
+  .summary-body .sum-row b { color:var(--ink); font-weight:700; }
+  .summary-body .sum-row.warn b { color:var(--err); }
+  .summary-body .sum-empty { color:var(--mut); }
   .rm-notes { width:100%; min-height:76px; resize:vertical; font-family:inherit; font-size:13.5px; line-height:1.5; color:var(--ink);
     background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; }
   .rm-notes::placeholder { color:var(--mut); }
@@ -423,6 +436,15 @@
       <span class="li"><span class="dia" style="background:var(--s-milestone)"></span>Milestone</span>
       <span class="li"><span class="today-sw"></span>Today</span>
     </div>
+  </div>
+
+  <!-- progress summary (auto-computed from the roadmap) -->
+  <div class="card editor-view" id="summaryCard" hidden>
+    <div class="card-head">
+      <h2>Progress summary</h2>
+      <button id="summaryCopy" class="btn ghost sm app-only" type="button">Copy</button>
+    </div>
+    <div class="summary-body" id="summaryBody"></div>
   </div>
 
   <!-- roadmap notes -->
@@ -792,7 +814,66 @@ function mdiamond(cx, cy, half, attrs){
 }
 function fitsInside(label, widthPx){ return (String(label).length * 6.7 + 18) <= widthPx; }
 
+/* ---------- auto progress summary (computed from the roadmap, no AI) ---------- */
+let lastSummaryText = "";
+function renderSummary(){
+  const card = $("summaryCard"); if (!card) return;
+  const body = $("summaryBody");
+  const items = [];
+  ((doc && doc.lanes) || []).forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
+  const total = items.length;
+  if (!total){ card.hidden = true; lastSummaryText = ""; return; }
+  card.hidden = false;
+  const by = {}; STATUSES.forEach(s => by[s.v] = 0);
+  items.forEach(it => { by[it.status] = (by[it.status] || 0) + 1; });
+  const complete = by.complete || 0;
+  const pct = Math.round(complete / total * 100);
+  const today = msOf(todayIso());
+  const labelsOf = arr => arr.map(it => it.label || (it.kind === "milestone" ? "Milestone" : "Phase"));
+  const inProg  = labelsOf(items.filter(it => it.status === "in_progress"));
+  const atRisk  = labelsOf(items.filter(it => it.status === "at_risk"));
+  const blocked = labelsOf(items.filter(it => it.status === "blocked"));
+  const onHold  = labelsOf(items.filter(it => it.status === "on_hold"));
+  const nextMiles = items.filter(it => it.kind === "milestone" && it.status !== "complete" && msOf(it.date) >= today)
+    .sort((a, b) => msOf(a.date) - msOf(b.date)).slice(0, 2);
+  const overdue = items.filter(it => {
+    if (it.status === "complete") return false;
+    const e = it.kind === "milestone" ? msOf(it.date) : msOf(it.end);
+    return e && e < today;
+  });
+  const fmtD = iso => { const d = new Date(msOf(iso)); return MONTHS[d.getMonth()] + " " + d.getDate(); };
+  const { t0, t1 } = computeDomain(doc.lanes);
+  const range = MONTHS[new Date(t0).getMonth()] + " " + new Date(t0).getFullYear() + " – "
+    + MONTHS[new Date(t1 - 864e5).getMonth()] + " " + new Date(t1 - 864e5).getFullYear();
+  const chips = STATUSES.filter(s => by[s.v] > 0).map(s =>
+    '<span class="sum-chip"><span class="sum-dot" style="background:' + STATUS_COLOR[s.v] + '"></span>' + by[s.v] + " " + esc(s.label) + "</span>").join("");
+  const rows = [];
+  if (inProg.length)    rows.push('<div class="sum-row"><b>In progress:</b> ' + esc(inProg.join(", ")) + "</div>");
+  if (nextMiles.length) rows.push('<div class="sum-row"><b>Next milestone' + (nextMiles.length > 1 ? "s" : "") + ':</b> ' + nextMiles.map(m => esc(m.label || "Milestone") + " (" + fmtD(m.date) + ")").join(", ") + "</div>");
+  if (atRisk.length)    rows.push('<div class="sum-row warn"><b>At risk:</b> ' + esc(atRisk.join(", ")) + "</div>");
+  if (blocked.length)   rows.push('<div class="sum-row warn"><b>Blocked:</b> ' + esc(blocked.join(", ")) + "</div>");
+  if (onHold.length)    rows.push('<div class="sum-row"><b>On hold:</b> ' + esc(onHold.join(", ")) + "</div>");
+  if (overdue.length)   rows.push('<div class="sum-row warn"><b>Overdue:</b> ' + overdue.length + " item" + (overdue.length > 1 ? "s" : "") + " — " + esc(labelsOf(overdue).join(", ")) + "</div>");
+  body.innerHTML =
+    '<div class="sum-head">' + esc(doc.title || "Untitled") + ' — <span class="sum-pct">' + pct + '% complete</span> <span style="font-weight:600;color:var(--mut)">(' + complete + " of " + total + " items)</span></div>"
+    + '<div class="sum-bar"><span style="width:' + pct + '%"></span></div>'
+    + '<div class="sum-row" style="margin-bottom:8px">' + esc(range) + "</div>"
+    + '<div class="sum-chips">' + chips + "</div>"
+    + rows.join("");
+  const tl = [];
+  tl.push((doc.title || "Untitled") + " — " + pct + "% complete (" + complete + " of " + total + " items)");
+  tl.push("Timeframe: " + range);
+  tl.push("Status: " + STATUSES.filter(s => by[s.v] > 0).map(s => by[s.v] + " " + s.label.toLowerCase()).join(" · "));
+  if (inProg.length)    tl.push("In progress: " + inProg.join(", "));
+  if (nextMiles.length) tl.push("Next milestone" + (nextMiles.length > 1 ? "s" : "") + ": " + nextMiles.map(m => (m.label || "Milestone") + " (" + fmtD(m.date) + ")").join(", "));
+  if (atRisk.length)    tl.push("At risk: " + atRisk.join(", "));
+  if (blocked.length)   tl.push("Blocked: " + blocked.join(", "));
+  if (onHold.length)    tl.push("On hold: " + onHold.join(", "));
+  tl.push("Overdue: " + (overdue.length ? overdue.length + " (" + labelsOf(overdue).join(", ") + ")" : "none"));
+  lastSummaryText = tl.join("\n");
+}
 function renderGantt(){
+  renderSummary();
   const host = $("gantt");
   const lanes = doc.lanes;
   const anyItems = lanes.some(l => l.items.some(itemValid));
@@ -1572,6 +1653,11 @@ function wire(){
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
   $("expPng").addEventListener("click", exportPng);
   $("printBtn").addEventListener("click", () => window.print());
+  $("summaryCopy").addEventListener("click", () => {
+    if (!lastSummaryText) return;
+    try { navigator.clipboard.writeText(lastSummaryText); } catch(_){ }
+    const b = $("summaryCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
+  });
   // AI
   $("aiBtn").addEventListener("click", openAi);
   $("aiClose").addEventListener("click", closeAi);
