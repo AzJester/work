@@ -60,6 +60,11 @@
     border-radius:6px; padding:2px 6px; margin-left:-6px; width:100%; margin-top:2px; }
   input.sub-in:hover { border-color:var(--line); }
   input.sub-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+  input.premise-in { font-family:var(--disp); font-size:15px; line-height:1.4; color:var(--ink); border:1px solid transparent; background:transparent;
+    border-radius:6px; padding:3px 6px; margin-left:-6px; width:100%; max-width:62ch; margin-top:8px; }
+  input.premise-in::placeholder { color:var(--mut); font-size:13.5px; }
+  input.premise-in:hover { border-color:var(--line); }
+  input.premise-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
   .ov-h1 { font-weight:800; font-size:27px; letter-spacing:-0.025em; color:var(--ink); }
   .ov-sub { font-size:14px; color:var(--ink-2); margin-top:2px; }
   .mast-tools { display:flex; align-items:center; gap:var(--sp-2); flex:0 0 auto; margin-top:4px; }
@@ -104,6 +109,11 @@
     border-radius:8px; border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); cursor:pointer; font-size:14px; transition:color .12s, border-color .12s; }
   .icon-btn:hover { color:var(--accent); border-color:var(--accent); }
   .icon-btn:disabled { opacity:.35; cursor:default; }
+  .icon-btn.tog.on { color:#fff; background:var(--ink-2); border-color:var(--ink-2); }
+  .lane-subrow { padding:6px 10px 2px 30px; background:var(--bg); border-bottom:1px solid var(--line); }
+  .lane-sub-in { width:100%; max-width:52ch; font-family:var(--mono); font-size:12px; color:var(--ink-2); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:6px; padding:5px 8px; }
+  .lane-sub-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
 
   /* ---------- toolbar ---------- */
   .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line);
@@ -134,8 +144,11 @@
   .legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:11px 16px 13px; border-top:1px solid var(--line); background:var(--bg); }
   .legend .li { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
   .legend .sw { width:22px; height:11px; border-radius:var(--pill); display:inline-block; }
+  .legend .sw.dot { width:11px; height:11px; border-radius:50%; border:1.5px solid #fff; box-shadow:0 0 0 1px var(--line-2); }
+  .legend .sw.hatch { border:1.3px dashed var(--mut); background:repeating-linear-gradient(45deg,var(--line-2) 0 5px,transparent 5px 10px) !important; }
   .legend .dia { width:12px; height:12px; transform:rotate(45deg); border-radius:2px; display:inline-block; }
   .legend .today-sw { width:0; height:15px; border-left:2px dashed var(--accent); display:inline-block; }
+  .legend .lead { font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; color:var(--mut); text-transform:uppercase; }
   .tl-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:46px 16px; text-align:center; color:var(--mut); font-size:14px; }
   .tl-empty .big { font-size:26px; opacity:.5; }
 
@@ -337,6 +350,13 @@
   .callout .co-body::placeholder, .callout .co-title::placeholder { color:var(--mut); }
   .callout.ro .co-title-ro { font-size:15px; font-weight:800; color:var(--ink); margin-bottom:6px; }
   .callout.ro .co-body-ro { font-size:13.5px; line-height:1.6; color:var(--ink-2); }
+  .callout .co-listtog { display:inline-flex; align-items:center; gap:4px; flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.04em;
+    color:var(--ink-2); white-space:nowrap; cursor:pointer; user-select:none; }
+  .callout .co-listtog input { margin:0; cursor:pointer; }
+  .callout .cond-list { list-style:none; margin:0; padding:0; counter-reset:c; }
+  .callout .cond-list li { position:relative; padding:11px 0 11px 40px; border-top:1px solid var(--line); font-size:13.5px; line-height:1.55; color:var(--ink-2); }
+  .callout .cond-list li:first-child { border-top:none; }
+  .callout .cond-list li::before { counter-increment:c; content:"0" counter(c); position:absolute; left:0; top:11px; font-family:var(--mono); font-size:12px; color:var(--mut); }
   .co-add { grid-column:1 / -1; justify-self:start; }
   .pub-url .pub-ico { flex:0 0 auto; font-size:14px; }
   .pub-url .pub-lbl { flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:700; }
@@ -386,6 +406,7 @@
         <div id="editorTitle" class="editor-view">
           <input id="titleIn" class="title-in" type="text" placeholder="Untitled roadmap" />
           <input id="subIn" class="sub-in" type="text" placeholder="Add a subtitle (optional)" />
+          <input id="premiseIn" class="premise-in" type="text" placeholder="Add a one-line premise (optional) — the key condition or takeaway" />
         </div>
         <div id="overviewTitle" class="app-only">
           <div class="ov-h1">Portfolio</div>
@@ -496,12 +517,13 @@
     </div>
     <div class="tl-scroll"><div id="gantt"></div></div>
     <div class="legend">
-      <span class="li"><span class="sw" style="background:var(--s-planned)"></span>Planned</span>
-      <span class="li"><span class="sw" style="background:var(--s-progress)"></span>In progress</span>
-      <span class="li"><span class="sw" style="background:var(--s-complete)"></span>Complete</span>
-      <span class="li"><span class="sw" style="background:var(--s-risk)"></span>At risk</span>
-      <span class="li"><span class="sw" style="background:var(--s-blocked)"></span>Blocked</span>
-      <span class="li"><span class="sw" style="background:var(--s-onhold)"></span>On hold</span>
+      <span class="li lead">Bar = lane · dot = status</span>
+      <span class="li"><span class="sw dot" style="background:var(--s-planned)"></span>Planned</span>
+      <span class="li"><span class="sw dot" style="background:var(--s-progress)"></span>In progress</span>
+      <span class="li"><span class="sw dot" style="background:var(--s-complete)"></span>Complete</span>
+      <span class="li"><span class="sw dot" style="background:var(--s-risk)"></span>At risk</span>
+      <span class="li"><span class="sw dot" style="background:var(--s-blocked)"></span>Blocked</span>
+      <span class="li"><span class="sw hatch"></span>On hold</span>
       <span class="li"><span class="dia" style="background:var(--s-milestone)"></span>Milestone</span>
       <span class="li"><span class="today-sw"></span>Today</span>
     </div>
@@ -687,7 +709,9 @@ function normItem(raw){
 }
 function normLane(raw, i){
   const lane = { id:(raw && raw.id) || uid("lane"), name:String((raw && raw.name) || "Untitled lane").trim(),
-    color:(raw && raw.color) || GROUP_COLORS[i % GROUP_COLORS.length], items:[] };
+    color:(raw && raw.color) || GROUP_COLORS[i % GROUP_COLORS.length],
+    // a "contingency" lane renders muted (dashed, greyed, with a sub-label) — e.g. a fallback branch held until a decision
+    contingency: !!(raw && raw.contingency), sub: String((raw && raw.sub) || ""), items:[] };
   const items = raw && Array.isArray(raw.items) ? raw.items : [];
   lane.items = items.map(normItem).filter(Boolean);
   return lane;
@@ -703,11 +727,14 @@ function normalizeRoadmap(raw){
     id: raw.id || uid("rm"),
     title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
     subtitle: String(raw.subtitle || ""),
+    // a one-line framing statement shown under the title (in the app, export and print)
+    premise: String(raw.premise || ""),
     notes: String(raw.notes || ""),
     public: !!raw.public,
-    // authored analysis / callout cards shown below the timeline
+    // authored analysis / callout cards shown below the timeline. `list:true` renders
+    // the body as a numbered conditions list (one item per line) instead of prose.
     callouts: (Array.isArray(raw.callouts) ? raw.callouts : []).map(c => ({
-      id: (c && c.id) || uid("co"), title: String((c && c.title) || ""), body: String((c && c.body) || "") })),
+      id: (c && c.id) || uid("co"), title: String((c && c.title) || ""), body: String((c && c.body) || ""), list: !!(c && c.list) })),
     templateType: raw.templateType || "custom",
     // The natural-language description + template hint used to build this roadmap
     // via ✨ Build from description, kept so it can be revisited and refined.
@@ -826,6 +853,11 @@ const GA = { PADL:184, PADR:26, PADT:70, PADB:14, barH:22, rowUnit:32, lanePadTo
 // literal font stacks (no spaces) so PNG export — a detached SVG with no CSS vars — still renders text
 const F_SANS = "-apple-system,Roboto,Helvetica,Arial,sans-serif";
 const F_MONO = "ui-monospace,Menlo,Consolas,monospace";
+// colour helpers — bars are filled with the lane colour, so labels need an
+// auto-contrasting ink and on-hold bars a lane-tinted hatch.
+function hexToRgb(h){ h = String(h||"").replace("#",""); if (h.length === 3) h = h.split("").map(c => c+c).join(""); const n = parseInt(h || "0", 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function inkOn(hex){ const [r,g,b] = hexToRgb(hex).map(v => { v/=255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }); const L = 0.2126*r + 0.7152*g + 0.0722*b; return L > 0.42 ? "#122031" : "#ffffff"; }
+function hatchId(color){ return "hatch_" + String(color||"").replace(/[^a-z0-9]/gi, ""); }
 
 function itemStart(it){ return it.kind === "milestone" ? it.date : it.start; }
 function itemEnd(it){ return it.kind === "milestone" ? it.date : it.end; }
@@ -887,6 +919,10 @@ function computeDomain(lanes, src){
   if (endDt.getTime() - startDt.getTime() < 32*864e5) endDt = addMonths(startDt, 2);   // >= ~2 months
   return { t0:startDt.getTime(), t1:endDt.getTime() };
 }
+// Lanes that count toward the computed summary/chips. A "contingency" lane is a
+// held branch, so it's shown on the timeline but excluded from the numbers
+// (progress %, window, next gate). Falls back to all lanes if every lane is one.
+function calcLanes(){ const ls = (doc && doc.lanes) || []; const c = ls.filter(l => !l.contingency); return c.length ? c : ls; }
 function svgEl(tag, attrs, inner){
   let s = "<"+tag;
   for (const k in attrs) s += " "+k+'="'+attrs[k]+'"';
@@ -908,7 +944,7 @@ function renderSummary(){
   const card = $("summaryCard"); if (!card) return;
   const body = $("summaryBody");
   const items = [];
-  ((doc && doc.lanes) || []).forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
+  calcLanes().forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
   const total = items.length;
   if (!total){ card.hidden = true; lastSummaryText = ""; return; }
   card.hidden = false;
@@ -997,7 +1033,7 @@ async function generateNarrative(){
 }
 function renderStatChips(){
   const el = $("statChips"); if (!el) return;
-  const items = []; ((doc && doc.lanes) || []).forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
+  const items = []; calcLanes().forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
   if (!items.length){ el.hidden = true; el.innerHTML = ""; return; }
   let mn = null, mx = null;
   items.forEach(it => { const s = msOf(itemStart(it)), e = msOf(itemEnd(it)); if (mn === null || s < mn) mn = s; if (mx === null || e > mx) mx = e; });
@@ -1062,12 +1098,19 @@ function renderGantt(){
   const bandBot = GA.PADT - 10;
 
   let out = "";
-  // diagonal hatch used for on-hold / contingency bars
-  out += svgEl("defs", {},
-    '<pattern id="hatchHold" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
-    + '<rect width="7" height="7" fill="' + P.bg + '"/>'
-    + '<line x1="0" y1="0" x2="0" y2="7" stroke="' + STATUS_COLOR.on_hold + '" stroke-width="2.5" stroke-opacity="0.5"/>'
-    + '</pattern>');
+  // diagonal hatch for on-hold / contingency bars — one pattern per lane colour in use,
+  // so a held bar reads as a tentative, lane-tinted version of a solid bar.
+  const hatchColors = new Set();
+  lanes.forEach(l => l.items.forEach(it => { if (it.kind === "bar" && it.status === "on_hold" && itemValid(it)) hatchColors.add(l.color || "#64748b"); }));
+  let defs = "";
+  hatchColors.forEach(c => { const [r,g,b] = hexToRgb(c);
+    defs += '<pattern id="' + hatchId(c) + '" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+      + '<rect width="7" height="7" fill="' + P.bg + '"/>'
+      + '<rect width="7" height="7" fill="rgba(' + r + ',' + g + ',' + b + ',0.10)"/>'
+      + '<line x1="0" y1="0" x2="0" y2="7" stroke="rgba(' + r + ',' + g + ',' + b + ',0.6)" stroke-width="2.5"/>'
+      + '</pattern>';
+  });
+  out += svgEl("defs", {}, defs);
   // background + header band
   out += svgEl("rect", { x:0, y:0, width:CW, height:CH, fill:P.bg, rx:4 });
   out += svgEl("rect", { x:0, y:0, width:CW, height:bandBot, fill:P.headerBand });
@@ -1108,13 +1151,22 @@ function renderGantt(){
 
   // lane backgrounds + names + dividers
   laneBox.forEach((box, i) => {
-    if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:CW, height:box.h.toFixed(1), fill:P.laneAlt });
-    out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:CW, y2:box.top.toFixed(1), stroke:P.grid, "stroke-width":1 });
     const lane = lanes[i];
-    // small lane dot for identity (keeps lane colour off the plot so status is the only bar colour)
+    const cont = !!lane.contingency;
+    if (i % 2 === 1) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:CW, height:box.h.toFixed(1), fill:P.laneAlt });
+    if (cont) out += svgEl("rect", { x:0, y:box.top.toFixed(1), width:CW, height:box.h.toFixed(1), fill:P.laneAlt });   // extra tint so a contingency lane reads as set-apart
+    out += svgEl("line", { x1:0, y1:box.top.toFixed(1), x2:CW, y2:box.top.toFixed(1), stroke: cont ? P.mut : P.grid, "stroke-width": cont ? 2 : 1, "stroke-opacity": cont ? 0.55 : 1 });
     const nameCy = box.top + box.h/2;
-    out += svgEl("circle", { cx:24, cy:nameCy.toFixed(1), r:4.5, fill:lane.color });
-    out += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+    out += svgEl("circle", { cx:24, cy:nameCy.toFixed(1), r:4.5, fill:lane.color, "fill-opacity": cont ? 0.55 : 1 });
+    const nameCol = cont ? P.mut : P.ink;
+    const subTxt = (lane.sub || "").trim();
+    if (subTxt){
+      const sub = subTxt.length > 30 ? subTxt.slice(0,29) + "…" : subTxt;
+      out += svgEl("text", { x:36, y:(nameCy-7).toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+      out += svgEl("text", { x:36, y:(nameCy+9).toFixed(1), fill:P.mut, "font-size":10, "font-family":F_MONO, "dominant-baseline":"middle" }, esc(sub));
+    } else {
+      out += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+    }
   });
 
   // gate / key-date lines (dashed, labeled) drawn under the items
@@ -1126,7 +1178,7 @@ function renderGantt(){
     out += svgEl("line", { x1:gxx.toFixed(1), y1:bandBot, x2:gxx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.ink2, "stroke-width":1.25, "stroke-dasharray":"5 4", "stroke-opacity":0.5 });
     const pw = 42, ph = 15, ppx = Math.min(Math.max(gxx-pw/2, GA.PADL), GA.PADL+plotW-pw), ppy = 3;
     out += svgEl("rect", { x:ppx.toFixed(1), y:ppy, width:pw, height:ph, rx:3, fill:P.ink });
-    out += svgEl("text", { x:(ppx+pw/2).toFixed(1), y:(ppy+ph/2+0.5).toFixed(1), fill:"#ffffff", "font-size":8.5, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.1em", "dominant-baseline":"middle" }, "GATE");
+    out += svgEl("text", { x:(ppx+pw/2).toFixed(1), y:(ppy+ph/2+0.5).toFixed(1), fill:P.bg, "font-size":8.5, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.1em", "dominant-baseline":"middle" }, "GATE");
   }));
 
   // today line + chip (drawn under items)
@@ -1143,19 +1195,21 @@ function renderGantt(){
   // items. Each item is wrapped in a <g> carrying a <title> (native hover tooltip
   // with the full label + note), so long labels and notes are always reachable.
   laneBox.forEach((box, i) => {
+    const laneCol = lanes[i].color || MILE_BLUE;
     box.lay.placed.forEach(v => {
       const it = v.it;
       const yTop = box.top + GA.lanePadTop + v.row*GA.rowUnit;
       const note = (it.note || "").trim();
+      const stCol = STATUS_COLOR[it.status] || "#94a3b8";
       let g = "";
       if (it.kind === "milestone"){
         const cx = xi(it.date), cy = yTop + GA.barH/2, r = 7;
-        const col = STATUS_COLOR[it.status] || MILE_BLUE;
-        const filled = it.status !== "planned";
-        // moat (opaque casing) so the diamond never blends into a bar behind it; clean
-        // filled-vs-outlined distinction (no inner keyline) for a sharper marker
-        g += mdiamond(cx, cy, r+3, { fill:P.bg });
-        g += mdiamond(cx, cy, r, { fill: filled ? col : P.bg, stroke:col, "stroke-width":1.75 });
+        // lane-coloured core, status-coloured stroke (the accent); hollow for planned / on-hold / blocked
+        const hollow = it.status === "planned" || it.status === "on_hold" || it.status === "blocked";
+        g += mdiamond(cx, cy, r+3, { fill:P.bg });   // moat so it never blends into a bar behind it
+        if (it.status === "at_risk" || it.status === "blocked")
+          g += mdiamond(cx, cy, r+2.5, { fill:"none", stroke:stCol, "stroke-width":3, "stroke-opacity":0.2 });   // soft status glow
+        g += mdiamond(cx, cy, r, { fill: hollow ? P.bg : laneCol, stroke:stCol, "stroke-width":2 });
         const rightSpace = (GA.PADL+plotW) - cx;
         const labelRight = rightSpace > 120;
         const lx = labelRight ? cx + r + 6 : cx - r - 6;
@@ -1166,30 +1220,31 @@ function renderGantt(){
       } else {
         let bx = xi(it.start), bxe = xi(it.end);
         let bw = Math.max(9, bxe - bx);
-        const planned = it.status === "planned";
         const onhold = it.status === "on_hold";
-        const lightFill = planned || onhold;   // ghost/hatched fills read on a light bar, so use dark labels
-        const col = STATUS_COLOR[it.status] || "#94a3b8";
-        // flat bar: solid fill; ghost outline for planned; diagonal hatch for on-hold/contingency
+        // lane-coloured fill (hatched when on hold); status shown by an accent pip
         g += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:bw.toFixed(1), height:GA.barH, rx:4,
-          fill: planned ? P.plannedFill : (onhold ? "url(#hatchHold)" : col),
-          stroke: onhold ? STATUS_COLOR.on_hold : (planned ? P.plannedStroke : P.barStroke), "stroke-width": lightFill ? 1.25 : 1 });
+          fill: onhold ? ("url(#" + hatchId(laneCol) + ")") : laneCol,
+          stroke: onhold ? laneCol : P.barStroke, "stroke-width": onhold ? 1.3 : 1, "stroke-dasharray": onhold ? "4 3" : "0" });
         // elapsed-time shading on in-progress bars (start → today, clamped inside the bar)
         if (it.status === "in_progress" && showToday){
           const ex = Math.min(Math.max(x(todayMs), bx), bxe);
           if (ex > bx + 0.75) g += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:(ex-bx).toFixed(1), height:GA.barH, rx:4, fill:P.elapsed });
         }
+        const txt = onhold ? P.ink2 : inkOn(laneCol);
+        const hasPip = bw >= 15;
+        if (hasPip) g += svgEl("circle", { cx:(bx+9).toFixed(1), cy:(yTop+GA.barH/2).toFixed(1), r:3.4, fill:stCol, stroke:"#ffffff", "stroke-width":1.4, "stroke-opacity":0.9 });
         const lab = it.label || "";
         if (lab){
-          if (fitsInside(lab, bw)){
-            g += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill: lightFill ? P.ink2 : (STATUS_TEXT[it.status]||"#3a3a44"),
+          const padL = hasPip ? 20 : 9;
+          if ((lab.length*6.7 + padL + 8) <= bw){
+            g += svgEl("text", { x:(bx+padL).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:txt,
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           } else {
             g += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           }
         }
-        if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: lightFill ? P.noteDot : "#ffffff", "fill-opacity": lightFill ? 1 : 0.85 }); }
+        if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: onhold ? P.noteDot : "#ffffff", "fill-opacity": onhold ? 1 : 0.85 }); }
       }
       const tip = it.label || (it.kind==="milestone" ? "Milestone" : "");
       const titleTxt = note ? (tip + " — " + note) : tip;
@@ -1343,11 +1398,13 @@ function renderEditor(){
       '<div class="lane-head">'
       + '<span class="dot" style="background:'+lane.color+'"></span>'
       + '<input class="lane-name" data-role="laneName" type="text" value="'+esc(lane.name)+'" placeholder="Lane name" />'
+      + '<button class="icon-btn tog'+(lane.contingency?' on':'')+'" data-role="laneCont" title="Contingency lane — renders muted, with a sub-label (e.g. a fallback branch)">⚑</button>'
       + '<button class="icon-btn" data-role="laneUp" title="Move lane up">↑</button>'
       + '<button class="icon-btn" data-role="laneDown" title="Move lane down">↓</button>'
       + '<button class="icon-btn" data-role="laneColor" title="Change colour">🎨</button>'
       + '<button class="icon-btn" data-role="laneDel" title="Delete lane">✕</button>'
       + '</div>'
+      + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" placeholder="Contingency note, e.g. “Only if the July 22 decision picks self-hosted”" value="'+esc(lane.sub||"")+'" /></div>' : '')
       + '<div class="items">'+itemsHtml+'</div>'
       + '<div class="add-row"><button class="btn add sm" data-role="addBar">＋ Phase</button><button class="btn add sm" data-role="addMile">＋ Milestone</button></div>';
     host.appendChild(laneEl);
@@ -1370,6 +1427,7 @@ function onEditorInput(e){
   const laneEl = e.target.closest("[data-lane]"); if (!laneEl) return;
   const lane = findLane(laneEl.dataset.lane); if (!lane) return;
   if (role === "laneName"){ lane.name = e.target.value; save(); renderGantt(); return; }
+  if (role === "laneSub"){ lane.sub = e.target.value; save(); renderGantt(); return; }
   const itemEl = e.target.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
   if (role === "label"){ it.label = e.target.value; save(); renderGantt(); }
@@ -1410,6 +1468,7 @@ function onEditorClick(e){
   if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
   if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
   if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
+  if (role === "laneCont"){ lane.contingency = !lane.contingency; if (!lane.contingency) lane.sub = ""; save(); fullRender(); return; }
   if (role === "addBar"){ const s = laneNextStart(lane); lane.items.push(normItem({ kind:"bar", label:"", start:s, end:addWeeksIso(s,3), status:"planned" })); save(); fullRender(); return; }
   if (role === "addMile"){ lane.items.push(normItem({ kind:"milestone", label:"", date:laneNextStart(lane), status:"planned" })); save(); fullRender(); return; }
   const itemEl = btn.closest("[data-item]"); if (!itemEl) return;
@@ -1424,6 +1483,12 @@ function onEditorClick(e){
    Header sync + full render
    ========================================================================= */
 function fullRender(){ renderGantt(); if (!readOnly) renderEditor(); }
+// a callout marked `list` renders as a numbered conditions list, one item per line
+function calloutListHtml(body){
+  const items = String(body || "").split(/\n/).map(s => s.trim()).filter(Boolean);
+  if (!items.length) return "";
+  return '<ol class="cond-list">' + items.map(t => '<li>' + esc(t) + '</li>').join("") + '</ol>';
+}
 function renderCallouts(){
   const card = $("calloutsCard"); if (!card) return;
   const body = $("calloutsBody");
@@ -1436,15 +1501,16 @@ function renderCallouts(){
     body.innerHTML = list.map(c =>
       '<div class="callout" data-co="' + esc(c.id) + '">'
       + '<div class="co-head"><input class="co-title" data-corole="title" type="text" placeholder="Card title" value="' + esc(c.title || "") + '" />'
+      + '<label class="co-listtog" title="Render as a numbered conditions list (one item per line)"><input type="checkbox" data-corole="list"' + (c.list ? " checked" : "") + ' />＃ List</label>'
       + '<button class="icon-btn" data-corole="del" title="Remove card">✕</button></div>'
-      + '<textarea class="co-body" data-corole="body" placeholder="Context, drivers, risks, decisions…">' + esc(c.body || "") + '</textarea>'
+      + '<textarea class="co-body" data-corole="body" placeholder="' + (c.list ? "One condition per line…" : "Context, drivers, risks, decisions…") + '">' + esc(c.body || "") + '</textarea>'
       + '</div>').join("")
       + '<button id="coAdd" class="btn add co-add" type="button">＋ Add card</button>';
   } else {
     body.innerHTML = list.filter(c => (c.title || "").trim() || (c.body || "").trim()).map(c =>
       '<div class="callout ro">'
       + (c.title ? '<div class="co-title-ro">' + esc(c.title) + '</div>' : '')
-      + (c.body ? '<div class="co-body-ro">' + esc(c.body).replace(/\n/g, "<br>") + '</div>' : '')
+      + (c.body ? (c.list ? calloutListHtml(c.body) : '<div class="co-body-ro">' + esc(c.body).replace(/\n/g, "<br>") + '</div>') : '')
       + '</div>').join("");
   }
 }
@@ -1457,12 +1523,15 @@ function onCalloutInput(e){
 function onCalloutClick(e){
   if (readOnly) return;
   if (e.target.closest("#coAdd")){ doc.callouts = doc.callouts || []; doc.callouts.push({ id:uid("co"), title:"", body:"" }); save(); renderCallouts(); const inp = $("calloutsBody").querySelector(".callout:last-of-type .co-title"); if (inp) inp.focus(); return; }
+  const listTog = e.target.closest("[data-corole='list']");
+  if (listTog){ const el = listTog.closest("[data-co]"); if (!el) return; const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (c){ c.list = listTog.checked; save(); renderCallouts(); } return; }
   const del = e.target.closest("[data-corole='del']");
   if (del){ const el = del.closest("[data-co]"); if (!el) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); }
 }
 function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
+  { const p = $("premiseIn"); if (p){ p.value = doc.premise || ""; p.readOnly = readOnly; p.hidden = readOnly && !(doc.premise || "").trim(); } }
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
   reflectPublicBtn();
   renderCallouts();
@@ -1529,6 +1598,7 @@ body{background:var(--paper);color:var(--ink);font-family:${F_EXP_SANS};-webkit-
 .eyebrow{font-family:${F_EXP_MONO};font-size:11px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase;margin:0 0 12px}
 h1.title{font-family:${F_EXP_COND};font-weight:700;font-size:clamp(30px,5vw,50px);line-height:1.02;letter-spacing:-.012em;margin:0}
 .subtitle{font-family:${F_EXP_MONO};font-size:13px;color:var(--ink-2);margin:13px 0 0;letter-spacing:.005em}
+.premise{font-size:17px;line-height:1.5;max-width:60ch;margin:18px 0 0;color:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 0}
 .stat-chip{border:1px solid var(--rule);background:var(--panel);border-radius:10px;padding:9px 13px;min-width:0}
 .stat-chip .sc-lbl{display:block;font-family:${F_EXP_MONO};font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
@@ -1536,6 +1606,8 @@ h1.title{font-family:${F_EXP_COND};font-weight:700;font-size:clamp(30px,5vw,50px
 .stat-chip.warn .sc-val{color:var(--red)}
 .legend{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin:26px 0 14px;padding-top:16px;border-top:1px solid var(--rule)}
 .lg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.lg.lead{font-family:${F_EXP_MONO};font-size:10.5px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.sw-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px var(--rule)}
 .sw-bar{width:24px;height:12px;border-radius:3px;background:var(--ink-2)}
 .sw-hold{width:24px;height:12px;border-radius:3px;border:1.3px dashed var(--muted);background:repeating-linear-gradient(45deg,rgba(101,113,129,.24) 0 6px,transparent 6px 12px)}
 .sw-dia{width:12px;height:12px;transform:rotate(45deg);border:1.5px solid var(--ink);background:var(--ink)}
@@ -1566,19 +1638,28 @@ h1.title{font-family:${F_EXP_COND};font-weight:700;font-size:clamp(30px,5vw,50px
 .g-body{position:relative;z-index:1}
 .lane{display:flex;border-bottom:1px solid var(--rule-soft)}
 .lane:last-child{border-bottom:none}
+.lane.ghost{border-top:2px solid var(--rule);background:rgba(101,113,129,.05)}
 .lane-label{width:var(--label);flex:none;padding:13px 14px;display:flex;gap:9px;align-items:flex-start}
 .chip2{width:10px;height:10px;border-radius:2px;flex:none;margin-top:3px}
+.lane.ghost .chip2{opacity:.55}
 .lane-name{font-weight:600;font-size:13.5px;line-height:1.22}
+.lane.ghost .lane-name{color:var(--muted)}
+.lane-sub{display:block;font-family:${F_EXP_MONO};font-size:10px;letter-spacing:.01em;color:var(--muted);margin-top:5px;font-weight:400}
 .lane-track{position:relative;flex:1;padding:8px 0}
 .ms-strip{position:relative}
 .ms{position:absolute;width:12px;height:12px;transform:translate(-50%,-50%) rotate(45deg);border:1.6px solid var(--ink);background:#fff;cursor:default}
 .ms.risk{box-shadow:0 0 0 3px rgba(226,161,0,.2)}
 .ms.blk{box-shadow:0 0 0 3px rgba(192,57,43,.16)}
+.lane.ghost .ms-label{color:var(--muted)}
 .ms-label{position:absolute;font-size:11px;font-weight:500;color:var(--ink-2);white-space:nowrap;transform:translateY(-50%)}
 .bar-row{position:relative;height:var(--row-h)}
 .bar{position:absolute;top:calc((var(--row-h) - var(--bar-h)) / 2);height:var(--bar-h);border-radius:5px;display:flex;align-items:center;overflow:hidden;cursor:default;box-shadow:0 1px 2px rgba(20,30,40,.14)}
+.bar.hold{box-shadow:none}
 .bar-elapsed{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.16);border-radius:5px 0 0 5px}
+.bar-pip{position:absolute;left:7px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px #fff;z-index:1}
 .bar .bl{position:relative;font-size:11.5px;font-weight:500;padding:0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar.haspip .bl{padding-left:22px}
+.lane.ghost .bar-ext{color:var(--muted)}
 .bar-ext{position:absolute;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;cursor:default}
 .hint{font-family:${F_EXP_MONO};font-size:10.5px;color:var(--muted);margin:11px 2px 0}
 .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:30px}
@@ -1586,6 +1667,10 @@ h1.title{font-family:${F_EXP_COND};font-weight:700;font-size:clamp(30px,5vw,50px
 .panel h2{font-family:${F_EXP_COND};font-weight:700;font-size:19px;margin:0 0 14px;letter-spacing:-.01em}
 .panel-body{font-size:13.5px;line-height:1.6;color:var(--ink-2)}
 .panel-body p{margin:0 0 12px}.panel-body p:last-child{margin:0}
+.cond-list{list-style:none;margin:0;padding:0;counter-reset:c}
+.cond-list li{position:relative;padding:11px 0 11px 42px;border-top:1px solid var(--rule-soft);font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.cond-list li:first-child{border-top:none}
+.cond-list li::before{counter-increment:c;content:"0" counter(c);position:absolute;left:0;top:11px;font-family:${F_EXP_MONO};font-size:12px;color:var(--muted)}
 .summary-body{font-size:13px;line-height:1.55;color:var(--ink-2)}
 .summary-body .sum-head{font-size:15px;font-weight:700;color:var(--ink)}
 .summary-body .sum-head .sum-pct{color:var(--today)}
@@ -1692,8 +1777,12 @@ async function exportHtml(){
   doc.lanes.forEach(l => (l.items || []).forEach(it => {
     if (it.gate && itemValid(it)){ const d = it.kind === "milestone" ? it.date : it.start; if (msOf(d) >= t0 && msOf(d) <= t1) gates.push({ date:d, label:it.label || "Gate" }); }
   }));
+  // The DAY-N finish + Window reflect the *committed* plan, so contingency lanes
+  // (held branches) don't push the finish out; fall back to all lanes if every
+  // lane is contingency.
   let starts = [], ends = [];
-  doc.lanes.forEach(l => (l.items || []).forEach(it => { if (itemValid(it)){ starts.push(msOf(itemStart(it))); ends.push(msOf(itemEnd(it))); } }));
+  doc.lanes.forEach(l => { if (l.contingency) return; (l.items || []).forEach(it => { if (itemValid(it)){ starts.push(msOf(itemStart(it))); ends.push(msOf(itemEnd(it))); } }); });
+  if (!ends.length) doc.lanes.forEach(l => (l.items || []).forEach(it => { if (itemValid(it)){ starts.push(msOf(itemStart(it))); ends.push(msOf(itemEnd(it))); } }));
   const minStart = Math.min.apply(null, starts), maxEnd = Math.max.apply(null, ends);
   const spanDays = Math.round((maxEnd - minStart) / DAY) + 1;
   const showFinish = ends.length >= 2 && spanDays >= 14 && maxEnd >= t0 && maxEnd <= t1;
@@ -1732,7 +1821,6 @@ async function exportHtml(){
 
   // ----- lanes: milestone strip (2-line when >1) then one row per bar -----
   const tips = [];
-  const pill = { planned:"#5b6673", in_progress:"#8a5a00", complete:"#0f7a4d", at_risk:"#b23a2e", blocked:"#5b46c0", on_hold:"#5b6673" };
   const pushTip = (label, when, status, note) => tips.push({ l:label, w:when, s:status, n:note || "" }) - 1;
   let body = "";
   doc.lanes.forEach(lane => {
@@ -1741,14 +1829,15 @@ async function exportHtml(){
     const twoLine = ms.length > 1;
     const stripH = ms.length ? (twoLine ? 46 : 28) : 0;
 
+    const laneCol = lane.color || "#0073ea";
     let strip = "";
     ms.forEach((m, i) => {
       const mx = pctIso(m.date, 0.5);
       const yTop = twoLine ? (i % 2 === 0 ? 14 : 32) : 14;
-      const filled = m.status !== "planned";
-      const col = STATUS_COLOR[m.status] || MILE_BLUE;
-      let cls = "ms", ds = "left:" + mx.toFixed(3) + "%;top:" + yTop + "px;background:" + (filled ? col : "#fff") + ";border-color:" + col + ";";
-      if (m.status === "planned") ds += "opacity:.9;";
+      // lane-coloured core, status-coloured stroke (the accent); hollow for planned / on-hold / blocked
+      const stC = STATUS_COLOR[m.status] || MILE_BLUE;
+      const hollow = m.status === "planned" || m.status === "on_hold" || m.status === "blocked";
+      let cls = "ms", ds = "left:" + mx.toFixed(3) + "%;top:" + yTop + "px;background:" + (hollow ? "#fff" : laneCol) + ";border-color:" + stC + ";";
       if (m.status === "at_risk") cls += " risk";
       if (m.status === "blocked") cls += " blk";
       const id = pushTip(m.label || "Milestone", fmtMD(m.date) + ", " + yrOf(m.date), m.status, m.note);
@@ -1766,31 +1855,34 @@ async function exportHtml(){
     bars.forEach(b => {
       const L = pctIso(b.start), W = Math.max(0.6, pctIso(b.end, 1) - L);
       const barPx = W / 100 * plotPx;
-      const inside = ((b.label || "").length * 6.6 + 16) <= barPx;
-      const planned = b.status === "planned", onhold = b.status === "on_hold";
-      const light = planned || onhold;
-      const col = STATUS_COLOR[b.status] || "#94a3b8";
-      let cls = "bar", bs = "left:" + L.toFixed(3) + "%;width:" + W.toFixed(3) + "%;";
+      const onhold = b.status === "on_hold";
+      const stC = STATUS_COLOR[b.status] || "#94a3b8";
+      const hasPip = barPx >= 22;
+      const padL = hasPip ? 22 : 10;
+      const inside = ((b.label || "").length * 6.6 + padL + 6) <= barPx;
+      // lane-coloured fill (hatched when on hold); status shown by an accent pip
+      let cls = "bar" + (hasPip ? " haspip" : ""), bs = "left:" + L.toFixed(3) + "%;width:" + W.toFixed(3) + "%;";
       let txt;
-      if (onhold){ const rgb = rgbOf(STATUS_COLOR.on_hold); bs += "background:repeating-linear-gradient(45deg,rgba(" + rgb + ",.16) 0 7px,rgba(" + rgb + ",.04) 7px 14px);border:1.4px dashed rgba(" + rgb + ",.7);box-shadow:none;"; cls += " hold"; txt = "var(--muted)"; }
-      else if (planned){ bs += "background:rgba(148,163,184,.16);border:1.3px dashed #aab2c0;box-shadow:none;"; txt = "var(--ink-2)"; }
-      else { bs += "background:" + col + ";"; txt = STATUS_TEXT[b.status] || "#fff"; }
+      if (onhold){ const rgb = rgbOf(laneCol); bs += "background:repeating-linear-gradient(45deg,rgba(" + rgb + ",.16) 0 7px,rgba(" + rgb + ",.04) 7px 14px);border:1.4px dashed rgba(" + rgb + ",.7);box-shadow:none;"; cls += " hold"; txt = "var(--muted)"; }
+      else { bs += "background:" + laneCol + ";"; txt = inkOn(laneCol); }
       let elapsed = "";
       if (b.status === "in_progress" && showToday){
         const frac = Math.max(0, Math.min(1, (todayMs - msOf(b.start)) / Math.max(1, msOf(b.end) - msOf(b.start))));
         if (frac > 0.02) elapsed = '<span class="bar-elapsed" style="width:' + (frac * 100).toFixed(2) + '%"></span>';
       }
+      const pip = hasPip ? '<span class="bar-pip" style="background:' + stC + '"></span>' : '';
       const when = fmtMD(b.start) + " to " + fmtMD(b.end) + ", " + yrOf(b.end);
       const id = pushTip(b.label || "Phase", when, b.status, b.note);
       const delay = Math.round(idxOf(msOf(b.start)) / TOTAL * 900);
       const inner = inside && b.label ? '<span class="bl" style="color:' + txt + '">' + esc(b.label) + '</span>' : '';
-      const bar = '<div class="' + cls + '" data-tid="' + id + '" data-delay="' + delay + '" data-w="' + W.toFixed(3) + '" style="' + bs + '">' + elapsed + inner + '</div>';
+      const bar = '<div class="' + cls + '" data-tid="' + id + '" data-delay="' + delay + '" data-w="' + W.toFixed(3) + '" style="' + bs + '">' + elapsed + pip + inner + '</div>';
       const ext = !inside && b.label ? '<div class="bar-ext" data-tid="' + id + '" data-delay="' + delay + '" style="left:calc(' + (L + W).toFixed(3) + '% + 8px)">' + esc(b.label) + '</div>' : '';
       rows += '<div class="bar-row">' + bar + ext + '</div>';
     });
     if (!bars.length && !ms.length) return;
-    body += '<div class="lane"><div class="lane-label"><span class="chip2" style="background:' + esc(lane.color || "#0073ea") + '"></span>'
-      + '<span class="lane-name">' + esc(lane.name || "Lane") + '</span></div>'
+    const sub = (lane.sub || "").trim() ? '<span class="lane-sub">' + esc(lane.sub) + '</span>' : '';
+    body += '<div class="lane' + (lane.contingency ? ' ghost' : '') + '"><div class="lane-label"><span class="chip2" style="background:' + esc(lane.color || "#0073ea") + '"></span>'
+      + '<span class="lane-name">' + esc(lane.name || "Lane") + sub + '</span></div>'
       + '<div class="lane-track">' + strip + rows + '</div></div>';
   });
 
@@ -1803,9 +1895,10 @@ async function exportHtml(){
   const summary = $("summaryBody") ? $("summaryBody").innerHTML : "";
   const present = STATUSES.filter(s => doc.lanes.some(l => (l.items || []).some(it => itemValid(it) && it.status === s.v)));
   const anyGate = gates.length > 0;
-  let legend = present.map(s => s.v === "on_hold"
+  let legend = '<span class="lg lead">Bar = lane · dot = status</span>';
+  legend += present.map(s => s.v === "on_hold"
     ? '<span class="lg"><span class="sw-hold"></span>' + esc(s.label) + '</span>'
-    : '<span class="lg"><span class="sw-bar" style="background:' + STATUS_COLOR[s.v] + '"></span>' + esc(s.label) + '</span>').join("");
+    : '<span class="lg"><span class="sw-dot" style="background:' + STATUS_COLOR[s.v] + '"></span>' + esc(s.label) + '</span>').join("");
   legend += '<span class="lg"><span class="sw-dia"></span>Milestone</span>';
   if (anyGate) legend += '<span class="lg"><span class="sw-gate"></span>Gate / key date</span>';
   if (showFinish) legend += '<span class="lg"><span class="sw-fin"></span>Day ' + spanDays + '</span>';
@@ -1815,8 +1908,10 @@ async function exportHtml(){
   let panels = "";
   if (summary) panels += '<div class="panel"><h2>Progress</h2><div class="summary-body">' + summary + '</div></div>';
   callouts.forEach(c => {
-    const paras = esc(c.body || "").split(/\n{2,}/).filter(Boolean).map(p => '<p>' + p.replace(/\n/g, "<br>") + '</p>').join("");
-    panels += '<div class="panel">' + (c.title ? '<h2>' + esc(c.title) + '</h2>' : '') + '<div class="panel-body">' + paras + '</div></div>';
+    const bodyHtml = c.list
+      ? calloutListHtml(c.body)
+      : esc(c.body || "").split(/\n{2,}/).filter(Boolean).map(p => '<p>' + p.replace(/\n/g, "<br>") + '</p>').join("");
+    panels += '<div class="panel">' + (c.title ? '<h2>' + esc(c.title) + '</h2>' : '') + '<div class="panel-body">' + bodyHtml + '</div></div>';
   });
 
   const rangeText = fmtMD(toIso(new Date(minStart))) + " to " + fmtMD(toIso(new Date(maxEnd))) + ", " + yrOf(toIso(new Date(maxEnd)));
@@ -1835,7 +1930,8 @@ async function exportHtml(){
     + '<style>' + css + '</style></head><body><div class="wrap">'
     + '<div class="masthead">'
     + '<div><p class="eyebrow">Roadmap</p><h1 class="title">' + esc(doc.title || "Untitled") + '</h1>'
-    + (subLine ? '<p class="subtitle">' + esc(subLine) + '</p>' : '') + '</div>'
+    + (subLine ? '<p class="subtitle">' + esc(subLine) + '</p>' : '')
+    + ((doc.premise || "").trim() ? '<p class="premise">' + esc(doc.premise) + '</p>' : '') + '</div>'
     + (logo ? '<img class="brand" src="' + logo + '" alt="">' : '')
     + '</div>'
     + (chips ? '<div class="chips">' + chips + '</div>' : '')
@@ -2222,6 +2318,7 @@ function wire(){
   // title / subtitle
   $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
   $("subIn").addEventListener("input", e => { doc.subtitle = e.target.value; save(); });
+  { const p = $("premiseIn"); if (p) p.addEventListener("input", e => { doc.premise = e.target.value; save(); }); }
   $("rmNotes").addEventListener("input", e => { doc.notes = e.target.value; save(); });
   $("calloutsBody").addEventListener("input", onCalloutInput);
   $("calloutsBody").addEventListener("click", onCalloutClick);
