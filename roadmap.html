@@ -302,6 +302,7 @@
   #publicBtn.on { color:var(--accent); border-color:var(--accent); }
   .pub-url { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px;
     background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; }
+  .pub-url[hidden] { display:none !important; }   /* display:flex above otherwise overrides the hidden attribute */
   .pub-url .pub-ico { flex:0 0 auto; font-size:14px; }
   .pub-url .pub-lbl { flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:700; }
   .pub-url .pub-input { flex:1 1 auto; min-width:0; font-family:var(--mono); font-size:12.5px; color:var(--ink);
@@ -964,26 +965,49 @@ function renderGantt(){
   const bandBot = GA.PADT - 10;
 
   let out = "";
+  // diagonal hatch used for on-hold / contingency bars
+  out += svgEl("defs", {},
+    '<pattern id="hatchHold" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+    + '<rect width="7" height="7" fill="' + P.bg + '"/>'
+    + '<line x1="0" y1="0" x2="0" y2="7" stroke="' + STATUS_COLOR.on_hold + '" stroke-width="2.5" stroke-opacity="0.5"/>'
+    + '</pattern>');
   // background + header band
   out += svgEl("rect", { x:0, y:0, width:CW, height:CH, fill:P.bg, rx:4 });
   out += svgEl("rect", { x:0, y:0, width:CW, height:bandBot, fill:P.headerBand });
   out += svgEl("line", { x1:0, y1:bandBot, x2:CW, y2:bandBot, stroke:P.grid, "stroke-width":1 });
 
-  // month gridlines + labels
-  let m = new Date(t0); let prevYear = null;
   const gridTop = bandBot, gridBot = CH - GA.PADB;
+  // weekly gridlines (faint) + week-start day numbers — a scheduling-grade grid.
+  // Drawn first so the stronger month lines/labels sit on top; week numbers appear
+  // only when there's room, so long timelines don't get cluttered.
+  const weekMs = 7*864e5;
+  const perWeekPx = plotW / (span / weekMs);
+  const showWeekNums = perWeekPx >= 26;
+  if (perWeekPx >= 11){
+    let wk = new Date(t0); wk.setHours(0,0,0,0);
+    wk.setDate(wk.getDate() - ((wk.getDay()+6)%7));   // snap back to the week's Monday
+    for (; wk.getTime() <= t1; wk = new Date(wk.getTime() + weekMs)){
+      const wkx = x(wk.getTime());
+      if (wkx > GA.PADL+0.5 && wkx < GA.PADL+plotW)
+        out += svgEl("line", { x1:wkx.toFixed(1), y1:gridTop, x2:wkx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.3 });
+      if (showWeekNums && wkx >= GA.PADL-1 && wkx <= GA.PADL+plotW+1)
+        out += svgEl("text", { x:wkx.toFixed(1), y:(GA.PADT-11).toFixed(1), fill:P.mut, "font-size":9, "font-family":F_MONO, "text-anchor":"middle", "fill-opacity":0.7 }, String(wk.getDate()));
+    }
+  }
+  // month gridlines + labels (stronger, on top of the weekly grid)
+  let m = new Date(t0); let prevYear = null;
   while (m.getTime() <= t1){
     const gx = x(m.getTime());
-    out += svgEl("line", { x1:gx.toFixed(1), y1:gridTop, x2:gx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.85 });
+    out += svgEl("line", { x1:gx.toFixed(1), y1:gridTop, x2:gx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.9 });
     if (m.getTime() < t1){
       let lbl = MONTHS[m.getMonth()];
       if (prevYear !== m.getFullYear()){ lbl += " ’" + String(m.getFullYear()).slice(2); prevYear = m.getFullYear(); }
-      out += svgEl("text", { x:(gx+7).toFixed(1), y:GA.PADT-24, fill:P.mut, "font-size":12, "font-family":F_SANS, "font-weight":600 }, esc(lbl));
+      out += svgEl("text", { x:(gx+7).toFixed(1), y:(GA.PADT-27).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":700 }, esc(lbl));
     }
     m = addMonths(m, 1);
   }
   // left gutter label
-  out += svgEl("text", { x:16, y:GA.PADT-24, fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
+  out += svgEl("text", { x:16, y:(GA.PADT-27).toFixed(1), fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
 
   // lane backgrounds + names + dividers
   laneBox.forEach((box, i) => {
@@ -1034,10 +1058,13 @@ function renderGantt(){
         let bx = xi(it.start), bxe = xi(it.end);
         let bw = Math.max(9, bxe - bx);
         const planned = it.status === "planned";
+        const onhold = it.status === "on_hold";
+        const lightFill = planned || onhold;   // ghost/hatched fills read on a light bar, so use dark labels
         const col = STATUS_COLOR[it.status] || "#94a3b8";
-        // flat bar: solid fill (ghost outline for planned), hairline border, no gloss/shadow
+        // flat bar: solid fill; ghost outline for planned; diagonal hatch for on-hold/contingency
         g += svgEl("rect", { x:bx.toFixed(1), y:yTop.toFixed(1), width:bw.toFixed(1), height:GA.barH, rx:4,
-          fill: planned ? P.plannedFill : col, stroke: planned ? P.plannedStroke : P.barStroke, "stroke-width": planned ? 1.25 : 1 });
+          fill: planned ? P.plannedFill : (onhold ? "url(#hatchHold)" : col),
+          stroke: onhold ? STATUS_COLOR.on_hold : (planned ? P.plannedStroke : P.barStroke), "stroke-width": lightFill ? 1.25 : 1 });
         // elapsed-time shading on in-progress bars (start → today, clamped inside the bar)
         if (it.status === "in_progress" && showToday){
           const ex = Math.min(Math.max(x(todayMs), bx), bxe);
@@ -1046,14 +1073,14 @@ function renderGantt(){
         const lab = it.label || "";
         if (lab){
           if (fitsInside(lab, bw)){
-            g += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill: planned ? P.ink2 : (STATUS_TEXT[it.status]||"#3a3a44"),
+            g += svgEl("text", { x:(bx+9).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill: lightFill ? P.ink2 : (STATUS_TEXT[it.status]||"#3a3a44"),
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           } else {
             g += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           }
         }
-        if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: planned ? P.noteDot : "#ffffff", "fill-opacity": planned ? 1 : 0.85 }); }
+        if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: lightFill ? P.noteDot : "#ffffff", "fill-opacity": lightFill ? 1 : 0.85 }); }
       }
       const tip = it.label || (it.kind==="milestone" ? "Milestone" : "");
       const titleTxt = note ? (tip + " — " + note) : tip;
