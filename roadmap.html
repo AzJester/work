@@ -267,6 +267,19 @@
   /* ---------- read-only mode ---------- */
   body.readonly .app-only { display:none !important; }
 
+  /* ---------- public viewer (not signed in): browse a read-only portfolio ---------- */
+  /* Hide every editing surface but keep navigation (overview grid, view toggle,
+     theme, zoom) so visitors can browse published roadmaps but change nothing. */
+  #ownerSignIn { display:none; }
+  body.publicview #ownerSignIn { display:inline-flex; }
+  body.publicview #toolbar,
+  body.publicview #editorCard,
+  body.publicview #notesCard,
+  body.publicview #draftBanner,
+  body.publicview .rm-acts,
+  body.publicview .rm-new { display:none !important; }
+  #publicBtn.on { color:var(--accent); border-color:var(--accent); }
+
   /* ---------- print ---------- */
   @media print {
     :root { --bg:#fff; --card:#fff; --bg-wash:none; }
@@ -310,6 +323,7 @@
       </div>
     </div>
     <div class="mast-tools app-only">
+      <button id="ownerSignIn" class="btn ghost sm" type="button" hidden>☁ Sign in to edit</button>
       <div class="segmented" role="group" aria-label="View">
         <button id="segOverview" class="seg-btn" type="button" aria-pressed="false">Overview <span id="segCount" class="seg-count">0</span></button>
         <button id="segEditor" class="seg-btn" type="button" aria-pressed="true">Editor</button>
@@ -342,7 +356,7 @@
       <option value="data">Data &amp; Analytics program</option>
       <option value="hiring">Hiring / team build</option>
     </select>
-    <button id="aiBtn" class="btn sm">✨ Build from description</button>
+    <button id="aiBtn" class="btn sm" hidden>✨ Build from description</button>
     <div class="grow"></div>
     <button id="expJson" class="btn ghost sm">Export JSON</button>
     <button id="impJson" class="btn ghost sm">Import</button>
@@ -351,6 +365,7 @@
     <div class="sep"></div>
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
+    <button id="publicBtn" class="btn ghost sm" hidden>🌐 Make public</button>
     <button id="cloudSave" class="btn ghost sm" hidden>Save to cloud</button>
     <button id="cloudOpen" class="btn ghost sm" hidden>Open</button>
     <button id="shareBtn" class="btn ghost sm" hidden>Share</button>
@@ -567,6 +582,7 @@ function normalizeRoadmap(raw){
     title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
     subtitle: String(raw.subtitle || ""),
     notes: String(raw.notes || ""),
+    public: !!raw.public,
     templateType: raw.templateType || "custom",
     // The natural-language description + template hint used to build this roadmap
     // via ✨ Build from description, kept so it can be revisited and refined.
@@ -765,7 +781,9 @@ function renderGantt(){
   const lanes = doc.lanes;
   const anyItems = lanes.some(l => l.items.some(itemValid));
   if (!lanes.length || !anyItems){
-    host.innerHTML = '<div class="tl-empty"><span class="big">🗓️</span><div>No dated items yet. Add a lane with phases or milestones below, or pick a template.</div></div>';
+    host.innerHTML = '<div class="tl-empty"><span class="big">🗓️</span><div>' + (readOnly
+      ? 'No public roadmaps have been published yet.'
+      : 'No dated items yet. Add a lane with phases or milestones below, or pick a template.') + '</div></div>';
     $("tlRange").textContent = "";
     return;
   }
@@ -985,11 +1003,12 @@ function renderOverview(){
 }
 function onOverviewClick(e){
   const act = e.target.closest("[data-act]");
-  if (act){ e.stopPropagation(); const id = act.dataset.id;
+  if (act && !readOnly){ e.stopPropagation(); const id = act.dataset.id;
     if (act.dataset.act === "dup") duplicateRoadmapById(id, false);
     else if (act.dataset.act === "del") deleteRoadmapById(id);
     return; }
-  if (e.target.closest("#ovNew")){ setMode("editor"); newRoadmap(); return; }
+  if (act && readOnly){ e.stopPropagation(); return; }   // no editing for public viewers
+  if (e.target.closest("#ovNew")){ if (readOnly) return; setMode("editor"); newRoadmap(); return; }
   const card = e.target.closest(".rm-card");
   if (card && card.dataset.id) openRoadmap(card.dataset.id);
 }
@@ -1121,6 +1140,7 @@ function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
+  reflectPublicBtn();
   if (readOnly) return;
   const pk = $("rmPicker"); pk.innerHTML = "";
   Object.values(store.roadmaps)
@@ -1313,10 +1333,19 @@ function reflectCloudUi(){
   const on = !!session;
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
   $("cloudEmail").hidden = !on; $("cloudEmail").textContent = on ? (session.user.email||"") : "";
-  ["cloudSave","cloudOpen","shareBtn"].forEach(id => $(id).hidden = !on);
+  // AI + publish + save/open/share are owner-only (they run on the owner's key / write data)
+  ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  reflectPublicBtn();
+}
+function reflectPublicBtn(){
+  const b = $("publicBtn"); if (!b) return;
+  const pub = !!(doc && doc.public);
+  b.textContent = pub ? "🌐 Public ✓" : "🌐 Make public";
+  b.classList.toggle("on", pub);
+  b.title = pub ? "This roadmap is public — anyone can view it read-only. Click to make it private." : "Publish this roadmap so anyone can view it read-only.";
 }
 async function cloudSignInFlow(){
-  if (session){ const client = await getSb(); await client.auth.signOut(); session = null; reflectCloudUi(); topNote("info","Signed out."); return; }
+  if (session){ const client = await getSb(); await client.auth.signOut(); session = null; location.reload(); return; }
   cloudModal("Sign in to sync",
     '<div class="row"><label class="fld">Email</label><input id="ciEmail" class="txt" type="email" autocomplete="username" /></div>'
     + '<div class="row"><label class="fld">Password</label><input id="ciPass" class="txt" type="password" autocomplete="current-password" /></div>'
@@ -1331,7 +1360,10 @@ async function cloudSignInFlow(){
       const client = await getSb();
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      session = data.session; reflectCloudUi(); closeCloud(); topNote("ok","Signed in as "+email+".");
+      session = data.session;
+      // Reload so boot re-derives the view from the (now persisted) session:
+      // signed in → full editor on your own roadmaps.
+      location.reload();
     } catch(e){ nt.className="note err"; nt.textContent = "Sign-in failed: " + (e.message||e); }
   };
 }
@@ -1341,7 +1373,7 @@ async function cloudSave(){
     const client = await getSb();
     const { error } = await client.from("roadmaps").upsert({
       id:doc.id, user_id:session.user.id, title:doc.title, subtitle:doc.subtitle,
-      template_type:doc.templateType, doc:doc, updated_at:new Date().toISOString()
+      template_type:doc.templateType, public:!!doc.public, doc:doc, updated_at:new Date().toISOString()
     }, { onConflict:"id" });
     if (error) throw error;
     topNote("ok","Saved to cloud.");
@@ -1363,6 +1395,19 @@ async function cloudOpen(){
       const d = normalizeRoadmap(rec.doc || rec); store.roadmaps[d.id] = d; switchTo(d.id); closeCloud(); topNote("ok","Opened from cloud.");
     });
   } catch(e){ $("clNote").className="note err"; $("clNote").textContent = "Couldn't load: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."; }
+}
+async function togglePublic(){
+  if (!session || readOnly || !doc) return;
+  doc.public = !doc.public;
+  save(); reflectPublicBtn();
+  try { await cloudSave(); }
+  catch(_){ /* cloudSave surfaces its own error */ }
+  if (doc.public){
+    const link = new URL("roadmap.html", location.href).href;
+    topNote("ok", "“"+(doc.title||"Untitled")+"” is now public — anyone can view it read-only at "+link);
+  } else {
+    topNote("info", "“"+(doc.title||"Untitled")+"” is private again.");
+  }
 }
 async function shareFlow(){
   if (!session) return;
@@ -1395,6 +1440,40 @@ async function initShared(token){
   } catch(e){
     $("gantt").innerHTML = '<div class="tl-empty"><b>Couldn’t load this shared roadmap.</b><br>'+esc(e.message||String(e))+'</div>';
   }
+}
+
+/* ---------- public portfolio (not signed in): view the owner's public roadmaps ---------- */
+async function loadPublicRoadmaps(){
+  store = { version:1, activeId:null, roadmaps:{} };
+  try {
+    const client = await getSb();
+    const { data, error } = await client.from("roadmaps")
+      .select("id,title,subtitle,updated_at,doc").eq("public", true).order("updated_at", { ascending:false });
+    if (error) throw error;
+    (data || []).forEach(r => { const d = normalizeRoadmap(r.doc || r); store.roadmaps[d.id] = d; });
+  } catch(_){ /* offline / policy missing → empty portfolio, handled below */ }
+  store.activeId = Object.keys(store.roadmaps)[0] || null;
+  if (!store.activeId){
+    const d = normalizeRoadmap({ title:"No public roadmaps yet", templateType:"custom", lanes:[] });
+    store.roadmaps[d.id] = d; store.activeId = d.id;
+  }
+  doc = store.roadmaps[store.activeId];
+}
+async function enterPublicMode(){
+  readOnly = true;
+  document.body.classList.add("publicview");
+  $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
+  $("eyebrow").textContent = "Public roadmaps · read-only";
+  await loadPublicRoadmaps();
+  reflectCloudUi(); syncHeader();
+  mode = Object.keys(store.roadmaps).length > 1 ? "overview" : "editor";
+  setMode(mode);
+}
+function enterOwnerMode(){
+  readOnly = false; document.body.classList.remove("publicview","readonly");
+  loadStore(); reflectCloudUi(); syncHeader();
+  mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
+  setMode(mode);
 }
 
 /* =========================================================================
@@ -1457,6 +1536,8 @@ function wire(){
   $("draftDiscard").addEventListener("click", discardDraft);
   // cloud
   $("cloudBtn").addEventListener("click", cloudSignInFlow);
+  $("ownerSignIn").addEventListener("click", cloudSignInFlow);
+  $("publicBtn").addEventListener("click", togglePublic);
   $("cloudSave").addEventListener("click", cloudSave);
   $("cloudOpen").addEventListener("click", cloudOpen);
   $("shareBtn").addEventListener("click", shareFlow);
@@ -1478,16 +1559,27 @@ function wire(){
 /* =========================================================================
    Boot
    ========================================================================= */
+async function boot(){
+  const token = new URLSearchParams(location.search).get("s");
+  if (token){ initShared(token); return; }
+  // Restore a persisted Supabase session (survives refresh until sign-out).
+  // Signed in → your editor; not signed in → read-only public portfolio.
+  let client = null;
+  try {
+    client = await getSb();
+    const { data } = await client.auth.getSession();
+    session = (data && data.session) ? data.session : null;
+  } catch(_){ session = null; }
+  // Keep the session token fresh across its lifetime (refresh events).
+  if (client){ try { client.auth.onAuthStateChange((_evt, s) => { session = s || null; }); } catch(_){ } }
+  if (session) enterOwnerMode();
+  else await enterPublicMode();
+}
 (function init(){
   initTheme();
   wire();
   const av = $("appVer"); if (av) av.textContent = APP_VERSION;
-  const token = new URLSearchParams(location.search).get("s");
-  if (token){ initShared(token); return; }
-  loadStore();
-  syncHeader();
-  mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
-  setMode(mode);
+  boot();
 })();
 </script>
 </body>

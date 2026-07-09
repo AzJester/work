@@ -214,6 +214,12 @@ cloud sync and shareable links.
 - **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
   (`roadmap.html?s=<token>`) for anyone to view without a login, reusing the same token-gated,
   read-only pattern as the leadership dashboard.
+- **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
+  view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
+  can't edit anything. Only the signed-in owner can create or change roadmaps. Sessions **persist
+  across refreshes** until you sign out. Requires the `public` column + "read public roadmaps"
+  policy above; pair it with the AI builder's `ALLOWED_EMAILS` lock and disabled sign-ups so only
+  you can edit.
 
 **One-time setup (only for the AI and cloud features — the template/form path needs none):**
 
@@ -246,11 +252,16 @@ cloud sync and shareable links.
   ```sql
   create table roadmaps (
     id text primary key, user_id uuid not null references auth.users(id) default auth.uid(),
-    title text, subtitle text, template_type text, doc jsonb not null,
+    title text, subtitle text, template_type text, public boolean not null default false, doc jsonb not null,
     created_at timestamptz default now(), updated_at timestamptz default now());
   alter table roadmaps enable row level security;
   create policy "own roadmaps" on roadmaps for all
     using (user_id = auth.uid()) with check (user_id = auth.uid());
+  -- public portfolio: anyone (even signed-out) may READ roadmaps flagged public
+  create policy "read public roadmaps" on roadmaps for select
+    to anon, authenticated using (public = true);
+  -- existing installs (table already created without the column): run just this line
+  alter table roadmaps add column if not exists public boolean not null default false;
 
   create table roadmap_shares (
     token uuid primary key default gen_random_uuid(),
