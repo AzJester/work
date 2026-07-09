@@ -316,13 +316,17 @@
     body.mode-overview #tlCard { display:block !important; }
     body.mode-overview #editorTitle { display:block !important; }
     .wrap { max-width:none; padding:0; }
-    .card { border:none; box-shadow:none; }
+    .mast { margin-bottom:10px; }
+    .card { border:none; box-shadow:none; margin-bottom:12px; break-inside:avoid; }
     .card .card-head { border-bottom:1px solid #e2e2e2; }
     .legend { background:#fff; }
-    .tl-scroll { overflow:visible; }
-    svg.gantt { min-width:0; }
-    .site-footer { border-color:#ddd; color:#666; margin-top:24px; }
-    @page { margin:14mm; }
+    .tl-scroll { overflow:visible !important; }
+    /* Fit the timeline to the printable page width instead of its (wide) on-screen
+       pixel width — the fixed width otherwise overflows the page and leaves a big blank band. */
+    svg.gantt { width:100% !important; height:auto !important; min-width:0 !important; }
+    #summaryCard, .summary-narrative { break-inside:avoid; }
+    .site-footer { border-color:#ddd; color:#666; margin-top:16px; }
+    @page { size:landscape; margin:12mm; }
   }
 </style>
 </head>
