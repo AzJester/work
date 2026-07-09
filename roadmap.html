@@ -665,11 +665,34 @@ function itemValid(it){
   if (it.kind === "milestone") return isIso(it.date);
   return isIso(it.start) && isIso(it.end);
 }
-function packLane(lane){
-  // milestones get a 1-day width so a milestone sitting inside a bar's span lands on its own
-  // sub-row instead of overlapping the bar; touching bars (sprint→sprint) still share a row.
-  const valid = lane.items.filter(itemValid).map(it => ({ it, s:msOf(itemStart(it)),
-    e: it.kind === "milestone" ? msOf(itemEnd(it)) + 864e5 : msOf(itemEnd(it)) }));
+function packLane(lane, xOf, plotRight){
+  // Pack items into as few rows as possible so neither their SHAPES nor their
+  // LABELS overlap. A bar whose label doesn't fit inside paints the label just
+  // past the bar's end, and a milestone paints its label beside the diamond, so
+  // each item's real footprint extends past its date range by the label width.
+  // We therefore reserve that extra span here (in pixels, matching the render
+  // math below) so a bar's overflowing label and a milestone sitting at the same
+  // date land on separate rows instead of on top of each other.
+  const CHAR = 6.7, MOAT = 11.5, GAP = 6;   // CHAR/MOAT/GAP mirror the render + fitsInside()
+  const px = !!xOf;
+  const labelW = it => String(it.label || (it.kind === "milestone" ? "Milestone" : "")).length * CHAR;
+  const valid = lane.items.filter(itemValid).map(it => {
+    if (!px){
+      // no pixel scale (defensive fallback): pack on shape extents only, as before
+      return { it, s:msOf(itemStart(it)), e: it.kind === "milestone" ? msOf(itemEnd(it)) + 864e5 : msOf(itemEnd(it)) };
+    }
+    if (it.kind === "milestone"){
+      const cx = xOf(msOf(it.date));
+      const labelRight = (plotRight - cx) > 120;   // matches the render's flip near the right edge
+      const lw = labelW(it);
+      return { it,
+        s: labelRight ? cx - MOAT : cx - MOAT - 3 - lw,
+        e: labelRight ? cx + MOAT + 3 + lw + GAP : cx + MOAT };
+    }
+    const bx = xOf(msOf(itemStart(it))), bxe = xOf(msOf(itemEnd(it)));
+    const bw = Math.max(9, bxe - bx);
+    return { it, s:bx, e: fitsInside(it.label || "", bw) ? bxe : bxe + 7 + labelW(it) + GAP };
+  });
   valid.sort((a,b) => a.s - b.s || a.e - b.e);
   const rowEnd = [];
   valid.forEach(v => {
@@ -725,14 +748,20 @@ function renderGantt(){
   // while the time axis stretches; .tl-scroll then scrolls when the timeline exceeds the viewport.
   const scrollEl = document.querySelector(".tl-scroll");
   const cwv = (scrollEl && scrollEl.clientWidth) || 0;
-  const CW = Math.max(480, Math.round((cwv > 0 ? cwv - 12 : 1160) * zoom));
+  const fitW = (cwv > 0 ? cwv - 12 : 1160);
+  // Keep at least ~132px per month so a long timeline stays legible instead of
+  // being crushed to fit the viewport; when the result is wider than the viewport
+  // the .tl-scroll container scrolls it horizontally (zoom widens it further).
+  const months = Math.max(1, Math.round((t1 - t0) / (30.4 * 864e5)));
+  const minW = GA.PADL + GA.PADR + months * 132;
+  const CW = Math.max(480, Math.round(Math.max(fitW, minW) * zoom));
   const plotW = CW - GA.PADL - GA.PADR;
   const span = Math.max(1, t1 - t0);
   const x = ms => GA.PADL + (ms - t0) / span * plotW;
   const xi = iso => x(msOf(iso));
 
-  // lane layout
-  const layout = lanes.map(l => packLane(l));
+  // lane layout (label-aware: needs the ms→px scale so label footprints pack correctly)
+  const layout = lanes.map(l => packLane(l, x, GA.PADL + plotW));
   let y = GA.PADT;
   const laneBox = layout.map((lay, i) => {
     const h = GA.lanePadTop + lay.rows*GA.rowUnit + GA.lanePadBot;
