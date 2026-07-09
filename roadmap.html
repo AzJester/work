@@ -312,6 +312,19 @@
   .stat-chip .sc-lbl { display:block; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); margin-bottom:3px; }
   .stat-chip .sc-val { font-size:14px; font-weight:700; color:var(--ink); }
   .stat-chip.warn .sc-val { color:var(--err); }
+  .callouts-body { padding:14px 16px 16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,300px),1fr)); gap:14px; }
+  .callout { border:1px solid var(--line-2); border-radius:12px; padding:14px 16px; background:var(--card); }
+  .callout .co-head { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .callout .co-title { flex:1 1 auto; min-width:0; font-size:15px; font-weight:800; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:7px; padding:4px 6px; }
+  .callout .co-title:hover { border-color:var(--line-2); }
+  .callout .co-title:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+  .callout .co-body { width:100%; min-height:96px; resize:vertical; font-family:inherit; font-size:13.5px; line-height:1.6; color:var(--ink-2);
+    background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:9px 11px; }
+  .callout .co-body:focus { outline:none; color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .callout .co-body::placeholder, .callout .co-title::placeholder { color:var(--mut); }
+  .callout.ro .co-title-ro { font-size:15px; font-weight:800; color:var(--ink); margin-bottom:6px; }
+  .callout.ro .co-body-ro { font-size:13.5px; line-height:1.6; color:var(--ink-2); }
+  .co-add { grid-column:1 / -1; justify-self:start; }
   .pub-url .pub-ico { flex:0 0 auto; font-size:14px; }
   .pub-url .pub-lbl { flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:700; }
   .pub-url .pub-input { flex:1 1 auto; min-width:0; font-family:var(--mono); font-size:12.5px; color:var(--ink);
@@ -472,6 +485,15 @@
     </div>
     <div class="summary-body" id="summaryBody"></div>
     <div class="summary-narrative" id="summaryNarrative" hidden></div>
+  </div>
+
+  <!-- authored analysis / callout cards -->
+  <div class="card editor-view" id="calloutsCard" hidden>
+    <div class="card-head">
+      <h2>Notes &amp; analysis</h2>
+      <span class="mono app-only">shown below the timeline</span>
+    </div>
+    <div class="callouts-body" id="calloutsBody"></div>
   </div>
 
   <!-- roadmap notes -->
@@ -649,6 +671,9 @@ function normalizeRoadmap(raw){
     subtitle: String(raw.subtitle || ""),
     notes: String(raw.notes || ""),
     public: !!raw.public,
+    // authored analysis / callout cards shown below the timeline
+    callouts: (Array.isArray(raw.callouts) ? raw.callouts : []).map(c => ({
+      id: (c && c.id) || uid("co"), title: String((c && c.title) || ""), body: String((c && c.body) || "") })),
     templateType: raw.templateType || "custom",
     // The natural-language description + template hint used to build this roadmap
     // via ✨ Build from description, kept so it can be revisited and refined.
@@ -1365,11 +1390,48 @@ function onEditorClick(e){
    Header sync + full render
    ========================================================================= */
 function fullRender(){ renderGantt(); if (!readOnly) renderEditor(); }
+function renderCallouts(){
+  const card = $("calloutsCard"); if (!card) return;
+  const body = $("calloutsBody");
+  const list = (doc && Array.isArray(doc.callouts)) ? doc.callouts : [];
+  const editable = !readOnly;
+  const hasContent = list.some(c => (c.title || "").trim() || (c.body || "").trim());
+  if (!editable && !hasContent){ card.hidden = true; body.innerHTML = ""; return; }
+  card.hidden = false;
+  if (editable){
+    body.innerHTML = list.map(c =>
+      '<div class="callout" data-co="' + esc(c.id) + '">'
+      + '<div class="co-head"><input class="co-title" data-corole="title" type="text" placeholder="Card title" value="' + esc(c.title || "") + '" />'
+      + '<button class="icon-btn" data-corole="del" title="Remove card">✕</button></div>'
+      + '<textarea class="co-body" data-corole="body" placeholder="Context, drivers, risks, decisions…">' + esc(c.body || "") + '</textarea>'
+      + '</div>').join("")
+      + '<button id="coAdd" class="btn add co-add" type="button">＋ Add card</button>';
+  } else {
+    body.innerHTML = list.filter(c => (c.title || "").trim() || (c.body || "").trim()).map(c =>
+      '<div class="callout ro">'
+      + (c.title ? '<div class="co-title-ro">' + esc(c.title) + '</div>' : '')
+      + (c.body ? '<div class="co-body-ro">' + esc(c.body).replace(/\n/g, "<br>") + '</div>' : '')
+      + '</div>').join("");
+  }
+}
+function onCalloutInput(e){
+  const role = e.target.dataset.corole; if (role !== "title" && role !== "body") return;
+  const el = e.target.closest("[data-co]"); if (!el) return;
+  const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (!c) return;
+  c[role] = e.target.value; save();
+}
+function onCalloutClick(e){
+  if (readOnly) return;
+  if (e.target.closest("#coAdd")){ doc.callouts = doc.callouts || []; doc.callouts.push({ id:uid("co"), title:"", body:"" }); save(); renderCallouts(); const inp = $("calloutsBody").querySelector(".callout:last-of-type .co-title"); if (inp) inp.focus(); return; }
+  const del = e.target.closest("[data-corole='del']");
+  if (del){ const el = del.closest("[data-co]"); if (!el) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); }
+}
 function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
   reflectPublicBtn();
+  renderCallouts();
   if (readOnly) return;
   const pk = $("rmPicker"); pk.innerHTML = "";
   Object.values(store.roadmaps)
@@ -1773,6 +1835,8 @@ function wire(){
   $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
   $("subIn").addEventListener("input", e => { doc.subtitle = e.target.value; save(); });
   $("rmNotes").addEventListener("input", e => { doc.notes = e.target.value; save(); });
+  $("calloutsBody").addEventListener("input", onCalloutInput);
+  $("calloutsBody").addEventListener("click", onCalloutClick);
   // view mode
   $("segOverview").addEventListener("click", () => setMode("overview"));
   $("segEditor").addEventListener("click", () => setMode("editor"));
