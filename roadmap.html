@@ -309,6 +309,9 @@
      theme, zoom) so visitors can browse published roadmaps but change nothing. */
   #ownerSignIn { display:none; }
   body.publicview #ownerSignIn { display:inline-flex; }
+  /* visitors can't edit, so no Overview/Editor switch — a "← All roadmaps" back
+     button (portfolio only) covers navigation instead */
+  body.publicview .segmented { display:none !important; }
   body.publicview #toolbar,
   body.publicview #editorCard,
   body.publicview #notesCard,
@@ -416,6 +419,7 @@
     </div>
     <div class="mast-tools app-only">
       <button id="ownerSignIn" class="btn ghost sm" type="button" hidden>☁ Sign in to edit</button>
+      <button id="backToPortfolio" class="btn ghost sm" type="button" hidden>← All roadmaps</button>
       <div class="segmented" role="group" aria-label="View">
         <button id="segOverview" class="seg-btn" type="button" aria-pressed="false">Overview <span id="segCount" class="seg-count">0</span></button>
         <button id="segEditor" class="seg-btn" type="button" aria-pressed="true">Editor</button>
@@ -1355,6 +1359,9 @@ function setMode(m){
   document.body.classList.toggle("mode-overview", mode === "overview");
   $("segOverview").setAttribute("aria-pressed", mode === "overview" ? "true" : "false");
   $("segEditor").setAttribute("aria-pressed", mode === "editor" ? "true" : "false");
+  // public visitors have no Overview/Editor switch; give them a way back to the
+  // portfolio grid when they've opened one of several public roadmaps
+  { const b = $("backToPortfolio"); if (b) b.hidden = !(readOnly && mode === "editor" && Object.keys(store.roadmaps).length > 1); }
   store.mode = mode; saveNow();
   if (mode === "overview"){ renderGantt(); renderOverview(); } else fullRender();
 }
@@ -1531,6 +1538,8 @@ function onCalloutClick(e){
 function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
+  // read-only viewers shouldn't see empty-field placeholders ("Add a subtitle…")
+  $("subIn").hidden = readOnly && !(doc.subtitle || "").trim();
   { const p = $("premiseIn"); if (p){ p.value = doc.premise || ""; p.readOnly = readOnly; p.hidden = readOnly && !(doc.premise || "").trim(); } }
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
   reflectPublicBtn();
@@ -2325,6 +2334,7 @@ function wire(){
   // view mode
   $("segOverview").addEventListener("click", () => setMode("overview"));
   $("segEditor").addEventListener("click", () => setMode("editor"));
+  $("backToPortfolio").addEventListener("click", () => setMode("overview"));
   const grid = $("overviewGrid");
   grid.addEventListener("click", onOverviewClick);
   grid.addEventListener("keydown", e => {
