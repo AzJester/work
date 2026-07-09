@@ -547,6 +547,10 @@ function normalizeRoadmap(raw){
     title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
     subtitle: String(raw.subtitle || ""),
     templateType: raw.templateType || "custom",
+    // The natural-language description + template hint used to build this roadmap
+    // via ✨ Build from description, kept so it can be revisited and refined.
+    aiPrompt: String(raw.aiPrompt || ""),
+    aiHint: ["software","product","gtm","data","hiring"].includes(raw.aiHint) ? raw.aiHint : null,
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || now,
     range,
@@ -1176,7 +1180,17 @@ async function getSb(){
 }
 
 /* ---------- AI: build-roadmap edge function ---------- */
-function openAi(){ $("aiNote").className = "note info hide"; $("aiModal").hidden = false; $("aiText").focus(); }
+function openAi(){
+  // Revisit / refine: prefill with the description this roadmap was built from (if any).
+  const saved = doc && doc.aiPrompt ? doc.aiPrompt : "";
+  $("aiText").value = saved;
+  $("aiHint").value = (doc && doc.aiHint) || "";
+  $("aiGen").textContent = saved ? "Rebuild roadmap" : "Generate roadmap";
+  const note = $("aiNote");
+  if (saved){ note.className = "note info"; note.textContent = "This is the description used to build the current roadmap. Edit it and rebuild to make changes."; }
+  else { note.className = "note info hide"; note.textContent = ""; }
+  $("aiModal").hidden = false; $("aiText").focus();
+}
 function closeAi(){ $("aiModal").hidden = true; }
 async function generateFromDescription(){
   const prompt = $("aiText").value.trim();
@@ -1194,6 +1208,7 @@ async function generateFromDescription(){
     const draft = normalizeRoadmap(raw);
     if (!draft.lanes.length) throw new Error("The model didn't return any lanes. Try adding more detail to your description.");
     draft.id = uid("rm"); if (draft.templateType==="custom" && hint) draft.templateType = hint;
+    draft.aiPrompt = prompt; draft.aiHint = hint;   // keep the description so it can be revisited/refined
     draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id };
     store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
     saveNow(); syncHeader(); setMode("editor"); fullRender();
