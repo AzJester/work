@@ -279,6 +279,13 @@
   body.publicview .rm-acts,
   body.publicview .rm-new { display:none !important; }
   #publicBtn.on { color:var(--accent); border-color:var(--accent); }
+  .pub-url { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px;
+    background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; }
+  .pub-url .pub-ico { flex:0 0 auto; font-size:14px; }
+  .pub-url .pub-lbl { flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  .pub-url .pub-input { flex:1 1 auto; min-width:0; font-family:var(--mono); font-size:12.5px; color:var(--ink);
+    background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:6px 10px; }
+  .pub-url .pub-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
 
   /* ---------- print ---------- */
   @media print {
@@ -370,6 +377,15 @@
     <button id="cloudOpen" class="btn ghost sm" hidden>Open</button>
     <button id="shareBtn" class="btn ghost sm" hidden>Share</button>
     <input id="fileIn" type="file" accept="application/json,.json" hidden />
+  </div>
+
+  <!-- public link (shown for the owner when the current roadmap is public) -->
+  <div id="publicUrlBar" class="pub-url app-only editor-view" hidden>
+    <span class="pub-ico">🌐</span>
+    <span class="pub-lbl">Public link</span>
+    <input id="publicUrl" class="pub-input" type="text" readonly aria-label="Public roadmap link" />
+    <button id="publicUrlCopy" class="btn ghost sm" type="button">Copy</button>
+    <a id="publicUrlOpen" class="btn ghost sm" href="#" target="_blank" rel="noopener">Open ↗</a>
   </div>
 
   <!-- global feedback -->
@@ -1337,12 +1353,20 @@ function reflectCloudUi(){
   ["cloudSave","cloudOpen","shareBtn","publicBtn","aiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   reflectPublicBtn();
 }
+function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
 function reflectPublicBtn(){
   const b = $("publicBtn"); if (!b) return;
   const pub = !!(doc && doc.public);
   b.textContent = pub ? "🌐 Public ✓" : "🌐 Make public";
   b.classList.toggle("on", pub);
   b.title = pub ? "This roadmap is public — anyone can view it read-only. Click to make it private." : "Publish this roadmap so anyone can view it read-only.";
+  // Show the shareable public link on the page while a public roadmap is open (owner only).
+  const bar = $("publicUrlBar");
+  if (bar){
+    const show = pub && !!session && !readOnly && !!(doc && doc.id);
+    bar.hidden = !show;
+    if (show){ const url = publicRoadmapUrl(doc.id); $("publicUrl").value = url; $("publicUrlOpen").href = url; }
+  }
 }
 async function cloudSignInFlow(){
   if (session){ const client = await getSb(); await client.auth.signOut(); session = null; location.reload(); return; }
@@ -1442,6 +1466,28 @@ async function initShared(token){
   }
 }
 
+/* ---------- deep link to one public roadmap (?r=<id>), read-only ---------- */
+async function initPublicRoadmap(id){
+  readOnly = true; document.body.classList.add("publicview");
+  $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
+  $("eyebrow").textContent = "Public roadmap · read-only";
+  store = { version:1, activeId:null, roadmaps:{} };
+  try {
+    const client = await getSb();
+    const { data, error } = await client.from("roadmaps")
+      .select("id,title,subtitle,updated_at,doc").eq("id", id).eq("public", true).maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("This roadmap isn’t public, or the link is wrong.");
+    const d = normalizeRoadmap(data.doc || data);
+    store.roadmaps[d.id] = d; store.activeId = d.id; doc = d;
+    reflectCloudUi(); syncHeader(); renderGantt();
+  } catch(e){
+    doc = normalizeRoadmap({ title:"", lanes:[] });
+    reflectCloudUi(); syncHeader();
+    $("gantt").innerHTML = '<div class="tl-empty"><b>Couldn’t load this roadmap.</b><br>'+esc(e.message||String(e))+'</div>';
+  }
+}
+
 /* ---------- public portfolio (not signed in): view the owner's public roadmaps ---------- */
 async function loadPublicRoadmaps(){
   store = { version:1, activeId:null, roadmaps:{} };
@@ -1538,6 +1584,11 @@ function wire(){
   $("cloudBtn").addEventListener("click", cloudSignInFlow);
   $("ownerSignIn").addEventListener("click", cloudSignInFlow);
   $("publicBtn").addEventListener("click", togglePublic);
+  $("publicUrlCopy").addEventListener("click", () => {
+    const el = $("publicUrl"); el.select();
+    try { navigator.clipboard.writeText(el.value); } catch(_){ try { document.execCommand("copy"); } catch(__){} }
+    const b = $("publicUrlCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
+  });
   $("cloudSave").addEventListener("click", cloudSave);
   $("cloudOpen").addEventListener("click", cloudOpen);
   $("shareBtn").addEventListener("click", shareFlow);
@@ -1560,10 +1611,11 @@ function wire(){
    Boot
    ========================================================================= */
 async function boot(){
-  const token = new URLSearchParams(location.search).get("s");
+  const params = new URLSearchParams(location.search);
+  const token = params.get("s");
   if (token){ initShared(token); return; }
+  const rid = params.get("r");
   // Restore a persisted Supabase session (survives refresh until sign-out).
-  // Signed in → your editor; not signed in → read-only public portfolio.
   let client = null;
   try {
     client = await getSb();
@@ -1572,8 +1624,11 @@ async function boot(){
   } catch(_){ session = null; }
   // Keep the session token fresh across its lifetime (refresh events).
   if (client){ try { client.auth.onAuthStateChange((_evt, s) => { session = s || null; }); } catch(_){ } }
-  if (session) enterOwnerMode();
-  else await enterPublicMode();
+  // Signed in → your editor (edit at the base URL, so ignore ?r here).
+  if (session){ enterOwnerMode(); return; }
+  // Not signed in: a ?r link shows one public roadmap; otherwise the whole portfolio.
+  if (rid){ await initPublicRoadmap(rid); return; }
+  await enterPublicMode();
 }
 (function init(){
   initTheme();
