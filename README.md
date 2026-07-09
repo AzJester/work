@@ -196,12 +196,18 @@ cloud sync and shareable links.
   - **✨ Build from description** — type what you're planning (phases, rough dates) and Claude
     returns a structured roadmap you can edit or discard. Runs server-side in a Supabase Edge
     Function (`build-roadmap`) so the API key never reaches the browser.
-- **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** line, color-coded status
-  (Planned · In progress · Complete · At risk) and milestone diamonds, with a legend. Dark mode.
+- **Portfolio overview** — an **Overview** tab shows every roadmap at once as a card grid, each
+  with a mini-timeline preview, a % complete, a per-status breakdown, date range, and last-updated
+  time — so you can track several programs side by side. Click a card to open it; **Editor** tab
+  edits the active one. Toggle views from the header.
+- **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
+  (Planned · In progress · Complete · At risk · Blocked · On hold) and milestone diamonds, with a
+  legend. Sliding light/dark toggle.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
-  date), each with a status chip. Lanes get cycling group colors.
+  date), each with one of six status chips. Lanes get cycling group colors.
 - **Saved in your browser** — multiple roadmaps persist to `localStorage` (key
-  `roadmap_builder_v1`); a picker switches between them (New / Duplicate / Delete).
+  `roadmap_builder_v1`); the Overview grid and a toolbar picker switch between them (New /
+  Duplicate / Delete).
 - **Exports** — **JSON** (round-trips via Import), **PNG** (the timeline as an image), and
   **Print / PDF** (timeline only, light theme).
 - **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
@@ -218,7 +224,7 @@ cloud sync and shareable links.
   - **Response** `{ roadmap: { title, subtitle?, lanes: [ { name, items: [
     {kind:"bar", label, start:"YYYY-MM-DD", end:"YYYY-MM-DD", status},
     {kind:"milestone", label, date:"YYYY-MM-DD", status} ] } ] } }`
-  - `status` ∈ `planned | in_progress | complete | at_risk`. Use Claude tool-use with a strict
+  - `status` ∈ `planned | in_progress | complete | at_risk | blocked | on_hold`. Use Claude tool-use with a strict
     `input_schema` so the model returns exactly this shape (the client normalizes/repairs it too).
   - If the function isn't deployed the page degrades gracefully — the button shows a clear note
     and the offline paths keep working.
