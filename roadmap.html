@@ -44,10 +44,12 @@
   /* ---------- masthead ---------- */
   .mast { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
   .brand { display:flex; align-items:flex-start; gap:14px; min-width:0; flex:1 1 420px; }
-  .brand .mark { width:46px; height:46px; border-radius:13px; flex:0 0 auto; margin-top:4px;
-    background:linear-gradient(145deg, #4aa3ff, var(--accent)); color:#fff;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px -8px rgba(0,115,234,0.6); }
-  .brand .mark svg { width:26px; height:26px; display:block; }
+  .brand .mark { width:54px; height:54px; flex:0 0 auto; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; }
+  .brand .mark .brand-logo { width:54px; height:54px; display:block; object-fit:contain; }
+  .brand .mark .logo-dark { display:none; }
+  :root[data-theme="dark"] .brand .mark .logo-light { display:none; }
+  :root[data-theme="dark"] .brand .mark .logo-dark { display:block; }
   .titlewrap { min-width:0; flex:1 1 auto; }
   .eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); margin:2px 0 5px; }
   input.title-in { font-family:var(--disp); font-weight:800; font-size:27px; letter-spacing:-0.025em; color:var(--ink);
@@ -324,11 +326,9 @@
   <!-- masthead -->
   <div class="mast">
     <div class="brand">
-      <div class="mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/>
-          <circle cx="18" cy="12" r="1.6" fill="currentColor" stroke="none"/>
-        </svg>
+      <div class="mark">
+        <img class="brand-logo logo-light" src="assets/dst-logo-black.png" alt="Dr. Shane Turner" />
+        <img class="brand-logo logo-dark" src="assets/dst-logo-white.png" alt="Dr. Shane Turner" />
       </div>
       <div class="titlewrap">
         <div class="eyebrow" id="eyebrow">Roadmap Builder</div>
@@ -1297,13 +1297,26 @@ function importJsonFile(file){
   };
   rd.readAsText(file);
 }
-function exportPng(){
+let _logoData = {};
+async function getLogoDataUrl(){
+  const key = isDark() ? "white" : "black";
+  if (_logoData[key] !== undefined) return _logoData[key];
+  try {
+    const res = await fetch("assets/dst-logo-" + key + ".png");
+    if (!res.ok) throw 0;
+    const blob = await res.blob();
+    _logoData[key] = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(blob); });
+  } catch(_){ _logoData[key] = null; }
+  return _logoData[key];
+}
+async function exportPng(){
   const svg = $("gantt").querySelector("svg");
   if (!svg){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
   const vb = svg.viewBox.baseVal; const w = vb.width || svg.clientWidth, h = vb.height || svg.clientHeight;
   const scale = 2;
   const P = pal();
   const pad = 24;
+  const logo = await getLogoDataUrl();
   const hasSub = !!(doc.subtitle && doc.subtitle.trim());
   const headerH = hasSub ? 80 : 60;
   const legendH = 46;
@@ -1327,8 +1340,10 @@ function exportPng(){
   });
   leg += mdiamond(lx+6, ly, 6, { fill:MILE_BLUE });
   leg += svgEl("text", { x:(lx+18).toFixed(1), y:ly.toFixed(1), "font-family":F_SANS, "font-size":12, fill:P.ink2, "dominant-baseline":"middle" }, "Milestone");
+  // Brand mark, bottom-right sign-off.
+  if (logo){ const lz = 40; leg += svgEl("image", { href:logo, "xlink:href":logo, x:(w-pad-lz).toFixed(1), y:(ly-lz/2).toFixed(1), width:lz, height:lz, preserveAspectRatio:"xMidYMid meet" }); }
 
-  const composed = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+totalH+'" viewBox="0 0 '+w+' '+totalH+'">'
+  const composed = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+w+'" height="'+totalH+'" viewBox="0 0 '+w+' '+totalH+'">'
     + hdr + '<g transform="translate(0,'+headerH+')">' + svg.innerHTML + '</g>' + leg + '</svg>';
   const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(composed);
   const img = new Image();
