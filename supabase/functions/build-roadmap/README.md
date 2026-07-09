@@ -45,10 +45,36 @@ description** — it now calls the deployed function.
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | yes | — | Your Anthropic key. Uses your Anthropic credits. |
 | `ANTHROPIC_MODEL` | no | `claude-opus-4-8` | Override the model (reuses the same env name as the tracker's `extract-tasks`). |
+| `ALLOWED_EMAILS` | no | — | Comma-separated allow-list of accounts that may use the AI builder (e.g. `you@example.com`). Leave unset to allow any signed-in account. |
 
 The function is invoked with the project's publishable/anon key by the
 signed-in client, so keep JWT verification at its default — no
 `--no-verify-jwt` needed.
+
+## Access control (protect your Anthropic credits)
+
+The Anthropic key is yours, so the function only serves **signed-in, allow-listed**
+callers. It validates the caller's Supabase user token (sent automatically by the
+signed-in client) against GoTrue and rejects the anonymous publishable/anon key —
+so a random visitor to the public page can't spend your credits. `SUPABASE_URL`
+and `SUPABASE_ANON_KEY` are injected into every Edge Function automatically; you
+don't set them.
+
+To lock it to just you:
+
+1. Set the allow-list secret and redeploy:
+   ```bash
+   supabase secrets set ALLOWED_EMAILS=you@example.com
+   supabase functions deploy build-roadmap
+   ```
+   (Multiple people? Comma-separate: `ALLOWED_EMAILS=a@x.com,b@x.com`.)
+2. **Turn off public sign-ups** so nobody can create an account:
+   Supabase dashboard → **Authentication → Sign In / Providers → Email** (or
+   **Auth → Settings**) → disable **Allow new users to sign up**. Create your own
+   account first (or add it under **Authentication → Users**) if you haven't.
+
+With sign-ups off and `ALLOWED_EMAILS` set to your address, only you can invoke
+the AI builder even though the page itself stays public.
 
 ## Contract
 
