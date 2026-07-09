@@ -217,16 +217,22 @@ cloud sync and shareable links.
 
 **One-time setup (only for the AI and cloud features — the template/form path needs none):**
 
-- **AI (`build-roadmap`)** — deploy a Supabase Edge Function named `build-roadmap` and set an
-  `ANTHROPIC_API_KEY` secret (reuses the same key/model env as `extract-tasks`; override the
-  model with `ANTHROPIC_MODEL`). Like `extract-tasks`/`weekly-summary`, the **function source is
-  not in this repo** — it lives in your Supabase project. Contract:
+- **AI (`build-roadmap`)** — the function source **is** in this repo at
+  [`supabase/functions/build-roadmap/`](supabase/functions/build-roadmap/) (with its own
+  step-by-step README). Deploy it and set an `ANTHROPIC_API_KEY` secret:
+  ```bash
+  supabase link --project-ref <your-project-ref>
+  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+  supabase functions deploy build-roadmap
+  ```
+  It runs on **Opus 4.8** (`claude-opus-4-8`) by default; override with an `ANTHROPIC_MODEL`
+  secret (the same env name the tracker's `extract-tasks` uses). Contract:
   - **Request** `{ prompt, today: "YYYY-MM-DD", templateHint }`
   - **Response** `{ roadmap: { title, subtitle?, lanes: [ { name, items: [
     {kind:"bar", label, start:"YYYY-MM-DD", end:"YYYY-MM-DD", status},
     {kind:"milestone", label, date:"YYYY-MM-DD", status} ] } ] } }`
-  - `status` ∈ `planned | in_progress | complete | at_risk | blocked | on_hold`. Use Claude tool-use with a strict
-    `input_schema` so the model returns exactly this shape (the client normalizes/repairs it too).
+  - `status` ∈ `planned | in_progress | complete | at_risk | blocked | on_hold`. Uses Claude
+    tool-use so the model returns exactly this shape (the client normalizes/repairs it too).
   - If the function isn't deployed the page degrades gracefully — the button shows a clear note
     and the offline paths keep working.
 - **Cloud sync + share** — provision two tables + a token-gated read function (RLS on):
