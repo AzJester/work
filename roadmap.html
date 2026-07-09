@@ -1513,76 +1513,342 @@ function deleteRoadmap(){ deleteRoadmapById(doc.id); }
 function slug(s){ return (String(s||"roadmap").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "roadmap"); }
 function download(name, blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 function exportJson(){ download(slug(doc.title)+".roadmap.json", new Blob([JSON.stringify(doc,null,2)], { type:"application/json" })); }
-async function exportHtml(){
-  const svg = $("gantt").querySelector("svg");
-  if (!svg){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
-  const P = pal();
-  const logo = await getLogoDataUrl();
-  const svgClone = svg.cloneNode(true);
-  svgClone.setAttribute("style", "width:100%;height:auto;display:block");
-  const chips = ($("statChips") && !$("statChips").hidden) ? $("statChips").innerHTML : "";
-  const summary = $("summaryBody") ? $("summaryBody").innerHTML : "";
-  const range = $("tlRange") ? ($("tlRange").textContent || "") : "";
-  const callouts = (doc.callouts || []).filter(c => (c.title || "").trim() || (c.body || "").trim());
-  const calloutsHtml = callouts.length
-    ? '<div class="exp-h">Notes &amp; analysis</div><div class="exp-co-grid">'
-      + callouts.map(c => '<div class="exp-co">' + (c.title ? '<div class="exp-co-t">' + esc(c.title) + '</div>' : '')
-        + (c.body ? '<div class="exp-co-b">' + esc(c.body).replace(/\n/g, "<br>") + '</div>' : '') + '</div>').join("")
-      + '</div>' : "";
-  const legend = STATUSES.map(s => '<span class="lg"><span class="lg-sw" style="background:' + STATUS_COLOR[s.v] + '"></span>' + esc(s.label) + '</span>').join("")
-    + '<span class="lg"><span class="lg-di" style="background:' + MILE_BLUE + '"></span>Milestone</span>';
-  const F = "-apple-system,Roboto,Helvetica,Arial,sans-serif", M = "ui-monospace,Menlo,Consolas,monospace";
-  const css = `:root{color-scheme:${isDark()?"dark":"light"}}
-*{box-sizing:border-box}
-body{margin:0;background:${P.bg};color:${P.ink};font-family:${F};-webkit-font-smoothing:antialiased}
-.w{max-width:1120px;margin:0 auto;padding:30px 26px 44px}
-.hd{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px}
-.hd img{width:56px;height:56px;object-fit:contain;flex:0 0 auto}
-.eb{font:700 10.5px ${M};letter-spacing:.16em;text-transform:uppercase;color:${P.mut}}
-h1{margin:2px 0 5px;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-.sub{color:${P.ink2};font-size:15px}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}
-.stat-chip{padding:9px 14px;border:1px solid ${P.grid};border-radius:12px;background:${P.bg}}
-.stat-chip .sc-lbl{display:block;font:700 10px ${M};letter-spacing:.12em;text-transform:uppercase;color:${P.mut};margin-bottom:3px}
-.stat-chip .sc-val{font-size:14px;font-weight:700;color:${P.ink}}
-.stat-chip.warn .sc-val{color:${P.err||"#e0485a"}}
-.tlh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid ${P.grid};padding-bottom:8px;margin-bottom:12px;font:700 12px ${M};letter-spacing:.08em;color:${P.ink2}}
-.tlh .rg{color:${P.mut};font-weight:400}
-.tl svg{width:100%;height:auto;display:block}
-.lg-row{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 6px;font-size:12.5px;color:${P.ink2}}
-.lg{display:inline-flex;align-items:center;gap:6px}
-.lg-sw{width:22px;height:11px;border-radius:6px;display:inline-block}
-.lg-di{width:11px;height:11px;transform:rotate(45deg);display:inline-block;border-radius:2px}
-.exp-h{font:700 13px ${F};text-transform:uppercase;letter-spacing:.06em;color:${P.ink2};margin:26px 0 10px}
-.summary-body{font-size:13.5px;line-height:1.6;color:${P.ink}}
-.summary-body .sum-head{font-size:15px;font-weight:800}
-.summary-body .sum-head .sum-pct{color:${P.today}}
-.summary-body .sum-bar{height:8px;border-radius:999px;background:${P.grid};overflow:hidden;margin:8px 0 12px;max-width:420px}
+// Stylesheet + script for the standalone HTML export (below). Kept as constants
+// so exportHtml() only has to weave in the data. __LABEL__ is substituted with the
+// left-gutter width; __TIPS__ with the JSON tooltip data.
+const F_EXP_SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const F_EXP_COND = '"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif';
+const F_EXP_MONO = '"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace';
+const EXPORT_CSS = `
+:root{--label:__LABEL__;--paper:#eef1f5;--panel:#fff;--ink:#141e28;--ink-2:#38424e;--muted:#657181;--rule:#cfd6de;--rule-soft:#dee4ea;--band:#dfe5eb;--grid:#d3dae2;--amber:#e2a100;--red:#c0392b;--today:#0073ea;--mut:#657181;--err:#c0392b;--row-h:34px;--bar-h:24px}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:${F_EXP_SANS};-webkit-font-smoothing:antialiased;line-height:1.5;padding:34px 22px 60px}
+.wrap{max-width:1180px;margin:0 auto}
+.masthead{display:flex;gap:18px;align-items:flex-start;justify-content:space-between}
+.masthead .brand{width:52px;height:52px;object-fit:contain;flex:none;opacity:.92}
+.eyebrow{font-family:${F_EXP_MONO};font-size:11px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase;margin:0 0 12px}
+h1.title{font-family:${F_EXP_COND};font-weight:700;font-size:clamp(30px,5vw,50px);line-height:1.02;letter-spacing:-.012em;margin:0}
+.subtitle{font-family:${F_EXP_MONO};font-size:13px;color:var(--ink-2);margin:13px 0 0;letter-spacing:.005em}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 0}
+.stat-chip{border:1px solid var(--rule);background:var(--panel);border-radius:10px;padding:9px 13px;min-width:0}
+.stat-chip .sc-lbl{display:block;font-family:${F_EXP_MONO};font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.stat-chip .sc-val{font-size:14px;font-weight:600}
+.stat-chip.warn .sc-val{color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin:26px 0 14px;padding-top:16px;border-top:1px solid var(--rule)}
+.lg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.sw-bar{width:24px;height:12px;border-radius:3px;background:var(--ink-2)}
+.sw-hold{width:24px;height:12px;border-radius:3px;border:1.3px dashed var(--muted);background:repeating-linear-gradient(45deg,rgba(101,113,129,.24) 0 6px,transparent 6px 12px)}
+.sw-dia{width:12px;height:12px;transform:rotate(45deg);border:1.5px solid var(--ink);background:var(--ink)}
+.sw-gate{width:0;height:16px;border-left:2px dashed var(--ink)}
+.sw-fin{width:0;height:16px;border-left:2px solid var(--ink);box-shadow:3px 0 0 rgba(20,30,40,.28)}
+.sw-today{width:0;height:16px;border-left:2px dashed var(--today)}
+.gantt-scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--panel);box-shadow:0 1px 0 rgba(20,30,40,.03)}
+.gantt{position:relative}
+.g-underlay{position:absolute;top:0;bottom:0;left:var(--label);right:0;z-index:0;pointer-events:none;overflow:hidden;border-radius:0 12px 12px 0}
+.band{position:absolute;top:0;bottom:0;background:var(--band);opacity:.5}
+.wgrid{position:absolute;top:0;bottom:0;width:1px;background:var(--grid);opacity:.6}
+.gline{position:absolute;top:0;bottom:0}
+.gline.gate{border-left:2px dashed var(--ink);opacity:.55;transform:translateX(-1px)}
+.gline.finish{border-left:2px solid var(--ink);box-shadow:3px 0 0 rgba(20,30,40,.2);transform:translateX(-1px)}
+.gline.today{border-left:2px dashed var(--today);opacity:.85}
+.g-head{position:relative;z-index:1;display:flex;border-bottom:1px solid var(--rule)}
+.g-head-label{width:var(--label);flex:none;padding:12px 14px;display:flex;align-items:flex-end}
+.g-head-label .cap{font-family:${F_EXP_MONO};font-size:10px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.g-head-time{position:relative;flex:1;height:84px}
+.flag{position:absolute;top:7px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;white-space:nowrap}
+.flag .tag{font-family:${F_EXP_MONO};font-size:9px;font-weight:600;letter-spacing:.13em;padding:3px 8px;border-radius:4px}
+.flag.gate .tag{background:var(--ink);color:#fff}
+.flag.finish .tag{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.flag .sub2{font-family:${F_EXP_MONO};font-size:9px;color:var(--muted)}
+.minlabel{position:absolute;top:12px;font-family:${F_EXP_MONO};font-size:8.5px;font-weight:600;letter-spacing:.12em;color:var(--today);white-space:nowrap}
+.mlabel{position:absolute;top:46px;font-family:${F_EXP_COND};font-weight:600;font-size:13px;color:var(--ink-2)}
+.wnum{position:absolute;top:65px;transform:translateX(-50%);font-family:${F_EXP_MONO};font-size:9.5px;color:var(--muted)}
+.g-body{position:relative;z-index:1}
+.lane{display:flex;border-bottom:1px solid var(--rule-soft)}
+.lane:last-child{border-bottom:none}
+.lane-label{width:var(--label);flex:none;padding:13px 14px;display:flex;gap:9px;align-items:flex-start}
+.chip2{width:10px;height:10px;border-radius:2px;flex:none;margin-top:3px}
+.lane-name{font-weight:600;font-size:13.5px;line-height:1.22}
+.lane-track{position:relative;flex:1;padding:8px 0}
+.ms-strip{position:relative}
+.ms{position:absolute;width:12px;height:12px;transform:translate(-50%,-50%) rotate(45deg);border:1.6px solid var(--ink);background:#fff;cursor:default}
+.ms.risk{box-shadow:0 0 0 3px rgba(226,161,0,.2)}
+.ms.blk{box-shadow:0 0 0 3px rgba(192,57,43,.16)}
+.ms-label{position:absolute;font-size:11px;font-weight:500;color:var(--ink-2);white-space:nowrap;transform:translateY(-50%)}
+.bar-row{position:relative;height:var(--row-h)}
+.bar{position:absolute;top:calc((var(--row-h) - var(--bar-h)) / 2);height:var(--bar-h);border-radius:5px;display:flex;align-items:center;overflow:hidden;cursor:default;box-shadow:0 1px 2px rgba(20,30,40,.14)}
+.bar-elapsed{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.16);border-radius:5px 0 0 5px}
+.bar .bl{position:relative;font-size:11.5px;font-weight:500;padding:0 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-ext{position:absolute;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:500;color:var(--ink-2);white-space:nowrap;cursor:default}
+.hint{font-family:${F_EXP_MONO};font-size:10.5px;color:var(--muted);margin:11px 2px 0}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:30px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:22px 24px}
+.panel h2{font-family:${F_EXP_COND};font-weight:700;font-size:19px;margin:0 0 14px;letter-spacing:-.01em}
+.panel-body{font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.panel-body p{margin:0 0 12px}.panel-body p:last-child{margin:0}
+.summary-body{font-size:13px;line-height:1.55;color:var(--ink-2)}
+.summary-body .sum-head{font-size:15px;font-weight:700;color:var(--ink)}
+.summary-body .sum-head .sum-pct{color:var(--today)}
+.summary-body .sum-bar{height:8px;border-radius:999px;background:var(--grid);overflow:hidden;margin:8px 0 12px;max-width:420px}
 .summary-body .sum-bar>span{display:block;height:100%;background:#12a56b;border-radius:999px}
 .summary-body .sum-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-.summary-body .sum-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${P.ink2};background:${P.bg};border:1px solid ${P.grid};border-radius:999px;padding:2px 9px}
-.summary-body .sum-dot{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
-.summary-body .sum-row{margin:3px 0;color:${P.ink2}}
-.summary-body .sum-row b{color:${P.ink};font-weight:700}
-.summary-body .sum-row.warn b{color:${P.err||"#e0485a"}}
-.exp-co-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.exp-co{border:1px solid ${P.grid};border-radius:12px;padding:14px 16px}
-.exp-co-t{font-size:15px;font-weight:800;color:${P.ink};margin-bottom:6px}
-.exp-co-b{font-size:13.5px;line-height:1.6;color:${P.ink2}}
-.ft{margin-top:30px;padding-top:14px;border-top:1px solid ${P.grid};color:${P.mut};font:12px ${M};text-align:center}`;
-  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>' + esc(doc.title || "Roadmap") + '</title><style>' + css + '</style></head><body><div class="w">'
-    + '<div class="hd">' + (logo ? '<img src="' + logo + '" alt="">' : '')
-    + '<div><div class="eb">Roadmap</div><h1>' + esc(doc.title || "Untitled") + '</h1>'
-    + (doc.subtitle ? '<div class="sub">' + esc(doc.subtitle) + '</div>' : '') + '</div></div>'
+.summary-body .sum-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--paper);border:1px solid var(--rule);border-radius:999px;padding:2px 9px}
+.summary-body .sum-dot{width:8px;height:8px;border-radius:2px;flex:none}
+.summary-body .sum-row{margin:3px 0}
+.summary-body .sum-row b{color:var(--ink);font-weight:700}
+.summary-body .sum-row.warn b{color:var(--err)}
+.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--rule);display:flex;flex-wrap:wrap;gap:6px 24px;font-family:${F_EXP_MONO};font-size:11px;color:var(--muted)}
+#tip{position:fixed;z-index:60;max-width:290px;background:var(--ink);color:#fff;border-radius:9px;padding:12px 14px;font-size:12px;line-height:1.45;box-shadow:0 12px 34px rgba(20,30,40,.32);display:none;pointer-events:none}
+#tip .tt-h{font-weight:600;font-size:13px;margin-bottom:4px}
+#tip .tt-when{font-family:${F_EXP_MONO};font-size:10.5px;opacity:.78;letter-spacing:.02em}
+#tip .tt-pill{display:inline-block;margin:8px 0 7px;font-size:10px;font-weight:600;padding:2px 9px;border-radius:999px;color:#fff}
+#tip .tt-note{opacity:.92}
+@media (max-width:760px){:root{--label:150px}.panels{grid-template-columns:1fr}}
+@media print{body{background:#fff;padding:0}.gantt-scroll{overflow:visible;border:none;box-shadow:none}.panel{break-inside:avoid}#tip{display:none!important}}
+`;
+const EXPORT_JS = `(function(){
+var TIPS=__TIPS__;
+var SM={planned:{t:"Planned",c:"#5b6673"},in_progress:{t:"In progress",c:"#8a5a00"},complete:{t:"Complete",c:"#0f7a4d"},at_risk:{t:"At risk",c:"#b23a2e"},blocked:{t:"Blocked",c:"#5b46c0"},on_hold:{t:"On hold",c:"#5b6673"}};
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+var tip=document.getElementById("tip");
+document.querySelectorAll("#gantt [data-tid]").forEach(function(el){
+  el.addEventListener("mouseenter",function(){
+    var d=TIPS[+el.dataset.tid];if(!d)return;var s=SM[d.s]||SM.planned;
+    tip.innerHTML='<div class="tt-h">'+esc(d.l)+'</div><div class="tt-when">'+esc(d.w)+'</div><span class="tt-pill" style="background:'+s.c+'">'+s.t+'</span>'+(d.n?'<div class="tt-note">'+esc(d.n)+'</div>':'');
+    tip.style.display="block";
+  });
+  el.addEventListener("mousemove",function(e){
+    var pad=14,r=tip.getBoundingClientRect(),x=e.clientX+pad,y=e.clientY+pad;
+    if(x+r.width>window.innerWidth-8)x=e.clientX-r.width-pad;
+    if(y+r.height>window.innerHeight-8)y=e.clientY-r.height-pad;
+    tip.style.left=x+"px";tip.style.top=y+"px";
+  });
+  el.addEventListener("mouseleave",function(){tip.style.display="none";});
+});
+if(!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)){
+  var g=document.getElementById("gantt");
+  var bars=[].slice.call(g.querySelectorAll(".bar"));
+  var fades=[].slice.call(g.querySelectorAll(".ms,.ms-label,.bar-ext"));
+  bars.forEach(function(b){b.style.transition="none";b.dataset.fw=b.style.width;b.style.width="0%";});
+  fades.forEach(function(e){e.style.transition="none";e.style.opacity="0";});
+  void g.offsetWidth;
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    bars.forEach(function(b){var d=parseFloat(b.dataset.delay)||0;b.style.transition="width .55s cubic-bezier(.22,.7,.2,1)";b.style.transitionDelay=d+"ms";b.style.width=b.dataset.fw||(b.dataset.w+"%");});
+    fades.forEach(function(e){var d=parseFloat(e.dataset.delay)||0;e.style.transition="opacity .4s ease";e.style.transitionDelay=(d+120)+"ms";e.style.opacity="1";});
+  });});
+}
+})();`;
+
+// A fully self-contained, magazine-quality HTML deliverable: a CSS-div Gantt
+// (month bands, weekly grid, gate / today / finish lines + header flags,
+// milestone strips, hover tooltips, entrance animation), stat chips, a legend,
+// the progress summary and any analysis cards. Rendered here from the data model
+// so it needs no scripts to *show* — JS only adds tooltips + the bar animation.
+async function exportHtml(){
+  const anyItems = (doc.lanes || []).some(l => (l.items || []).some(itemValid));
+  if (!anyItems){ topNote("err", "Nothing to export yet — add some dated items first."); return; }
+  const logo = await getLogoDataUrl();
+  const rgbOf = h => { h = String(h).replace("#",""); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)].join(","); };
+
+  // ----- domain (whole months) + percent scale across the plot -----
+  const { t0, t1 } = computeDomain(doc.lanes);
+  const DAY = 864e5;
+  const TOTAL = Math.max(1, Math.round((t1 - t0) / DAY));
+  const idxOf = ms => (ms - t0) / DAY;
+  const pctMs = (ms, off = 0) => ((idxOf(ms) + off) / TOTAL) * 100;
+  const pctIso = (iso, off = 0) => pctMs(msOf(iso), off);
+  const LABEL = 210;
+  const monthCount = Math.max(1, Math.round((t1 - t0) / (30.4 * DAY)));
+  const minW = LABEL + monthCount * 150;               // scales so long plans stay legible (scrolls if wider than screen)
+  const plotPx = minW - LABEL;
+  const perWeekPx = plotPx / (TOTAL / 7);
+  const showWeekNums = perWeekPx >= 24;
+  const fmtMD = iso => { const d = dateOf(iso); return MONTHS[d.getMonth()] + " " + d.getDate(); };
+  const yrOf = iso => dateOf(iso).getFullYear();
+
+  // ----- underlay: month bands, weekly gridlines, gate / today / finish lines -----
+  let bands = "", wg = "", wnums = "", mlabels = "", glines = "";
+  let mm = firstOfMonth(toIso(new Date(t0))), bi = 0;
+  while (mm.getTime() < t1){
+    const next = addMonths(mm, 1);
+    const L = Math.max(0, pctMs(mm.getTime()));
+    const R = Math.min(100, pctMs(Math.min(next.getTime(), t1) - DAY, 1));
+    if (bi % 2 === 1) bands += '<div class="band" style="left:' + L.toFixed(3) + '%;width:' + (R - L).toFixed(3) + '%"></div>';
+    let lbl = MONTHS[mm.getMonth()];
+    if (mm.getMonth() === 0 || bi === 0) lbl += " ’" + String(mm.getFullYear()).slice(2);
+    mlabels += '<div class="mlabel" style="left:calc(' + L.toFixed(3) + '% + 8px)">' + lbl + '</div>';
+    mm = next; bi++;
+  }
+  let wk = new Date(t0); wk.setHours(0,0,0,0);
+  wk.setDate(wk.getDate() - ((wk.getDay() + 6) % 7));    // snap back to Monday
+  for (; wk.getTime() <= t1; wk = new Date(wk.getTime() + 7 * DAY)){
+    const wx = pctMs(wk.getTime());
+    if (wx > 0.2 && wx < 99.8) wg += '<div class="wgrid" style="left:' + wx.toFixed(3) + '%"></div>';
+    if (showWeekNums && wx >= -0.5 && wx <= 100.5) wnums += '<div class="wnum" style="left:' + wx.toFixed(3) + '%">' + wk.getDate() + '</div>';
+  }
+
+  // gate flags (from gate milestones) + a finish marker at the plan's end
+  const gates = [];
+  doc.lanes.forEach(l => (l.items || []).forEach(it => {
+    if (it.gate && itemValid(it)){ const d = it.kind === "milestone" ? it.date : it.start; if (msOf(d) >= t0 && msOf(d) <= t1) gates.push({ date:d, label:it.label || "Gate" }); }
+  }));
+  let starts = [], ends = [];
+  doc.lanes.forEach(l => (l.items || []).forEach(it => { if (itemValid(it)){ starts.push(msOf(itemStart(it))); ends.push(msOf(itemEnd(it))); } }));
+  const minStart = Math.min.apply(null, starts), maxEnd = Math.max.apply(null, ends);
+  const spanDays = Math.round((maxEnd - minStart) / DAY) + 1;
+  const showFinish = ends.length >= 2 && spanDays >= 14 && maxEnd >= t0 && maxEnd <= t1;
+  const todayMs = msOf(todayIso());
+  const showToday = todayMs >= t0 && todayMs <= t1;
+
+  let flags = "";
+  // Gate flags carry only the date (the full label lives on the diamond below);
+  // adjacent gates are staggered down a level so their tags never collide.
+  gates.sort((a, b) => msOf(a.date) - msOf(b.date));
+  let lastGx = -99, gLevel = 0;
+  gates.forEach(g => {
+    const gx = pctIso(g.date, 0.5);
+    glines += '<div class="gline gate" style="left:' + gx.toFixed(3) + '%"></div>';
+    gLevel = (gx - lastGx < 7) ? (gLevel + 1) % 2 : 0;
+    lastGx = gx;
+    flags += '<div class="flag gate" style="left:' + gx.toFixed(3) + '%;top:' + (7 + gLevel * 17) + 'px"><span class="tag">GATE</span><span class="sub2">' + esc(fmtMD(g.date)) + '</span></div>';
+  });
+  if (showFinish){
+    const fx = pctMs(maxEnd, 1);
+    glines += '<div class="gline finish" style="left:' + fx.toFixed(3) + '%"></div>';
+    const near = fx > 88;   // right-anchor near the edge so the flag stays inside the plot
+    const fStyle = near
+      ? 'left:' + Math.min(fx, 99.6).toFixed(3) + '%;transform:translateX(-100%);align-items:flex-end;text-align:right'
+      : 'left:' + fx.toFixed(3) + '%';
+    flags += '<div class="flag finish" style="' + fStyle + '"><span class="tag">DAY ' + spanDays + '</span><span class="sub2">' + esc(fmtMD(toIso(new Date(maxEnd)))) + '</span></div>';
+  }
+  if (showToday){
+    const tx = pctMs(todayMs, 0.5);
+    glines += '<div class="gline today" style="left:' + tx.toFixed(3) + '%"></div>';
+    const tLbl = tx < 6
+      ? '<div class="minlabel" style="left:calc(' + tx.toFixed(3) + '% + 4px)">TODAY</div>'
+      : '<div class="minlabel" style="left:' + tx.toFixed(3) + '%;transform:translateX(-50%)">TODAY</div>';
+    flags += tLbl;
+  }
+
+  // ----- lanes: milestone strip (2-line when >1) then one row per bar -----
+  const tips = [];
+  const pill = { planned:"#5b6673", in_progress:"#8a5a00", complete:"#0f7a4d", at_risk:"#b23a2e", blocked:"#5b46c0", on_hold:"#5b6673" };
+  const pushTip = (label, when, status, note) => tips.push({ l:label, w:when, s:status, n:note || "" }) - 1;
+  let body = "";
+  doc.lanes.forEach(lane => {
+    const bars = (lane.items || []).filter(it => it.kind === "bar" && itemValid(it));
+    const ms   = (lane.items || []).filter(it => it.kind === "milestone" && itemValid(it));
+    const twoLine = ms.length > 1;
+    const stripH = ms.length ? (twoLine ? 46 : 28) : 0;
+
+    let strip = "";
+    ms.forEach((m, i) => {
+      const mx = pctIso(m.date, 0.5);
+      const yTop = twoLine ? (i % 2 === 0 ? 14 : 32) : 14;
+      const filled = m.status !== "planned";
+      const col = STATUS_COLOR[m.status] || MILE_BLUE;
+      let cls = "ms", ds = "left:" + mx.toFixed(3) + "%;top:" + yTop + "px;background:" + (filled ? col : "#fff") + ";border-color:" + col + ";";
+      if (m.status === "planned") ds += "opacity:.9;";
+      if (m.status === "at_risk") cls += " risk";
+      if (m.status === "blocked") cls += " blk";
+      const id = pushTip(m.label || "Milestone", fmtMD(m.date) + ", " + yrOf(m.date), m.status, m.note);
+      const delay = Math.round(idxOf(msOf(m.date)) / TOTAL * 900);
+      strip += '<div class="' + cls + '" data-tid="' + id + '" data-delay="' + delay + '" style="' + ds + '"></div>';
+      const toLeft = mx > 62;
+      const ls = toLeft
+        ? "right:calc(" + (100 - mx).toFixed(3) + "% + 12px);top:" + yTop + "px;text-align:right;"
+        : "left:calc(" + mx.toFixed(3) + "% + 12px);top:" + yTop + "px;";
+      strip += '<div class="ms-label" data-tid="' + id + '" data-delay="' + delay + '" style="' + ls + '">' + esc(m.label || "Milestone") + '</div>';
+    });
+    if (ms.length) strip = '<div class="ms-strip" style="height:' + stripH + 'px">' + strip + '</div>';
+
+    let rows = "";
+    bars.forEach(b => {
+      const L = pctIso(b.start), W = Math.max(0.6, pctIso(b.end, 1) - L);
+      const barPx = W / 100 * plotPx;
+      const inside = ((b.label || "").length * 6.6 + 16) <= barPx;
+      const planned = b.status === "planned", onhold = b.status === "on_hold";
+      const light = planned || onhold;
+      const col = STATUS_COLOR[b.status] || "#94a3b8";
+      let cls = "bar", bs = "left:" + L.toFixed(3) + "%;width:" + W.toFixed(3) + "%;";
+      let txt;
+      if (onhold){ const rgb = rgbOf(STATUS_COLOR.on_hold); bs += "background:repeating-linear-gradient(45deg,rgba(" + rgb + ",.16) 0 7px,rgba(" + rgb + ",.04) 7px 14px);border:1.4px dashed rgba(" + rgb + ",.7);box-shadow:none;"; cls += " hold"; txt = "var(--muted)"; }
+      else if (planned){ bs += "background:rgba(148,163,184,.16);border:1.3px dashed #aab2c0;box-shadow:none;"; txt = "var(--ink-2)"; }
+      else { bs += "background:" + col + ";"; txt = STATUS_TEXT[b.status] || "#fff"; }
+      let elapsed = "";
+      if (b.status === "in_progress" && showToday){
+        const frac = Math.max(0, Math.min(1, (todayMs - msOf(b.start)) / Math.max(1, msOf(b.end) - msOf(b.start))));
+        if (frac > 0.02) elapsed = '<span class="bar-elapsed" style="width:' + (frac * 100).toFixed(2) + '%"></span>';
+      }
+      const when = fmtMD(b.start) + " to " + fmtMD(b.end) + ", " + yrOf(b.end);
+      const id = pushTip(b.label || "Phase", when, b.status, b.note);
+      const delay = Math.round(idxOf(msOf(b.start)) / TOTAL * 900);
+      const inner = inside && b.label ? '<span class="bl" style="color:' + txt + '">' + esc(b.label) + '</span>' : '';
+      const bar = '<div class="' + cls + '" data-tid="' + id + '" data-delay="' + delay + '" data-w="' + W.toFixed(3) + '" style="' + bs + '">' + elapsed + inner + '</div>';
+      const ext = !inside && b.label ? '<div class="bar-ext" data-tid="' + id + '" data-delay="' + delay + '" style="left:calc(' + (L + W).toFixed(3) + '% + 8px)">' + esc(b.label) + '</div>' : '';
+      rows += '<div class="bar-row">' + bar + ext + '</div>';
+    });
+    if (!bars.length && !ms.length) return;
+    body += '<div class="lane"><div class="lane-label"><span class="chip2" style="background:' + esc(lane.color || "#0073ea") + '"></span>'
+      + '<span class="lane-name">' + esc(lane.name || "Lane") + '</span></div>'
+      + '<div class="lane-track">' + strip + rows + '</div></div>';
+  });
+
+  const head = '<div class="g-head"><div class="g-head-label"><span class="cap">Phase / lane</span></div>'
+    + '<div class="g-head-time">' + flags + mlabels + wnums + '</div></div>';
+  const ganttHtml = '<div class="g-underlay">' + bands + wg + glines + '</div>' + head + '<div class="g-body">' + body + '</div>';
+
+  // ----- chips, legend, summary, analysis panels, footer -----
+  const chips = ($("statChips") && !$("statChips").hidden) ? $("statChips").innerHTML : "";
+  const summary = $("summaryBody") ? $("summaryBody").innerHTML : "";
+  const present = STATUSES.filter(s => doc.lanes.some(l => (l.items || []).some(it => itemValid(it) && it.status === s.v)));
+  const anyGate = gates.length > 0;
+  let legend = present.map(s => s.v === "on_hold"
+    ? '<span class="lg"><span class="sw-hold"></span>' + esc(s.label) + '</span>'
+    : '<span class="lg"><span class="sw-bar" style="background:' + STATUS_COLOR[s.v] + '"></span>' + esc(s.label) + '</span>').join("");
+  legend += '<span class="lg"><span class="sw-dia"></span>Milestone</span>';
+  if (anyGate) legend += '<span class="lg"><span class="sw-gate"></span>Gate / key date</span>';
+  if (showFinish) legend += '<span class="lg"><span class="sw-fin"></span>Day ' + spanDays + '</span>';
+  if (showToday) legend += '<span class="lg"><span class="sw-today"></span>Today</span>';
+
+  const callouts = (doc.callouts || []).filter(c => (c.title || "").trim() || (c.body || "").trim());
+  let panels = "";
+  if (summary) panels += '<div class="panel"><h2>Progress</h2><div class="summary-body">' + summary + '</div></div>';
+  callouts.forEach(c => {
+    const paras = esc(c.body || "").split(/\n{2,}/).filter(Boolean).map(p => '<p>' + p.replace(/\n/g, "<br>") + '</p>').join("");
+    panels += '<div class="panel">' + (c.title ? '<h2>' + esc(c.title) + '</h2>' : '') + '<div class="panel-body">' + paras + '</div></div>';
+  });
+
+  const rangeText = fmtMD(toIso(new Date(minStart))) + " to " + fmtMD(toIso(new Date(maxEnd))) + ", " + yrOf(toIso(new Date(maxEnd)));
+  const subLine = [doc.subtitle, rangeText].filter(s => (s || "").trim()).join(" · ");
+  const now = new Date();
+  const rendered = MONTHS[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
+  const pubUrl = (doc.public && doc.id) ? publicRoadmapUrl(doc.id) : "";
+
+  const tipsJson = JSON.stringify(tips).replace(/</g, "\\u003c");
+  const css = EXPORT_CSS.replace(/__LABEL__/g, LABEL + "px");
+  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + esc(doc.title || "Roadmap") + ' — Roadmap</title>'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    + '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    + '<style>' + css + '</style></head><body><div class="wrap">'
+    + '<div class="masthead">'
+    + '<div><p class="eyebrow">Roadmap</p><h1 class="title">' + esc(doc.title || "Untitled") + '</h1>'
+    + (subLine ? '<p class="subtitle">' + esc(subLine) + '</p>' : '') + '</div>'
+    + (logo ? '<img class="brand" src="' + logo + '" alt="">' : '')
+    + '</div>'
     + (chips ? '<div class="chips">' + chips + '</div>' : '')
-    + '<div class="tlh"><span>TIMELINE</span><span class="rg">' + esc(range) + '</span></div>'
-    + '<div class="tl">' + svgClone.outerHTML + '</div>'
-    + '<div class="lg-row">' + legend + '</div>'
-    + (summary ? '<div class="exp-h">Progress summary</div><div class="summary-body">' + summary + '</div>' : '')
-    + calloutsHtml
-    + '<div class="ft">' + esc(doc.title || "Roadmap") + ' · exported from Roadmap Builder</div>'
-    + '</div></body></html>';
+    + '<div class="legend">' + legend + '</div>'
+    + '<div class="gantt-scroll"><div class="gantt" id="gantt" style="min-width:' + minW + 'px">' + ganttHtml + '</div></div>'
+    + '<p class="hint">Hover any bar or marker for dates, status and notes.</p>'
+    + (panels ? '<div class="panels">' + panels + '</div>' : '')
+    + '<div class="foot"><span>Exported from Roadmap Builder</span>'
+    + (pubUrl ? '<span>Public link · ' + esc(pubUrl) + '</span>' : '')
+    + '<span>Rendered ' + rendered + '</span></div>'
+    + '</div><div id="tip"></div>'
+    + '<script>' + EXPORT_JS.replace("__TIPS__", () => tipsJson) + '<\/script>'
+    + '</body></html>';
   download(slug(doc.title) + "-roadmap.html", new Blob([html], { type:"text/html" }));
 }
 function importJsonFile(file){
