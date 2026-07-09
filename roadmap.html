@@ -160,6 +160,9 @@
     border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
   .item input[type="date"]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .item .dash { color:var(--mut); }
+  .item .gate-tog { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-2); white-space:nowrap; cursor:pointer;
+    border:1px solid var(--line-2); border-radius:7px; padding:5px 8px; background:var(--input-bg); }
+  .item .gate-tog input { margin:0; cursor:pointer; }
   .notes-body { padding:12px 16px 16px; }
   .summary-body { padding:14px 16px 16px; font-size:13.5px; line-height:1.6; color:var(--ink); }
   .summary-body .sum-head { font-size:15px; font-weight:800; letter-spacing:-0.01em; }
@@ -303,6 +306,12 @@
   .pub-url { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:9px 12px;
     background:var(--accent-soft); border:1px solid var(--accent); border-radius:10px; }
   .pub-url[hidden] { display:none !important; }   /* display:flex above otherwise overrides the hidden attribute */
+  .stat-chips { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+  .stat-chips[hidden] { display:none !important; }
+  .stat-chip { flex:0 1 auto; min-width:112px; padding:9px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow-sm); }
+  .stat-chip .sc-lbl { display:block; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); margin-bottom:3px; }
+  .stat-chip .sc-val { font-size:14px; font-weight:700; color:var(--ink); }
+  .stat-chip.warn .sc-val { color:var(--err); }
   .pub-url .pub-ico { flex:0 0 auto; font-size:14px; }
   .pub-url .pub-lbl { flex:0 0 auto; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); font-weight:700; }
   .pub-url .pub-input { flex:1 1 auto; min-width:0; font-family:var(--mono); font-size:12.5px; color:var(--ink);
@@ -417,6 +426,9 @@
 
   <!-- overview / portfolio -->
   <div id="overviewView" class="app-only"><div id="overviewGrid" class="ov-grid"></div></div>
+
+  <!-- at-a-glance stat chips (auto-derived) -->
+  <div id="statChips" class="stat-chips editor-view" hidden></div>
 
   <!-- timeline -->
   <div class="card editor-view" id="tlCard">
@@ -607,14 +619,15 @@ function normItem(raw){
   const label = String(raw.label || "").trim();
   const status = normStatus(raw.status);
   const note = String(raw.note || "");
+  const gate = !!raw.gate;   // mark a milestone as a decision gate / key date → dashed line on the timeline
   if (kind === "milestone"){
     const date = isIso(raw.date) ? raw.date : (isIso(raw.start) ? raw.start : "");
-    return { id: raw.id || uid("it"), kind, label, date, status, note };
+    return { id: raw.id || uid("it"), kind, label, date, status, note, gate };
   }
   let start = isIso(raw.start) ? raw.start : "";
   let end   = isIso(raw.end)   ? raw.end   : "";
   if (start && end && msOf(end) < msOf(start)){ const t = start; start = end; end = t; }
-  return { id: raw.id || uid("it"), kind, label, start, end, status, note };
+  return { id: raw.id || uid("it"), kind, label, start, end, status, note, gate };
 }
 function normLane(raw, i){
   const lane = { id:(raw && raw.id) || uid("lane"), name:String((raw && raw.name) || "Untitled lane").trim(),
@@ -750,7 +763,7 @@ function pal(){
         ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea",
         plannedFill:"rgba(148,163,184,0.16)", plannedStroke:"#aab2c0", barStroke:"rgba(20,28,50,0.12)", elapsed:"rgba(0,0,0,0.16)", noteDot:"#8a90a0" };
 }
-const GA = { PADL:184, PADR:26, PADT:56, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
+const GA = { PADL:184, PADR:26, PADT:70, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
 // literal font stacks (no spaces) so PNG export — a detached SVG with no CSS vars — still renders text
 const F_SANS = "-apple-system,Roboto,Helvetica,Arial,sans-serif";
 const F_MONO = "ui-monospace,Menlo,Consolas,monospace";
@@ -923,8 +936,33 @@ async function generateNarrative(){
       + '<br><br>This runs in a Supabase Edge Function named <b>roadmap-summary</b> — deploy it (it uses the same <b>ANTHROPIC_API_KEY</b> and <b>ALLOWED_EMAILS</b> lock as the AI builder).';
   } finally { btn.disabled = false; btn.textContent = orig; }
 }
+function renderStatChips(){
+  const el = $("statChips"); if (!el) return;
+  const items = []; ((doc && doc.lanes) || []).forEach(l => (l.items || []).forEach(it => { if (itemValid(it)) items.push(it); }));
+  if (!items.length){ el.hidden = true; el.innerHTML = ""; return; }
+  let mn = null, mx = null;
+  items.forEach(it => { const s = msOf(itemStart(it)), e = msOf(itemEnd(it)); if (mn === null || s < mn) mn = s; if (mx === null || e > mx) mx = e; });
+  const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()] + " " + d.getDate(); };
+  const days = Math.max(1, Math.round((mx - mn) / 864e5));
+  const today = msOf(todayIso());
+  const upcoming = items.filter(it => it.kind === "milestone" && it.status !== "complete" && msOf(it.date) >= today).sort((a, b) => msOf(a.date) - msOf(b.date));
+  const nextGate = upcoming.find(it => it.gate) || upcoming[0] || null;
+  const atRisk = items.filter(it => it.status === "at_risk").length;
+  const blocked = items.filter(it => it.status === "blocked").length;
+  const chips = [
+    { lbl:"Window", val: fmt(mn) + " – " + fmt(mx) },
+    { lbl:"Duration", val: days + " day" + (days === 1 ? "" : "s") },
+  ];
+  if (nextGate) chips.push({ lbl: nextGate.gate ? "Next gate" : "Next milestone", val: (nextGate.label || "Milestone") + " · " + fmt(msOf(nextGate.date)) });
+  chips.push({ lbl:"Items", val: String(items.length) });
+  if (atRisk + blocked > 0) chips.push({ lbl:"Needs attention", warn:true,
+    val: [atRisk ? atRisk + " at risk" : "", blocked ? blocked + " blocked" : ""].filter(Boolean).join(", ") });
+  el.innerHTML = chips.map(c => '<div class="stat-chip' + (c.warn ? " warn" : "") + '"><span class="sc-lbl">' + esc(c.lbl) + '</span><span class="sc-val">' + esc(c.val) + '</span></div>').join("");
+  el.hidden = false;
+}
 function renderGantt(){
   renderSummary();
+  renderStatChips();
   const host = $("gantt");
   const lanes = doc.lanes;
   const anyItems = lanes.some(l => l.items.some(itemValid));
@@ -991,7 +1029,7 @@ function renderGantt(){
       if (wkx > GA.PADL+0.5 && wkx < GA.PADL+plotW)
         out += svgEl("line", { x1:wkx.toFixed(1), y1:gridTop, x2:wkx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.3 });
       if (showWeekNums && wkx >= GA.PADL-1 && wkx <= GA.PADL+plotW+1)
-        out += svgEl("text", { x:wkx.toFixed(1), y:(GA.PADT-11).toFixed(1), fill:P.mut, "font-size":9, "font-family":F_MONO, "text-anchor":"middle", "fill-opacity":0.7 }, String(wk.getDate()));
+        out += svgEl("text", { x:wkx.toFixed(1), y:(GA.PADT-14).toFixed(1), fill:P.mut, "font-size":9, "font-family":F_MONO, "text-anchor":"middle", "fill-opacity":0.7 }, String(wk.getDate()));
     }
   }
   // month gridlines + labels (stronger, on top of the weekly grid)
@@ -1002,12 +1040,12 @@ function renderGantt(){
     if (m.getTime() < t1){
       let lbl = MONTHS[m.getMonth()];
       if (prevYear !== m.getFullYear()){ lbl += " ’" + String(m.getFullYear()).slice(2); prevYear = m.getFullYear(); }
-      out += svgEl("text", { x:(gx+7).toFixed(1), y:(GA.PADT-27).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":700 }, esc(lbl));
+      out += svgEl("text", { x:(gx+7).toFixed(1), y:(GA.PADT-30).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":700 }, esc(lbl));
     }
     m = addMonths(m, 1);
   }
   // left gutter label
-  out += svgEl("text", { x:16, y:(GA.PADT-27).toFixed(1), fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
+  out += svgEl("text", { x:16, y:(GA.PADT-30).toFixed(1), fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
 
   // lane backgrounds + names + dividers
   laneBox.forEach((box, i) => {
@@ -1020,13 +1058,25 @@ function renderGantt(){
     out += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:P.ink, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
   });
 
+  // gate / key-date lines (dashed, labeled) drawn under the items
+  lanes.forEach(l => (l.items || []).forEach(it => {
+    if (!it.gate || !itemValid(it)) return;
+    const gd = it.kind === "milestone" ? msOf(it.date) : msOf(itemStart(it));
+    if (gd < t0 || gd > t1) return;
+    const gxx = x(gd);
+    out += svgEl("line", { x1:gxx.toFixed(1), y1:bandBot, x2:gxx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.ink2, "stroke-width":1.25, "stroke-dasharray":"5 4", "stroke-opacity":0.5 });
+    const pw = 42, ph = 15, ppx = Math.min(Math.max(gxx-pw/2, GA.PADL), GA.PADL+plotW-pw), ppy = 3;
+    out += svgEl("rect", { x:ppx.toFixed(1), y:ppy, width:pw, height:ph, rx:3, fill:P.ink });
+    out += svgEl("text", { x:(ppx+pw/2).toFixed(1), y:(ppy+ph/2+0.5).toFixed(1), fill:"#ffffff", "font-size":8.5, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.1em", "dominant-baseline":"middle" }, "GATE");
+  }));
+
   // today line + chip (drawn under items)
   const todayMs = msOf(todayIso());
   const showToday = todayMs >= t0 && todayMs <= t1;
   if (showToday){
     const tx = x(todayMs);
     out += svgEl("line", { x1:tx.toFixed(1), y1:bandBot, x2:tx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.today, "stroke-width":2, "stroke-dasharray":"4 4" });
-    const cw = 52, ch = 17, ccx = Math.min(Math.max(tx, GA.PADL+cw/2), GA.PADL+plotW-cw/2), cy = GA.PADT-40;
+    const cw = 52, ch = 17, ccx = Math.min(Math.max(tx, GA.PADL+cw/2), GA.PADL+plotW-cw/2), cy = 3;
     out += svgEl("rect", { x:(ccx-cw/2).toFixed(1), y:cy, width:cw, height:ch, rx:8.5, fill:P.today });
     out += svgEl("text", { x:ccx.toFixed(1), y:(cy+ch/2+0.5).toFixed(1), fill:"#ffffff", "font-size":10, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.12em", "dominant-baseline":"middle" }, "TODAY");
   }
@@ -1223,6 +1273,7 @@ function renderEditor(){
         + '<input class="lbl" data-role="label" type="text" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
         + dates
         + statusSelect(st.cls, it.status)
+        + (it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')
         + '<button class="icon-btn" data-role="up" title="Move up">↑</button>'
         + '<button class="icon-btn" data-role="down" title="Move down">↓</button>'
         + '<button class="icon-btn" data-role="del" title="Delete">✕</button>'
@@ -1284,6 +1335,10 @@ function onEditorChange(e){
     if (e.target.value === "milestone"){ it.kind = "milestone"; it.date = it.start || todayIso(); }
     else { it.kind = "bar"; it.start = it.date || todayIso(); it.end = it.end || addWeeksIso(it.start, 2); }
     save(); fullRender(); return;
+  }
+  if (role === "gate"){
+    const itemEl = e.target.closest("[data-item]"); const it = itemEl && findItem(lane, itemEl.dataset.item); if (!it) return;
+    it.gate = e.target.checked; save(); renderGantt(); return;
   }
 }
 function onEditorClick(e){
