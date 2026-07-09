@@ -226,7 +226,14 @@ cloud sync and shareable links.
   supabase functions deploy build-roadmap
   ```
   It runs on **Opus 4.8** (`claude-opus-4-8`) by default; override with an `ANTHROPIC_MODEL`
-  secret (the same env name the tracker's `extract-tasks` uses). Contract:
+  secret (the same env name the tracker's `extract-tasks` uses).
+  - **Access control:** the function only serves **signed-in, allow-listed** accounts, so a
+    random visitor to the public page can't spend your Anthropic credits. Set
+    `ALLOWED_EMAILS=you@example.com` (comma-separated for more) and turn off public sign-ups
+    in Supabase Auth — see the function's
+    [README](supabase/functions/build-roadmap/README.md).
+
+  Contract:
   - **Request** `{ prompt, today: "YYYY-MM-DD", templateHint }`
   - **Response** `{ roadmap: { title, subtitle?, lanes: [ { name, items: [
     {kind:"bar", label, start:"YYYY-MM-DD", end:"YYYY-MM-DD", status},

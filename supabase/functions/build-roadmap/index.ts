@@ -106,9 +106,44 @@ function systemPrompt(today: string, hint: string | null): string {
   ].join("\n");
 }
 
+// Access control. The Anthropic key is the project owner's, so this function is
+// restricted to signed-in, allow-listed accounts — otherwise anyone who loads the
+// page (which ships the public publishable key) could spend the owner's credits.
+// A caller must present a valid Supabase user access token (sent automatically by
+// the signed-in client); the anonymous publishable/anon key is rejected. Set the
+// ALLOWED_EMAILS secret to a comma-separated list to limit which signed-in
+// accounts may use it. SUPABASE_URL and SUPABASE_ANON_KEY are provided to every
+// Edge Function automatically — no setup needed.
+async function authorizeCaller(req: Request): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const DENY = { ok: false as const, status: 401, error: "Please sign in to use the AI roadmap builder." };
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+  const supaUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!token || !supaUrl || !anonKey) return DENY;
+
+  // Validate the token against GoTrue; this rejects the anon/publishable key
+  // (which is not a user token) and any forged/expired JWT.
+  let user: { email?: string; role?: string; aud?: string } | null = null;
+  try {
+    const r = await fetch(supaUrl + "/auth/v1/user", { headers: { Authorization: "Bearer " + token, apikey: anonKey } });
+    if (r.ok) user = await r.json();
+  } catch { /* network/parse failure → treated as unauthenticated */ }
+  if (!user || !user.email || user.role === "anon") return DENY;
+
+  const allow = (Deno.env.get("ALLOWED_EMAILS") || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (allow.length && !allow.includes(user.email.toLowerCase())) {
+    return { ok: false, status: 403, error: "This account isn't allowed to use the AI roadmap builder." };
+  }
+  return { ok: true };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
+
+  const gate = await authorizeCaller(req);
+  if (!gate.ok) return json({ error: gate.error }, gate.status);
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) {
