@@ -1571,15 +1571,18 @@ function syncHeader(){
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
   reflectPublicBtn();
   renderCallouts();
+  // The Portfolio header count is shown to everyone — including public
+  // visitors — so it must be set before the read-only early-return below
+  // (it used to sit after it, leaving the public portfolio at "0 roadmaps").
+  { const n = Object.keys(store.roadmaps).length;
+    $("segCount").textContent = n;
+    $("ovSub").textContent = n + (n === 1 ? " roadmap" : " roadmaps"); }
   if (readOnly) return;
   const pk = $("rmPicker"); pk.innerHTML = "";
   Object.values(store.roadmaps)
     .sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""))
     .forEach(d => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; pk.appendChild(o); });
   { const delItem = document.querySelector('.menu-item[data-act="del"]'); if (delItem) delItem.disabled = Object.keys(store.roadmaps).length <= 1; }
-  const n = Object.keys(store.roadmaps).length;
-  $("segCount").textContent = n;
-  $("ovSub").textContent = n + (n === 1 ? " roadmap" : " roadmaps");
 }
 
 /* =========================================================================
