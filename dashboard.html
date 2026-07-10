@@ -76,7 +76,7 @@
   .etile:hover { transform:translateY(-2px); box-shadow:var(--shadow-sm); }
   .et-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; min-height:18px; }
   .et-label { font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); }
-  .et-num { font-family:var(--serif); font-size:34px; font-weight:600; letter-spacing:0; line-height:1; color:var(--ink); }
+  .et-num { font-family:var(--serif); font-size:36px; font-weight:600; letter-spacing:0; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums; }
   .et-unit { font-family:var(--serif); font-size:18px; font-weight:600; color:var(--mut); margin-left:1px; }
   .et-sub { font-size:11.5px; color:var(--mut); margin-top:6px; }
   .etile.g .et-num { color:var(--green); } .etile.a .et-num { color:var(--amber); } .etile.r .et-num { color:var(--red); }
@@ -90,7 +90,10 @@
   .kcard { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; box-shadow:var(--shadow); }
   .kcard h3 { margin:0 0 2px; font-family:var(--serif); font-size:16.5px; font-weight:600; letter-spacing:0; } .kcard .desc { margin:0 0 16px; font-size:12px; color:var(--mut); }
   .stat-row { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:12px; }
-  .stat .n { font-family:var(--serif); font-size:28px; font-weight:600; letter-spacing:0; } .stat .l { font-size:10.5px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+  .stat .n { font-family:var(--serif); font-size:28px; font-weight:600; letter-spacing:0; font-variant-numeric:tabular-nums; } .stat .l { font-size:10.5px; color:var(--mut); font-family:var(--mono); letter-spacing:.05em; text-transform:uppercase; }
+  /* signature watermark — print only */
+  .printmark { display:none; }
+  @media print { .printmark { display:block; position:fixed; bottom:8pt; right:8pt; width:40pt; opacity:.45; } }
   svg.chart { width:100%; height:auto; display:block; }
   svg.chart .pt { transition:r .1s; }
   svg.chart { touch-action:pan-y; }
@@ -235,6 +238,7 @@
 <script>try{if(localStorage.getItem("tracker_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 </head>
 <body>
+<img class="printmark" src="assets/dst-logo-black.png" alt="" aria-hidden="true" />
 <div class="wrap">
   <header class="mast">
     <div class="brand">
