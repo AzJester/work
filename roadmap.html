@@ -466,6 +466,7 @@
         <button class="menu-item" data-act="html" role="menuitem">HTML page</button>
         <button class="menu-item" data-act="json" role="menuitem">JSON</button>
         <button class="menu-item" data-act="import" role="menuitem">Import JSON…</button>
+        <button class="menu-item" data-act="jira" role="menuitem">Import Jira CSV…</button>
         <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
       </div>
     </div>
@@ -481,6 +482,7 @@
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
     <input id="fileIn" type="file" accept="application/json,.json" hidden />
+    <input id="jiraIn" type="file" accept=".csv,text/csv" hidden />
   </div>
 
   <!-- public link (shown for the owner when the current roadmap is public) -->
@@ -595,7 +597,9 @@
     <div class="modal-body">
       <div class="row">
         <label class="fld">Describe the project, phases, and any known dates</label>
-        <textarea id="aiText" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch."></textarea>
+        <textarea id="aiText" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch.
+
+You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export — Claude will structure it. (For a deterministic Jira import, use Export ▾ → Import Jira CSV instead.)"></textarea>
       </div>
       <div class="row">
         <label class="fld">Template hint (optional)</label>
@@ -1968,6 +1972,117 @@ function importJsonFile(file){
   };
   rd.readAsText(file);
 }
+/* ---------- Jira CSV import ----------
+   Accepts Jira's built-in issue export (Export → CSV, current or all fields).
+   Deterministic mapping: Epics → lanes; issues with start+due dates → bars;
+   single-dated issues (or "Milestone" types) → milestones; Jira statuses →
+   the app's six; a "gate" label marks a gate. No credentials, works offline. */
+function parseCsv(text){
+  // RFC 4180: quoted fields may contain commas, newlines and doubled quotes.
+  const rows = []; let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (inQ){
+      if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ","){ row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r"){
+      if (c === "\r" && text[i+1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.length > 1 || row[0] !== "") rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  row.push(field);
+  if (row.length > 1 || row[0] !== "") rows.push(row);
+  return rows;
+}
+const JIRA_MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+function parseJiraDate(s){
+  s = String(s || "").trim();
+  if (!s) return "";
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);                       // ISO (with or without time)
+  if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  m = s.match(/^(\d{1,2})[\/\-]([A-Za-z]{3})[\/\-](\d{2,4})/);       // 22/Jul/26, 22-Jul-2026 (Jira default)
+  if (m && JIRA_MONTHS[m[2].toLowerCase()]){
+    let y = +m[3]; if (y < 100) y += 2000;
+    return y + "-" + pad2(JIRA_MONTHS[m[2].toLowerCase()]) + "-" + pad2(+m[1]);
+  }
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);                   // US-locale 7/22/26
+  if (m){ let y = +m[3]; if (y < 100) y += 2000; return y + "-" + pad2(+m[1]) + "-" + pad2(+m[2]); }
+  return "";
+}
+function jiraStatusTo(status){
+  const s = String(status || "").toLowerCase();
+  if (/done|closed|resolved|complete|released|live/.test(s)) return "complete";
+  if (/blocked|imped/.test(s)) return "blocked";
+  if (/hold|paused|waiting|deferred|suspend/.test(s)) return "on_hold";
+  if (/risk/.test(s)) return "at_risk";
+  if (/progress|review|dev|doing|active|testing|qa|implement/.test(s)) return "in_progress";
+  return "planned";
+}
+function importJiraCsv(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const rows = parseCsv(String(rd.result || ""));
+      if (rows.length < 2) throw new Error("That CSV has no data rows.");
+      const headers = rows[0].map(h => String(h).trim());
+      const hkey = h => h.toLowerCase().replace(/[^a-z]/g, "");
+      // one column index per logical field; repeated columns (Labels…) collected as lists
+      const colAll = name => headers.reduce((a, h, i) => { if (hkey(h) === hkey(name)) a.push(i); return a; }, []);
+      const col = (...names) => { for (const n of names){ const c = colAll(n); if (c.length) return c[0]; } return -1; };
+      const cKey = col("Issue key"), cSum = col("Summary"), cType = col("Issue Type", "Issue type"),
+            cStatus = col("Status"), cProject = col("Project name", "Project"),
+            cEpic = col("Epic Link", "Epic link"), cParent = col("Parent"), cParentSum = col("Parent summary"),
+            cDue = col("Due date", "Due Date", "Due"),
+            cStart = col("Start date", "Custom field (Start date)", "Target start", "Custom field (Target start)"),
+            cEnd = col("Target end", "Custom field (Target end)", "End date"),
+            cLabels = colAll("Labels");
+      if (cSum === -1) throw new Error("No “Summary” column — export issues from Jira via Export → CSV.");
+      const val = (r, c) => c >= 0 && c < r.length ? String(r[c]).trim() : "";
+      const issues = rows.slice(1).filter(r => val(r, cSum)).map(r => ({
+        key: val(r, cKey), summary: val(r, cSum), type: val(r, cType).toLowerCase(),
+        status: val(r, cStatus), project: val(r, cProject),
+        epic: val(r, cEpic), parent: val(r, cParent), parentSum: val(r, cParentSum),
+        start: parseJiraDate(val(r, cStart)) || "",
+        end: parseJiraDate(val(r, cEnd)) || parseJiraDate(val(r, cDue)) || "",
+        labels: cLabels.map(c => val(r, c)).filter(Boolean).join(" ").toLowerCase(),
+      }));
+      // Epics become lanes; everything else lands in its epic's lane (Epic Link /
+      // Parent), else a lane per project, else one "Imported" lane.
+      const epics = new Map();   // epic key → lane
+      const lanes = [];
+      const laneFor = name => { let l = lanes.find(x => x.name === name); if (!l){ l = { name, items:[] }; lanes.push(l); } return l; };
+      issues.filter(it => it.type.includes("epic")).forEach(it => { const l = laneFor(it.summary || it.key); if (it.key) epics.set(it.key, l); });
+      let bars = 0, miles = 0, skipped = 0;
+      issues.filter(it => !it.type.includes("epic")).forEach(it => {
+        const start = it.start, end = it.end;
+        if (!start && !end){ skipped++; return; }
+        const lane = (it.epic && epics.get(it.epic)) || (it.parent && epics.get(it.parent))
+          || (it.parentSum && lanes.find(l => l.name === it.parentSum))
+          || laneFor(it.project || "Imported");
+        const status = jiraStatusTo(it.status);
+        const gate = /(^|\s)gate(\s|$)/.test(it.labels);
+        const note = it.key ? it.key : "";
+        const isMile = it.type.includes("milestone") || !(start && end);
+        if (isMile){ lane.items.push({ kind:"milestone", label:it.summary, date: end || start, status, gate, note }); miles++; }
+        else { lane.items.push({ kind:"bar", label:it.summary, start, end, status, gate, note }); bars++; }
+      });
+      const withItems = lanes.filter(l => l.items.length);
+      if (!withItems.length) throw new Error("No dated issues found — add Start/Due dates in Jira (or include them in the export) and try again.");
+      const project = issues.find(it => it.project) || {};
+      const d = normalizeRoadmap({ title: (project.project || file.name.replace(/\.csv$/i, "")) + " — Jira import", lanes: withItems });
+      store.roadmaps[d.id] = d; switchTo(d.id);
+      topNote("ok", "Imported " + bars + " phase" + (bars===1?"":"s") + " and " + miles + " milestone" + (miles===1?"":"s")
+        + " into " + withItems.length + " lane" + (withItems.length===1?"":"s")
+        + (skipped ? " — skipped " + skipped + " undated issue" + (skipped===1?"":"s") : "") + ".");
+    } catch(e){ topNote("err", "Jira import failed: " + (e.message || e)); }
+  };
+  rd.readAsText(file);
+}
+
 let _logoData = {};
 async function getLogoDataUrl(){
   const key = isDark() ? "white" : "black";
@@ -2312,7 +2427,7 @@ function closeMenus(){
   document.querySelectorAll(".menu-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
 }
 function runMenuAction(act){
-  const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), print:() => window.print(),
+  const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
     dup:duplicateRoadmap, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic };
   (map[act] || function(){})();
 }
@@ -2354,6 +2469,7 @@ function wire(){
   // export / import / png / print / html run via the Export menu (runMenuAction);
   // the hidden file input is triggered by the menu's Import item.
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
+  $("jiraIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJiraCsv(f); e.target.value = ""; });
   // dropdown menus (Export, Cloud, roadmap ⋯)
   document.addEventListener("click", onMenuDocClick);
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenus(); });

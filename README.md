@@ -209,8 +209,22 @@ cloud sync and shareable links.
 - **Saved in your browser** — multiple roadmaps persist to `localStorage` (key
   `roadmap_builder_v1`); the Overview grid and a toolbar picker switch between them (New /
   Duplicate / Delete).
-- **Exports** — **JSON** (round-trips via Import), **PNG** (the timeline as an image), and
-  **Print / PDF** (timeline only, light theme).
+- **Exports** — **JSON** (round-trips via Import), **HTML** (a self-contained, magazine-style
+  page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
+  an image), and **Print / PDF**.
+- **Import from Jira (CSV)** — *Export ▾ → Import Jira CSV…* takes Jira's built-in issue export
+  (any Jira: **Export → CSV**, current or all fields) and builds a roadmap deterministically —
+  no credentials, works offline, nothing leaves the browser:
+  - **Epics → lanes.** Other issues land in their epic's lane (via *Epic Link* or *Parent*),
+    else in a per-project lane.
+  - **Dates:** *Start date* + *Due date* → a phase bar; a single date (or a "Milestone" issue
+    type) → a milestone diamond. Undated issues are skipped and counted. Jira's `22/Jul/26`,
+    ISO, and US-locale dates are all understood.
+  - **Statuses** map onto the six chips (Done/Closed → Complete; In Progress/In Review →
+    In progress; Blocked; On Hold/Waiting; anything with "risk" → At risk; else Planned).
+  - A **`gate` label** in Jira marks the item as a gate (dashed line + GATE flag); each item's
+    note keeps its issue key (e.g. `SH-11`).
+  - Prefer AI shaping instead? Paste the raw issue list into **✨ Build from description**.
 - **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
   (`roadmap.html?s=<token>`) for anyone to view without a login, reusing the same token-gated,
   read-only pattern as the leadership dashboard.
