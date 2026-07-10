@@ -157,6 +157,54 @@ setting and reminds you if it's still on.)
 The cloud page loads the `@supabase/supabase-js` client from a CDN — the one external
 dependency that a database-backed page necessarily has.
 
+### Consolidated multi-project tracking — **Projects · Portfolio · recurring checklists**
+
+The tracker isn't just a weekly status list — it's your **one place for everything you do across
+projects** (AI Weekly, Road Maps, and anything else). Two new tabs turn the free-text "project"
+tag into a first-class thing, without changing how the weekly workflow feels:
+
+- **Projects tab** — a registry of everything you run. Give each project a **colour**, **type**,
+  **status**, a **cadence** (Weekly / Biweekly / Monthly), an **owner**, and **links** (to a
+  roadmap, a Drive folder, a repo). Each task's *Project* field is now a **combobox** that
+  autocompletes from this registry (with a colour dot), so names stay consistent instead of
+  fragmenting into `Roadmap` / `Road Maps` / `roadmaps`. Typing a brand-new name registers it
+  automatically.
+  - **Recurring checklists (templates).** Give a project a reusable set of steps — for **AI Weekly**:
+    *collect signals → draft → review → publish*, each with its own action items and a due-date
+    offset. Click **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps
+    drop into the current week as tasks, pre-filled with their action items and due dates. It
+    de-dupes, so starting twice won't double-add. Two projects come **seeded** — *AI Weekly* and
+    *Road Maps* — ready to edit.
+- **Portfolio tab** — every project rolled up **across all your weeks** as a card grid: **%
+  complete** (all-time), a status bar and **open / at-risk / blocked / overdue / done** counts for
+  the latest week it appears in, **next due date**, **last active** week, and its links. Filter by
+  **Active / All / Archived**. Below the grid, a **Road Maps** section reads your **Roadmap
+  Builder** portfolio from the same Supabase project and shows each roadmap's **% complete** and
+  **next milestone** — so your roadmaps and your weekly work finally live in one view.
+
+**Storage & setup.** The registry saves to a new `projects` table (and mirrors to `localStorage`
+so it keeps working if the table isn't there yet — it just won't sync across devices). Provision it
+once (RLS on, scoped to each account, same pattern as the other tables):
+
+```sql
+create table if not exists public.projects (
+  id text primary key,
+  user_id uuid not null references auth.users(id) default auth.uid(),
+  name text not null,
+  doc jsonb not null default '{}'::jsonb,   -- { color, type, status, cadence, owner, links[], template:{items[]}, archived }
+  created_at timestamptz default now(),
+  updated_at timestamptz default now());
+alter table public.projects enable row level security;
+create policy "own projects" on public.projects for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create index if not exists projects_user_idx on public.projects(user_id);
+```
+
+A task still stores its project as the plain `project` **name** (unchanged column), so existing
+weeks, the offline file, the KPI *By project* view, and the shared dashboard all keep working — the
+registry just adds the colour, cadence, links and checklist on top. The Road Maps section reuses the
+`roadmaps` table the Roadmap Builder already writes to; no extra setup.
+
 ### Shareable read-only dashboard (for your bosses)
 
 From the cloud tracker, **Share dashboard ▾** gives you a secret link your leadership can open
