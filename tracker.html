@@ -575,6 +575,7 @@
           <div class="menu" id="moreMenu" role="menu" hidden>
             <button class="menuitem" id="importNotes" type="button" role="menuitem" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
             <button class="menuitem" id="aiSummary" type="button" role="menuitem" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
+            <button class="menuitem" id="planDay" type="button" role="menuitem" title="Turn this week's open tasks into a prioritized plan for today">✨ Plan my day</button>
             <button class="menuitem" id="save" type="button" role="menuitem" title="Saves automatically as you type — click to save now">☁ Save now</button>
           </div>
         </div>
@@ -593,6 +594,9 @@
         </label>
         <span class="savestate" id="savestate" role="button" tabindex="0" title="Saved automatically — click to save now">—</span>
       </div>
+
+      <!-- Today panel: morning triage at a glance; click a chip to filter the list -->
+      <div class="todaybar" id="todayBar" hidden></div>
 
       <div class="tcard">
         <table class="tasks">
@@ -721,6 +725,19 @@
     </div>
   </div>
 
+  <div id="planModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>✨ Plan my day</strong><button class="ibtn" id="planClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body" id="planBody"></div>
+      <div class="modal-foot">
+        <button class="btn ghost sm" id="planCopy" type="button" hidden>Copy</button>
+        <button class="btn ghost sm" id="planRegen" type="button" hidden>Regenerate</button>
+        <span class="spacer" style="flex:1 1 auto"></span>
+        <button class="btn ghost sm" id="planDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="notesModal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-card">
       <div class="modal-head"><strong>📝 Import notes</strong><button class="ibtn" id="notesClose" type="button" title="Close">✕</button></div>
@@ -822,6 +839,21 @@
   .pj-tmpl-hint { font-size:10.5px; color:var(--ink-2); margin:6px 0 0; }
   .pj-actions { display:flex; gap:7px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:10px; margin-top:2px; }
   .pj-actions .spacer { flex:1 1 auto; }
+
+  /* ---- Today panel (morning triage strip) ---- */
+  .todaybar { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:0 0 12px; }
+  .todaybar .tb-lab { font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-right:2px; }
+  .tb-chip { font:inherit; font-size:12px; font-weight:600; border-radius:999px; padding:4px 12px; cursor:pointer;
+    border:1px solid var(--line-2); background:var(--card); color:var(--ink-2); }
+  .tb-chip:hover { border-color:var(--accent); color:var(--accent); }
+  .tb-chip.on { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 3px var(--ring); }
+  .tb-chip.warn { color:#B45309; background:rgba(217,163,0,.10); border-color:rgba(217,163,0,.32); }
+  .tb-chip.bad { color:#B42318; background:rgba(180,35,24,.08); border-color:rgba(180,35,24,.30); }
+  .tb-chip.info { color:var(--accent); background:var(--accent-soft); }
+  .tb-chip.zero { opacity:.55; }
+  :root[data-theme="dark"] .tb-chip.warn { color:#E6B655; }
+  :root[data-theme="dark"] .tb-chip.bad { color:#FF8275; }
+  @media print { .todaybar { display:none !important; } }
 </style>
 
 <script type="module">
@@ -1176,16 +1208,21 @@ async function loadWeek(){
       const carried = await fetchCarryForward(state.week);
       if (carried) {
         state.rows = carried.rows;
+        const auto = await autoSpawnWeekly();
         $("carryText").innerHTML = "Carried <b>" + carried.rows.length + "</b> unfinished task"
-          + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek)
-          + "</b>. Edit or Save to keep them.";
+          + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek) + "</b>."
+          + (auto.length ? " Added the weekly checklist for <b>" + auto.map(escHtml).join("</b>, <b>") + "</b>." : "")
+          + " Edit or Save to keep them.";
         $("carryBanner").hidden = false;
         renderRows();
         setSave("", "New week — not saved yet");
       } else {
-        state.rows = [ blankRow(), blankRow(), blankRow() ];
+        state.rows = [];
+        const auto = await autoSpawnWeekly();
+        if (!state.rows.length) state.rows = [ blankRow(), blankRow(), blankRow() ];
         renderRows();
-        setSave("", "New week — not saved yet");
+        setSave("", auto.length ? "New week — added the " + auto.join(", ") + " weekly checklist — not saved yet"
+                                : "New week — not saved yet");
       }
     }
   } catch (err) {
@@ -1279,7 +1316,8 @@ function renderRows(){
   const manual = sortMode === "manual";
   const order = displayOrder();
   // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
-  const visible = showDone ? order : order.filter(it => it.row.status !== "Done");
+  let visible = showDone ? order : order.filter(it => it.row.status !== "Done");
+  if (dayFilter) visible = visible.filter(it => rowMatchesDayFilter(it.row, dayFilter));
   visibleOrder = visible;
   updateDoneToggle();
   if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
@@ -1572,7 +1610,41 @@ function toggleCollapseAll(){
   state.rows.forEach(r => { r._open = !anyOpen; });
   renderRows();
 }
+// ---------- Today panel: due / overdue / blocked / needs-update at a glance ----------
+let dayFilter = null;   // null | "due" | "overdue" | "blocked" | "needs"
+function rowMatchesDayFilter(row, f){
+  const t = todayIso();
+  if (f === "due")     return row.status !== "Done" && row.due === t;
+  if (f === "overdue") return row.status !== "Done" && !!row.due && row.due < t;
+  if (f === "blocked") return row.status === "Blocked";
+  if (f === "needs")   return needsUpdate(row);
+  return true;
+}
+function renderTodayBar(){
+  const bar = $("todayBar"); if (!bar) return;
+  const rows = state.rows.filter(r => r.task && r.task.trim());
+  if (!rows.length){ bar.hidden = true; if (dayFilter){ dayFilter = null; } return; }
+  bar.hidden = false;
+  const count = f => rows.filter(r => rowMatchesDayFilter(r, f)).length;
+  const n = { needs:count("needs"), due:count("due"), overdue:count("overdue"), blocked:count("blocked") };
+  const chip = (key, label, cls) =>
+    '<button type="button" class="tb-chip '+(n[key] ? cls : "zero")+(dayFilter===key ? " on" : "")+'" data-f="'+key+'" title="Click to show only these tasks">'+label+'</button>';
+  bar.innerHTML = '<span class="tb-lab">Today</span>'
+    + chip("needs",   n.needs   + " need update" + (n.needs===1?"":"s"), "warn")
+    + chip("due",     n.due     + " due today", "info")
+    + chip("overdue", n.overdue + " overdue", "bad")
+    + chip("blocked", n.blocked + " blocked", "bad")
+    + (dayFilter ? '<button type="button" class="tb-chip" data-f="">✕ Show all</button>' : '');
+}
+$("todayBar").addEventListener("click", (e) => {
+  const b = e.target.closest(".tb-chip"); if (!b) return;
+  const f = b.getAttribute("data-f") || null;
+  dayFilter = (f && dayFilter !== f) ? f : null;
+  renderRows();
+});
+
 function updateDailyBar(){
+  renderTodayBar();
   const n = state.rows.filter(needsUpdate).length;
   const lt = $("logToday");
   if (lt) { lt.textContent = n ? ("✎ Log today (" + n + ")") : "✎ Log today"; lt.classList.toggle("hot", n>0); }
@@ -2745,13 +2817,10 @@ function refreshProjectOptions(){
   dl.innerHTML = PROJECTS.filter(p=>!(p.doc&&p.doc.archived)).map(p=>'<option value="'+escHtml(p.name)+'"></option>').join("");
 }
 
-// spawn a project's recurring checklist into the current week
-function spawnTemplate(project){
+// turn a project's recurring checklist into task rows (deduped against `seen`)
+function templateTasksFor(project, base, seen){
   const items = (project.doc && project.doc.template && project.doc.template.items) || [];
-  if (!items.length){ alert("“"+project.name+"” has no checklist steps yet — add some on the Projects tab."); return; }
-  const base = state.week || todayIso();
-  const seen = new Set(state.rows.map(r => pnorm(r.task)+"|"+pnorm(r.project)));
-  let added = 0;
+  const out = [];
   items.forEach(it => {
     if (!it.task || !it.task.trim()) return;
     const key = pnorm(it.task)+"|"+pnorm(project.name);
@@ -2761,12 +2830,37 @@ function spawnTemplate(project){
     r.due = (it.off!=null && it.off!=="") ? addDaysIso(base, parseInt(it.off,10)||0) : "";
     r.items = Array.isArray(it.items) ? it.items.filter(x=>x&&x.trim()).map(x=>({text:x, done:false})) : [];
     r.started = todayIso();
-    state.rows.push(r); seen.add(key); added++;
+    out.push(r); seen.add(key);
   });
-  if (!added){ alert("Those checklist steps are already in this week."); return; }
+  return out;
+}
+// spawn a project's recurring checklist into the current week (manual "Start this week")
+function spawnTemplate(project){
+  const items = (project.doc && project.doc.template && project.doc.template.items) || [];
+  if (!items.length){ alert("“"+project.name+"” has no checklist steps yet — add some on the Projects tab."); return; }
+  const seen = new Set(state.rows.map(r => pnorm(r.task)+"|"+pnorm(r.project)));
+  const rows = templateTasksFor(project, state.week || todayIso(), seen);
+  if (!rows.length){ alert("Those checklist steps are already in this week."); return; }
+  state.rows.push(...rows);
   registerProjectName(project.name);
   showTab("week"); renderRows(); scheduleSave();
-  setSave("", added+" task"+(added===1?"":"s")+" added from “"+project.name+"” — review & Save");
+  setSave("", rows.length+" task"+(rows.length===1?"":"s")+" added from “"+project.name+"” — review & Save");
+}
+// Weekly-cadence projects drop their checklist into a brand-new week automatically
+// (only when the week has no saved report yet; "Start blank instead" still clears it)
+async function autoSpawnWeekly(){
+  try { await loadProjects(); } catch(e){ return []; }
+  const base = state.week || todayIso();
+  const seen = new Set(state.rows.map(r => pnorm(r.task)+"|"+pnorm(r.project)));
+  const added = [];
+  PROJECTS.forEach(p => {
+    const d = p.doc || {};
+    if (d.archived || (d.status || "Active") !== "Active" || d.cadence !== "Weekly") return;
+    if (!(d.template && Array.isArray(d.template.items) && d.template.items.length)) return;
+    const rows = templateTasksFor(p, base, seen);
+    if (rows.length){ state.rows.push(...rows); added.push(p.name); }
+  });
+  return added;
 }
 
 // ---------- Portfolio (cross-project rollup across all weeks) ----------
@@ -2976,6 +3070,42 @@ $("projAdd").addEventListener("click", () => {
 });
 $("pfFilter").addEventListener("change", loadPortfolio);
 $("pfRefresh").addEventListener("click", loadPortfolio);
+
+// ============ ✨ PLAN MY DAY ============
+// Sends this week's open tasks to the plan-day edge function (same JWT-gated
+// pattern as the weekly summary) and renders a prioritized plan for today.
+let planMd = "";
+async function runPlanDay(){
+  const body = $("planBody");
+  $("planCopy").hidden = true; $("planRegen").hidden = true;
+  const open = state.rows.filter(r => r.task && r.task.trim() && r.status !== "Done").map(r => ({
+    task: r.task, project: r.project || "", status: r.status, priority: r.pri, progress: r.prog,
+    due: r.due || "", latest_note: htmlToText(r.note).trim().split(/\r?\n/)[0].slice(0, 140),
+    actions_remaining: normItems(r.items).filter(i => !i.done).map(i => i.text).slice(0, 6)
+  }));
+  if (!open.length){ body.innerHTML = '<div class="muted-empty">No open tasks this week — nothing to plan. 🎉</div>'; return; }
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Planning your day…</div>';
+  try {
+    const { data: d, error: er } = await sb.functions.invoke("plan-day", { body: { today: todayIso(), week_ending: state.week, tasks: open } });
+    let msg = er ? (er.message || "Request failed.") : (d && d.error);
+    if (er) { try { const b = await er.context.json(); if (b && b.error) msg = b.error; } catch(_){} }
+    if (msg) throw new Error(msg);
+    planMd = d.plan || "";
+    body.innerHTML = '<div class="ai-rendered">' + sanitizeHtml(mdToHtml(planMd)) + '</div>';
+    $("planCopy").hidden = false; $("planRegen").hidden = false;
+  } catch (e) {
+    body.innerHTML = '<div class="muted-empty">Could not plan the day: ' + escHtml(e.message || String(e)) + '</div>';
+    $("planRegen").hidden = false;
+  }
+}
+$("planDay").addEventListener("click", () => { $("planModal").hidden = false; runPlanDay(); });
+$("planClose").addEventListener("click", () => { $("planModal").hidden = true; });
+$("planDone").addEventListener("click", () => { $("planModal").hidden = true; });
+$("planRegen").addEventListener("click", runPlanDay);
+$("planCopy").addEventListener("click", async function(){
+  const ok = await copyRich('<div>' + sanitizeHtml(mdToHtml(planMd)) + '</div>', planMd);
+  this.textContent = ok ? "Copied ✓" : "Copy failed"; setTimeout(() => this.textContent = "Copy", 1100);
+});
 
 (async function init(){
   const { data } = await sb.auth.getSession();

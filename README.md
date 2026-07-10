@@ -56,6 +56,10 @@ them and run KPIs**, use the cloud-backed version:
   - **Week navigation** — ◀ / ▶ / **This week** to jump between weeks.
   - **Carry forward** — a new week pre-fills with last week's unfinished tasks (Done items
     drop off); keep them or **Start blank**.
+  - **Today panel** — a triage strip above the task list: **N need updates · N due today ·
+    N overdue · N blocked**. Click a chip to filter the list to just those tasks (click it
+    again — or **✕ Show all** — to clear). Counts update live as you edit, so the morning
+    routine is: open the page, glance at the strip, knock the chips down to zero.
   - **Collapsible task list** — each task collapses to a one-line summary (project · ☑
     checklist count · due · latest note), so a week of tasks reads as a tidy scannable list;
     click a task (the ▸ caret) to expand and edit, or **⊟ Collapse all / ⊞ Expand all**.
@@ -122,6 +126,13 @@ them and run KPIs**, use the cloud-backed version:
     polished exec narrative — override with an `ANTHROPIC_SUMMARY_MODEL` secret. The
     high-volume note extractors (`extract-tasks`, `task-actions`) run on **Sonnet 4.6**
     (`claude-sonnet-4-6`) for speed/cost — override with `ANTHROPIC_MODEL`.
+- **✨ Plan my day** (under **⋯ More ▾**) — turns the week's open tasks (status, priority, due
+  dates, remaining action items, latest note) into a prioritized plan for **today**: 2–4 **P1
+  must-move** items each with the concrete next action, **P2 if time allows**, an explicit
+  **Defer** list, and morning / midday / afternoon **focus blocks**. Renders formatted with a
+  rich-text **Copy** button. Runs in a Supabase Edge Function
+  ([`plan-day`](supabase/functions/plan-day/)) on the same `ANTHROPIC_API_KEY`; defaults to
+  **Sonnet 4.6** (override with `ANTHROPIC_PLAN_MODEL`).
 - **📝 Import notes (AI note taker → tasks)** — paste the summary or transcript from any AI
   note taker (Plaud, Soundcore, Otter, Fireflies, Zoom/Teams/Meet AI, …) and Claude extracts the action
   items as draft tasks — with project, priority, due date, a context note, and checkable
@@ -174,7 +185,10 @@ tag into a first-class thing, without changing how the weekly workflow feels:
     **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps drop into the
     current week as tasks, pre-filled with their action items and due dates. It de-dupes, so
     starting twice won't double-add. Two projects come **seeded** — *AI Weekly* (empty checklist,
-    add your own steps) and *Road Maps* (a three-step starter).
+    add your own steps) and *Road Maps* (a three-step starter). Projects with a **Weekly**
+    cadence add their checklist to each brand-new week **automatically** (alongside
+    carry-forward; *Start blank instead* clears them). Biweekly / Monthly cadences use the
+    manual **▶ Start this week** button.
 - **Portfolio tab** — every project rolled up **across all your weeks** as a card grid: **%
   complete** (all-time), a status bar and **open / at-risk / blocked / overdue / done** counts for
   the latest week it appears in, **next due date**, **last active** week, and its links. Filter by
