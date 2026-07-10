@@ -1208,21 +1208,16 @@ async function loadWeek(){
       const carried = await fetchCarryForward(state.week);
       if (carried) {
         state.rows = carried.rows;
-        const auto = await autoSpawnWeekly();
         $("carryText").innerHTML = "Carried <b>" + carried.rows.length + "</b> unfinished task"
-          + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek) + "</b>."
-          + (auto.length ? " Added the weekly checklist for <b>" + auto.map(escHtml).join("</b>, <b>") + "</b>." : "")
-          + " Edit or Save to keep them.";
+          + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek)
+          + "</b>. Edit or Save to keep them.";
         $("carryBanner").hidden = false;
         renderRows();
         setSave("", "New week — not saved yet");
       } else {
-        state.rows = [];
-        const auto = await autoSpawnWeekly();
-        if (!state.rows.length) state.rows = [ blankRow(), blankRow(), blankRow() ];
+        state.rows = [ blankRow(), blankRow(), blankRow() ];
         renderRows();
-        setSave("", auto.length ? "New week — added the " + auto.join(", ") + " weekly checklist — not saved yet"
-                                : "New week — not saved yet");
+        setSave("", "New week — not saved yet");
       }
     }
   } catch (err) {
@@ -2846,22 +2841,9 @@ function spawnTemplate(project){
   showTab("week"); renderRows(); scheduleSave();
   setSave("", rows.length+" task"+(rows.length===1?"":"s")+" added from “"+project.name+"” — review & Save");
 }
-// Weekly-cadence projects drop their checklist into a brand-new week automatically
-// (only when the week has no saved report yet; "Start blank instead" still clears it)
-async function autoSpawnWeekly(){
-  try { await loadProjects(); } catch(e){ return []; }
-  const base = state.week || todayIso();
-  const seen = new Set(state.rows.map(r => pnorm(r.task)+"|"+pnorm(r.project)));
-  const added = [];
-  PROJECTS.forEach(p => {
-    const d = p.doc || {};
-    if (d.archived || (d.status || "Active") !== "Active" || d.cadence !== "Weekly") return;
-    if (!(d.template && Array.isArray(d.template.items) && d.template.items.length)) return;
-    const rows = templateTasksFor(p, base, seen);
-    if (rows.length){ state.rows.push(...rows); added.push(p.name); }
-  });
-  return added;
-}
+// NOTE: checklists are added to a week ONLY via the manual "▶ Start this week"
+// button — never automatically. (An auto-spawn variant was tried and removed:
+// it stamped template tasks into any empty week you navigated to.)
 
 // ---------- Portfolio (cross-project rollup across all weeks) ----------
 function roadmapStats(doc){

@@ -185,10 +185,8 @@ tag into a first-class thing, without changing how the weekly workflow feels:
     **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps drop into the
     current week as tasks, pre-filled with their action items and due dates. It de-dupes, so
     starting twice won't double-add. Two projects come **seeded** — *AI Weekly* (empty checklist,
-    add your own steps) and *Road Maps* (a three-step starter). Projects with a **Weekly**
-    cadence add their checklist to each brand-new week **automatically** (alongside
-    carry-forward; *Start blank instead* clears them). Biweekly / Monthly cadences use the
-    manual **▶ Start this week** button.
+    add your own steps) and *Road Maps* (a three-step starter). Checklists are only ever added
+    when **you click the button** — nothing is inserted into a week automatically.
 - **Portfolio tab** — every project rolled up **across all your weeks** as a card grid: **%
   complete** (all-time), a status bar and **open / at-risk / blocked / overdue / done** counts for
   the latest week it appears in, **next due date**, **last active** week, and its links. Filter by
