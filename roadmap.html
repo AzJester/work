@@ -12,6 +12,7 @@
     --bg-wash:radial-gradient(1100px 460px at 50% -8%, rgba(0,115,234,0.06), rgba(0,115,234,0) 62%);
     --ink:#2b2d34; --ink-2:#5f6472; --mut:#9296a5;
     --accent:#0073ea; --accent-2:#0060b9; --accent-soft:#e6f1fd; --ring:rgba(0,115,234,0.30);
+    --btn-ink:#ffffff;   /* text on accent-filled buttons — dark navy in dark mode, where the accent is light */
     --s-planned:#94a3b8; --s-progress:#f59e0b; --s-complete:#12a56b; --s-risk:#e0485a;
     --s-blocked:#7c5cf0; --s-onhold:#64748b; --s-milestone:#0073ea;
     --ok:#00854d; --ok-bg:#e4f7ee; --err:#c2362b; --err-bg:#fdecea; --info:#0060b9; --info-bg:#e6f1fd;
@@ -28,6 +29,7 @@
     --bg-wash:radial-gradient(1100px 460px at 50% -8%, rgba(74,163,255,0.10), rgba(74,163,255,0) 62%);
     --ink:#e7ebf2; --ink-2:#aeb6c4; --mut:#7e8796;
     --accent:#4aa3ff; --accent-2:#2b8bff; --accent-soft:#14243b; --ring:rgba(74,163,255,0.38);
+    --btn-ink:#081422;
     --ok:#46d08a; --ok-bg:#12271d; --err:#ff8275; --err-bg:#2c1714; --info:#8ab8ff; --info-bg:#14243b;
     --input-bg:#212a35;
     --shadow-sm:0 1px 2px rgba(0,0,0,0.45);
@@ -93,7 +95,7 @@
   @media (prefers-reduced-motion: reduce) { .theme-switch, .theme-switch * { transition:none; } }
 
   /* ---------- buttons ---------- */
-  .btn { font-family:var(--disp); font-size:13px; font-weight:600; color:#fff;
+  .btn { font-family:var(--disp); font-size:13px; font-weight:700; color:var(--btn-ink);
     background:var(--accent); border:1px solid var(--accent); padding:8px 14px; border-radius:9px; cursor:pointer; white-space:nowrap;
     box-shadow:var(--shadow-sm); transition:transform .1s, filter .15s, box-shadow .15s; }
   .btn:hover { filter:brightness(1.07); transform:translateY(-1px); box-shadow:var(--shadow); }
@@ -856,10 +858,10 @@ function isDark(){ return document.documentElement.getAttribute("data-theme") ==
 function pal(){
   return isDark()
     ? { bg:"#1a212b", headerBand:"rgba(255,255,255,0.025)", laneAlt:"rgba(255,255,255,0.035)", grid:"#2b333f",
-        ink:"#e7ebf2", ink2:"#aeb6c4", mut:"#7e8796", today:"#4aa3ff",
+        ink:"#e7ebf2", ink2:"#aeb6c4", mut:"#7e8796", today:"#4aa3ff", todayInk:"#081422",
         plannedFill:"rgba(148,163,184,0.14)", plannedStroke:"#5b6472", barStroke:"rgba(255,255,255,0.14)", elapsed:"rgba(0,0,0,0.24)", noteDot:"#aeb6c4" }
     : { bg:"#ffffff", headerBand:"rgba(20,28,50,0.022)", laneAlt:"rgba(20,28,50,0.028)", grid:"#e9ecf3",
-        ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea",
+        ink:"#2b2d34", ink2:"#5f6472", mut:"#9296a5", today:"#0073ea", todayInk:"#ffffff",
         plannedFill:"rgba(148,163,184,0.16)", plannedStroke:"#aab2c0", barStroke:"rgba(20,28,50,0.12)", elapsed:"rgba(0,0,0,0.16)", noteDot:"#8a90a0" };
 }
 const GA = { PADL:184, PADR:26, PADT:70, PADB:14, barH:22, rowUnit:32, lanePadTop:12, lanePadBot:10 };
@@ -1202,7 +1204,7 @@ function renderGantt(){
     out += svgEl("line", { x1:tx.toFixed(1), y1:bandBot, x2:tx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.today, "stroke-width":2, "stroke-dasharray":"4 4" });
     const cw = 52, ch = 17, ccx = Math.min(Math.max(tx, GA.PADL+cw/2), GA.PADL+plotW-cw/2), cy = 3;
     out += svgEl("rect", { x:(ccx-cw/2).toFixed(1), y:cy, width:cw, height:ch, rx:8.5, fill:P.today });
-    out += svgEl("text", { x:ccx.toFixed(1), y:(cy+ch/2+0.5).toFixed(1), fill:"#ffffff", "font-size":10, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.12em", "dominant-baseline":"middle" }, "TODAY");
+    out += svgEl("text", { x:ccx.toFixed(1), y:(cy+ch/2+0.5).toFixed(1), fill:P.todayInk, "font-size":10, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.12em", "dominant-baseline":"middle" }, "TODAY");
   }
 
   // items. Each item is wrapped in a <g> carrying a <title> (native hover tooltip
