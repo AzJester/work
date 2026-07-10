@@ -308,6 +308,20 @@
   .cloud-row .grow { flex:1 1 auto; min-width:0; }
   .cloud-row .nm { font-weight:600; font-size:14px; }
   .cloud-row .mt { font-size:12px; color:var(--mut); }
+  /* owner: "All users' roadmaps" admin list, grouped by account */
+  .au-group { margin-top:14px; }
+  .au-group:first-child { margin-top:2px; }
+  .au-owner { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.02em;
+    color:var(--ink-2); text-transform:none; margin:0 2px 7px; padding-bottom:5px; border-bottom:1px solid var(--line); }
+  .au-count { font-weight:600; color:var(--mut); background:var(--info-bg); border-radius:20px; padding:1px 8px; font-size:11px; }
+  .au-pub { font-weight:600; color:var(--info); font-size:11px; }
+  /* forced password-change screen */
+  .pw-intro { font-size:13px; color:var(--ink-2); margin:0 0 12px; }
+  .pw-rules { list-style:none; margin:12px 0 4px; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; }
+  .pw-rules li { font-size:12.5px; color:var(--mut); display:flex; align-items:center; gap:7px; }
+  .pw-rules li .pw-x { display:inline-flex; width:15px; justify-content:center; color:var(--mut); font-weight:700; }
+  .pw-rules li.ok { color:var(--ok); }
+  .pw-rules li.ok .pw-x { color:var(--ok); }
   .share-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
   .share-row input { flex:1 1 auto; font-family:var(--mono); font-size:12px; }
 
@@ -493,6 +507,7 @@
         <button class="menu-item" data-act="open" role="menuitem">Open from cloud…</button>
         <button class="menu-item" data-act="share" role="menuitem">Share link…</button>
         <button class="menu-item" id="publicItem" data-act="public" role="menuitem">🌐 Make public</button>
+        <button class="menu-item" id="allUsersItem" data-act="allusers" role="menuitem" hidden>👥 All users’ roadmaps…</button>
       </div>
     </div>
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
@@ -662,6 +677,24 @@ const LS_KEY = "roadmap_builder_v1";
 const THEME_KEY = "roadmap_theme";
 const APP_VERSION = "1.1.0";
 
+// The super-owner account: this email sees an "All users' roadmaps" admin view
+// (read-only, across every account). It only gates the *UI* — the server enforces
+// the same check in the is_owner() SQL function behind the all_roadmaps/admin_roadmap
+// RPCs, so a non-owner can't reach anyone else's data even by faking this.
+const OWNER_EMAIL = "shane0372@gmail.com";
+
+// New-account password policy — used by the forced "create your password" screen
+// that a user hits when they first sign in with a temporary password. Mirror this
+// in Supabase → Authentication → Policies so it's enforced server-side too.
+const PW_RULES = [
+  { re:/.{12,}/,      label:"At least 12 characters" },
+  { re:/[a-z]/,       label:"A lowercase letter"     },
+  { re:/[A-Z]/,       label:"An uppercase letter"    },
+  { re:/[^A-Za-z0-9]/,label:"A special character"    },
+];
+function pwChecks(v){ return PW_RULES.map(r => ({ ok:r.re.test(v||""), label:r.label })); }
+function pwValid(v){ return PW_RULES.every(r => r.re.test(v||"")); }
+
 const STATUSES = [
   { v:"planned",     label:"Planned",     cls:"s-planned"  },
   { v:"in_progress", label:"In progress", cls:"s-progress" },
@@ -710,6 +743,7 @@ let sb = null;                  // lazily-created supabase client
 let draftSnapshot = null;       // {prevActiveId} for AI-draft discard
 let readOnly = false;
 let printing = false;           // true during a print job → render callouts as static prose
+let forcingPassword = false;    // true while the forced "set your password" screen is up (blocks dismiss)
 
 /* =========================================================================
    Normalisation — accepts local docs and AI output; repairs shape.
@@ -2303,6 +2337,8 @@ function reflectCloudUi(){
   $("cloudEmail").hidden = true; $("cloudEmail").textContent = "";
   // Cloud menu (save/open/share/publish) + AI actions are owner-only.
   ["cloudMenu","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  // The "All users' roadmaps" admin item only shows for the super-owner account.
+  { const au = $("allUsersItem"); if (au) au.hidden = !(on && isOwnerAccount()); }
   reflectPublicBtn();
 }
 function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
@@ -2335,6 +2371,8 @@ async function cloudSignInFlow(){
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
       session = data.session;
+      // First login on a temporary password → force a compliant new password before anything else.
+      if (needsPasswordChange(session)){ forcePasswordChangeFlow(); return; }
       // Reload so boot re-derives the view from the (now persisted) session:
       // signed in → full editor on your own roadmaps.
       location.reload();
@@ -2370,6 +2408,121 @@ async function cloudOpen(){
     });
   } catch(e){ $("clNote").className="note err"; $("clNote").textContent = "Couldn't load: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."; }
 }
+/* ---------- owner / multi-user helpers ---------- */
+function sessionEmail(s){ return ((s || session) && (s || session).user && (s || session).user.email || "").toLowerCase(); }
+function isOwnerAccount(){ return !!session && sessionEmail() === OWNER_EMAIL.toLowerCase(); }
+
+// True when the signed-in account still owes a password change. Provisioning may set
+// the flag in user_metadata (self-clearing) or app_metadata (admin-only / tamper-proof);
+// an explicit user_metadata.must_change_password === false is the "done" acknowledgement,
+// so we never loop even when a tamper-proof app_metadata flag can't be cleared client-side.
+function needsPasswordChange(s){
+  const u = s && s.user; if (!u) return false;
+  const um = u.user_metadata || {}, am = u.app_metadata || {};
+  if (um.must_change_password === false) return false;
+  return um.must_change_password === true || am.must_change_password === true;
+}
+
+/* ---------- forced "create your password" screen (temp-password first login) ---------- */
+function forcePasswordChangeFlow(){
+  forcingPassword = true;
+  // Hide the app behind the modal so nothing is editable until the reset is done.
+  readOnly = true; document.body.classList.add("readonly");
+  $("eyebrow").textContent = "Set your password";
+  const rulesHtml = '<ul id="pwRules" class="pw-rules">'
+    + PW_RULES.map((r,i) => '<li data-i="'+i+'"><span class="pw-x">•</span> '+esc(r.label)+'</li>').join("")
+    + '</ul>';
+  cloudModal("Create your password",
+    '<p class="pw-intro">You signed in with a temporary password. Choose a new password to continue — this replaces the temporary one.</p>'
+    + '<div class="row"><label class="fld">New password</label><input id="pw1" class="txt" type="password" autocomplete="new-password" /></div>'
+    + '<div class="row"><label class="fld">Confirm password</label><input id="pw2" class="txt" type="password" autocomplete="new-password" /></div>'
+    + rulesHtml
+    + '<div id="pwNote" class="note info hide"></div>',
+    '<button id="pwOut" class="btn ghost">Sign out</button><button id="pwGo" class="btn" disabled>Set password &amp; continue</button>');
+  const pw1 = $("pw1"), pw2 = $("pw2"), go = $("pwGo");
+  function refresh(){
+    pwChecks(pw1.value).forEach((c,i) => {
+      const li = $("pwRules").querySelector('[data-i="'+i+'"]');
+      if (li){ li.classList.toggle("ok", c.ok); li.querySelector(".pw-x").textContent = c.ok ? "✓" : "•"; }
+    });
+    const match = pw1.value.length > 0 && pw1.value === pw2.value;
+    go.disabled = !(pwValid(pw1.value) && match);
+    const nt = $("pwNote");
+    if (pw2.value && !match){ nt.className = "note err"; nt.textContent = "Passwords don’t match."; }
+    else { nt.className = "note info hide"; nt.textContent = ""; }
+  }
+  pw1.addEventListener("input", refresh);
+  pw2.addEventListener("input", refresh);
+  $("pwOut").onclick = async () => { try { const c = await getSb(); await c.auth.signOut(); } catch(_){ } location.reload(); };
+  go.onclick = async () => {
+    if (!pwValid(pw1.value) || pw1.value !== pw2.value) return;
+    const nt = $("pwNote"); nt.className = "note info"; nt.innerHTML = '<span class="spin"></span> Saving…'; go.disabled = true;
+    try {
+      const client = await getSb();
+      const { error } = await client.auth.updateUser({ password: pw1.value, data: { must_change_password: false } });
+      if (error) throw error;
+      forcingPassword = false;
+      location.reload();   // boot → enterOwnerMode with the flag now acknowledged
+    } catch(e){ nt.className = "note err"; nt.textContent = "Couldn’t set password: " + (e.message || e); go.disabled = false; }
+  };
+  setTimeout(() => { try { pw1.focus(); } catch(_){ } }, 30);
+}
+
+/* ---------- owner: browse every user's roadmaps (read-only) ---------- */
+function adminRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("admin", id); return u.href; }
+async function cloudOpenAll(){
+  if (!session) return;
+  cloudModal("All users’ roadmaps",
+    '<div id="auNote" class="note info"><span class="spin"></span> Loading…</div><div id="auList" class="cloud-list"></div>',
+    '<button id="auClose" class="btn ghost">Close</button>');
+  $("auClose").onclick = closeCloud;
+  try {
+    const client = await getSb();
+    const { data, error } = await client.rpc("all_roadmaps");
+    if (error) throw error;
+    if (!data || !data.length){
+      $("auNote").className = "note info hide";
+      $("auList").innerHTML = '<div class="tl-empty">No roadmaps found — or this account isn’t the owner.</div>';
+      return;
+    }
+    // Group by owner email so each account's portfolio reads as its own block.
+    const groups = {};
+    data.forEach(r => { const k = r.owner_email || "—"; (groups[k] = groups[k] || []).push(r); });
+    $("auNote").className = "note info hide";
+    $("auList").innerHTML = Object.keys(groups).sort().map(email => {
+      const rows = groups[email].map(r =>
+        '<div class="cloud-row"><div class="grow"><div class="nm">' + esc(r.title || "Untitled")
+        + (r.public ? ' <span class="au-pub">🌐 public</span>' : '')
+        + '</div><div class="mt">updated ' + esc((r.updated_at || "").slice(0,10)) + '</div></div>'
+        + '<a class="btn sm" target="_blank" rel="noopener" href="' + esc(adminRoadmapUrl(r.id)) + '">Open ↗</a></div>'
+      ).join("");
+      return '<div class="au-group"><div class="au-owner">' + esc(email)
+        + ' <span class="au-count">' + groups[email].length + '</span></div>' + rows + '</div>';
+    }).join("");
+  } catch(e){
+    $("auNote").className = "note err";
+    $("auNote").textContent = "Couldn’t load: " + (e.message || e) + " — the all_roadmaps() function may not be provisioned yet (see README).";
+  }
+}
+
+/* ---------- owner deep link (?admin=<id>): view one user's roadmap read-only ---------- */
+async function initAdminRoadmap(id){
+  readOnly = true; document.body.classList.add("readonly");
+  $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
+  try {
+    const client = await getSb();
+    const { data, error } = await client.rpc("admin_roadmap", { p_id: id });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error("Not found, or this account isn’t the owner.");
+    doc = normalizeRoadmap(row.doc || row);
+    $("eyebrow").textContent = "Owner view · " + (row.owner_email || "user") + " · read-only";
+    syncHeader(); renderGantt();
+  } catch(e){
+    $("gantt").innerHTML = '<div class="tl-empty"><b>Couldn’t load this roadmap.</b><br>' + esc(e.message || String(e)) + '</div>';
+  }
+}
+
 async function togglePublic(){
   if (!session || readOnly || !doc) return;
   doc.public = !doc.public;
@@ -2497,7 +2650,7 @@ function closeMenus(){
 }
 function runMenuAction(act){
   const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
-    dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic };
+    dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, allusers:cloudOpenAll };
   (map[act] || function(){})();
 }
 function onMenuDocClick(e){
@@ -2564,8 +2717,8 @@ function wire(){
     try { navigator.clipboard.writeText(el.value); } catch(_){ try { document.execCommand("copy"); } catch(__){} }
     const b = $("publicUrlCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
   });
-  $("cloudClose").addEventListener("click", closeCloud);
-  $("cloudModal").addEventListener("click", e => { if (e.target === $("cloudModal")) closeCloud(); });
+  $("cloudClose").addEventListener("click", () => { if (!forcingPassword) closeCloud(); });
+  $("cloudModal").addEventListener("click", e => { if (!forcingPassword && e.target === $("cloudModal")) closeCloud(); });
   // theme
   $("themeBtn").addEventListener("click", toggleTheme);
   // zoom
@@ -2599,6 +2752,10 @@ async function boot(){
   } catch(_){ session = null; }
   // Keep the session token fresh across its lifetime (refresh events).
   if (client){ try { client.auth.onAuthStateChange((_evt, s) => { session = s || null; }); } catch(_){ } }
+  // Signed in, still on a temporary password → force the password reset first.
+  if (session && needsPasswordChange(session)){ forcePasswordChangeFlow(); return; }
+  // Owner deep link (?admin=<id>) → read-only view of one user's roadmap.
+  if (session){ const adminId = params.get("admin"); if (adminId){ await initAdminRoadmap(adminId); return; } }
   // Signed in → your editor (edit at the base URL, so ignore ?r here).
   if (session){ enterOwnerMode(); return; }
   // Not signed in: a ?r link shows one public roadmap; otherwise the whole portfolio.
