@@ -1049,9 +1049,17 @@ async function generateNarrative(){
     out.className = "summary-narrative";
     out.innerHTML = '<span class="nar-lbl">Narrative</span>' + esc(text);
   } catch(e){
+    const msg = e.message || String(e);
     out.className = "summary-narrative err";
-    out.innerHTML = '<b>Couldn’t generate a narrative.</b> ' + esc(e.message || String(e))
-      + '<br><br>This runs in a Supabase Edge Function named <b>roadmap-summary</b> — deploy it (it uses the same <b>ANTHROPIC_API_KEY</b> and <b>ALLOWED_EMAILS</b> lock as the AI builder).';
+    // A 401 "please sign in" while the app holds a session means the stored
+    // session went stale (revoked/expired server-side) — deploy advice would
+    // be misleading, and re-authenticating is the actual fix.
+    if (/please sign in/i.test(msg)){
+      out.innerHTML = '<b>Couldn’t generate a narrative.</b> Your sign-in session has gone stale — the server no longer accepts it. Click <b>☁ Sign out</b>, sign back in, and try again.';
+    } else {
+      out.innerHTML = '<b>Couldn’t generate a narrative.</b> ' + esc(msg)
+        + '<br><br>This runs in a Supabase Edge Function named <b>roadmap-summary</b> — deploy it (it uses the same <b>ANTHROPIC_API_KEY</b> and <b>ALLOWED_EMAILS</b> lock as the AI builder).';
+    }
   } finally { btn.disabled = false; btn.textContent = orig; }
 }
 function renderStatChips(){
@@ -2221,9 +2229,15 @@ async function generateFromDescription(){
     $("draftBanner").classList.add("show");
     closeAi();
   } catch(e){
+    const msg = e.message || String(e);
     note.className = "note err";
-    note.innerHTML = '<b>Couldn’t build that roadmap.</b><br>' + esc(e.message||String(e))
-      + '<br><br>The natural-language builder runs in a Supabase Edge Function named <b>build-roadmap</b>. If it isn’t deployed yet (or you’re offline), that’s expected — the template and form paths work without it. Deploy the function and set an <b>ANTHROPIC_API_KEY</b> secret in your Supabase project to enable this.';
+    if (/please sign in/i.test(msg)){
+      // stale session: the server no longer accepts the stored token — re-auth fixes it
+      note.innerHTML = '<b>Couldn’t build that roadmap.</b> Your sign-in session has gone stale — the server no longer accepts it. Click <b>☁ Sign out</b>, sign back in, and try again.';
+    } else {
+      note.innerHTML = '<b>Couldn’t build that roadmap.</b><br>' + esc(msg)
+        + '<br><br>The natural-language builder runs in a Supabase Edge Function named <b>build-roadmap</b>. If it isn’t deployed yet (or you’re offline), that’s expected — the template and form paths work without it. Deploy the function and set an <b>ANTHROPIC_API_KEY</b> secret in your Supabase project to enable this.';
+    }
   } finally { btn.disabled = false; btn.textContent = orig; }
 }
 function keepDraft(){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
