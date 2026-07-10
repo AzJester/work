@@ -2209,18 +2209,13 @@ $("shareAdd").addEventListener("click", async function () {
   const btn = this; const orig = btn.textContent; btn.disabled = true; btn.textContent = "Creating…";
   const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "" }).select("token,label").single();
   if (error) { btn.disabled = false; btn.textContent = orig; alert("Could not create link: " + error.message); return; }
-  // auto-shorten the new link; if the shortener is unavailable, fall back to the full link
-  try {
-    const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(data.token) } });
-    if (!er && d && d.short) await sb.from("shares").update({ short_url: d.short }).eq("token", data.token);
-  } catch (_) {}
   btn.disabled = false; btn.textContent = orig;
   loadShares();
 });
 async function loadShares(){
   const list = $("shareList");
   list.innerHTML = '<div class="share-loading"><span class="spin"></span> Loading…</div>';
-  const { data, error } = await sb.from("shares").select("token,label,created_at,short_url")
+  const { data, error } = await sb.from("shares").select("token,label,created_at")
     .eq("revoked", false).order("created_at", { ascending:true });
   if (error) { list.innerHTML = '<div class="share-loading">Error: '+esc(error.message)+'</div>'; return; }
   if (!data || !data.length) { list.innerHTML = '<div class="share-loading">No links yet — click <b>+ New link</b> to create one.</div>'; return; }
@@ -2233,9 +2228,9 @@ async function loadShares(){
       clearTimeout(shareTimers[s.token]);
       shareTimers[s.token] = setTimeout(() => { sb.from("shares").update({ label: label.value }).eq("token", s.token); }, 600);
     });
+    // always the full, direct dashboard link — no third-party shortener, no interstitial page
     const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true;
-    url.value = s.short_url || shareUrlFor(s.token);
-    if (s.short_url) url.title = "Short link · long link: " + shareUrlFor(s.token);
+    url.value = shareUrlFor(s.token);
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "btn ghost sm"; copy.textContent = "Copy";
     copy.addEventListener("click", () => {
       url.select();
@@ -2244,25 +2239,6 @@ async function loadShares(){
       else { try { document.execCommand("copy"); done(); } catch(e){} }
     });
     row.appendChild(label); row.appendChild(url); row.appendChild(copy);
-    if (!s.short_url) {
-      const shortBtn = document.createElement("button"); shortBtn.type = "button"; shortBtn.className = "btn ghost sm"; shortBtn.textContent = "⚡ Shorten";
-      shortBtn.title = "Create a short, shareable link";
-      shortBtn.addEventListener("click", async () => {
-        shortBtn.disabled = true; const orig = shortBtn.textContent; shortBtn.textContent = "…";
-        try {
-          const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(s.token) } });
-          let msg = er ? (er.message || "Request failed.") : (d && d.error);
-          if (er) { try { const b = await er.context.json(); if (b && b.error) msg = b.error; } catch(_){} }
-          if (msg) throw new Error(msg);
-          await sb.from("shares").update({ short_url: d.short }).eq("token", s.token);
-          loadShares();
-        } catch (e) {
-          shortBtn.disabled = false; shortBtn.textContent = orig;
-          alert("Could not shorten the link: " + (e.message || e));
-        }
-      });
-      row.appendChild(shortBtn);
-    }
     const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "btn ghost sm danger"; revoke.textContent = "Revoke";
     revoke.addEventListener("click", async () => {
       if (!confirm("Revoke this link" + (s.label ? ' for “'+s.label+'”' : "") + "? It stops working immediately.")) return;
