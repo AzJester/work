@@ -2618,11 +2618,65 @@ async function enterPublicMode(){
   mode = Object.keys(store.roadmaps).length > 1 ? "overview" : "editor";
   setMode(mode);
 }
-function enterOwnerMode(){
+async function enterOwnerMode(){
   readOnly = false; document.body.classList.remove("publicview","readonly");
+  const hadLocal = hasStoredStore();
   loadStore(); reflectCloudUi(); syncHeader();
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
+  setMode(mode);   // paint the local view immediately …
+  await mergeCloudRoadmaps(hadLocal);   // … then fold in this account's cloud roadmaps
+}
+
+// Did this browser already have a saved portfolio? (loadStore() mints an empty
+// placeholder when it doesn't, which we drop once cloud roadmaps arrive.)
+function hasStoredStore(){
+  try { const raw = JSON.parse(localStorage.getItem(LS_KEY) || "null"); return !!(raw && raw.roadmaps && Object.keys(raw.roadmaps).length); }
+  catch(_){ return false; }
+}
+function isEmptyPlaceholder(d){
+  return d && (!d.lanes || d.lanes.length === 0) && (!d.callouts || d.callouts.length === 0)
+    && !((d.notes || "").trim()) && !((d.subtitle || "").trim()) && !((d.premise || "").trim());
+}
+
+// On sign-in, pull the account's cloud roadmaps into the portfolio so you see
+// everything — not just what happens to be cached in this browser's localStorage.
+// RLS scopes the query to your own rows; offline / unprovisioned just no-ops.
+async function mergeCloudRoadmaps(hadLocal){
+  if (!session || readOnly) return;
+  let rows;
+  try {
+    const client = await getSb();
+    const { data, error } = await client.from("roadmaps")
+      .select("id,title,subtitle,updated_at,doc").order("updated_at", { ascending:false });
+    if (error) throw error;
+    rows = data || [];
+  } catch(_){ return; }   // offline / table missing → keep the local-only view, unchanged
+  if (!rows.length) return;
+  // A brand-new browser had no saved roadmaps, so loadStore() minted an empty
+  // "My roadmap" placeholder — drop it so the cloud portfolio isn't cluttered.
+  if (!hadLocal){
+    const ids = Object.keys(store.roadmaps);
+    if (ids.length === 1 && isEmptyPlaceholder(store.roadmaps[ids[0]])){ store.roadmaps = {}; store.activeId = null; }
+  }
+  let added = 0;
+  rows.forEach(r => {
+    const d = normalizeRoadmap(r.doc || r);
+    const local = store.roadmaps[d.id];
+    if (!local){ store.roadmaps[d.id] = d; added++; return; }
+    // Keep whichever copy is newer so we never clobber unsaved local edits.
+    const cloudT = Date.parse(r.updated_at || d.updatedAt || 0) || 0;
+    const localT = Date.parse(local.updatedAt || 0) || 0;
+    if (cloudT > localT) store.roadmaps[d.id] = d;
+  });
+  if (!store.activeId || !store.roadmaps[store.activeId]){
+    store.activeId = Object.keys(store.roadmaps)[0] || null;
+    if (store.activeId) doc = store.roadmaps[store.activeId];
+  }
+  saveNow();   // cache the merged portfolio so it's there next load too (even offline)
+  reflectCloudUi(); syncHeader();
+  mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
   setMode(mode);
+  if (added > 0) topNote("info", added + (added === 1 ? " roadmap" : " roadmaps") + " loaded from your cloud.");
 }
 
 /* =========================================================================
@@ -2757,7 +2811,7 @@ async function boot(){
   // Owner deep link (?admin=<id>) → read-only view of one user's roadmap.
   if (session){ const adminId = params.get("admin"); if (adminId){ await initAdminRoadmap(adminId); return; } }
   // Signed in → your editor (edit at the base URL, so ignore ?r here).
-  if (session){ enterOwnerMode(); return; }
+  if (session){ await enterOwnerMode(); return; }
   // Not signed in: a ?r link shows one public roadmap; otherwise the whole portfolio.
   if (rid){ await initPublicRoadmap(rid); return; }
   await enterPublicMode();

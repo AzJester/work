@@ -231,7 +231,10 @@ cloud sync and shareable links.
   - Prefer AI shaping instead? Paste the raw issue list into **✨ Build from description**.
 - **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
   (`roadmap.html?s=<token>`) for anyone to view without a login, reusing the same token-gated,
-  read-only pattern as the leadership dashboard.
+  read-only pattern as the leadership dashboard. **Signing in auto-loads your cloud roadmaps**
+  into the portfolio (merged with anything already in this browser; the newer copy wins, so
+  unsaved local edits are never clobbered) — so "sign in → there's my whole portfolio" just
+  works, even on a fresh browser, without re-opening each one from the Cloud menu.
 - **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
   view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
   can't edit anything. Only the signed-in owner can create or change roadmaps. Sessions **persist
