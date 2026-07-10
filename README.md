@@ -200,6 +200,10 @@ cloud sync and shareable links.
   with a mini-timeline preview, a % complete, a per-status breakdown, date range, and last-updated
   time — so you can track several programs side by side. Click a card to open it; **Editor** tab
   edits the active one. Toggle views from the header.
+- **Archive completed roadmaps** — the ⋯ menu (or the 🗄 button on an Overview card) moves a
+  finished roadmap into a collapsed **Archived** section below the active grid; it stays openable
+  and restorable (↩ Unarchive) and is grouped under "Archived" in the roadmap picker. The header
+  count reads e.g. "4 roadmaps · 2 archived".
 - **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
   (Planned · In progress · Complete · At risk · Blocked · On hold) and outlined milestone diamonds,
   with a legend. **Zoom** the time axis 50–300% and scroll horizontally. Sliding light/dark toggle.
