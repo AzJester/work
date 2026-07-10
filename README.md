@@ -212,7 +212,7 @@ cloud sync and shareable links.
 - **Exports** — **JSON** (round-trips via Import), **HTML** (a self-contained, magazine-style
   page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
   an image), and **Print / PDF**.
-- **Import from Jira (CSV)** — *Export ▾ → Import Jira CSV…* takes Jira's built-in issue export
+- **Import from Jira (CSV)** — *Import ▾ → Jira CSV…* takes Jira's built-in issue export
   (any Jira: **Export → CSV**, current or all fields) and builds a roadmap deterministically —
   no credentials, works offline, nothing leaves the browser:
   - **Epics → lanes.** Other issues land in their epic's lane (via *Epic Link* or *Parent*),
