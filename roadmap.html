@@ -255,6 +255,14 @@
   .rm-new { display:flex; align-items:center; justify-content:center; min-height:200px; border:1.5px dashed var(--line-2); border-radius:var(--radius);
     background:transparent; color:var(--ink-2); font-family:var(--disp); font-weight:700; font-size:14px; cursor:pointer; transition:border-color .15s, color .15s, background .15s; }
   .rm-new:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  /* archived section: full-width divider + muted cards */
+  .ov-divider { grid-column:1 / -1; display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:14px; border-top:1px solid var(--line);
+    font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); }
+  .ov-divider-n { font-family:var(--mono); font-size:11px; background:var(--bg); border:1px solid var(--line-2); color:var(--ink-2); border-radius:999px; padding:0 7px; }
+  .rm-card.archived { opacity:0.66; }
+  .rm-card.archived:hover { opacity:1; }
+  .arch-pill { display:inline-block; vertical-align:2px; margin-left:6px; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-2); background:var(--bg); border:1px solid var(--line-2); border-radius:999px; padding:1px 7px; }
 
   /* ---------- draft banner ---------- */
   .draft-banner { display:none; align-items:center; gap:12px; margin:0 16px 12px; padding:10px 14px; border-radius:10px;
@@ -447,6 +455,7 @@
       <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More roadmap actions">⋯</button>
       <div class="menu-list" role="menu" hidden>
         <button class="menu-item" data-act="dup" role="menuitem">Duplicate roadmap</button>
+        <button class="menu-item" data-act="archive" id="archiveItem" role="menuitem">🗄 Archive roadmap</button>
         <button class="menu-item danger" data-act="del" role="menuitem">Delete roadmap</button>
       </div>
     </div>
@@ -746,6 +755,9 @@ function normalizeRoadmap(raw){
     premise: String(raw.premise || ""),
     notes: String(raw.notes || ""),
     public: !!raw.public,
+    // archived roadmaps are kept (and still openable) but move out of the
+    // active portfolio grid and picker into an Archived section
+    archived: !!raw.archived,
     // authored analysis / callout cards shown below the timeline. `list:true` renders
     // the body as a numbered conditions list (one item per line) instead of prose.
     callouts: (Array.isArray(raw.callouts) ? raw.callouts : []).map(c => ({
@@ -1353,9 +1365,10 @@ function overviewCard(d){
     '<span class="ov-seg" style="flex:'+s.counts[st.v]+';background:'+STATUS_COLOR[st.v]+'"></span>').join("");
   const chips = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-chip"><span class="ov-dot" style="background:'+STATUS_COLOR[st.v]+'"></span>'+s.counts[st.v]+' '+esc(st.label)+'</span>').join("");
-  return '<div class="rm-card" role="button" tabindex="0" data-id="'+esc(d.id)+'" style="--rm-accent:'+accent+'" aria-label="Open '+esc(d.title||"Untitled")+'">'
-    + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+'</div>'
-    + '<div class="rm-acts"><button class="icon-btn" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate">⧉</button>'
+  return '<div class="rm-card'+(d.archived?' archived':'')+'" role="button" tabindex="0" data-id="'+esc(d.id)+'" style="--rm-accent:'+accent+'" aria-label="Open '+esc(d.title||"Untitled")+'">'
+    + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'
+    + '<div class="rm-acts"><button class="icon-btn" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'">'+(d.archived?'↩':'🗄')+'</button>'
+    + '<button class="icon-btn" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate">⧉</button>'
     + '<button class="icon-btn" data-act="del" data-id="'+esc(d.id)+'" title="Delete">✕</button></div></div>'
     + (d.subtitle ? '<div class="rm-sub">'+esc(d.subtitle)+'</div>' : "")
     + '<div class="rm-mini">'+renderMiniGantt(d)+'</div>'
@@ -1368,12 +1381,22 @@ function overviewCard(d){
 function renderOverview(){
   const grid = $("overviewGrid");
   const list = Object.values(store.roadmaps).sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""));
-  grid.innerHTML = list.map(overviewCard).join("") + '<button class="rm-new" id="ovNew" type="button">＋ New roadmap</button>';
+  const active = list.filter(d => !d.archived);
+  const archived = list.filter(d => d.archived);
+  let html = active.map(overviewCard).join("");
+  if (!readOnly) html += '<button class="rm-new" id="ovNew" type="button">＋ New roadmap</button>';
+  // completed / retired roadmaps live below the fold, out of the active portfolio
+  if (archived.length){
+    html += '<div class="ov-divider">Archived <span class="ov-divider-n">' + archived.length + '</span></div>'
+      + archived.map(overviewCard).join("");
+  }
+  grid.innerHTML = html;
 }
 function onOverviewClick(e){
   const act = e.target.closest("[data-act]");
   if (act && !readOnly){ e.stopPropagation(); const id = act.dataset.id;
     if (act.dataset.act === "dup") duplicateRoadmapById(id, false);
+    else if (act.dataset.act === "arch") toggleArchiveById(id);
     else if (act.dataset.act === "del") deleteRoadmapById(id);
     return; }
   if (act && readOnly){ e.stopPropagation(); return; }   // no editing for public viewers
@@ -1574,14 +1597,19 @@ function syncHeader(){
   // The Portfolio header count is shown to everyone — including public
   // visitors — so it must be set before the read-only early-return below
   // (it used to sit after it, leaving the public portfolio at "0 roadmaps").
-  { const n = Object.keys(store.roadmaps).length;
-    $("segCount").textContent = n;
-    $("ovSub").textContent = n + (n === 1 ? " roadmap" : " roadmaps"); }
+  { const all = Object.values(store.roadmaps);
+    const arch = all.filter(d => d.archived).length;
+    const active = all.length - arch;
+    $("segCount").textContent = all.length;
+    $("ovSub").textContent = active + (active === 1 ? " roadmap" : " roadmaps") + (arch ? " · " + arch + " archived" : ""); }
   if (readOnly) return;
+  { const ai = $("archiveItem"); if (ai) ai.textContent = doc.archived ? "↩ Unarchive roadmap" : "🗄 Archive roadmap"; }
   const pk = $("rmPicker"); pk.innerHTML = "";
-  Object.values(store.roadmaps)
-    .sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""))
-    .forEach(d => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; pk.appendChild(o); });
+  const sorted = Object.values(store.roadmaps).sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""));
+  const addOpt = (parent, d) => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; parent.appendChild(o); };
+  sorted.filter(d => !d.archived).forEach(d => addOpt(pk, d));
+  const archived = sorted.filter(d => d.archived);
+  if (archived.length){ const og = document.createElement("optgroup"); og.label = "Archived"; archived.forEach(d => addOpt(og, d)); pk.appendChild(og); }
   { const delItem = document.querySelector('.menu-item[data-act="del"]'); if (delItem) delItem.disabled = Object.keys(store.roadmaps).length <= 1; }
 }
 
@@ -1614,6 +1642,15 @@ function deleteRoadmapById(id){
   if (mode === "overview") renderOverview(); else fullRender();
 }
 function deleteRoadmap(){ deleteRoadmapById(doc.id); }
+function toggleArchiveById(id){
+  const d = store.roadmaps[id]; if (!d) return;
+  d.archived = !d.archived;
+  d.updatedAt = new Date().toISOString();
+  saveNow(); syncHeader();
+  if (mode === "overview") renderOverview();
+  topNote(d.archived ? "ok" : "info", (d.archived ? "Archived “" : "Restored “") + (d.title || "Untitled") + "”" + (d.archived ? " — find it under Archived in the Overview." : "."));
+}
+function toggleArchive(){ toggleArchiveById(doc.id); }
 
 /* =========================================================================
    Export / import
@@ -2460,7 +2497,7 @@ function closeMenus(){
 }
 function runMenuAction(act){
   const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
-    dup:duplicateRoadmap, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic };
+    dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic };
   (map[act] || function(){})();
 }
 function onMenuDocClick(e){
