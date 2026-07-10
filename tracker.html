@@ -48,11 +48,11 @@
 
   .mast { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
   .brand { display:flex; align-items:center; gap:13px; }
-  .brand .mark { width:42px; height:42px; border-radius:12px; flex:0 0 auto;
-    background:linear-gradient(145deg, var(--accent-2), var(--accent)); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; letter-spacing:-0.02em;
-    box-shadow:0 8px 18px -6px rgba(79,70,229,0.55); }
-  .brand .mark svg { width:27px; height:27px; display:block; }
+  .brand .mark { width:52px; height:52px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; }
+  .brand .mark .brand-logo { width:52px; height:52px; display:block; object-fit:contain; }
+  .brand .mark .logo-dark { display:none; }
+  :root[data-theme="dark"] .brand .mark .logo-light { display:none; }
+  :root[data-theme="dark"] .brand .mark .logo-dark { display:block; }
   .mast h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:-0.02em; color:var(--ink); }
   .mast .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-top:3px; }
   .who-line { display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2);
@@ -489,7 +489,10 @@
 
   <header class="mast">
     <div class="brand">
-      <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="#fff"><ellipse cx="12" cy="7.5" rx="7" ry="3"/><circle cx="12" cy="5" r="3.2"/><circle cx="7.5" cy="6.5" r="2.4"/><circle cx="16.5" cy="6.5" r="2.4"/><circle cx="9.7" cy="4.6" r="1.8"/><circle cx="14.3" cy="4.6" r="1.8"/><path d="M10 9.5q-.6 3 .4 4.5-1 1.6-.8 3.5h4.8q.2-1.9-.8-3.5 1-1.5.4-4.5z"/><ellipse cx="12" cy="18.5" rx="5.2" ry="1.7"/><circle cx="6.8" cy="18.3" r="1.1"/><circle cx="17.2" cy="18.3" r="1.1"/></svg></div>
+      <div class="mark">
+        <img class="brand-logo logo-light" src="assets/dst-logo-black.png" alt="Dr. Shane Turner" />
+        <img class="brand-logo logo-dark" src="assets/dst-logo-white.png" alt="Dr. Shane Turner" />
+      </div>
       <div>
         <h1>Shane's Weekly Tracker</h1>
         <div class="tag">Cloud · saved to your database</div>
@@ -532,11 +535,14 @@
 
     <div class="tabs" id="nav-tabs" role="tablist">
       <button id="tab-week" class="on" type="button">This week</button>
+      <button id="tab-portfolio" type="button">Portfolio</button>
+      <button id="tab-projects" type="button">Projects</button>
       <button id="tab-history" type="button">History</button>
       <button id="tab-completed" type="button">Completed</button>
       <button id="tab-kudos" type="button">Kudos</button>
       <button id="tab-kpis" type="button">KPIs</button>
     </div>
+    <datalist id="projectOptions"></datalist>
 
     <!-- ---- Editor ---- -->
     <section class="view" id="v-week">
@@ -669,6 +675,33 @@
       </div>
       <div id="kpiBody"></div>
     </section>
+
+    <!-- ---- Portfolio (cross-project rollup) ---- -->
+    <section class="view" id="v-portfolio" hidden>
+      <div class="htoolbar" style="justify-content:space-between; margin-bottom:14px">
+        <p class="hint" style="margin:0">Every project you track, rolled up across all your weeks — one glance at where each one stands.</p>
+        <div class="htoolbar" style="gap:8px">
+          <label class="sortlab" style="margin:0">Show
+            <select id="pfFilter">
+              <option value="active" selected>Active</option>
+              <option value="all">All</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <button class="btn ghost sm" id="pfRefresh" type="button">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="portfolioBody"></div>
+    </section>
+
+    <!-- ---- Projects (registry + recurring templates) ---- -->
+    <section class="view" id="v-projects" hidden>
+      <div class="htoolbar" style="justify-content:space-between; margin-bottom:14px">
+        <p class="hint" style="margin:0">Your projects — give each a colour, cadence and a reusable checklist, then drop that checklist into any week in one click.</p>
+        <button class="btn" id="projAdd" type="button">+ New project</button>
+      </div>
+      <div id="projectsBody"></div>
+    </section>
   </main>
 
   <div id="aiModal" class="modal" hidden aria-modal="true" role="dialog">
@@ -729,6 +762,67 @@
 
 
 </div>
+
+<style id="consolidation-styles">
+  /* ---- inline project dot (in the per-task "Project" field) ---- */
+  .projdot { width:12px; height:12px; border-radius:4px; border:1.5px solid var(--line-2); flex:0 0 auto; display:inline-block; }
+  .rs-proj { position:relative; }
+  .rs-proj[data-c]::before { content:""; display:inline-block; width:8px; height:8px; border-radius:3px; background:var(--pc,transparent); margin-right:5px; vertical-align:middle; }
+
+  /* ---- shared card grid ---- */
+  .pf-grid, .pj-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; }
+  .pf-card, .pj-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 16px 14px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:10px; }
+  .pf-card.arch, .pj-card.arch { opacity:.62; }
+
+  /* ---- portfolio card ---- */
+  .pf-head { display:flex; align-items:center; gap:9px; }
+  .pf-dot { width:14px; height:14px; border-radius:5px; flex:0 0 auto; }
+  .pf-name { font-family:var(--disp); font-weight:700; font-size:15px; color:var(--ink); line-height:1.2; }
+  .pf-cad { margin-left:auto; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-2); background:var(--track-bg); border:1px solid var(--line); border-radius:999px; padding:2px 8px; }
+  .pf-topline { display:flex; align-items:baseline; gap:8px; }
+  .pf-pct { font-family:var(--disp); font-weight:800; font-size:26px; color:var(--ink); }
+  .pf-pctl { font-size:11.5px; color:var(--ink-2); }
+  .pf-bar { display:flex; height:8px; border-radius:999px; overflow:hidden; background:var(--track-bg); }
+  .pf-bar i { display:block; height:100%; }
+  .pf-stats { display:flex; flex-wrap:wrap; gap:6px 7px; }
+  .pf-pill { font-size:11.5px; font-weight:600; color:var(--ink-2); background:var(--track-bg); border:1px solid var(--line); border-radius:7px; padding:3px 8px; }
+  .pf-pill.warn { color:#B45309; background:rgba(217,163,0,.12); border-color:rgba(217,163,0,.30); }
+  .pf-pill.bad { color:#B42318; background:rgba(180,35,24,.10); border-color:rgba(180,35,24,.28); }
+  .pf-pill.good { color:#1A8A4E; background:rgba(26,138,78,.10); border-color:rgba(26,138,78,.28); }
+  :root[data-theme="dark"] .pf-pill.warn { color:#E6B655; } :root[data-theme="dark"] .pf-pill.bad { color:#FF8275; } :root[data-theme="dark"] .pf-pill.good { color:#46D08A; }
+  .pf-foot { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px; }
+  .pf-links { display:flex; gap:6px; flex-wrap:wrap; }
+  .pf-links a { font-size:11.5px; font-weight:600; text-decoration:none; background:var(--accent-soft); border:1px solid var(--line); border-radius:7px; padding:3px 8px; }
+  .pf-when { font-size:11px; color:var(--ink-2); margin-left:auto; }
+  .pf-open { display:flex; flex-direction:column; gap:3px; margin-top:2px; }
+  .pf-open .o { font-size:12px; color:var(--ink-2); display:flex; gap:6px; align-items:center; }
+  .pf-open .o b { color:var(--ink); font-weight:600; }
+  .pf-sec-h { font-family:var(--disp); font-weight:700; font-size:13px; color:var(--ink-2); text-transform:uppercase; letter-spacing:.04em; margin:22px 0 10px; }
+
+  /* ---- projects registry card ---- */
+  .pj-top { display:flex; align-items:center; gap:9px; }
+  .pj-name { flex:1 1 auto; font:inherit; font-family:var(--disp); font-weight:700; font-size:15px; color:var(--ink); background:transparent; border:1px solid transparent; border-radius:8px; padding:5px 7px; }
+  .pj-name:hover { border-color:var(--line); } .pj-name:focus { outline:none; border-color:var(--accent); background:var(--input-bg); box-shadow:0 0 0 3px var(--ring); }
+  .pj-sw { display:flex; gap:4px; }
+  .pj-sw button { width:16px; height:16px; border-radius:5px; border:1.5px solid transparent; cursor:pointer; padding:0; }
+  .pj-sw button.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--card), 0 0 0 3px var(--ink-2); }
+  .pj-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .pj-f { display:flex; flex-direction:column; gap:3px; }
+  .pj-f label { font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-2); }
+  .pj-f select, .pj-f input, .pj-links-ta { font:inherit; font-size:12.5px; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:6px 8px; }
+  .pj-f select:focus, .pj-f input:focus, .pj-links-ta:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .pj-links-ta { width:100%; resize:vertical; min-height:38px; }
+  .pj-tmpl { border-top:1px dashed var(--line-2); padding-top:9px; }
+  .pj-tmpl > summary { cursor:pointer; font-size:12px; font-weight:700; color:var(--ink-2); list-style:none; display:flex; align-items:center; gap:6px; }
+  .pj-tmpl > summary::-webkit-details-marker { display:none; }
+  .pj-tmpl-row { display:grid; grid-template-columns:1fr 58px 26px; gap:6px; margin-top:7px; align-items:start; }
+  .pj-tmpl-row input, .pj-tmpl-row textarea { font:inherit; font-size:12px; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; width:100%; }
+  .pj-tmpl-row textarea { grid-column:1 / -1; resize:vertical; min-height:30px; }
+  .pj-tmpl-row .off { text-align:center; }
+  .pj-tmpl-hint { font-size:10.5px; color:var(--ink-2); margin:6px 0 0; }
+  .pj-actions { display:flex; gap:7px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:10px; margin-top:2px; }
+  .pj-actions .spacer { flex:1 1 auto; }
+</style>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -953,6 +1047,7 @@ function applySession(sess){
     if (!state.week) state.week = isoDate(comingFriday());
     loadWeek();
     renderWeekKudos();
+    loadProjects().then(() => { if (!$("v-week").hidden) renderRows(); }).catch(()=>{});
   } else {
     $("app").hidden = true; $("whoLine").hidden = true; $("gate").hidden = false;
   }
@@ -1223,7 +1318,7 @@ function renderRows(){
     // collapsed summary line (project · checklist · due · first note line) — click to expand
     const sub = document.createElement("div"); sub.className = "row-sub"; sub.hidden = open;
     const parts = [];
-    if (row.project && row.project.trim()) parts.push('<span class="rs-proj">'+escHtml(row.project.trim())+'</span>');
+    if (row.project && row.project.trim()) { const pc = projectColor(row.project) || "transparent"; parts.push('<span class="rs-proj" data-c="1" style="--pc:'+pc+'">'+escHtml(row.project.trim())+'</span>'); }
     const subItems = normItems(row.items);
     if (subItems.length) { const d = subItems.filter(x=>x.done).length; parts.push('<span class="rs-chk'+(d===subItems.length?' all':'')+'">☑ '+d+'/'+subItems.length+'</span>'); }
     if (row.due) parts.push('<span class="rs-due'+(row.due<todayIso()&&row.status!=="Done"?' od':'')+'">'+shortDate(row.due)+'</span>');
@@ -1292,8 +1387,13 @@ function renderRows(){
     // meta column (project + dates)
     const meta = document.createElement("div"); meta.className = "meta-col";
     const proj = document.createElement("input");
-    proj.className = "mini project"; proj.type = "text"; proj.placeholder = "Add a project…"; proj.value = row.project || "";
-    proj.addEventListener("input", () => { row.project = proj.value; scheduleSave(); });
+    proj.className = "mini project"; proj.type = "text"; proj.placeholder = "Project / area…"; proj.value = row.project || "";
+    proj.setAttribute("list", "projectOptions"); proj.autocomplete = "off";
+    const projDot = document.createElement("span"); projDot.className = "projdot";
+    const paintProjDot = () => { const c = projectColor(row.project); projDot.style.background = c || "transparent"; projDot.style.borderColor = c || "var(--line-2)"; projDot.title = (row.project||"").trim(); };
+    paintProjDot();
+    proj.addEventListener("input", () => { row.project = proj.value; paintProjDot(); scheduleSave(); });
+    proj.addEventListener("change", () => { registerProjectName(row.project); paintProjDot(); refreshProjectOptions(); });
     dueInput = document.createElement("input");
     dueInput.className = "mini due"; dueInput.type = "date"; dueInput.title = "Due date"; dueInput.value = row.due || "";
     markOverdue(dueInput, row);
@@ -1312,7 +1412,7 @@ function renderRows(){
     startQuick.appendChild(mkMini("Today", "Set start to today", () => { startedInput.value = todayIso(); row.started = todayIso(); scheduleSave(); }));
     const doneQuick = document.createElement("span"); doneQuick.className = "dquick";
     doneQuick.appendChild(mkMini("Today", "Set completed to today", () => { completedInput.value = todayIso(); row.completed = todayIso(); scheduleSave(); }));
-    meta.appendChild(dateField("Area", proj));
+    meta.appendChild(dateField("Project", proj, projDot));
     meta.appendChild(dateField("Due", dueInput, dueQuick));
     meta.appendChild(dateField("Start", startedInput, startQuick));
     meta.appendChild(dateField("Done", completedInput, doneQuick));
@@ -1631,18 +1731,23 @@ async function exportKudosCSV(btn){
 }
 
 // ============ TABS ============
-const tabs = { week:["tab-week","v-week"], history:["tab-history","v-history"],
-               completed:["tab-completed","v-completed"], kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
+const tabs = { week:["tab-week","v-week"], portfolio:["tab-portfolio","v-portfolio"], projects:["tab-projects","v-projects"],
+               history:["tab-history","v-history"], completed:["tab-completed","v-completed"],
+               kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
 function showTab(name){
   Object.entries(tabs).forEach(([k,[btn,view]]) => {
     $(btn).classList.toggle("on", k===name); $(view).hidden = (k!==name);
   });
+  if (name === "portfolio") loadPortfolio();
+  if (name === "projects") renderProjects();
   if (name === "history") loadHistory();
   if (name === "completed") loadCompleted();
   if (name === "kudos") loadKudos();
   if (name === "kpis") loadKpis();
 }
 $("tab-week").addEventListener("click", () => showTab("week"));
+$("tab-portfolio").addEventListener("click", () => showTab("portfolio"));
+$("tab-projects").addEventListener("click", () => showTab("projects"));
 $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
 $("tab-kudos").addEventListener("click", () => showTab("kudos"));
@@ -2575,6 +2680,320 @@ $("tnAdd").addEventListener("click", addTaskNotes);
 })();
 
 // ============ boot ============
+// ============================================================================
+// PROJECTS — first-class registry, recurring templates, and cross-project Portfolio
+// A task still links to a project by its `project` name (backward compatible with
+// existing data, the offline file, the KPI "by project" view and the dashboard);
+// this layer adds colour, cadence, owner, links and a reusable checklist per project.
+// ============================================================================
+const PROJ_LS = "tracker_projects_v1";
+const PROJ_COLORS = ["#4F46E5","#0EA5E9","#1A8A4E","#D9A300","#B42318","#7C3AED","#DB2777","#0D9488","#EA580C","#475569"];
+const P_TYPES = ["","Content","Product","Program","Engineering","Operations","Research","Other"];
+const P_STATUS = ["Active","Paused","Done"];
+const P_CAD = ["None","Weekly","Biweekly","Monthly"];
+let PROJECTS = [];            // [{id, name, doc:{color,type,status,cadence,owner,links[],template:{items[]},archived}}]
+let projectsLoaded = false;
+let projTableOk = true;       // flips false if the projects table isn't provisioned → localStorage only
+const projSaveTimers = {};
+
+function pnorm(s){ return String(s||"").trim().toLowerCase(); }
+function pid(name){ const base = pnorm(name).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,32) || "p"; return base + "-" + Math.random().toString(36).slice(2,7); }
+function hashOf(s){ let h=0; const t=pnorm(s); for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; return h; }
+function findProject(name){ const k = pnorm(name); return PROJECTS.find(p => pnorm(p.name)===k) || null; }
+function projectColor(name){ if(!name || !name.trim()) return null; const p=findProject(name); if(p && p.doc && p.doc.color) return p.doc.color; return PROJ_COLORS[hashOf(name)%PROJ_COLORS.length]; }
+
+function projLoadLocal(){ try { const v=JSON.parse(localStorage.getItem(PROJ_LS)); return Array.isArray(v)?v:[]; } catch(e){ return []; } }
+function projSaveLocal(){ try { localStorage.setItem(PROJ_LS, JSON.stringify(PROJECTS)); } catch(e){} }
+
+function seedProjects(){
+  const mk = (name, doc) => ({ id: pid(name), name, doc });
+  return [
+    mk("AI Weekly", { color:"#4F46E5", type:"Content", status:"Active", cadence:"Weekly", owner:"", links:[], template:{ items:[
+      { task:"Collect AI news & signals", off:0, items:["Newsletters & feeds","Internal Slack / Teams","Vendor & model releases"] },
+      { task:"Draft AI Weekly", off:2, items:["Headline + BLUF","3–5 items, each with the so-what","Links & sources"] },
+      { task:"Review & edit AI Weekly", off:3, items:["Self-edit / human-voice pass","SME or leadership check"] },
+      { task:"Publish & distribute AI Weekly", off:4, pri:"High", items:["Send to distribution list","Post to channel","Log outcome here"] },
+    ] } }),
+    mk("Road Maps", { color:"#0EA5E9", type:"Program", status:"Active", cadence:"Weekly", owner:"", links:[{label:"Roadmap Builder", url:"roadmap.html"}], template:{ items:[
+      { task:"Update roadmap status & dates", off:0, items:["Pull latest from teams","Update % and statuses","Flag slips / at-risk"] },
+      { task:"Review upcoming milestones & gates", off:1, items:["Next 2–4 weeks","Dependencies","Owners confirmed"] },
+      { task:"Publish roadmap update", off:2, items:["Export / refresh share link","Notify stakeholders"] },
+    ] } }),
+  ];
+}
+
+async function upsertProjectCloud(p){
+  if (!session || !projTableOk) return;
+  const { error } = await sb.from("projects").upsert(
+    { id:p.id, user_id:session.user.id, name:p.name, doc:p.doc||{}, updated_at:new Date().toISOString() },
+    { onConflict:"id" });
+  if (error && (error.code==="42P01" || /relation .*projects.* does not exist/i.test(error.message||""))) projTableOk=false;
+}
+function persistProject(p){
+  projSaveLocal();
+  clearTimeout(projSaveTimers[p.id]);
+  projSaveTimers[p.id] = setTimeout(() => upsertProjectCloud(p), 500);
+}
+async function loadProjects(){
+  let cloud = null;
+  if (session){
+    const { data, error } = await sb.from("projects").select("id,name,doc").order("created_at",{ascending:true});
+    if (error){ projTableOk=false; } else { projTableOk=true; cloud = data||[]; }
+  }
+  if (cloud){
+    PROJECTS = cloud.map(p => ({ id:p.id, name:p.name, doc: p.doc||{} }));
+    if (!PROJECTS.length){ PROJECTS = seedProjects(); for (const p of PROJECTS) await upsertProjectCloud(p); projSaveLocal(); }
+  } else {
+    PROJECTS = projLoadLocal();
+    if (!PROJECTS.length){ PROJECTS = seedProjects(); projSaveLocal(); }
+  }
+  projectsLoaded = true;
+  refreshProjectOptions();
+}
+// typing a new project name into a task's Project field makes it first-class automatically
+function registerProjectName(name){
+  const n = String(name||"").trim();
+  if (!n || findProject(n)) return;
+  const p = { id: pid(n), name:n, doc:{ color: PROJ_COLORS[hashOf(n)%PROJ_COLORS.length], type:"", status:"Active", cadence:"None", owner:"", links:[], template:{items:[]} } };
+  PROJECTS.push(p); persistProject(p); refreshProjectOptions();
+}
+function refreshProjectOptions(){
+  const dl = $("projectOptions"); if(!dl) return;
+  dl.innerHTML = PROJECTS.filter(p=>!(p.doc&&p.doc.archived)).map(p=>'<option value="'+escHtml(p.name)+'"></option>').join("");
+}
+
+// spawn a project's recurring checklist into the current week
+function spawnTemplate(project){
+  const items = (project.doc && project.doc.template && project.doc.template.items) || [];
+  if (!items.length){ alert("“"+project.name+"” has no checklist steps yet — add some on the Projects tab."); return; }
+  const base = state.week || todayIso();
+  const seen = new Set(state.rows.map(r => pnorm(r.task)+"|"+pnorm(r.project)));
+  let added = 0;
+  items.forEach(it => {
+    if (!it.task || !it.task.trim()) return;
+    const key = pnorm(it.task)+"|"+pnorm(project.name);
+    if (seen.has(key)) return;
+    const r = blankRow();
+    r.task = it.task; r.project = project.name; r.note = it.note || ""; r.pri = it.pri || "Med";
+    r.due = (it.off!=null && it.off!=="") ? addDaysIso(base, parseInt(it.off,10)||0) : "";
+    r.items = Array.isArray(it.items) ? it.items.filter(x=>x&&x.trim()).map(x=>({text:x, done:false})) : [];
+    r.started = todayIso();
+    state.rows.push(r); seen.add(key); added++;
+  });
+  if (!added){ alert("Those checklist steps are already in this week."); return; }
+  registerProjectName(project.name);
+  showTab("week"); renderRows(); scheduleSave();
+  setSave("", added+" task"+(added===1?"":"s")+" added from “"+project.name+"” — review & Save");
+}
+
+// ---------- Portfolio (cross-project rollup across all weeks) ----------
+function roadmapStats(doc){
+  let total=0, complete=0, next=null; const today=todayIso();
+  const lanes = (doc && Array.isArray(doc.lanes)) ? doc.lanes : [];
+  lanes.forEach(l => (l.items||[]).forEach(it=>{
+    total++; if (it.status==="complete") complete++;
+    const d = it.kind==="milestone" ? it.date : it.end;
+    if (d && it.status!=="complete" && d>=today){ if(next===null || d<next) next=d; }
+  }));
+  return { total, complete, pct: total?Math.round(100*complete/total):0, next };
+}
+function pfCard(proj, a){
+  const doc = (proj && proj.doc) || {};
+  const named = a.name && a.name !== "— Untagged —";
+  const color = (named ? projectColor(a.name) : null) || "#94A3B8";
+  const pct = a.total ? Math.round(100*a.done/a.total) : 0;
+  const cur = a.cur, seg = cur.done+cur.ontrack+cur.atrisk+cur.blocked;
+  const w = (n) => seg ? (n/seg*100) : 0;
+  const bar = '<div class="pf-bar">' + (seg
+    ? '<i style="width:'+w(cur.done)+'%;background:'+COLORS.done+'"></i>'
+      +'<i style="width:'+w(cur.ontrack)+'%;background:'+COLORS.ontrack+'"></i>'
+      +'<i style="width:'+w(cur.atrisk)+'%;background:'+COLORS.atrisk+'"></i>'
+      +'<i style="width:'+w(cur.blocked)+'%;background:'+COLORS.blocked+'"></i>' : '') + '</div>';
+  const open = cur.ontrack+cur.atrisk+cur.blocked;
+  const pills = ['<span class="pf-pill">'+open+' open</span>'];
+  if (cur.atrisk)  pills.push('<span class="pf-pill warn">'+cur.atrisk+' at risk</span>');
+  if (cur.blocked) pills.push('<span class="pf-pill bad">'+cur.blocked+' blocked</span>');
+  if (a.overdue)   pills.push('<span class="pf-pill bad">'+a.overdue+' overdue</span>');
+  pills.push('<span class="pf-pill good">'+a.done+' done</span>');
+  const cad = (doc.cadence && doc.cadence!=="None") ? '<span class="pf-cad">'+esc(doc.cadence)+'</span>' : '';
+  const links = (doc.links||[]).filter(l=>l.url).map(l=>'<a href="'+escHtml(l.url)+'" target="_blank" rel="noopener">'+escHtml(l.label||l.url)+'</a>').join("");
+  const nextDue = a.nextDue ? '<div class="o">🗓 Next due <b>'+shortDate(a.nextDue)+'</b></div>' : '';
+  const lastA = a.lastWk ? '<span class="pf-when">last active '+shortDate(a.lastWk)+'</span>' : '';
+  const canStart = proj && !doc.archived && doc.template && doc.template.items && doc.template.items.length;
+  const startBtn = canStart ? '<button class="btn ghost sm" data-start="'+escHtml(proj.id)+'">▶ Start this week</button>' : '';
+  const div = document.createElement("div"); div.className = "pf-card" + (doc.archived ? " arch" : "");
+  div.innerHTML =
+    '<div class="pf-head"><span class="pf-dot" style="background:'+color+'"></span><span class="pf-name">'+escHtml(a.name)+'</span>'+cad+'</div>'
+    +'<div class="pf-topline"><span class="pf-pct">'+pct+'%</span><span class="pf-pctl">complete · '+a.done+'/'+a.total+' all-time</span></div>'
+    + bar
+    +'<div class="pf-stats">'+pills.join("")+'</div>'
+    +'<div class="pf-open">'+nextDue+'</div>'
+    +'<div class="pf-foot"><div class="pf-links">'+links+startBtn+'</div>'+lastA+'</div>';
+  return div;
+}
+async function loadPortfolio(){
+  if (!projectsLoaded) await loadProjects();
+  refreshChartColors();
+  const body = $("portfolioBody");
+  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Building portfolio…</div>';
+  const [{ data: reps, error:e1 }, { data: tks, error:e2 }, rmRes] = await Promise.all([
+    sb.from("reports").select("id,week_ending"),
+    sb.from("tasks").select("report_id,project,status,due_date"),
+    sb.from("roadmaps").select("id,title,subtitle,updated_at,doc").then(r=>r, ()=>({data:null}))
+  ]);
+  if (e1 || e2){ body.innerHTML = '<div class="muted-empty">Could not load portfolio: '+esc((e1||e2).message)+'</div>'; return; }
+  const wkOf = {}; (reps||[]).forEach(r => wkOf[r.id]=r.week_ending);
+  const today = todayIso();
+  const keyFor = (name) => { const p=findProject(name); return p?pnorm(p.name):pnorm(name); };
+  const agg = {};
+  const A = (k,name) => agg[k] || (agg[k] = { name, total:0, done:0, cur:{done:0,ontrack:0,atrisk:0,blocked:0}, lastWk:"", nextDue:null, overdue:0 });
+  (tks||[]).forEach(t => {
+    const raw = (t.project||"").trim();
+    const k = raw ? keyFor(raw) : "__untagged__";
+    const name = raw ? ((findProject(raw)||{}).name || raw) : "— Untagged —";
+    const wk = wkOf[t.report_id] || "";
+    const a = A(k,name);
+    a.total++; if (t.status==="Done") a.done++;
+    if (wk > a.lastWk) a.lastWk = wk;
+    if (t.status!=="Done" && t.due_date){ if (a.nextDue===null || t.due_date<a.nextDue) a.nextDue=t.due_date; if (t.due_date<today) a.overdue++; }
+  });
+  (tks||[]).forEach(t => {
+    const raw = (t.project||"").trim();
+    const k = raw ? keyFor(raw) : "__untagged__";
+    const a = agg[k]; if(!a) return;
+    if ((wkOf[t.report_id]||"") !== a.lastWk) return;
+    if (t.status==="Done") a.cur.done++;
+    else if (t.status==="At Risk") a.cur.atrisk++;
+    else if (t.status==="Blocked") a.cur.blocked++;
+    else a.cur.ontrack++;
+  });
+  const emptyAgg = (name) => ({ name, total:0, done:0, cur:{done:0,ontrack:0,atrisk:0,blocked:0}, lastWk:"", nextDue:null, overdue:0 });
+  const filt = $("pfFilter") ? $("pfFilter").value : "active";
+  const regShown = PROJECTS.filter(p => filt==="all" ? true : filt==="archived" ? (p.doc&&p.doc.archived) : !(p.doc&&p.doc.archived));
+  const cards = []; const used = new Set();
+  regShown.forEach(p => { const k=pnorm(p.name); used.add(k); cards.push({ proj:p, a: agg[k] || emptyAgg(p.name) }); });
+  if (filt !== "archived"){ Object.keys(agg).forEach(k => { if(!used.has(k)) cards.push({ proj:null, a:agg[k] }); }); }
+  cards.sort((x,y) => (y.a.total - x.a.total) || String(x.a.name).localeCompare(String(y.a.name)));
+
+  const rms = (rmRes && rmRes.data) || null;
+  let rmHtml = "";
+  if (rms && rms.length){
+    rmHtml = '<div class="pf-sec-h">Road Maps · from the Roadmap Builder</div><div class="pf-grid">'
+      + rms.map(r => { const s=roadmapStats(r.doc);
+        return '<div class="pf-card"><div class="pf-head"><span class="pf-dot" style="background:#0EA5E9"></span><span class="pf-name">'+escHtml(r.title||"Untitled roadmap")+'</span></div>'
+          + (r.subtitle ? '<div class="pf-pctl">'+escHtml(r.subtitle)+'</div>' : '')
+          + '<div class="pf-topline"><span class="pf-pct">'+s.pct+'%</span><span class="pf-pctl">complete · '+s.complete+'/'+s.total+' items</span></div>'
+          + '<div class="pf-open">'+(s.next ? '<div class="o">🚩 Next milestone <b>'+shortDate(s.next)+'</b></div>' : '')+'</div>'
+          + '<div class="pf-foot"><div class="pf-links"><a href="roadmap.html" target="_blank" rel="noopener">Open Roadmap Builder</a></div><span class="pf-when">updated '+shortDate(String(r.updated_at||"").slice(0,10))+'</span></div></div>';
+      }).join("") + '</div>';
+  }
+  body.innerHTML = (cards.length ? '<div class="pf-grid" id="pfGrid"></div>'
+    : '<div class="muted-empty">No projects yet — tag tasks with a Project, or seed one on the <b>Projects</b> tab.</div>') + rmHtml;
+  if (cards.length){
+    const grid = $("pfGrid");
+    cards.forEach(c => grid.appendChild(pfCard(c.proj, c.a)));
+    grid.addEventListener("click", e => {
+      const b = e.target.closest("[data-start]"); if(!b) return;
+      const p = PROJECTS.find(x => x.id === b.getAttribute("data-start")); if(p) spawnTemplate(p);
+    });
+  }
+}
+
+// ---------- Projects registry (management tab) ----------
+function pel(tag, cls, txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function projField(label, control){ const f=pel("div","pj-f"); f.appendChild(pel("label",null,label)); f.appendChild(control); return f; }
+function selOf(opts, val){ const s=document.createElement("select"); opts.forEach(o=>{ const op=document.createElement("option"); op.value=o; op.textContent=o||"—"; if(o===val)op.selected=true; s.appendChild(op); }); return s; }
+function linksToText(links){ return (links||[]).map(l => (l.label ? l.label+" | " : "") + (l.url||"")).join("\n"); }
+function textToLinks(t){ return String(t||"").split(/\n+/).map(s=>s.trim()).filter(Boolean).map(s=>{ const i=s.indexOf("|"); return i>=0 ? {label:s.slice(0,i).trim(), url:s.slice(i+1).trim()} : {label:"", url:s}; }); }
+
+function projectCard(p){
+  p.doc = p.doc || {}; const d = p.doc;
+  if (!d.template) d.template = { items:[] }; if (!Array.isArray(d.template.items)) d.template.items = []; if (!Array.isArray(d.links)) d.links = [];
+  const card = pel("div", "pj-card" + (d.archived ? " arch" : ""));
+  const top = pel("div","pj-top");
+  const dot = pel("span","pf-dot"); dot.style.background = d.color || projectColor(p.name) || "#94A3B8";
+  const name = document.createElement("input"); name.className="pj-name"; name.value=p.name; name.placeholder="Project name";
+  name.addEventListener("input", ()=>{ p.name=name.value; persistProject(p); });
+  name.addEventListener("change", ()=>{ refreshProjectOptions(); });
+  top.appendChild(dot); top.appendChild(name); card.appendChild(top);
+
+  const sw = pel("div","pj-sw");
+  PROJ_COLORS.forEach(c => { const b=document.createElement("button"); b.type="button"; b.style.background=c; if(c===d.color)b.classList.add("on"); b.title=c;
+    b.addEventListener("click", ()=>{ d.color=c; dot.style.background=c; sw.querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); persistProject(p); refreshProjectOptions(); });
+    sw.appendChild(b); });
+  card.appendChild(projField("Colour", sw));
+
+  const typeSel=selOf(P_TYPES, d.type||""); typeSel.addEventListener("change", ()=>{ d.type=typeSel.value; persistProject(p); });
+  const cadSel=selOf(P_CAD, d.cadence||"None"); cadSel.addEventListener("change", ()=>{ d.cadence=cadSel.value; persistProject(p); });
+  const statusSel=selOf(P_STATUS, d.status||"Active"); statusSel.addEventListener("change", ()=>{ d.status=statusSel.value; persistProject(p); });
+  const owner=document.createElement("input"); owner.value=d.owner||""; owner.placeholder="Owner / lead"; owner.addEventListener("input", ()=>{ d.owner=owner.value; persistProject(p); });
+  const row1=pel("div","pj-row"); row1.appendChild(projField("Type",typeSel)); row1.appendChild(projField("Cadence",cadSel)); card.appendChild(row1);
+  const row2=pel("div","pj-row"); row2.appendChild(projField("Status",statusSel)); row2.appendChild(projField("Owner",owner)); card.appendChild(row2);
+
+  const linksTa=document.createElement("textarea"); linksTa.className="pj-links-ta"; linksTa.value=linksToText(d.links); linksTa.placeholder="Label | https://…  (one per line)";
+  linksTa.addEventListener("input", ()=>{ d.links=textToLinks(linksTa.value); persistProject(p); });
+  card.appendChild(projField("Links", linksTa));
+
+  const det=document.createElement("details"); det.className="pj-tmpl"; if(d._open) det.open=true;
+  const sum=document.createElement("summary");
+  const sumLabel=()=>{ sum.textContent="▸ Recurring checklist ("+d.template.items.length+" step"+(d.template.items.length===1?"":"s")+")"; };
+  sumLabel(); det.appendChild(sum);
+  const tw=pel("div","pj-tmpl-wrap"); det.appendChild(tw);
+  function renderTmpl(){
+    tw.innerHTML="";
+    d.template.items.forEach((it, idx)=>{
+      const r=pel("div","pj-tmpl-row");
+      const ti=document.createElement("input"); ti.value=it.task||""; ti.placeholder="Step "+(idx+1)+"…"; ti.addEventListener("input", ()=>{ it.task=ti.value; persistProject(p); });
+      const off=document.createElement("input"); off.className="off"; off.type="number"; off.value=(it.off!=null?it.off:""); off.title="Due date: this many days after the week-ending date"; off.placeholder="+d";
+      off.addEventListener("input", ()=>{ it.off = off.value===""?null:(parseInt(off.value,10)||0); persistProject(p); });
+      const rm=mkIbtn("🗑","Remove step", ()=>{ d.template.items.splice(idx,1); persistProject(p); renderTmpl(); sumLabel(); });
+      const ai=document.createElement("textarea"); ai.value=(it.items||[]).join("\n"); ai.placeholder="action items (one per line)";
+      ai.addEventListener("input", ()=>{ it.items=ai.value.split(/\n+/).map(s=>s.trim()).filter(Boolean); persistProject(p); });
+      r.appendChild(ti); r.appendChild(off); r.appendChild(rm); r.appendChild(ai); tw.appendChild(r);
+    });
+    const add=pel("button",null,"+ Add step"); add.type="button"; add.className="btn ghost sm"; add.style.marginTop="8px";
+    add.addEventListener("click", ()=>{ d.template.items.push({task:"", off:null, items:[]}); d._open=true; persistProject(p); renderTmpl(); sumLabel(); });
+    tw.appendChild(add);
+    tw.appendChild(pel("p","pj-tmpl-hint","“+d” sets a due date that many days after the week-ending date (blank = none). Steps become tasks — with these action items — when you click “Start this week.”"));
+  }
+  renderTmpl();
+  det.addEventListener("toggle", ()=>{ d._open=det.open; });
+  card.appendChild(det);
+
+  const act=pel("div","pj-actions");
+  const startBtn=pel("button",null,"▶ Start this week"); startBtn.type="button"; startBtn.className="btn sm"; startBtn.addEventListener("click", ()=>spawnTemplate(p));
+  const archBtn=pel("button",null, d.archived?"↩ Unarchive":"🗄 Archive"); archBtn.type="button"; archBtn.className="btn ghost sm";
+  archBtn.addEventListener("click", ()=>{ d.archived=!d.archived; persistProject(p); renderProjects(); refreshProjectOptions(); });
+  const delBtn=pel("button",null,"🗑 Delete"); delBtn.type="button"; delBtn.className="btn ghost sm danger"; delBtn.addEventListener("click", ()=>deleteProject(p));
+  act.appendChild(startBtn); act.appendChild(pel("span","spacer")); act.appendChild(archBtn); act.appendChild(delBtn);
+  card.appendChild(act);
+  return card;
+}
+async function renderProjects(){
+  if (!projectsLoaded) await loadProjects();
+  const body = $("projectsBody");
+  if (!PROJECTS.length){ body.innerHTML = '<div class="muted-empty">No projects yet — click <b>+ New project</b> to add one.</div>'; return; }
+  body.innerHTML = '<div class="pj-grid" id="pjGrid"></div>';
+  const grid = $("pjGrid");
+  PROJECTS.forEach(p => grid.appendChild(projectCard(p)));
+}
+function deleteProject(p){
+  const idx = PROJECTS.findIndex(x => x.id === p.id); if (idx < 0) return;
+  PROJECTS.splice(idx,1); projSaveLocal(); renderProjects(); refreshProjectOptions();
+  if (session && projTableOk) sb.from("projects").delete().eq("id", p.id);
+  showUndo("Project “"+(p.name||"")+"” deleted", async () => {
+    PROJECTS.splice(Math.min(idx, PROJECTS.length), 0, p); projSaveLocal(); renderProjects(); refreshProjectOptions();
+    if (session && projTableOk) await upsertProjectCloud(p);
+  });
+}
+$("projAdd").addEventListener("click", () => {
+  const p = { id: pid("project"), name:"New project", doc:{ color:PROJ_COLORS[PROJECTS.length%PROJ_COLORS.length], type:"", status:"Active", cadence:"None", owner:"", links:[], template:{items:[]}, _open:true } };
+  PROJECTS.push(p); persistProject(p); renderProjects(); refreshProjectOptions();
+  const grid = $("pjGrid"); if (grid && grid.lastElementChild){ grid.lastElementChild.scrollIntoView({behavior:"smooth", block:"center"}); const nm=grid.lastElementChild.querySelector(".pj-name"); if(nm){ nm.focus(); nm.select(); } }
+});
+$("pfFilter").addEventListener("change", loadPortfolio);
+$("pfRefresh").addEventListener("click", loadPortfolio);
+
 (async function init(){
   const { data } = await sb.auth.getSession();
   applySession(data.session);
