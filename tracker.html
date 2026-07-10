@@ -2209,18 +2209,13 @@ $("shareAdd").addEventListener("click", async function () {
   const btn = this; const orig = btn.textContent; btn.disabled = true; btn.textContent = "Creating…";
   const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "" }).select("token,label").single();
   if (error) { btn.disabled = false; btn.textContent = orig; alert("Could not create link: " + error.message); return; }
-  // auto-shorten the new link; if the shortener is unavailable, fall back to the full link
-  try {
-    const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(data.token) } });
-    if (!er && d && d.short) await sb.from("shares").update({ short_url: d.short }).eq("token", data.token);
-  } catch (_) {}
   btn.disabled = false; btn.textContent = orig;
   loadShares();
 });
 async function loadShares(){
   const list = $("shareList");
   list.innerHTML = '<div class="share-loading"><span class="spin"></span> Loading…</div>';
-  const { data, error } = await sb.from("shares").select("token,label,created_at,short_url")
+  const { data, error } = await sb.from("shares").select("token,label,created_at")
     .eq("revoked", false).order("created_at", { ascending:true });
   if (error) { list.innerHTML = '<div class="share-loading">Error: '+esc(error.message)+'</div>'; return; }
   if (!data || !data.length) { list.innerHTML = '<div class="share-loading">No links yet — click <b>+ New link</b> to create one.</div>'; return; }
@@ -2233,9 +2228,9 @@ async function loadShares(){
       clearTimeout(shareTimers[s.token]);
       shareTimers[s.token] = setTimeout(() => { sb.from("shares").update({ label: label.value }).eq("token", s.token); }, 600);
     });
+    // always the full, direct dashboard link — no third-party shortener, no interstitial page
     const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true;
-    url.value = s.short_url || shareUrlFor(s.token);
-    if (s.short_url) url.title = "Short link · long link: " + shareUrlFor(s.token);
+    url.value = shareUrlFor(s.token);
     const copy = document.createElement("button"); copy.type = "button"; copy.className = "btn ghost sm"; copy.textContent = "Copy";
     copy.addEventListener("click", () => {
       url.select();
@@ -2244,25 +2239,6 @@ async function loadShares(){
       else { try { document.execCommand("copy"); done(); } catch(e){} }
     });
     row.appendChild(label); row.appendChild(url); row.appendChild(copy);
-    if (!s.short_url) {
-      const shortBtn = document.createElement("button"); shortBtn.type = "button"; shortBtn.className = "btn ghost sm"; shortBtn.textContent = "⚡ Shorten";
-      shortBtn.title = "Create a short, shareable link";
-      shortBtn.addEventListener("click", async () => {
-        shortBtn.disabled = true; const orig = shortBtn.textContent; shortBtn.textContent = "…";
-        try {
-          const { data: d, error: er } = await sb.functions.invoke("shorten", { body: { url: shareUrlFor(s.token) } });
-          let msg = er ? (er.message || "Request failed.") : (d && d.error);
-          if (er) { try { const b = await er.context.json(); if (b && b.error) msg = b.error; } catch(_){} }
-          if (msg) throw new Error(msg);
-          await sb.from("shares").update({ short_url: d.short }).eq("token", s.token);
-          loadShares();
-        } catch (e) {
-          shortBtn.disabled = false; shortBtn.textContent = orig;
-          alert("Could not shorten the link: " + (e.message || e));
-        }
-      });
-      row.appendChild(shortBtn);
-    }
     const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "btn ghost sm danger"; revoke.textContent = "Revoke";
     revoke.addEventListener("click", async () => {
       if (!confirm("Revoke this link" + (s.label ? ' for “'+s.label+'”' : "") + "? It stops working immediately.")) return;
@@ -2708,12 +2684,7 @@ function projSaveLocal(){ try { localStorage.setItem(PROJ_LS, JSON.stringify(PRO
 function seedProjects(){
   const mk = (name, doc) => ({ id: pid(name), name, doc });
   return [
-    mk("AI Weekly", { color:"#4F46E5", type:"Content", status:"Active", cadence:"Weekly", owner:"", links:[], template:{ items:[
-      { task:"Collect AI news & signals", off:0, items:["Newsletters & feeds","Internal Slack / Teams","Vendor & model releases"] },
-      { task:"Draft AI Weekly", off:2, items:["Headline + BLUF","3–5 items, each with the so-what","Links & sources"] },
-      { task:"Review & edit AI Weekly", off:3, items:["Self-edit / human-voice pass","SME or leadership check"] },
-      { task:"Publish & distribute AI Weekly", off:4, pri:"High", items:["Send to distribution list","Post to channel","Log outcome here"] },
-    ] } }),
+    mk("AI Weekly", { color:"#4F46E5", type:"Content", status:"Active", cadence:"Weekly", owner:"", links:[], template:{ items:[] } }),
     mk("Road Maps", { color:"#0EA5E9", type:"Program", status:"Active", cadence:"Weekly", owner:"", links:[{label:"Roadmap Builder", url:"roadmap.html"}], template:{ items:[
       { task:"Update roadmap status & dates", off:0, items:["Pull latest from teams","Update % and statuses","Flag slips / at-risk"] },
       { task:"Review upcoming milestones & gates", off:1, items:["Next 2–4 weeks","Dependencies","Owners confirmed"] },
@@ -2734,21 +2705,33 @@ function persistProject(p){
   clearTimeout(projSaveTimers[p.id]);
   projSaveTimers[p.id] = setTimeout(() => upsertProjectCloud(p), 500);
 }
+let projLoadInflight = null;
 async function loadProjects(){
-  let cloud = null;
-  if (session){
-    const { data, error } = await sb.from("projects").select("id,name,doc").order("created_at",{ascending:true});
-    if (error){ projTableOk=false; } else { projTableOk=true; cloud = data||[]; }
-  }
-  if (cloud){
-    PROJECTS = cloud.map(p => ({ id:p.id, name:p.name, doc: p.doc||{} }));
-    if (!PROJECTS.length){ PROJECTS = seedProjects(); for (const p of PROJECTS) await upsertProjectCloud(p); projSaveLocal(); }
-  } else {
-    PROJECTS = projLoadLocal();
-    if (!PROJECTS.length){ PROJECTS = seedProjects(); projSaveLocal(); }
-  }
-  projectsLoaded = true;
-  refreshProjectOptions();
+  // single-flight: sign-in and tab clicks can all request a load at once — share one
+  // in-flight fetch so an empty table can't be seeded more than once (dupe-seed race)
+  if (projLoadInflight) return projLoadInflight;
+  projLoadInflight = (async () => {
+    let cloud = null;
+    if (session){
+      const { data, error } = await sb.from("projects").select("id,name,doc").order("created_at",{ascending:true});
+      if (error){ projTableOk=false; } else { projTableOk=true; cloud = data||[]; }
+    }
+    if (cloud){
+      // collapse any same-name duplicates (e.g. from a historical double-seed): keep the oldest row
+      const seen = new Map(), dupes = [];
+      cloud.forEach(p => { const k = pnorm(p.name); if (seen.has(k)) dupes.push(p.id); else seen.set(k, p); });
+      if (dupes.length) sb.from("projects").delete().in("id", dupes).then(()=>{}, ()=>{});
+      PROJECTS = Array.from(seen.values()).map(p => ({ id:p.id, name:p.name, doc: p.doc||{} }));
+      if (!PROJECTS.length){ PROJECTS = seedProjects(); for (const p of PROJECTS) await upsertProjectCloud(p); }
+      projSaveLocal();
+    } else {
+      PROJECTS = projLoadLocal();
+      if (!PROJECTS.length){ PROJECTS = seedProjects(); projSaveLocal(); }
+    }
+    projectsLoaded = true;
+    refreshProjectOptions();
+  })();
+  try { return await projLoadInflight; } finally { projLoadInflight = null; }
 }
 // typing a new project name into a task's Project field makes it first-class automatically
 function registerProjectName(name){

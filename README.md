@@ -137,10 +137,10 @@ them and run KPIs**, use the cloud-backed version:
 - **Dark mode** — a 🌙 toggle in the header (also on the shared dashboard).
 - **Per-recipient share links** — create multiple labelled read-only links (one per person)
   from **Share dashboard ▾**; copy or **revoke any one** without affecting the others.
-  Every **new link is automatically shortened** to a tidy `is.gd`/`tinyurl` URL that's easy to
-  paste into an email or chat (older links keep a manual **⚡ Shorten** button). The shortening
-  runs in a Supabase Edge Function (`shorten`) that only shortens your own dashboard links; if
-  the shortener is ever unavailable, the full link is used instead.
+  Links are the **full, direct dashboard URL** — recipients land straight on the dashboard,
+  with no third-party URL-shortener bounce page in between. (If you previously sent someone a
+  shortened link that now shows an interstitial page, just re-copy the link here and re-send —
+  the underlying token is unchanged, so their access carries over.)
 - **Exec hero** — the shared dashboard opens with a polished headline panel: large KPI tiles
   (completion · avg progress · at-risk · blocked · total tasks · weeks tracked), each with a
   **week-over-week trend** arrow (green = better, red = worse) — designed to read cleanly for
@@ -169,12 +169,12 @@ tag into a first-class thing, without changing how the weekly workflow feels:
   autocompletes from this registry (with a colour dot), so names stay consistent instead of
   fragmenting into `Roadmap` / `Road Maps` / `roadmaps`. Typing a brand-new name registers it
   automatically.
-  - **Recurring checklists (templates).** Give a project a reusable set of steps — for **AI Weekly**:
-    *collect signals → draft → review → publish*, each with its own action items and a due-date
-    offset. Click **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps
-    drop into the current week as tasks, pre-filled with their action items and due dates. It
-    de-dupes, so starting twice won't double-add. Two projects come **seeded** — *AI Weekly* and
-    *Road Maps* — ready to edit.
+  - **Recurring checklists (templates).** Give a project a reusable set of steps (e.g. *collect →
+    draft → review → publish*), each with its own action items and a due-date offset. Click
+    **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps drop into the
+    current week as tasks, pre-filled with their action items and due dates. It de-dupes, so
+    starting twice won't double-add. Two projects come **seeded** — *AI Weekly* (empty checklist,
+    add your own steps) and *Road Maps* (a three-step starter).
 - **Portfolio tab** — every project rolled up **across all your weeks** as a card grid: **%
   complete** (all-time), a status bar and **open / at-risk / blocked / overdue / done** counts for
   the latest week it appears in, **next due date**, **last active** week, and its links. Filter by
