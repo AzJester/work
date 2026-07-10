@@ -950,7 +950,15 @@ function mdiamond(cx, cy, half, attrs){
     width:(half*2).toFixed(1), height:(half*2).toFixed(1), rx:2.5,
     transform:"rotate(45 "+cx.toFixed(1)+" "+cy.toFixed(1)+")" }, attrs));
 }
-function fitsInside(label, widthPx){ return (String(label).length * 6.7 + 18) <= widthPx; }
+// Single source of truth for "does this bar's label fit inside the bar?" —
+// used by BOTH packLane (row packing) and renderGantt (painting). Bars ≥15px
+// carry a status pip, which pushes the label right by an extra ~11px; if the
+// two sides ever disagree, an outside-painted label lands on top of whatever
+// the packer placed next to the bar.
+function fitsInside(label, widthPx){
+  const padL = widthPx >= 15 ? 20 : 9;   // must mirror hasPip/padL in renderGantt
+  return (String(label).length * 6.7 + padL + 8) <= widthPx;
+}
 
 /* ---------- auto progress summary (computed from the roadmap, no AI) ---------- */
 let lastSummaryText = "";
@@ -1251,7 +1259,7 @@ function renderGantt(){
         const lab = it.label || "";
         if (lab){
           const padL = hasPip ? 20 : 9;
-          if ((lab.length*6.7 + padL + 8) <= bw){
+          if (fitsInside(lab, bw)){
             g += svgEl("text", { x:(bx+padL).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:txt,
               "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
           } else {
