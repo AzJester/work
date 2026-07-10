@@ -169,12 +169,12 @@ tag into a first-class thing, without changing how the weekly workflow feels:
   autocompletes from this registry (with a colour dot), so names stay consistent instead of
   fragmenting into `Roadmap` / `Road Maps` / `roadmaps`. Typing a brand-new name registers it
   automatically.
-  - **Recurring checklists (templates).** Give a project a reusable set of steps — for **AI Weekly**:
-    *collect signals → draft → review → publish*, each with its own action items and a due-date
-    offset. Click **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps
-    drop into the current week as tasks, pre-filled with their action items and due dates. It
-    de-dupes, so starting twice won't double-add. Two projects come **seeded** — *AI Weekly* and
-    *Road Maps* — ready to edit.
+  - **Recurring checklists (templates).** Give a project a reusable set of steps (e.g. *collect →
+    draft → review → publish*), each with its own action items and a due-date offset. Click
+    **▶ Start this week** (on the Projects tab or a Portfolio card) and those steps drop into the
+    current week as tasks, pre-filled with their action items and due dates. It de-dupes, so
+    starting twice won't double-add. Two projects come **seeded** — *AI Weekly* (empty checklist,
+    add your own steps) and *Road Maps* (a three-step starter).
 - **Portfolio tab** — every project rolled up **across all your weeks** as a card grid: **%
   complete** (all-time), a status bar and **open / at-risk / blocked / overdue / done** counts for
   the latest week it appears in, **next due date**, **last active** week, and its links. Filter by

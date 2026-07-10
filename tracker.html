@@ -2708,12 +2708,7 @@ function projSaveLocal(){ try { localStorage.setItem(PROJ_LS, JSON.stringify(PRO
 function seedProjects(){
   const mk = (name, doc) => ({ id: pid(name), name, doc });
   return [
-    mk("AI Weekly", { color:"#4F46E5", type:"Content", status:"Active", cadence:"Weekly", owner:"", links:[], template:{ items:[
-      { task:"Collect AI news & signals", off:0, items:["Newsletters & feeds","Internal Slack / Teams","Vendor & model releases"] },
-      { task:"Draft AI Weekly", off:2, items:["Headline + BLUF","3–5 items, each with the so-what","Links & sources"] },
-      { task:"Review & edit AI Weekly", off:3, items:["Self-edit / human-voice pass","SME or leadership check"] },
-      { task:"Publish & distribute AI Weekly", off:4, pri:"High", items:["Send to distribution list","Post to channel","Log outcome here"] },
-    ] } }),
+    mk("AI Weekly", { color:"#4F46E5", type:"Content", status:"Active", cadence:"Weekly", owner:"", links:[], template:{ items:[] } }),
     mk("Road Maps", { color:"#0EA5E9", type:"Program", status:"Active", cadence:"Weekly", owner:"", links:[{label:"Roadmap Builder", url:"roadmap.html"}], template:{ items:[
       { task:"Update roadmap status & dates", off:0, items:["Pull latest from teams","Update % and statuses","Flag slips / at-risk"] },
       { task:"Review upcoming milestones & gates", off:1, items:["Next 2–4 weeks","Dependencies","Owners confirmed"] },
@@ -2734,21 +2729,33 @@ function persistProject(p){
   clearTimeout(projSaveTimers[p.id]);
   projSaveTimers[p.id] = setTimeout(() => upsertProjectCloud(p), 500);
 }
+let projLoadInflight = null;
 async function loadProjects(){
-  let cloud = null;
-  if (session){
-    const { data, error } = await sb.from("projects").select("id,name,doc").order("created_at",{ascending:true});
-    if (error){ projTableOk=false; } else { projTableOk=true; cloud = data||[]; }
-  }
-  if (cloud){
-    PROJECTS = cloud.map(p => ({ id:p.id, name:p.name, doc: p.doc||{} }));
-    if (!PROJECTS.length){ PROJECTS = seedProjects(); for (const p of PROJECTS) await upsertProjectCloud(p); projSaveLocal(); }
-  } else {
-    PROJECTS = projLoadLocal();
-    if (!PROJECTS.length){ PROJECTS = seedProjects(); projSaveLocal(); }
-  }
-  projectsLoaded = true;
-  refreshProjectOptions();
+  // single-flight: sign-in and tab clicks can all request a load at once — share one
+  // in-flight fetch so an empty table can't be seeded more than once (dupe-seed race)
+  if (projLoadInflight) return projLoadInflight;
+  projLoadInflight = (async () => {
+    let cloud = null;
+    if (session){
+      const { data, error } = await sb.from("projects").select("id,name,doc").order("created_at",{ascending:true});
+      if (error){ projTableOk=false; } else { projTableOk=true; cloud = data||[]; }
+    }
+    if (cloud){
+      // collapse any same-name duplicates (e.g. from a historical double-seed): keep the oldest row
+      const seen = new Map(), dupes = [];
+      cloud.forEach(p => { const k = pnorm(p.name); if (seen.has(k)) dupes.push(p.id); else seen.set(k, p); });
+      if (dupes.length) sb.from("projects").delete().in("id", dupes).then(()=>{}, ()=>{});
+      PROJECTS = Array.from(seen.values()).map(p => ({ id:p.id, name:p.name, doc: p.doc||{} }));
+      if (!PROJECTS.length){ PROJECTS = seedProjects(); for (const p of PROJECTS) await upsertProjectCloud(p); }
+      projSaveLocal();
+    } else {
+      PROJECTS = projLoadLocal();
+      if (!PROJECTS.length){ PROJECTS = seedProjects(); projSaveLocal(); }
+    }
+    projectsLoaded = true;
+    refreshProjectOptions();
+  })();
+  try { return await projLoadInflight; } finally { projLoadInflight = null; }
 }
 // typing a new project name into a task's Project field makes it first-class automatically
 function registerProjectName(name){
