@@ -3747,7 +3747,7 @@ async function loadPortfolio(){
   const [{ data: reps, error:e1 }, { data: tks, error:e2 }, rmRes] = await Promise.all([
     sb.from("reports").select("id,week_ending"),
     sb.from("tasks").select("report_id,logical_id,project,status,due_date"),
-    sb.from("roadmaps").select("id,title,subtitle,updated_at,doc").then(r=>r, ()=>({data:null}))
+    sb.rpc("roadmap_owner_portfolio", { p_include_deleted:false }).then(r=>r, ()=>({data:null}))
   ]);
   if (e1 || e2){ body.innerHTML = '<div class="muted-empty">Could not load portfolio: '+esc((e1||e2).message)+'</div>'; return; }
   const wkOf = {}; (reps||[]).forEach(r => wkOf[r.id]=r.week_ending);

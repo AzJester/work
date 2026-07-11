@@ -178,6 +178,19 @@ test("Supabase browser client is self-hosted and pinned to an exact version", ()
   );
 });
 
+test("portfolio roadmap cards use the hardened owner RPC", () => {
+  assert.match(
+    tracker,
+    /\.rpc\s*\(\s*["']roadmap_owner_portfolio["']\s*,\s*\{\s*p_include_deleted\s*:\s*false\s*\}\s*\)/,
+    "Load roadmap portfolio cards through the owner RPC",
+  );
+  assert.doesNotMatch(
+    tracker,
+    /\.from\s*\(\s*["'](?:roadmaps|roadmap_shares)["']\s*\)/,
+    "The tracker must not bypass roadmap RPCs with direct table access",
+  );
+});
+
 test("CSV escaping neutralizes spreadsheet formulas before quoting", () => {
   const functionSource = extractFunctionSource(tracker, "csvEscape");
   const csvEscape = vm.runInNewContext(`(${functionSource})`, Object.create(null));
