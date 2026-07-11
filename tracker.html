@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shane's Weekly Tracker — Cloud</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#4F46E5" />
+<link rel="apple-touch-icon" href="assets/tracker-icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Tracker" />
 <meta name="description" content="Cloud-backed weekly task tracker: sign in, log tasks daily, carry unfinished work forward, run KPIs, and export reports for leadership." />
 <style>
   :root {
@@ -578,6 +584,7 @@
             <button class="menuitem" id="importNotes" type="button" role="menuitem" title="Paste meeting notes from an AI note taker and turn them into tasks">📝 Import notes</button>
             <button class="menuitem" id="aiSummary" type="button" role="menuitem" title="Draft an executive summary of this week with AI">✨ Draft summary</button>
             <button class="menuitem" id="planDay" type="button" role="menuitem" title="Turn this week's open tasks into a prioritized plan for today">✨ Plan my day</button>
+            <button class="menuitem" id="dayWizard" type="button" role="menuitem" title="Walk through every task missing today's update, one at a time">✔ Close out my day</button>
             <button class="menuitem" id="save" type="button" role="menuitem" title="Saves automatically as you type — click to save now">☁ Save now</button>
           </div>
         </div>
@@ -599,6 +606,7 @@
 
       <!-- Today panel: morning triage at a glance; click a chip to filter the list -->
       <div class="todaybar" id="todayBar" hidden></div>
+      <button class="fab" id="fabAdd" type="button" title="Add task" aria-label="Add task">+</button>
 
       <div class="tcard">
         <table class="tasks">
@@ -723,6 +731,35 @@
         <span class="spacer" style="flex:1 1 auto"></span>
         <span class="ai-dash" id="aiDash"></span>
         <button class="btn ghost sm" id="aiDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dayModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>✔ Close out my day</strong><button class="ibtn" id="dayClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body" id="dayBody"></div>
+      <div class="modal-foot" id="dayFoot"></div>
+    </div>
+  </div>
+
+  <div id="qcModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>Quick add</strong><button class="ibtn" id="qcClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body">
+        <input class="qc-input" id="qcInput" type="text" placeholder="Task title  @project  !fri  #high" autocomplete="off" />
+        <div class="qc-preview" id="qcPreview"></div>
+        <p class="qc-hint"><b>@</b>project · <b>!</b>today !tomorrow !fri !+3 !7/15 · <b>#</b>high #med #low — <b>Enter</b> to add, <b>Esc</b> to close</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="ckModal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-card">
+      <div class="modal-head"><strong>Jump to…</strong><button class="ibtn" id="ckClose" type="button" title="Close">✕</button></div>
+      <div class="modal-body">
+        <input class="qc-input" id="ckInput" type="text" placeholder="Type a task, tab, or action…" autocomplete="off" />
+        <div class="ck-list" id="ckList"></div>
       </div>
     </div>
   </div>
@@ -902,6 +939,64 @@
   .btn svg { width:13px; height:13px; display:inline-block; vertical-align:-2px; margin-right:4px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   #themeToggle { display:inline-flex; align-items:center; justify-content:center; }
   #themeToggle svg { width:15px; height:15px; display:block; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* ================= NEXT-TIER BATCH ================= */
+  /* suite-unified masthead: the same serif voice as the dashboard & roadmap */
+  :root { --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; }
+  .mast h1 { font-family:var(--serif); font-weight:600; font-size:23px; letter-spacing:0; }
+  .gate h2 { font-family:var(--serif); font-weight:600; letter-spacing:0; }
+
+  /* sticky column header while scrolling a long week */
+  .tasks thead th { position:sticky; top:0; z-index:3; background:var(--card); box-shadow:0 1px 0 var(--line); }
+
+  /* drag-and-drop reorder (manual sort): grab handle + drop indicator */
+  .draghandle { cursor:grab; color:var(--mut); font-size:13px; letter-spacing:1px; user-select:none;
+    border:1px solid var(--line); border-radius:6px; padding:3px 5px; background:transparent; }
+  .draghandle:hover { color:var(--accent); border-color:var(--accent); }
+  .tasks tr.dragging { opacity:.45; }
+  .tasks tr.drop-above > td { box-shadow: inset 0 3px 0 var(--accent) !important; }
+
+  /* richer collapsed rows: mini progress bar in the summary line */
+  .rs-pg { display:inline-block; vertical-align:middle; width:44px; height:5px; border-radius:999px; background:var(--track-bg); overflow:hidden; }
+  .rs-pg i { display:block; height:100%; background:var(--accent); border-radius:999px; }
+
+  /* mobile / touch pass + floating add button */
+  .fab { display:none; position:fixed; right:18px; bottom:18px; z-index:60; width:54px; height:54px; border-radius:50%;
+    align-items:center; justify-content:center; font-size:28px; line-height:1; color:var(--accent-ink);
+    background:linear-gradient(180deg, var(--accent-2), var(--accent)); border:1px solid var(--accent);
+    box-shadow:0 10px 26px -6px rgba(79,70,229,.6); cursor:pointer; }
+  @media (max-width:640px){
+    .ibtn { min-width:34px; min-height:34px; }
+    select.chip, .pri { min-height:34px; }
+    .tb-chip { padding:7px 13px; }
+    .fab { display:flex; }
+  }
+  @media print { .fab { display:none !important; } }
+
+  /* close-out-my-day wizard */
+  .dw-task { font-family:var(--disp); font-weight:700; font-size:16px; color:var(--ink); margin:0 0 4px; }
+  .dw-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-size:12px; color:var(--ink-2); }
+  .dw-count { font-family:var(--mono); font-size:11px; color:var(--mut); }
+  .dw-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .dw-row .prog { flex:1 1 180px; }
+  .dw-items { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .dw-note { width:100%; font:inherit; font-size:13.5px; color:var(--ink); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:9px; padding:9px 11px; resize:vertical; min-height:64px; }
+  .dw-note:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .dw-done { text-align:center; padding:22px 8px; font-size:15px; color:var(--ink); }
+
+  /* quick capture + command palette */
+  .qc-input { width:100%; font:inherit; font-size:15px; color:var(--ink); background:var(--input-bg);
+    border:1px solid var(--line-2); border-radius:10px; padding:11px 13px; }
+  .qc-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .qc-preview { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; min-height:24px; }
+  .qc-chipp { font-size:11.5px; font-weight:600; border-radius:7px; padding:3px 9px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--line); }
+  .qc-hint { font-size:11px; color:var(--mut); margin:10px 0 0; }
+  .ck-list { margin-top:10px; max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+  .ck-item { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13.5px; color:var(--ink); }
+  .ck-item .ck-kind { font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); margin-left:auto; }
+  .ck-item.active, .ck-item:hover { background:var(--accent-soft); color:var(--accent); }
+  .ck-empty { padding:14px 10px; font-size:12.5px; color:var(--mut); }
 </style>
 
 <script type="module">
@@ -1410,6 +1505,7 @@ function renderRows(){
     const sub = document.createElement("div"); sub.className = "row-sub"; sub.hidden = open;
     const parts = [];
     if (row.project && row.project.trim()) { const pc = projectColor(row.project) || "transparent"; parts.push('<span class="rs-proj" data-c="1" style="--pc:'+pc+'">'+escHtml(row.project.trim())+'</span>'); }
+    if ((+row.prog||0) > 0 && row.status !== "Done") parts.push('<span class="rs-pg" title="'+(+row.prog||0)+'% complete"><i style="width:'+(+row.prog||0)+'%"></i></span>');
     const subItems = normItems(row.items);
     if (subItems.length) { const d = subItems.filter(x=>x.done).length; parts.push('<span class="rs-chk'+(d===subItems.length?' all':'')+'">☑ '+d+'/'+subItems.length+'</span>'); }
     if (row.due) parts.push('<span class="rs-due'+(row.due<todayIso()&&row.status!=="Done"?' od':'')+'">'+shortDate(row.due)+'</span>');
@@ -1451,10 +1547,20 @@ function renderRows(){
     const tdAct = document.createElement("td"); tdAct.className = "col-act";
     const grp = document.createElement("div"); grp.className = "rowbtns";
     if (manual) {
+      const handle = document.createElement("span");
+      handle.className = "draghandle"; handle.textContent = "⠿"; handle.title = "Drag to reorder";
+      handle.addEventListener("mousedown", () => { tr.draggable = true; });
+      handle.addEventListener("touchstart", () => { tr.draggable = true; }, { passive:true });
+      tr.addEventListener("dragstart", (e) => {
+        dragIdx = i; tr.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", ""); } catch(_){}
+      });
+      tr.addEventListener("dragend", () => { tr.draggable = false; tr.classList.remove("dragging"); clearDropMarks(); dragIdx = null; });
       const up = mkIbtn("▲","Move task up",() => moveRow(i,-1));
       const dn = mkIbtn("▼","Move task down",() => moveRow(i,1));
       up.disabled = (i===0); dn.disabled = (i===state.rows.length-1);
-      grp.appendChild(up); grp.appendChild(dn);
+      grp.appendChild(handle); grp.appendChild(up); grp.appendChild(dn);
     }
     const del = mkIbtn(ICON_TRASH,"Delete this task",() => {
       const removed = state.rows[i], at = i;
@@ -3169,6 +3275,265 @@ $("planCopy").addEventListener("click", async function(){
   const ok = await copyRich('<div>' + sanitizeHtml(mdToHtml(planMd)) + '</div>', planMd);
   this.textContent = ok ? "Copied ✓" : "Copy failed"; setTimeout(() => this.textContent = "Copy", 1100);
 });
+
+// ============ ✔ CLOSE OUT MY DAY — rapid-fire walk through tasks missing today's update ============
+let dwQueue = [], dwIdx = 0, dwUpdated = 0;
+function openDayWizard(){
+  dwQueue = state.rows.filter(r => needsUpdate(r));
+  dwIdx = 0; dwUpdated = 0;
+  $("dayModal").hidden = false;
+  renderDayStep();
+}
+function closeDayWizard(){
+  $("dayModal").hidden = true;
+  renderRows();
+  if (dwUpdated) scheduleSave();
+}
+function renderDayStep(){
+  const body = $("dayBody"), foot = $("dayFoot");
+  if (dwIdx >= dwQueue.length){
+    body.innerHTML = '<div class="dw-done">' + (dwQueue.length
+      ? 'Day closed out — <b>'+dwUpdated+'</b> of '+dwQueue.length+' task'+(dwQueue.length===1?'':'s')+' updated. 🎉'
+      : 'All caught up — every task already has today’s update. 🎉') + '</div>';
+    foot.innerHTML = "";
+    const done = document.createElement("button"); done.type="button"; done.className="btn"; done.textContent="Done";
+    done.addEventListener("click", closeDayWizard);
+    foot.appendChild(done);
+    return;
+  }
+  const row = dwQueue[dwIdx];
+  body.innerHTML = "";
+  const t = document.createElement("div"); t.className = "dw-task"; t.textContent = row.task || "(untitled)"; body.appendChild(t);
+  const meta = document.createElement("div"); meta.className = "dw-meta";
+  const bits = [];
+  if (row.project && row.project.trim()){ const pc = projectColor(row.project);
+    bits.push('<span class="projdot" style="background:'+(pc||"transparent")+';border-color:'+(pc||"var(--line-2)")+'"></span>'+escHtml(row.project.trim())); }
+  if (row.due) bits.push("due " + shortDate(row.due));
+  meta.innerHTML = bits.join(" · ");
+  if (bits.length) body.appendChild(meta);
+  const rowc = document.createElement("div"); rowc.className = "dw-row";
+  const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status);
+  STATUSES.forEach(s => { const o=document.createElement("option"); o.value=s.v; o.textContent=s.v; if(s.v===row.status)o.selected=true; sel.appendChild(o); });
+  const rng = document.createElement("input"); rng.type="range"; rng.min="0"; rng.max="100"; rng.step="5"; rng.value=row.prog; paintRange(rng);
+  const pv = document.createElement("span"); pv.className="pv"; pv.textContent=row.prog+"%";
+  sel.addEventListener("change", () => {
+    row.status = sel.value; sel.className = "chip " + statusClass(row.status);
+    if (row.status === "Done"){ if (!row.completed) row.completed = todayIso(); row.prog = 100; rng.value = "100"; paintRange(rng); pv.textContent = "100%"; }
+    else row.completed = "";
+  });
+  rng.addEventListener("input", () => { row.prog = parseInt(rng.value,10)||0; pv.textContent = row.prog+"%"; paintRange(rng); });
+  const prog = document.createElement("div"); prog.className="prog"; prog.style.flex="1 1 180px";
+  prog.appendChild(rng); prog.appendChild(pv);
+  rowc.appendChild(sel); rowc.appendChild(prog); body.appendChild(rowc);
+  const items = normItems(row.items); row.items = items;
+  if (items.length){
+    const wrap = document.createElement("div"); wrap.className = "dw-items";
+    items.forEach(it => {
+      const lab = document.createElement("label"); lab.className = "citem" + (it.done ? " done" : "");
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!it.done;
+      cb.addEventListener("change", () => { it.done = cb.checked; lab.classList.toggle("done", cb.checked); });
+      const sp = document.createElement("span"); sp.textContent = it.text; sp.style.fontSize = "13px";
+      lab.appendChild(cb); lab.appendChild(sp); wrap.appendChild(lab);
+    });
+    body.appendChild(wrap);
+  }
+  const note = document.createElement("textarea"); note.className = "dw-note";
+  note.placeholder = "What happened today? (one line is plenty — saved as a dated update)";
+  body.appendChild(note);
+  foot.innerHTML = "";
+  const count = document.createElement("span"); count.className = "dw-count"; count.textContent = (dwIdx+1) + " of " + dwQueue.length;
+  const spacer = document.createElement("span"); spacer.style.flex = "1 1 auto";
+  const skip = document.createElement("button"); skip.type="button"; skip.className="btn ghost sm"; skip.textContent="Skip";
+  skip.addEventListener("click", () => { dwIdx++; renderDayStep(); });
+  const save = document.createElement("button"); save.type="button"; save.className="btn sm"; save.textContent="Save & next";
+  save.addEventListener("click", () => {
+    const txt = note.value.trim();
+    const hadContent = (row.note||"").trim() && row.note !== "<br>";
+    if (txt) row.note = escHtml(shortDate(todayIso()) + ": " + txt) + (hadContent ? "<br>" + row.note : "");
+    else if (!updatedToday(row)) row.note = escHtml(shortDate(todayIso()) + ": ") + (hadContent ? "<br>" + row.note : "");
+    dwUpdated++; dwIdx++; renderDayStep();
+  });
+  foot.appendChild(count); foot.appendChild(spacer); foot.appendChild(skip); foot.appendChild(save);
+  note.focus();
+}
+$("dayWizard").addEventListener("click", openDayWizard);
+$("dayClose").addEventListener("click", closeDayWizard);
+
+// ============ QUICK CAPTURE — press N, type "title @project !fri #high" ============
+const QC_DOW = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
+function parseQuickDue(tok){
+  const t = String(tok||"").toLowerCase();
+  if (t === "today") return todayIso();
+  if (t === "tomorrow" || t === "tmrw") return addDaysIso(todayIso(), 1);
+  if (/^\+\d+$/.test(t)) return addDaysIso(todayIso(), parseInt(t.slice(1),10));
+  for (const k in QC_DOW){
+    if (t === k || t === k+"day" || (k==="tue" && (t==="tues"||t==="tuesday")) || (k==="thu" && (t==="thur"||t==="thurs"||t==="thursday")) || (k==="wed" && t==="wednesday") || (k==="sat" && t==="saturday") || (k==="sun" && t==="sunday")){
+      const now = new Date(); let d = (QC_DOW[k] - now.getDay() + 7) % 7; if (!d) d = 7;
+      return addDaysIso(todayIso(), d);
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const md = t.match(/^(\d{1,2})[\/.](\d{1,2})$/);
+  if (md){
+    const now = new Date(); let y = now.getFullYear();
+    const iso = (yy) => yy + "-" + String(md[1]).padStart(2,"0") + "-" + String(md[2]).padStart(2,"0");
+    return iso(y) < todayIso() ? iso(y+1) : iso(y);
+  }
+  return "";
+}
+function parseQuick(text){
+  const words = String(text||"").trim().split(/\s+/).filter(Boolean);
+  const out = { task:"", project:"", due:"", pri:"" };
+  const titleWords = [];
+  for (let i = 0; i < words.length; i++){
+    const w = words[i];
+    if (w[0] === "#" && w.length > 1){
+      const p = w.slice(1).toLowerCase();
+      const pri = (p==="high"||p==="h") ? "High" : (p==="low"||p==="l") ? "Low" : (p==="med"||p==="medium"||p==="m") ? "Med" : "";
+      if (pri){ out.pri = pri; continue; }
+    }
+    if (w[0] === "!" && w.length > 1){
+      const d = parseQuickDue(w.slice(1));
+      if (d){ out.due = d; continue; }
+    }
+    if (w[0] === "@" && w.length > 1){
+      const first = w.slice(1);
+      let best = null, blen = 0;   // greedy longest match against registered project names
+      PROJECTS.forEach(p => {
+        const parts = p.name.trim().split(/\s+/);
+        const cand = [first].concat(words.slice(i+1, i+parts.length));
+        if (cand.length === parts.length && cand.join(" ").toLowerCase() === parts.join(" ").toLowerCase() && parts.length > blen){ best = p.name; blen = parts.length; }
+      });
+      if (best){ out.project = best; i += blen - 1; } else out.project = first;
+      continue;
+    }
+    titleWords.push(w);
+  }
+  out.task = titleWords.join(" ");
+  return out;
+}
+function qcRender(){
+  const p = parseQuick($("qcInput").value);
+  const chips = [];
+  if (p.task) chips.push('<span class="qc-chipp">'+escHtml(p.task)+'</span>');
+  if (p.project) chips.push('<span class="qc-chipp">📁 '+escHtml(p.project)+'</span>');
+  if (p.due) chips.push('<span class="qc-chipp">🗓 '+shortDate(p.due)+'</span>');
+  if (p.pri) chips.push('<span class="qc-chipp">'+p.pri+' priority</span>');
+  $("qcPreview").innerHTML = chips.join("");
+  return p;
+}
+function openQuickCapture(){ $("qcModal").hidden = false; $("qcInput").value = ""; $("qcPreview").innerHTML = ""; $("qcInput").focus(); }
+function qcAdd(){
+  const p = qcRender();
+  if (!p.task){ $("qcInput").focus(); return; }
+  const r = blankRow();
+  r.task = p.task; r.project = p.project || ""; r.due = p.due || ""; if (p.pri) r.pri = p.pri;
+  r.started = todayIso();
+  if (state.rows.length === 1 && isBlankRow(state.rows[0])) state.rows = [];
+  state.rows.push(r);
+  if (p.project) registerProjectName(p.project);
+  $("qcModal").hidden = true;
+  showTab("week"); renderRows(); scheduleSave();
+  setSave("", "Added “" + p.task.slice(0,40) + "”" + (p.due ? " · due " + shortDate(p.due) : ""));
+}
+$("qcInput").addEventListener("input", qcRender);
+$("qcInput").addEventListener("keydown", (e) => { if (e.key === "Enter"){ e.preventDefault(); qcAdd(); } });
+$("qcClose").addEventListener("click", () => { $("qcModal").hidden = true; });
+
+// ============ COMMAND PALETTE — Ctrl/Cmd+K ============
+let ckItems = [], ckActive = 0;
+function ckBuild(){
+  const items = [
+    { label:"Quick add task (N)", kind:"action", run:openQuickCapture },
+    { label:"Add empty task", kind:"action", run:() => { showTab("week"); $("add").click(); } },
+    { label:"Log today into all tasks", kind:"action", run:() => { showTab("week"); logTodayAll(); } },
+    { label:"Close out my day", kind:"action", run:openDayWizard },
+    { label:"✨ Plan my day", kind:"action", run:() => { $("planModal").hidden = false; runPlanDay(); } },
+    { label:"✨ Draft weekly summary", kind:"action", run:() => $("aiSummary").click() },
+    { label:"📝 Import meeting notes", kind:"action", run:() => $("importNotes").click() },
+    { label:"Toggle dark mode", kind:"action", run:() => $("themeToggle").click() },
+    { label:"Save now", kind:"action", run:() => saveWeek(true) },
+  ];
+  const names = { week:"This week", portfolio:"Portfolio", projects:"Projects", history:"History", completed:"Completed", kudos:"Kudos", kpis:"KPIs" };
+  Object.keys(tabs).forEach(k => items.push({ label:"Go to " + names[k], kind:"tab", run:() => showTab(k) }));
+  state.rows.forEach(r => {
+    if (r.task && r.task.trim()) items.push({ label:r.task.trim().slice(0,70), kind:"task", run:() => {
+      showTab("week"); dayFilter = null; r._open = true; pendingFocus = { row:r, type:"note" }; renderRows();
+    } });
+  });
+  return items;
+}
+function ckRender(){
+  const q = $("ckInput").value.trim().toLowerCase();
+  const list = $("ckList");
+  const vis = ckItems.filter(it => !q || it.label.toLowerCase().includes(q));
+  ckActive = Math.max(0, Math.min(ckActive, vis.length - 1));
+  list.innerHTML = vis.length ? "" : '<div class="ck-empty">No matches.</div>';
+  vis.forEach((it, i) => {
+    const d = document.createElement("div"); d.className = "ck-item" + (i === ckActive ? " active" : "");
+    d.innerHTML = '<span>' + escHtml(it.label) + '</span><span class="ck-kind">' + it.kind + '</span>';
+    d.addEventListener("click", () => { $("ckModal").hidden = true; it.run(); });
+    list.appendChild(d);
+  });
+  list._vis = vis;
+}
+function openPalette(){ ckItems = ckBuild(); ckActive = 0; $("ckModal").hidden = false; $("ckInput").value = ""; ckRender(); $("ckInput").focus(); }
+$("ckInput").addEventListener("input", () => { ckActive = 0; ckRender(); });
+$("ckInput").addEventListener("keydown", (e) => {
+  const vis = $("ckList")._vis || [];
+  if (e.key === "ArrowDown"){ e.preventDefault(); ckActive = Math.min(ckActive + 1, vis.length - 1); ckRender(); }
+  else if (e.key === "ArrowUp"){ e.preventDefault(); ckActive = Math.max(ckActive - 1, 0); ckRender(); }
+  else if (e.key === "Enter"){ e.preventDefault(); const it = vis[ckActive]; if (it){ $("ckModal").hidden = true; it.run(); } }
+});
+$("ckClose").addEventListener("click", () => { $("ckModal").hidden = true; });
+
+// global hotkeys: N = quick add · Ctrl/Cmd+K = palette · Esc closes these overlays
+function anyModalOpen(){ return Array.from(document.querySelectorAll(".modal")).some(m => !m.hidden); }
+document.addEventListener("keydown", (e) => {
+  const t = e.target;
+  const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "k"){
+    if (!session) return; e.preventDefault(); openPalette(); return;
+  }
+  if (e.key === "Escape"){
+    [["qcModal"],["ckModal"],["dayModal", closeDayWizard],["planModal"]].forEach(([id, closer]) => {
+      const m = $(id); if (m && !m.hidden){ if (closer) closer(); else m.hidden = true; }
+    });
+    return;
+  }
+  if (!typing && !anyModalOpen() && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "n" || e.key === "N")){
+    if (!session) return; e.preventDefault(); openQuickCapture();
+  }
+});
+
+// ============ DRAG-AND-DROP REORDER (manual sort) ============
+let dragIdx = null;
+function clearDropMarks(){ $("rows").querySelectorAll("tr.drop-above").forEach(t => t.classList.remove("drop-above")); }
+$("rows").addEventListener("dragover", (e) => {
+  if (dragIdx === null) return;
+  e.preventDefault();
+  const tr = e.target.closest("tr"); if (!tr || tr.dataset.disp === undefined) return;
+  clearDropMarks();
+  if (!tr.classList.contains("detail")) tr.classList.add("drop-above");
+});
+$("rows").addEventListener("drop", (e) => {
+  if (dragIdx === null) return;
+  e.preventDefault();
+  const tr = e.target.closest("tr"); clearDropMarks();
+  const from = dragIdx; dragIdx = null;
+  if (!tr || tr.dataset.disp === undefined) return;
+  const it = visibleOrder[parseInt(tr.dataset.disp, 10)];
+  if (!it) return;
+  const target = it.idx;
+  if (from === target) return;
+  const moved = state.rows.splice(from, 1)[0];
+  state.rows.splice(target > from ? target - 1 : target, 0, moved);
+  renderRows(); scheduleSave();
+});
+
+// PWA: installable app shell (no caching — always loads fresh)
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+$("fabAdd").addEventListener("click", () => { $("add").click(); });
 
 (async function init(){
   const { data } = await sb.auth.getSession();
