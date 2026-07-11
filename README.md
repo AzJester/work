@@ -492,6 +492,44 @@ The track IDs, classes, Pk values, and timings are illustrative for the demo —
 system performance. By doctrine, AI assists and accelerates the kill chain; a human
 retains release authority over the use of force.
 
+## Radar Signal Processing Chain — Simulator
+
+A standalone, self-contained page that models a pulsed radar's full **transmit and
+receive signal chain** — waveform generation, digital/analog up- and down-conversion,
+the antenna/T-R switch, and pulse-compression range recovery — and actually runs the
+math, not just an animation:
+
+### → https://azjester.github.io/work/radar-signal-chain.html
+
+- **Live block diagram** — the transmitter chain (Waveform generator → DUC → DAC → Up
+  converter → T/R switch → Antenna array) and the mirrored receiver chain (Antenna →
+  T/R switch → Down converter → ADC → DDC → Digital signal processing) light up in
+  sequence as a pulse "travels" through the system, matching the classic radar signal
+  chain reference diagram.
+- **Real DSP under the hood** — an LFM chirp is generated at baseband, interpolated and
+  quadrature-mixed up to a digital IF (the DUC), sent through a simulated channel with a
+  time delay (target range) and additive noise (SNR), then mixed back down and decimated
+  (the DDC), and **pulse-compressed with a matched filter** — the same principle real
+  pulse-compression radars use to get fine range resolution from a long, low-power pulse.
+- **8 live spectrum plots** at every domain checkpoint (Baseband / Digital IF / Analog IF
+  / RF, for both transmit and receive) — the baseband and digital-IF plots are real FFTs
+  of the simulated samples; the analog-IF/RF plots are illustrative bumps drawn to scale
+  and labeled with the actual frequencies.
+- **A-scope range profile** — the matched-filter output plotted against range, with the
+  true target range marked, so you can see the compressed pulse peak land in the right
+  place (and degrade gracefully as you drop the SNR slider).
+- **Interactive controls** — RF carrier (9.0–10.0 GHz), IF center (60–120 MHz), bandwidth
+  (10–40 MHz), sample rate (200–500 MSPS), unambiguous range, target range, and receive
+  SNR — all update the diagram, spectra, waveform, and range estimate live. Derived
+  readouts show f<sub>LO</sub>, the required interpolation/decimation factor, range
+  resolution (c / 2B), and a Nyquist check.
+- **Play / Pause / Send single pulse** — auto-plays by default (a fresh noise draw each
+  cycle), respects `prefers-reduced-motion` by starting paused.
+
+One file, **zero external dependencies**, dark HUD styling consistent with the LDAWIF
+page above. Frequencies, sample rates, and the range estimate are illustrative/educational
+— not a specification for any real radar system.
+
 ## Files
 
 | File | Purpose |
@@ -502,6 +540,7 @@ retains release authority over the use of force.
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `roadmap.html` | The **Roadmap Builder** — build project roadmaps from templates, a form, or a plain-language description; edit lanes/milestones/statuses on a timeline; export JSON/PNG/PDF; optional cloud sync + read-only share links. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
+| `radar-signal-chain.html` | The **Radar Signal Processing Chain Simulator** — an interactive, in-browser DSP simulation of a pulsed radar's transmit/receive chain (waveform generation → up/down conversion → pulse compression → range), with live spectra and an animated block diagram. |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
 | `.github/workflows/pages.yml` | Publishes the site to GitHub Pages on push to `main`. |
