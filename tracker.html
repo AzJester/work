@@ -970,6 +970,11 @@
     select.chip, .pri { min-height:34px; }
     .tb-chip { padding:7px 13px; }
     .fab { display:flex; }
+    /* tab bar: wrap into rows so Completed / Kudos / KPIs never fall off-screen */
+    .tabs { display:flex; flex-wrap:wrap; width:100%; }
+    .tabs button { flex:1 1 auto; text-align:center; padding:8px 10px; }
+    /* long save/error messages must wrap, not push the page wider */
+    .savestate { flex:1 1 100%; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
   }
   @media print { .fab { display:none !important; } }
 
