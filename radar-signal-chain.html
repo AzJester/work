@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Radar Signal Processing Chain — Simulator</title>
 <meta name="description" content="An interactive, in-browser simulation of a pulsed radar's transmit and receive signal chain — waveform generation, digital/analog up- and down-conversion, ADC/DAC, and pulse-compression range recovery — with live spectra and a working matched filter." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%230B1220' stroke='%2335DEFF' stroke-width='2.5'/%3E%3Cpath d='M16 16 L25 6' stroke='%2335DEFF' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2335DEFF'/%3E%3C/svg%3E" />
 <style>
   :root {
     --ground:#070B14; --ground-2:#0B1220; --panel:#0E1626; --line:#1B2842; --line-2:#293B5A;
@@ -39,6 +40,7 @@
   .ctl label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between; gap:6px; }
   .ctl label .val { color:var(--cyan); font-weight:600; }
   .ctl input[type=range] { width:100%; accent-color:var(--cyan); height:20px; }
+  .ctl input[type=range]:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; border-radius:6px; }
   .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px; }
   .btn { font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
     color:#04222C; background:linear-gradient(180deg,#6BEBFF,var(--cyan)); border:1px solid #8CF0FF; padding:8px 15px; border-radius:7px; cursor:pointer;
@@ -55,6 +57,7 @@
   .pill.ok { color:var(--green); border-color:rgba(52,224,161,0.4); background:rgba(52,224,161,0.07); }
   .pill.bad { color:var(--red); border-color:rgba(255,93,110,0.5); background:rgba(255,93,110,0.08); }
   .pill i { width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 6px currentColor; }
+  .pill:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
 
   /* ---------- chain diagram ---------- */
   .chain-wrap { display:flex; align-items:stretch; gap:12px; flex-wrap:wrap; }
@@ -74,13 +77,15 @@
   .block.done { border-color:var(--line-2); background:rgba(53,222,255,0.04); }
   .chain-row.rx .block.done { background:rgba(255,177,60,0.04); }
   .arrow { flex:0 0 16px; display:flex; align-items:center; justify-content:center; color:var(--mut); font-size:13px; }
-  .shared { display:flex; flex-direction:column; gap:16px; flex:0 0 168px; }
+  .shared { display:flex; flex-direction:column; gap:4px; flex:0 0 168px; }
   .shared .block { flex:1 1 0; align-items:center; text-align:center; justify-content:center; }
   .shared .block .name { font-size:12px; }
+  .shared .shared-link { flex:0 0 auto; font-size:15px; }
   @media (max-width:820px) {
     .chain-wrap { flex-direction:column; }
     .rows { flex:1 1 auto; }
-    .shared { flex-direction:row; flex:1 1 auto; }
+    .shared { flex-direction:row; flex:1 1 auto; gap:4px; }
+    .shared .shared-link { transform:rotate(-90deg); }
     .blocks { flex-wrap:wrap; }
     .block { flex:1 1 40%; }
   }
@@ -90,13 +95,20 @@
   .spec-card { border:1px solid var(--line); border-radius:10px; background:var(--ground-2); padding:8px 9px 6px; min-width:0; }
   .spec-card .t { font-family:var(--mono); font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between; gap:4px; }
   .spec-card .t .tag { color:var(--mut); font-style:normal; }
+  .spec-card .t .tag.warn { color:var(--red); }
+  .spec-card { transition:border-color .25s, box-shadow .25s; }
+  .spec-card.hot-tx { border-color:rgba(53,222,255,0.55); box-shadow:0 0 12px -4px rgba(53,222,255,0.5); }
+  .spec-card.hot-rx { border-color:rgba(255,177,60,0.55); box-shadow:0 0 12px -4px rgba(255,177,60,0.5); }
   .spec-card canvas { display:block; width:100%; height:78px; margin-top:4px; }
   @media (max-width:820px) { .spectra-row { grid-template-columns:repeat(2,1fr); } }
 
   /* ---------- scope panel ---------- */
   .scope-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:900px) { .scope-grid { grid-template-columns:1fr; } }
-  .scope-card canvas { display:block; width:100%; height:190px; border-radius:8px; background:var(--ground-2); border:1px solid var(--line); }
+  .scope-card canvas { display:block; width:100%; height:190px; border-radius:8px; background:var(--ground-2); border:1px solid var(--line);
+    transition:border-color .25s, box-shadow .25s; }
+  .scope-card.hot canvas { border-color:rgba(255,177,60,0.55); box-shadow:0 0 12px -4px rgba(255,177,60,0.5); }
+  .scope-title { font-family:var(--mono); font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
   .scope-foot { display:flex; gap:8px 14px; flex-wrap:wrap; margin-top:8px; }
 
   /* ---------- legend / notes ---------- */
@@ -118,6 +130,8 @@
 </head>
 <body>
 <div class="wrap">
+  <noscript><p style="color:#FFB13C;border:1px solid #293B5A;border-radius:8px;padding:10px 14px;margin:0;">
+    This simulator is fully client-side and needs JavaScript to run.</p></noscript>
 
   <header class="top">
     <div class="brand">
@@ -133,31 +147,31 @@
     <h2 class="h">Controls</h2>
     <div class="controls-grid">
       <div class="ctl">
-        <label>RF Carrier f<sub>RF</sub> <span class="val" id="v-frf">9.50 GHz</span></label>
+        <label for="c-frf">RF Carrier f<sub>RF</sub> <span class="val" id="v-frf">9.50 GHz</span></label>
         <input type="range" id="c-frf" min="9.0" max="10.0" step="0.05" value="9.5" />
       </div>
       <div class="ctl">
-        <label>IF Center f<sub>IF</sub> <span class="val" id="v-fif">90 MHz</span></label>
+        <label for="c-fif">IF Center f<sub>IF</sub> <span class="val" id="v-fif">90 MHz</span></label>
         <input type="range" id="c-fif" min="60" max="120" step="1" value="90" />
       </div>
       <div class="ctl">
-        <label>Bandwidth B <span class="val" id="v-b">20 MHz</span></label>
+        <label for="c-b">Bandwidth B <span class="val" id="v-b">20 MHz</span></label>
         <input type="range" id="c-b" min="10" max="40" step="1" value="20" />
       </div>
       <div class="ctl">
-        <label>Sampling f<sub>s</sub> <span class="val" id="v-fs">300 MSPS</span></label>
+        <label for="c-fs">Sampling f<sub>s</sub> <span class="val" id="v-fs">300 MSPS</span></label>
         <input type="range" id="c-fs" min="200" max="500" step="10" value="300" />
       </div>
       <div class="ctl">
-        <label>Unambiguous range <span class="val" id="v-runamb">150 km</span></label>
+        <label for="c-runamb">Unambiguous range <span class="val" id="v-runamb">150 km</span></label>
         <input type="range" id="c-runamb" min="40" max="400" step="10" value="150" />
       </div>
       <div class="ctl">
-        <label>Target range <span class="val" id="v-range">90 km</span></label>
+        <label for="c-range">Target range <span class="val" id="v-range">90 km</span></label>
         <input type="range" id="c-range" min="0" max="150" step="1" value="90" />
       </div>
       <div class="ctl">
-        <label>Receive SNR <span class="val" id="v-snr">14 dB</span></label>
+        <label for="c-snr">Receive SNR <span class="val" id="v-snr">14 dB</span></label>
         <input type="range" id="c-snr" min="-5" max="30" step="1" value="14" />
       </div>
     </div>
@@ -193,12 +207,12 @@
     <h2 class="h">Waveform &amp; pulse-compression range profile</h2>
     <div class="scope-grid">
       <div class="scope-card">
-        <div class="t" style="font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Transmitted baseband I/Q (LFM chirp)</div>
-        <canvas id="scope-tx" width="600" height="190"></canvas>
+        <div class="scope-title">Transmitted baseband I/Q (LFM chirp)</div>
+        <canvas id="scope-tx" width="600" height="190" role="img" aria-label="Time-domain plot of the transmitted baseband I and Q chirp waveforms"></canvas>
       </div>
-      <div class="scope-card">
-        <div class="t" style="font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Matched-filter output vs. range (A-scope)</div>
-        <canvas id="scope-range" width="600" height="190"></canvas>
+      <div class="scope-card" id="card-range">
+        <div class="scope-title">Matched-filter output vs. range (A-scope)</div>
+        <canvas id="scope-range" width="600" height="190" role="img" aria-label="Matched-filter output amplitude versus range, with the true and estimated target ranges marked"></canvas>
       </div>
     </div>
     <div class="scope-foot" id="range-readouts"></div>
@@ -237,7 +251,7 @@
         <p class="formula">Receive: f<sub>IF</sub> = | f<sub>RF</sub> − f<sub>LO</sub> |</p>
         <p class="formula">Range resolution: ΔR = c / (2B)</p>
         <p class="formula">Unambiguous range: R<sub>u</sub> = c / (2·PRF)</p>
-        <p class="note">Output of DUC / DDC is complex baseband I/Q.</p>
+        <p class="note">The DUC's input and the DDC's output are complex baseband I/Q; the digital IF between them is real.</p>
       </div>
       <div>
         <h3>Notes</h3>
@@ -246,10 +260,11 @@
           <li>Tx path: baseband → RF (up-conversion) → antenna.</li>
           <li>Rx path: antenna → RF → baseband (down-conversion) → matched filter.</li>
           <li>The analog IF / RF spectrum cards are illustrative shapes drawn to scale; the baseband
-            and digital-IF cards are real FFTs of the simulated samples.</li>
-          <li>The <b>K</b> / <b>M</b> pills show the interpolation/decimation factor really required for your
-            chosen f<sub>IF</sub>, B, and f<sub>s</sub>; the DUC/DDC animation itself always runs at a fixed
-            illustrative factor so it stays smooth in the browser.</li>
+            and digital-IF cards are real FFTs of the simulated samples — on the receive side, of the
+            actual noisy received signal, so the noise floor moves with the SNR slider.</li>
+          <li>The <b>K</b> / <b>M</b> and <b>ADC Nyquist</b> pills reflect what your chosen
+            f<sub>IF</sub>, B, and f<sub>s</sub> really require; the DUC/DDC simulation itself always runs
+            at a fixed illustrative factor so it stays smooth in the browser.</li>
           <li>Frequencies, sample rates, and the range estimate are for education, not a specific system.</li>
         </ul>
       </div>
@@ -266,7 +281,6 @@
 
   // ============================== DSP core ==============================
   function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
-  function lerp(a, b, t) { return a + (b - a) * t; }
 
   function designLPF(fc, taps) {
     const h = new Array(taps);
@@ -393,12 +407,13 @@
 
   function computeDerived(p) {
     const fLO = p.fRF * 1000 - p.fIF; // MHz
-    const digitalIFRateMSPS = Math.max(p.fs, 2.2 * (p.fIF + p.b / 2));
-    const K = clamp(Math.ceil(digitalIFRateMSPS / p.fs), 1, 16);
-    const nyquistOk = (K * p.fs) > 2 * (p.fIF + p.b / 2);
+    const ifTopMHz = p.fIF + p.b / 2;
+    const K = clamp(Math.ceil(2.2 * ifTopMHz / p.fs - 1e-9), 1, 16); // epsilon: 2.2*100/220 must give K=1, not 2
+    const adcMinFs = 2 * ifTopMHz;
+    const adcNyquistOk = p.fs > adcMinFs;
     const rangeResM = C / (2 * p.b * 1e6);
-    const runamb = p.runamb;
-    return { fLOGhz: fLO / 1000, K, M: K, nyquistOk, rangeResM, runamb };
+    const prfHz = C / (2 * p.runamb * 1000);
+    return { fLOGhz: fLO / 1000, K, M: K, adcNyquistOk, adcMinFs, rangeResM, prfHz };
   }
 
   function simulate(p) {
@@ -441,12 +456,12 @@
     }
     let peakIdx = 0, peakVal = -1;
     for (let i = 0; i < corr.length; i++) if (corr[i] > peakVal) { peakVal = corr[i]; peakIdx = i; }
-    const estDelayFrac = clamp(peakIdx / corr.length, 0, 1);
+    const estDelayFrac = clamp(peakIdx / (corr.length - 1), 0, 1);
     const estRangeKm = estDelayFrac * p.runamb;
     const floor = corr.reduce((a, b) => a + b, 0) / corr.length;
     const snrOutDb = 20 * Math.log10((peakVal || 1e-9) / (floor || 1e-9));
 
-    return { I, Q, Iup, Qup, txIF, corr, peakIdx, peakVal, estRangeKm, snrOutDb, fIFn, Bn };
+    return { I, Q, Iup, Qup, txIF, chan, Ibb, Qbb, corr, peakIdx, peakVal, estRangeKm, snrOutDb, fIFn, Bn };
   }
 
   // ============================== chain diagram ==============================
@@ -469,6 +484,11 @@
   const SEQUENCE = ['wfg', 'duc', 'dac', 'upc', 'trsw', 'ant', 'dwc', 'adc', 'ddc', 'dsp'];
 
   function el(tag, cls, html) { const e = document.createElement('div'); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+  function arrowEl(glyph, extra) {
+    const e = el('div', 'arrow' + (extra ? ' ' + extra : ''), glyph);
+    e.setAttribute('aria-hidden', 'true');
+    return e;
+  }
 
   function renderBlocks(container, list) {
     list.forEach(b => {
@@ -484,15 +504,26 @@
   const sharedEl = document.getElementById('shared-blocks');
   (function buildDiagram() {
     TX_BLOCKS.forEach((b, i) => {
-      if (i > 0) txBlocksEl.appendChild(el('div', 'arrow', '→'));
+      if (i > 0) txBlocksEl.appendChild(arrowEl('→'));
       renderBlocks(txBlocksEl, [b]);
     });
+    txBlocksEl.appendChild(arrowEl('→'));   // hand-off into the T/R switch
     RX_BLOCKS.forEach((b, i) => {
-      if (i > 0) rxBlocksEl.appendChild(el('div', 'arrow', '←'));
+      if (i > 0) rxBlocksEl.appendChild(arrowEl('←'));
       renderBlocks(rxBlocksEl, [b]);
     });
-    renderBlocks(sharedEl, SHARED_BLOCKS);
+    rxBlocksEl.appendChild(arrowEl('←'));   // echo entering from the T/R switch
+    renderBlocks(sharedEl, [SHARED_BLOCKS[0]]);
+    sharedEl.appendChild(arrowEl('⇅', 'shared-link'));
+    renderBlocks(sharedEl, [SHARED_BLOCKS[1]]);
   })();
+
+  // Which spectrum/scope card each block feeds, so the plots light up with the animation.
+  const HOT_CARD = {
+    wfg: 'spec-tx-bb', duc: 'spec-tx-dif', dac: 'spec-tx-aif', upc: 'spec-tx-rf',
+    ant: 'spec-rx-rf', dwc: 'spec-rx-aif', adc: 'spec-rx-dif', ddc: 'spec-rx-bb',
+  };
+  const TX_IDS = new Set(['wfg', 'duc', 'dac', 'upc']);
 
   let seqIndex = 0;
   function stepDiagram() {
@@ -505,33 +536,47 @@
       const node = document.getElementById('blk-' + SEQUENCE[i]);
       if (node) node.classList.add('done');
     }
-    const cur = document.getElementById('blk-' + SEQUENCE[seqIndex]);
+    const curId = SEQUENCE[seqIndex];
+    const cur = document.getElementById('blk-' + curId);
     if (cur) cur.classList.add('active');
+
+    document.querySelectorAll('.spec-card').forEach(c => c.classList.remove('hot-tx', 'hot-rx'));
+    const rangeCard = document.getElementById('card-range');
+    rangeCard.classList.remove('hot');
+    if (curId === 'dsp') {
+      rangeCard.classList.add('hot');
+    } else if (HOT_CARD[curId]) {
+      const canvas = document.getElementById(HOT_CARD[curId]);
+      if (canvas) canvas.closest('.spec-card').classList.add(TX_IDS.has(curId) ? 'hot-tx' : 'hot-rx');
+    }
+
     seqIndex = (seqIndex + 1) % SEQUENCE.length;
     return seqIndex === 0; // true right after wrapping (a fresh pulse cycle begins)
   }
 
   // ============================== spectrum cards ==============================
-  function buildSpectrumCards(container, defs) {
+  function buildSpectrumCards(container, chain, defs) {
     defs.forEach(d => {
       const card = el('div', 'spec-card');
-      card.innerHTML = '<div class="t"><span>' + d.title + '</span><span class="tag">' + d.tag + '</span></div>' +
-        '<canvas id="spec-' + d.id + '" width="260" height="78"></canvas>';
+      card.innerHTML = '<div class="t"><span>' + d.title + '</span><span class="tag" id="tag-' + d.id + '">' + d.tag + '</span></div>' +
+        '<canvas id="spec-' + d.id + '" width="260" height="78" role="img" aria-label="' + chain + ' spectrum: ' + d.title + '"></canvas>';
       container.appendChild(card);
     });
   }
-  buildSpectrumCards(document.getElementById('tx-spectra'), [
+  buildSpectrumCards(document.getElementById('tx-spectra'), 'Transmit', [
     { id: 'tx-bb', title: 'Baseband (BB)', tag: '0 Hz' },
     { id: 'tx-dif', title: 'Digital IF (DIF)', tag: 'f_IF' },
     { id: 'tx-aif', title: 'Analog IF (AIF)', tag: 'illustrative' },
     { id: 'tx-rf', title: 'RF (transmit)', tag: 'illustrative' },
   ]);
-  buildSpectrumCards(document.getElementById('rx-spectra'), [
+  buildSpectrumCards(document.getElementById('rx-spectra'), 'Receive', [
     { id: 'rx-rf', title: 'RF (received)', tag: 'illustrative' },
     { id: 'rx-aif', title: 'Analog IF (AIF)', tag: 'illustrative' },
     { id: 'rx-dif', title: 'Digital IF (DIF)', tag: 'f_IF' },
     { id: 'rx-bb', title: 'Baseband (BB)', tag: '0 Hz' },
   ]);
+
+  const BODY_FONT = getComputedStyle(document.body).fontFamily;
 
   function dpr() { return Math.max(1, Math.min(2, window.devicePixelRatio || 1)); }
   function prepCanvas(canvas) {
@@ -581,7 +626,7 @@
       ctx.beginPath(); ctx.moveTo(cx, 4); ctx.lineTo(cx, h - 14.5); ctx.stroke();
       ctx.setLineDash([]);
     }
-    ctx.fillStyle = '#54637C'; ctx.font = '9px ' + getComputedStyle(document.body).fontFamily;
+    ctx.fillStyle = '#54637C'; ctx.font = '9px ' + BODY_FONT;
     ctx.textAlign = 'left'; ctx.fillText(opts.leftLabel || '', 2, h - 3);
     ctx.textAlign = 'right'; ctx.fillText(opts.rightLabel || '', w - 2, h - 3);
     if (opts.centerLabel) { ctx.textAlign = 'center'; ctx.fillStyle = '#FFB13C'; ctx.fillText(opts.centerLabel, clamp(opts.centerFrac, 0.08, 0.92) * w, 12); }
@@ -615,8 +660,9 @@
     }
     drawTrace(model.I, '#35DEFF');
     drawTrace(model.Q, '#9C8CFF');
-    ctx.fillStyle = '#54637C'; ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
-    ctx.textAlign = 'left'; ctx.fillText('I', 4, 12); ctx.fillStyle = '#9C8CFF'; ctx.fillText('Q', 18, 12);
+    ctx.font = '10px ' + BODY_FONT; ctx.textAlign = 'left';
+    ctx.fillStyle = '#35DEFF'; ctx.fillText('I', 4, 12);
+    ctx.fillStyle = '#9C8CFF'; ctx.fillText('Q', 18, 12);
   }
   function drawRangeScope(model, p) {
     const canvas = document.getElementById('scope-range');
@@ -624,23 +670,39 @@
     ctx.clearRect(0, 0, w, h);
     drawAxis(ctx, w, h);
     const plotH = h - 22;
+    const dbMin = -40;
+
+    ctx.font = '9px ' + BODY_FONT;
+    for (const g of [-10, -20, -30]) {
+      const y = 6 + (g / dbMin) * plotH;
+      ctx.strokeStyle = 'rgba(41,59,90,0.55)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(34, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.fillStyle = '#8595AF'; ctx.textAlign = 'left'; ctx.fillText(g + ' dB', 2, y + 3);
+    }
+
     const maxV = Math.max(1e-9, ...model.corr);
     const db = model.corr.map(v => 20 * Math.log10((v + 1e-6) / maxV));
-    const dbMin = -40;
     ctx.beginPath();
     for (let i = 0; i < db.length; i++) {
       const x = (i / (db.length - 1)) * w;
-      const y = 6 + clamp((db[i] - 0) / dbMin, 0, 1) * plotH;
+      const y = 6 + clamp(db[i] / dbMin, 0, 1) * plotH;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.strokeStyle = '#FFB13C'; ctx.lineWidth = 1.4; ctx.stroke();
 
+    ctx.font = '9px ' + BODY_FONT;
     const trueFrac = clamp(p.range / p.runamb, 0, 1);
     const tx = trueFrac * w;
     ctx.strokeStyle = 'rgba(52,224,161,0.85)'; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(tx, 6); ctx.lineTo(tx, h - 14.5); ctx.stroke(); ctx.setLineDash([]);
 
-    ctx.fillStyle = '#8595AF'; ctx.font = '9px ' + getComputedStyle(document.body).fontFamily;
+    const estFrac = clamp(model.peakIdx / (model.corr.length - 1), 0, 1);
+    const ex = estFrac * w;
+    ctx.strokeStyle = 'rgba(53,222,255,0.85)'; ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(ex, 6); ctx.lineTo(ex, h - 14.5); ctx.stroke(); ctx.setLineDash([]);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#35DEFF'; ctx.fillText('est', clamp(estFrac, 0.05, 0.95) * w, 12);
+
+    ctx.fillStyle = '#8595AF';
     ctx.textAlign = 'left'; ctx.fillText('0 km', 2, h - 3);
     ctx.textAlign = 'right'; ctx.fillText(p.runamb.toFixed(0) + ' km', w - 2, h - 3);
     ctx.textAlign = 'center'; ctx.fillStyle = '#34E0A1'; ctx.fillText('true', clamp(trueFrac, 0.05, 0.95) * w, h - 3);
@@ -650,60 +712,80 @@
   const readoutsEl = document.getElementById('readouts');
   const rangeReadoutsEl = document.getElementById('range-readouts');
 
-  function pill(label, value, cls) {
-    return '<span class="pill' + (cls ? ' ' + cls : '') + '"><i></i>' + label + ' <b>' + value + '</b></span>';
+  function pill(label, value, cls, title) {
+    // Pills with an explanation are focusable so the tooltip text is reachable by
+    // keyboard and exposed to assistive tech, not just mouse hover.
+    const explain = title ? ' title="' + title + '" tabindex="0" aria-label="' + label + ' ' + value + '. ' + title + '"' : '';
+    return '<span class="pill' + (cls ? ' ' + cls : '') + '"' + explain + '><i></i>' +
+      label + ' <b>' + value + '</b></span>';
   }
 
   function render(model, derived, p) {
-    // TX spectra: BB + DIF are real FFTs of the toy arrays; AIF + RF are illustrative shapes.
-    const bbMag = fftshift(magSpectrum(model.I, model.Q));
-    drawSpectrumBump('spec-tx-bb', bbMag, { leftLabel: '−fs/2', rightLabel: '+fs/2', centerFrac: 0.5, centerLabel: '0' });
+    // TX spectra: BB + DIF are real FFTs of the clean transmit arrays; AIF + RF are illustrative shapes.
+    const txBbMag = fftshift(magSpectrum(model.I, model.Q));
+    drawSpectrumBump('spec-tx-bb', txBbMag, { leftLabel: '−fs/2', rightLabel: '+fs/2', centerFrac: 0.5, centerLabel: '0' });
 
-    const difMag = magSpectrum(model.txIF, null);
-    const half = difMag.slice(0, difMag.length / 2);
-    drawSpectrumBump('spec-tx-dif', half, {
-      leftLabel: '0', rightLabel: 'Nyquist', centerFrac: model.fIFn / 0.5 * 1,
-      centerLabel: 'f_IF', stroke: '#9C8CFF', fill: 'rgba(156,140,255,0.20)'
-    });
-
-    const bwFracIllustrative = clamp(p.b / (p.fIF * 2), 0.06, 0.4);
-    drawSpectrumBump('spec-tx-aif', gaussianBump(96, 0.5, bwFracIllustrative), {
-      leftLabel: (p.fIF - p.b).toFixed(0) + ' MHz', rightLabel: (p.fIF + p.b).toFixed(0) + ' MHz',
-      centerFrac: 0.5, centerLabel: p.fIF.toFixed(0) + ' MHz', stroke: '#FFB13C', fill: 'rgba(255,177,60,0.18)'
-    });
-    drawSpectrumBump('spec-tx-rf', gaussianBump(96, 0.5, bwFracIllustrative), {
-      leftLabel: (p.fRF - p.b / 1000).toFixed(2) + ' GHz', rightLabel: (p.fRF + p.b / 1000).toFixed(2) + ' GHz',
-      centerFrac: 0.5, centerLabel: p.fRF.toFixed(2) + ' GHz', stroke: '#FF5D6E', fill: 'rgba(255,93,110,0.16)'
-    });
-
-    drawSpectrumBump('spec-rx-rf', gaussianBump(96, 0.5, bwFracIllustrative), {
-      leftLabel: (p.fRF - p.b / 1000).toFixed(2) + ' GHz', rightLabel: (p.fRF + p.b / 1000).toFixed(2) + ' GHz',
-      centerFrac: 0.5, centerLabel: p.fRF.toFixed(2) + ' GHz', stroke: '#FF5D6E', fill: 'rgba(255,93,110,0.16)'
-    });
-    drawSpectrumBump('spec-rx-aif', gaussianBump(96, 0.5, bwFracIllustrative), {
-      leftLabel: (p.fIF - p.b).toFixed(0) + ' MHz', rightLabel: (p.fIF + p.b).toFixed(0) + ' MHz',
-      centerFrac: 0.5, centerLabel: p.fIF.toFixed(0) + ' MHz', stroke: '#FFB13C', fill: 'rgba(255,177,60,0.18)'
-    });
-    drawSpectrumBump('spec-rx-dif', half, {
+    const txDifMag = magSpectrum(model.txIF, null);
+    drawSpectrumBump('spec-tx-dif', txDifMag.slice(0, txDifMag.length / 2), {
       leftLabel: '0', rightLabel: 'Nyquist', centerFrac: model.fIFn / 0.5,
       centerLabel: 'f_IF', stroke: '#9C8CFF', fill: 'rgba(156,140,255,0.20)'
     });
-    drawSpectrumBump('spec-rx-bb', bbMag, { leftLabel: '−fs/2', rightLabel: '+fs/2', centerFrac: 0.5, centerLabel: '0' });
+
+    // Illustrative AIF/RF cards use a fixed 100 MHz axis span so the bump is genuinely
+    // to scale against its own labels: FWHM = B / 100 MHz of the plot width (B is 10–40).
+    const SPAN_MHZ = 100;
+    const bump = gaussianBump(96, 0.5, p.b / SPAN_MHZ);
+    const aifOpts = {
+      leftLabel: (p.fIF - SPAN_MHZ / 2).toFixed(0) + ' MHz', rightLabel: (p.fIF + SPAN_MHZ / 2).toFixed(0) + ' MHz',
+      centerFrac: 0.5, centerLabel: p.fIF.toFixed(0) + ' MHz', stroke: '#FFB13C', fill: 'rgba(255,177,60,0.18)'
+    };
+    const rfOpts = {
+      leftLabel: (p.fRF - SPAN_MHZ / 2000).toFixed(2) + ' GHz', rightLabel: (p.fRF + SPAN_MHZ / 2000).toFixed(2) + ' GHz',
+      centerFrac: 0.5, centerLabel: p.fRF.toFixed(2) + ' GHz', stroke: '#FF5D6E', fill: 'rgba(255,93,110,0.16)'
+    };
+    drawSpectrumBump('spec-tx-aif', bump, aifOpts);
+    drawSpectrumBump('spec-tx-rf', bump, rfOpts);
+    drawSpectrumBump('spec-rx-rf', bump, rfOpts);
+    drawSpectrumBump('spec-rx-aif', bump, aifOpts);
+
+    // RX spectra: real FFTs of the actual received samples, noise floor included.
+    const rxDifMag = magSpectrum(model.chan, null);
+    drawSpectrumBump('spec-rx-dif', rxDifMag.slice(0, rxDifMag.length / 2), {
+      leftLabel: '0', rightLabel: 'Nyquist', centerFrac: model.fIFn / 0.5,
+      centerLabel: 'f_IF', stroke: '#9C8CFF', fill: 'rgba(156,140,255,0.20)'
+    });
+    const rxBbMag = fftshift(magSpectrum(model.Ibb, model.Qbb));
+    drawSpectrumBump('spec-rx-bb', rxBbMag, { leftLabel: '−fs/2', rightLabel: '+fs/2', centerFrac: 0.5, centerLabel: '0' });
+
+    const difTag = document.getElementById('tag-rx-dif');
+    difTag.textContent = derived.adcNyquistOk ? 'f_IF' : 'ALIASING RISK';
+    difTag.classList.toggle('warn', !derived.adcNyquistOk);
 
     drawTxScope(model);
     drawRangeScope(model, p);
 
+    const prfLabel = derived.prfHz >= 1000 ? (derived.prfHz / 1000).toFixed(2) + ' kHz' : derived.prfHz.toFixed(0) + ' Hz';
     readoutsEl.innerHTML =
-      pill('f_LO', derived.fLOGhz.toFixed(2) + ' GHz') +
-      pill('K (interp)', '×' + derived.K) +
-      pill('M (decim)', '×' + derived.M) +
-      pill('Range res. ΔR', derived.rangeResM.toFixed(1) + ' m') +
-      pill('Nyquist (DUC/DDC)', derived.nyquistOk ? 'OK' : 'violated', derived.nyquistOk ? 'ok' : 'bad');
+      pill('f_LO', derived.fLOGhz.toFixed(2) + ' GHz', '',
+        'Transmit mixing: f_RF = f_LO + f_IF, so f_LO = f_RF − f_IF') +
+      pill('K (interp)', '×' + derived.K, '',
+        'Smallest DUC interpolation factor with K·fs ≥ 2.2·(f_IF + B/2) for your sliders') +
+      pill('M (decim)', '×' + derived.M, '',
+        'DDC decimation factor back down to the baseband rate (mirrors K)') +
+      pill('PRF', prfLabel, '',
+        'Pulse repetition frequency: PRF = c / (2·R_u)') +
+      pill('Range res. ΔR', derived.rangeResM.toFixed(1) + ' m', '',
+        'ΔR = c / (2B) — wider bandwidth, finer resolution') +
+      pill('ADC Nyquist', derived.adcNyquistOk ? 'OK' : 'aliasing risk', derived.adcNyquistOk ? 'ok' : 'bad',
+        'Direct IF sampling needs fs > 2·(f_IF + B/2) = ' + derived.adcMinFs.toFixed(0) +
+        ' MSPS. Real designs may use bandpass sampling instead.');
 
     rangeReadoutsEl.innerHTML =
       pill('True range', p.range.toFixed(0) + ' km') +
-      pill('Estimated range', model.estRangeKm.toFixed(1) + ' km') +
-      pill('Pulse-compression gain', model.snrOutDb.toFixed(1) + ' dB out') +
+      pill('Estimated range', model.estRangeKm.toFixed(1) + ' km', '',
+        'Range of the matched-filter peak (cyan marker on the A-scope)') +
+      pill('MF peak / floor', model.snrOutDb.toFixed(1) + ' dB', '',
+        'Matched-filter output peak over its mean level — pulse compression pulls the echo out of the noise') +
       pill('Input SNR', p.snr.toFixed(0) + ' dB');
   }
 
@@ -742,6 +824,9 @@
     val.runamb.textContent = params.runamb.toFixed(0) + ' km';
     val.range.textContent = params.range.toFixed(0) + ' km';
     val.snr.textContent = params.snr.toFixed(0) + ' dB';
+
+    // Announce values with their units, not bare numbers, while a slider is adjusted.
+    Object.keys(ctl).forEach(k => ctl[k].setAttribute('aria-valuetext', val[k].textContent));
   }
 
   let lastModel = null, lastDerived = null;
@@ -751,7 +836,16 @@
     render(lastModel, lastDerived, params);
   }
 
-  Object.values(ctl).forEach(input => input.addEventListener('input', () => { syncFromControls(); recomputeAndRender(); }));
+  // The full pipeline (FFTs + matched filter) is too heavy to rerun on every input event
+  // while a slider is being dragged — coalesce to at most one recompute per frame.
+  let rafPending = false;
+  function scheduleRecompute() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; recomputeAndRender(); });
+  }
+
+  Object.values(ctl).forEach(input => input.addEventListener('input', () => { syncFromControls(); scheduleRecompute(); }));
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     ctl.frf.value = DEFAULTS.fRF; ctl.fif.value = DEFAULTS.fIF; ctl.b.value = DEFAULTS.b;
@@ -760,35 +854,54 @@
     syncFromControls(); recomputeAndRender();
   });
 
-  document.getElementById('btn-pulse').addEventListener('click', () => { recomputeAndRender(); });
-
   // ============================== animation loop ==============================
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let playing = !reducedMotion;
-  let timer = null;
+  let pulseTimer = null;
   const btnPlay = document.getElementById('btn-play');
+
+  function stopPulseTimer() { if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; } }
+  // Step the pulse through the chain; on each completed traversal draw a fresh noise
+  // realization. loop=false runs exactly one traversal (the paused "single pulse" case).
+  function runPulse(loop) {
+    stopPulseTimer();
+    pulseTimer = setInterval(() => {
+      const wrapped = stepDiagram();
+      if (wrapped) {
+        // One-shot keeps the data drawn at click — the pulse the user just watched
+        // arrive must not be replaced by a fresh noise draw at the finish line.
+        if (!loop) { stopPulseTimer(); return; }
+        recomputeAndRender();
+      }
+    }, 420);
+  }
   function setPlaying(on) {
     playing = on;
     btnPlay.textContent = playing ? 'Pause' : 'Play';
-    if (playing) startTimer(); else stopTimer();
+    if (playing) runPulse(true); else stopPulseTimer();
   }
-  function startTimer() {
-    stopTimer();
-    timer = setInterval(() => {
-      const wrapped = stepDiagram();
-      if (wrapped) recomputeAndRender();
-    }, 420);
-  }
-  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
   btnPlay.addEventListener('click', () => setPlaying(!playing));
 
-  window.addEventListener('resize', () => { if (lastModel) render(lastModel, lastDerived, params); });
+  document.getElementById('btn-pulse').addEventListener('click', () => {
+    seqIndex = 0;
+    recomputeAndRender();
+    if (reducedMotion) return;          // no animation, just a fresh pulse's data
+    if (playing) return;                // the running loop restarts from the top
+    runPulse(false);
+  });
+
+  let resizePending = false;
+  window.addEventListener('resize', () => {
+    if (!lastModel || resizePending) return;
+    resizePending = true;
+    requestAnimationFrame(() => { resizePending = false; render(lastModel, lastDerived, params); });
+  });
 
   // ---- init ----
   syncFromControls();
   recomputeAndRender();
   stepDiagram();
-  if (playing) startTimer(); else btnPlay.textContent = 'Play';
+  if (playing) runPulse(true); else btnPlay.textContent = 'Play';
 })();
 </script>
 </body>
