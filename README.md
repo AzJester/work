@@ -513,18 +513,24 @@ math, not just an animation:
   pulse-compression radars use to get fine range resolution from a long, low-power pulse.
 - **8 live spectrum plots** at every domain checkpoint (Baseband / Digital IF / Analog IF
   / RF, for both transmit and receive) — the baseband and digital-IF plots are real FFTs
-  of the simulated samples; the analog-IF/RF plots are illustrative bumps drawn to scale
-  and labeled with the actual frequencies.
-- **A-scope range profile** — the matched-filter output plotted against range, with the
-  true target range marked, so you can see the compressed pulse peak land in the right
-  place (and degrade gracefully as you drop the SNR slider).
+  of the simulated samples (on the receive side, of the actual noisy received signal, so
+  the noise floor moves with the SNR slider); the analog-IF/RF plots are illustrative
+  bumps drawn to scale on a fixed 100 MHz axis span and labeled with the actual
+  frequencies, so the drawn width really is B. As the animated pulse traverses the
+  chain, the spectrum card each block feeds lights up with it.
+- **A-scope range profile** — the matched-filter output plotted against range on a dB
+  scale with gridlines, with both the **true** and **estimated** target ranges marked, so
+  you can see the compressed pulse peak land in the right place (and degrade gracefully
+  as you drop the SNR slider).
 - **Interactive controls** — RF carrier (9.0–10.0 GHz), IF center (60–120 MHz), bandwidth
   (10–40 MHz), sample rate (200–500 MSPS), unambiguous range, target range, and receive
   SNR — all update the diagram, spectra, waveform, and range estimate live. Derived
-  readouts show f<sub>LO</sub>, the required interpolation/decimation factor, range
-  resolution (c / 2B), and a Nyquist check.
+  readouts (each with an explanatory hover tooltip) show f<sub>LO</sub>, PRF, the required
+  interpolation/decimation factor, range resolution (c / 2B), and an **ADC Nyquist check**
+  that flags aliasing risk when the sample rate can't directly sample your chosen IF.
 - **Play / Pause / Send single pulse** — auto-plays by default (a fresh noise draw each
-  cycle), respects `prefers-reduced-motion` by starting paused.
+  cycle); *Send single pulse* animates one full traversal even while paused. Respects
+  `prefers-reduced-motion` by starting paused and skipping the traversal animation.
 
 One file, **zero external dependencies**, dark HUD styling consistent with the LDAWIF
 page above. Frequencies, sample rates, and the range estimate are illustrative/educational
