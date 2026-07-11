@@ -60,6 +60,20 @@ them and run KPIs**, use the cloud-backed version:
     N overdue · N blocked**. Click a chip to filter the list to just those tasks (click it
     again — or **✕ Show all** — to clear). Counts update live as you edit, so the morning
     routine is: open the page, glance at the strip, knock the chips down to zero.
+  - **✔ Close out my day** (under **⋯ More ▾**) — a rapid-fire wizard that walks through only
+    the tasks with no update yet today, one at a time: type a one-liner (saved as a dated
+    update), adjust status/progress, tick action items, **Save & next**. Daily logging in
+    about two minutes.
+  - **Quick add — press N** — type `Send deck to Conn @AI Weekly !fri #high` and the task is
+    filed with its **@project**, **!due date** (`!today !tomorrow !fri !+3 !7/15`) and
+    **#priority** parsed straight from the text, with a live preview of what was understood.
+  - **Command palette — Ctrl/Cmd+K** — jump to any task, tab, or action (add task, log today,
+    plan my day, draft summary, toggle theme…) by typing a few letters.
+  - **Drag to reorder** — in **Manual order** sort, drag a task's **⠿** handle to rearrange
+    (the ▲/▼ buttons still work).
+  - **Install it on your phone** — the tracker is a **PWA**: open it on your phone and choose
+    **Add to Home Screen** (Safari) / **Install app** (Chrome). It opens full-screen under your
+    signature icon, with touch-sized controls and a floating **＋** button for quick entry.
   - **Collapsible task list** — each task collapses to a one-line summary (project · ☑
     checklist count · due · latest note), so a week of tasks reads as a tidy scannable list;
     click a task (the ▸ caret) to expand and edit, or **⊟ Collapse all / ⊞ Expand all**.
