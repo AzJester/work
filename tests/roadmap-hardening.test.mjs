@@ -10,6 +10,7 @@ const rootDir = resolve(testDir, "..");
 const roadmapPath = resolve(rootDir, "roadmap.html");
 const roadmap = readFileSync(roadmapPath, "utf8");
 const roadmapMigration = readFileSync(resolve(rootDir, "supabase/migrations/20260711180000_roadmap_data_safety.sql"), "utf8");
+const roadmapCutoverMigration = readFileSync(resolve(rootDir, "supabase/migrations/20260711193000_roadmap_rpc_only_cutover.sql"), "utf8");
 
 function attribute(tag, name) {
   const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, "i"));
@@ -295,6 +296,43 @@ test("owner, save, delete, public, and share traffic uses the hardened RPC surfa
     /\.from\s*\(\s*["'](?:roadmaps|roadmap_shares)["']\s*\)/,
     "The browser must not bypass the safe roadmap RPCs with direct table access",
   );
+});
+
+test("the final cutover is metadata-only and removes direct roadmap table access", () => {
+  assert.doesNotMatch(
+    roadmapCutoverMigration,
+    /\b(?:insert\s+into|update|delete\s+from|truncate\s+(?:table\s+)?)\s*public\.(?:roadmaps|roadmap_shares|roadmap_revisions)\b/i,
+    "The cutover must not change or remove roadmap data",
+  );
+  for (const table of ["roadmaps", "roadmap_shares"]) {
+    assert.match(
+      roadmapCutoverMigration,
+      new RegExp(`revoke\\s+all\\s+privileges\\s+on\\s+table\\s+public\\.${table}\\s+from\\s+public\\s*,\\s*anon\\s*,\\s*authenticated`, "i"),
+      `Revoke browser table privileges from ${table}`,
+    );
+  }
+  for (const policy of ["read public roadmaps", "own roadmaps", "own shares", "roadmap_active_or_owner_read_guard"]) {
+    assert.match(roadmapCutoverMigration, new RegExp(`drop\\s+policy\\s+if\\s+exists\\s+["']?${policy}["']?`, "i"));
+  }
+  assert.match(roadmapCutoverMigration, /pg_catalog\.pg_policy[\s\S]{0,800}unexpected policies remain/i, "Fail closed on unreviewed production policies");
+  assert.match(roadmapCutoverMigration, /p\.prosecdef[\s\S]{0,1400}safe SECURITY DEFINER/i, "RPCs must bypass the removed browser policies safely");
+  assert.match(roadmapCutoverMigration, /has_function_privilege\s*\(\s*['"]authenticated['"]/i, "Authenticated RPC execution must be verified before cutover");
+  assert.match(roadmapCutoverMigration, /has_function_privilege\s*\(\s*['"]anon['"]/i, "Anonymous public/share RPC execution must be verified before cutover");
+  for (const rpc of [
+    "roadmap_owner_portfolio",
+    "roadmap_save_atomic",
+    "roadmap_soft_delete",
+    "roadmap_restore",
+    "roadmap_public_list",
+    "roadmap_public_get",
+    "roadmap_share_create",
+    "roadmap_share_list",
+    "roadmap_share_revoke",
+    "roadmap_shared_get",
+    "shared_roadmap",
+  ]) {
+    assert.match(roadmapCutoverMigration, new RegExp(`public\\.${rpc}\\(`), `Require ${rpc} before changing permissions`);
+  }
 });
 
 test("users can download one recovery file containing the complete local portfolio", () => {
