@@ -287,10 +287,12 @@ cloud sync and shareable links.
   New phases and milestones are added after the lane's last item so they don't overlap.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
   date), each with one of six status chips. Lanes get cycling group colors.
-- **Saved in your browser** — multiple roadmaps persist to `localStorage` (key
-  `roadmap_builder_v1`); the Overview grid and a toolbar picker switch between them (New /
-  Duplicate / Delete).
-- **Exports** — **JSON** (round-trips via Import), **HTML** (a self-contained, magazine-style
+- **Saved and recoverable in your browser** — the original `roadmap_builder_v1` value is retained
+  untouched as a recovery source. Each signed-in account works from its own verified
+  `roadmap_builder_v2:<user-id>` copy, with persistent pending-sync operations, Trash, and Undo
+  snapshots. The app stops destructive changes if the recovery snapshot cannot be verified.
+- **Exports** — **JSON** (one roadmap), **Full portfolio backup** (every active, archived, and
+  trashed roadmap plus sync metadata), **HTML** (a self-contained, magazine-style
   page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
   an image), and **Print / PDF**.
 - **Import from Jira (CSV)** — *Import ▾ → Jira CSV…* takes Jira's built-in issue export
@@ -306,24 +308,21 @@ cloud sync and shareable links.
   - A **`gate` label** in Jira marks the item as a gate (dashed line + GATE flag); each item's
     note keeps its issue key (e.g. `SH-11`).
   - Prefer AI shaping instead? Paste the raw issue list into **✨ Build from description**.
-- **Optional cloud (sign in)** — sync roadmaps to Supabase and create **read-only share links**
-  (`roadmap.html?s=<token>`) for anyone to view without a login, reusing the same token-gated,
-  read-only pattern as the leadership dashboard. **Signing in auto-loads your cloud roadmaps**
-  into the portfolio (merged with anything already in this browser; the newer copy wins, so
-  unsaved local edits are never clobbered) — so "sign in → there's my whole portfolio" just
-  works, even on a fresh browser, without re-opening each one from the Cloud menu.
+- **Optional cloud (sign in)** — revision-aware Supabase RPCs synchronize the complete portfolio.
+  Every mutation has a durable UUID and expected revision, so a network retry is idempotent and
+  a stale device cannot overwrite a newer one. Divergent copies are retained as clearly labeled
+  recovered roadmaps. Soft-deleted roadmaps appear in cross-device **Trash** and remain restorable.
+- **Managed read-only share links** — new links use URL fragments, expire after 30 days, can be
+  listed/revoked in the app, and continue accepting legacy `?s=<token>` URLs. The server validates
+  share ownership and returns a strict presentation-only document.
 - **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
   view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
   can't edit anything. Only the signed-in owner can create or change roadmaps. Sessions **persist
-  across refreshes** until you sign out. Requires the `public` column + "read public roadmaps"
-  policy above; pair it with the AI builder's `ALLOWED_EMAILS` lock and disabled sign-ups so only
-  you can edit.
-- **Multi-user portfolios + owner overview** — every account gets its own private, RLS-isolated
-  portfolio, while a designated **owner** account (set via `OWNER_EMAIL`) gets a **👥 All users’
-  roadmaps** view in the Cloud menu to browse everyone's roadmaps **read-only**, grouped by
-  account. Provision accounts with a **temporary password** and the app forces a compliant new
-  password (≥12 chars · upper · lower · special) on first sign-in. See *Multiple users* and
-  *Temporary passwords* under setup below.
+  across refreshes** until you sign out. Public and bearer-share RPCs remove private notes, AI
+  prompts/hints, identities, tokens, secrets, and unknown fields before returning any document.
+- **Multi-user portfolios** — each account has an isolated browser key and owner-only server RPCs.
+  Provisioned temporary-password accounts must choose a compliant password (≥12 chars · upper ·
+  lower · number · special) before the editor unlocks.
 
 **One-time setup (only for the AI and cloud features — the template/form path needs none):**
 
@@ -357,90 +356,21 @@ cloud sync and shareable links.
   Deploy `supabase functions deploy roadmap-summary`; it reuses the **same** `ANTHROPIC_API_KEY`
   and `ALLOWED_EMAILS` secrets as `build-roadmap` (set once, covers both). See its
   [README](supabase/functions/roadmap-summary/README.md). The free computed summary shows without it.
-- **Cloud sync + share** — provision two tables + a token-gated read function (RLS on):
-  ```sql
-  create table roadmaps (
-    id text primary key, user_id uuid not null references auth.users(id) default auth.uid(),
-    title text, subtitle text, template_type text, public boolean not null default false, doc jsonb not null,
-    created_at timestamptz default now(), updated_at timestamptz default now());
-  alter table roadmaps enable row level security;
-  create policy "own roadmaps" on roadmaps for all
-    using (user_id = auth.uid()) with check (user_id = auth.uid());
-  -- public portfolio: anyone (even signed-out) may READ roadmaps flagged public
-  create policy "read public roadmaps" on roadmaps for select
-    to anon, authenticated using (public = true);
-  -- existing installs (table already created without the column): run just this line
-  alter table roadmaps add column if not exists public boolean not null default false;
+- **Cloud sync + share** — do not paste ad-hoc table policies or grants into the SQL editor.
+  The tracked migrations are the source of truth:
+  - `20260711180000_roadmap_data_safety.sql` provisions or upgrades the tables without replacing
+    existing IDs/documents/tokens, records every existing row as revision 0, adds append-only
+    history, atomic save/delete/restore RPCs, soft-delete Trash, and sanitized public/share APIs.
+  - The post-cutover RPC-only migration revokes browser table access after the v2 frontend is live.
+  GitHub Pages runs `supabase db push --dry-run` and then `supabase db push` before publishing the
+  matching frontend, so the browser never gets ahead of its database contract.
 
-  create table roadmap_shares (
-    token uuid primary key default gen_random_uuid(),
-    roadmap_id text not null references roadmaps(id) on delete cascade,
-    user_id uuid not null default auth.uid(), label text, revoked boolean default false,
-    created_at timestamptz default now());
-  alter table roadmap_shares enable row level security;
-  create policy "own shares" on roadmap_shares for all
-    using (user_id = auth.uid()) with check (user_id = auth.uid());
+### Multiple users, each with their own portfolio
 
-  -- token-gated, read-only: returns just the shared roadmap's doc
-  create or replace function shared_roadmap(p_token uuid)
-  returns table (doc jsonb) language sql security definer set search_path = public as $$
-    select r.doc from roadmap_shares s join roadmaps r on r.id = s.roadmap_id
-    where s.token = p_token and s.revoked = false;
-  $$;
-  grant execute on function shared_roadmap(uuid) to anon, authenticated;
-  ```
-
-### Multiple users, each with their own portfolio (+ an owner who sees all)
-
-The cloud layer is already **multi-tenant** — the app never filters roadmaps by user in
-its own code; the `own roadmaps` RLS policy above scopes every signed-in account to *only its
-own* rows automatically. So "several people, each with a private portfolio" needs **no code
-change** — just let more than one account exist:
-
-1. **Let users in.** Either turn on **Authentication → Providers → Email → “Allow new users to
-   sign up”**, or (recommended) keep sign-ups off and **provision each account yourself** (see
-   *Temporary passwords* below). Each person then signs in on `roadmap.html` and gets an
-   isolated portfolio; nobody can see anyone else's roadmaps.
-2. **AI features** stay gated by the `ALLOWED_EMAILS` secret on `build-roadmap` /
-   `roadmap-summary`. Add each user's email to share the AI builder on your key, or leave it to
-   just you — the template / form / Jira-CSV paths need no server and work for everyone.
-
-**Owner-sees-all.** So *you* can browse every account's roadmaps (read-only), add a super-owner
-check and two token-gated, read-only functions — no loosening of RLS, and each roadmap is
-attributed to its owner's email:
-
-```sql
--- the super-owner: change to your account's email
-create or replace function is_owner() returns boolean
-  language sql stable as $$ select (auth.jwt() ->> 'email') = 'shane0372@gmail.com' $$;
-
--- list every roadmap with its owner's email (owner only; everyone else gets zero rows)
-create or replace function all_roadmaps()
-returns table (id text, title text, subtitle text, updated_at timestamptz, public boolean, owner_email text)
-language sql security definer set search_path = public, auth as $$
-  select r.id, r.title, r.subtitle, r.updated_at, r.public, u.email::text
-  from roadmaps r join auth.users u on u.id = r.user_id
-  where is_owner()
-  order by u.email asc, r.updated_at desc;
-$$;
-grant execute on function all_roadmaps() to authenticated;
-
--- fetch one roadmap's doc regardless of who owns it (owner only)
-create or replace function admin_roadmap(p_id text)
-returns table (doc jsonb, owner_email text)
-language sql security definer set search_path = public, auth as $$
-  select r.doc, u.email::text from roadmaps r join auth.users u on u.id = r.user_id
-  where r.id = p_id and is_owner();
-$$;
-grant execute on function admin_roadmap(text) to authenticated;
-```
-
-With these in place and your account's email set as `OWNER_EMAIL` in `roadmap.html`, the
-**☁ Cloud ▾** menu shows an owner-only **👥 All users’ roadmaps…** entry: a list grouped by
-account, each roadmap opening **read-only** in a new tab (`roadmap.html?admin=<id>`). Both the
-list and the deep link are guarded by `is_owner()` server-side, so a non-owner who calls the
-functions directly gets nothing. The functions are **read-only** by design — the owner can view
-everyone's work but only edit their own.
+Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Every
+owner query explicitly uses `auth.uid()` inside a narrowly granted `SECURITY DEFINER` RPC; public
+and bearer-share callers receive only the bounded presentation schema. AI access remains separately
+fail-closed through `AI_ALLOWED_EMAILS` and `AI_ALLOWED_ORIGINS` Edge Function secrets.
 
 ### Temporary passwords & forced reset on first login
 
@@ -451,35 +381,30 @@ it. To hand a new user a starter password that they must replace on first sign-i
    settings →** set **Minimum length = 12** and **Required characters = “Lowercase, uppercase
    letters, digits and symbols.”** This is checked on every password set (including the reset),
    so the temporary password must itself comply (e.g. `Welcome2Roadmap!`).
-2. **Create the account with the temp password + a flag.** A few users: **Authentication →
-   Users → Add user** — set email + temp password, tick **Auto Confirm User**, and add **User
-   Metadata** `{ "must_change_password": true }`. Many users: the Admin API (service-role key,
+2. **Create the account with the temp password + an authoritative flag.** A few users:
+   **Authentication → Users → Add user** — set email + temp password and tick **Auto Confirm
+   User**. Set **App Metadata** `{ "must_change_password": true }` through an admin-only path.
+   Many users: use the Admin API (service-role key,
    from a script/edge function — never the browser):
    ```js
    await supabaseAdmin.auth.admin.createUser({
      email: "alice@example.com",
      password: "Welcome2Roadmap!",
      email_confirm: true,
-     user_metadata: { must_change_password: true }
+     app_metadata: { must_change_password: true }
    });
    ```
 3. **First login.** When the user signs in, `roadmap.html` detects the flag and shows a
    mandatory **Create your password** screen (a live checklist: ≥12 chars · lowercase ·
-   uppercase · special) before anything is editable. On submit it calls
+   uppercase · number · special) before anything is editable. On submit it calls
    `updateUser({ password, data: { must_change_password: false } })` and reloads — the flag is
-   now acknowledged and never prompts again. (The client mirrors `PW_RULES` in `roadmap.html`;
-   keep it in sync with the Supabase policy.)
+   now acknowledged and never prompts again. The database clears the app-metadata flag only in
+   the same transaction that actually changes `auth.users.encrypted_password`, then the client
+   refreshes its session. (Keep the client `PW_RULES` aligned with the Supabase password policy.)
 
-**Tamper-proof variant (optional):** `user_metadata` is user-editable, so a savvy user could
-flip the flag from the console to skip the reset. For a hard gate, provision the flag in
-**`app_metadata`** instead (only the service-role key can write it). The app already honors an
-`app_metadata.must_change_password` flag and treats the user's completed reset
-(`user_metadata.must_change_password === false`) as the acknowledgement, so it won't re-prompt —
-no extra edge function required. If you also want to physically clear the `app_metadata` flag
-afterward, do it from the dashboard or a service-role Admin API call.
-
-The page loads the `@supabase/supabase-js` client from a CDN **only** when you use a cloud/AI
-feature; the template, form, and export paths make **no network calls**.
+The page loads the pinned, repository-owned `assets/vendor/supabase-js-2.110.2.umd.js` bundle.
+The template, form, import, backup, and export paths remain usable from the cached offline shell;
+cloud sync, public browsing, and AI features naturally require the network.
 
 ## Astrion Division Landing Page (team review build)
 

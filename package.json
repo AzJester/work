@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/tracker-hardening.test.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:roadmap": "node --test tests/roadmap-hardening.test.mjs",
     "build:vendor": "node scripts/build-vendor.mjs"
   },
   "devDependencies": {
