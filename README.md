@@ -136,8 +136,8 @@ them and run KPIs**, use the cloud-backed version:
   key never reaches the browser.
   - **One-time setup:** add an `ANTHROPIC_API_KEY` secret to the Supabase project
     (Edge Functions → Secrets). It uses your Anthropic API credits.
-  - **Models:** the weekly summary runs on **Opus 4.8** (`claude-opus-4-8`) for a more
-    polished exec narrative — override with an `ANTHROPIC_SUMMARY_MODEL` secret. The
+  - **Models:** the weekly summary defaults to **Sonnet 4.6** (`claude-sonnet-4-6`) —
+    override with an `ANTHROPIC_WEEKLY_MODEL` secret. The
     high-volume note extractors (`extract-tasks`, `task-actions`) run on **Sonnet 4.6**
     (`claude-sonnet-4-6`) for speed/cost — override with `ANTHROPIC_MODEL`.
 - **✨ Plan my day** (under **⋯ More ▾**) — turns the week's open tasks (status, priority, due
@@ -174,13 +174,14 @@ them and run KPIs**, use the cloud-backed version:
   the page only carries a public *publishable* key (safe to expose). The signed-in email is
   **not shown anywhere** in the header, so nothing leaks in screen-shares or screenshots.
 
-**One-time setup (≈30 seconds, once):** so login works instantly on a static page, open the
-Supabase project → **Authentication → Providers → Email** and turn **off** *“Confirm email.”*
-Then visit the page, choose **Create an account**, and you're in. (The app detects this
-setting and reminds you if it's still on.)
+**Account setup:** keep email confirmation enabled and disable public sign-ups in Supabase.
+Provision or invite each approved user from the Supabase dashboard. The tracker intentionally
+shows sign-in and password-reset flows only; it does not offer unrestricted browser sign-up.
 
-The cloud page loads the `@supabase/supabase-js` client from a CDN — the one external
-dependency that a database-backed page necessarily has.
+The cloud page serves an exact-version `@supabase/supabase-js` bundle from this repository,
+so authentication does not depend on a third-party CDN. Before publishing a tracker change,
+follow [TRACKER_DEPLOYMENT.md](TRACKER_DEPLOYMENT.md); database migrations and Edge Functions
+must be deployed before the GitHub Pages frontend.
 
 ### Consolidated multi-project tracking — **Projects · Portfolio · recurring checklists**
 
@@ -240,18 +241,20 @@ with **no login** — a read-only view at `dashboard.html`:
   **Interactive** — hover (or tap, on touch) any chart for a crosshair guide, a highlighted
   data point, and a tooltip with that week's exact figures (colour-keyed to each series).
   **Click a week to drill down** — it opens and scrolls to that week's full report. Stat
-  numbers and the exec-summary tiles show plain-English explanations on hover.
+  numbers and the exec-summary tiles show plain-English explanations on hover. Keyboard users
+  can tab through each week, and every chart has an expandable semantic data table.
 - **Weekly reports** — each week's status table, expandable, newest first.
 - **Print / PDF** — matches the tracker's clean report: borderless tables, status shown as
   colored text (not filled pills), each task kept whole, and a section per page. A **“KPIs in
   PDF”** toggle prints the charts or, switched off, gives a **reports-only** PDF (remembered
   per browser).
-- **Anyone with the link can view** (read-only). **Revoke &amp; regenerate** invalidates the old
-  link instantly and issues a new one.
+- **Anyone with a valid link can view** (read-only). Each recipient link has its own expiry,
+  week range, kudos/summary scope, last-used timestamp, and revoke control.
 
 How it stays safe: the page only ever calls one **token-gated, read-only** database function
-(`shared_dashboard`) that returns *only* the link owner's data. No write access is exposed, and
-every table stays protected by Row Level Security — the share link is the single, revocable door.
+(<code>secure_shared_dashboard</code>) that enforces expiry/revocation and returns an allow-listed,
+scope-filtered object. No table write access is exposed, and every base table remains protected
+by Row Level Security — the capability link is the single, revocable door.
 
 ## Roadmap Builder
 

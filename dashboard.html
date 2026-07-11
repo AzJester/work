@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shane's Weekly Tracker — Shared Dashboard</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://hqqwlkmggwgaoiyzgrhy.supabase.co wss://hqqwlkmggwgaoiyzgrhy.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" />
 <meta name="description" content="Read-only shared view of weekly task status: KPI trends (completion, blocked/at-risk, velocity, carryover) and each week's report." />
 <style>
   :root {
     --bg:#EEF1F7; --card:#FFFFFF; --line:#E7EAF1; --line-2:#D5DAE4;
-    --ink:#151A24; --ink-2:#454F63; --mut:#8A93A6;
+    --ink:#151A24; --ink-2:#454F63; --mut:#5F6B7C;
     --accent:#4F46E5; --accent-2:#6366F1; --accent-soft:#EEEFFE; --ring:rgba(99,102,241,0.30);
-    --green:#0F8A4F; --green-bg:#E5F6EC; --amber:#9A6700; --amber-bg:#FBF1D9;
+    --green:#08733F; --green-bg:#E5F6EC; --amber:#795500; --amber-bg:#FBF1D9;
     --red:#C2362B; --red-bg:#FCEBE9; --slate:#475467; --slate-bg:#EDF0F5;
     --th-bg:#F6F7FB; --chip2-bg:#EEF2F8; --chip3-bg:#F1F4F9;
     --radius:14px;
@@ -23,7 +25,7 @@
   }
   :root[data-theme="dark"] {
     --bg:#0E1117; --card:#171B22; --line:#262C36; --line-2:#333B47;
-    --ink:#E7EBF2; --ink-2:#AEB6C4; --mut:#7E8796;
+    --ink:#E7EBF2; --ink-2:#BEC6D3; --mut:#9AA3B2;
     --accent:#7C83FF; --accent-2:#9AA0FF; --accent-soft:#1E2340; --ring:rgba(124,131,255,0.35);
     --green:#46D08A; --green-bg:#10271C; --amber:#E6B655; --amber-bg:#2A2310;
     --red:#FF8275; --red-bg:#2C1714; --slate:#AEB6C4; --slate-bg:#222936;
@@ -32,6 +34,7 @@
     --shadow:0 6px 18px -8px rgba(0,0,0,0.6);
   }
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
   html, body { margin:0; min-height:100%; }
   body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
     background:
@@ -99,6 +102,7 @@
   svg.chart { touch-action:pan-y; }
   svg.chart .hb { fill:#000; fill-opacity:0; pointer-events:all; cursor:pointer; }
   svg.chart .hb:hover, svg.chart .hb.on { fill:var(--accent); fill-opacity:.07; }
+  svg.chart .hb:focus { outline:none; fill:var(--accent); fill-opacity:.12; stroke:var(--accent); stroke-width:1.5; }
   .chart-tip .tip-hint { display:block; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,.15); color:#9AA3B2; font-size:10.5px; }
   .rep.flash { animation:repflash 1.3s ease-out; }
   @keyframes repflash { 0%,15% { background:var(--accent-soft); } 100% { background:var(--card); } }
@@ -193,7 +197,28 @@
   .t-items li.hdr { font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); margin-bottom:2px; }
   .t-items li.done { color:var(--mut); text-decoration:line-through; }
 
-  @media (max-width:720px) { .kgrid { grid-template-columns:1fr; } .col-pri, .prog-cell { display:none; } }
+  .chart-data { margin-top:10px; font-size:12px; }
+  .chart-data summary { color:var(--accent); cursor:pointer; font-weight:700; }
+  .chart-data .table-scroll { overflow-x:auto; margin-top:6px; }
+  .chart-data table { width:100%; border-collapse:collapse; }
+  .chart-data th, .chart-data td { padding:5px 7px; border:1px solid var(--line); text-align:left; vertical-align:top; }
+  .chart-data th { background:var(--th-bg); }
+
+  @media (max-width:720px) {
+    .kgrid { grid-template-columns:1fr; }
+    .tasks, .tasks tbody { display:block; }
+    .tasks thead { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .tasks tr { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; padding:13px 14px; border-top:1px solid var(--line); }
+    .tasks td { display:block; border:0; padding:0; min-width:0; }
+    .tasks td:first-child { grid-column:1 / -1; }
+    .tasks td::before { content:attr(data-label); display:block; margin-bottom:2px; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    html { scroll-behavior:auto !important; }
+    .spin, .rep.flash { animation:none; }
+    .btn, .btn:hover, .etile, .etile:hover, .kcard, .kcard:hover { transition:none; transform:none; }
+    .chart-tip { transition:none; }
+  }
   @media print {
     /* even margins all round; reset wrappers so content fills the margin box symmetrically */
     @page { margin:14mm; }
@@ -262,18 +287,19 @@
         </select>
       </label>
       <label class="ptoggle" id="kpiToggleWrap" hidden title="Include the KPI charts in the printed PDF (off = weekly reports only)"><input type="checkbox" id="kpiPrint" checked> KPIs in PDF</label>
-      <button class="btn" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+      <button class="btn" id="themeToggle" type="button" title="Switch to dark mode" aria-label="Switch to dark mode" aria-pressed="false">🌙</button>
       <button class="btn" id="print" type="button" hidden>Print / PDF</button>
     </div>
   </header>
 
-  <div id="root">
-    <div class="muted-empty"><span class="spin"></span> Loading shared dashboard…</div>
-  </div>
+  <main id="root" aria-live="polite" aria-busy="true">
+    <div class="muted-empty" role="status"><span class="spin" aria-hidden="true"></span> Loading shared dashboard…</div>
+  </main>
 </div>
 
+<script src="assets/vendor/supabase-js-2.110.2.umd.js"></script>
 <script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const { createClient } = globalThis.supabase;
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
@@ -293,6 +319,10 @@ const $ = (id) => document.getElementById(id);
     if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else document.documentElement.removeAttribute("data-theme");
     $("themeToggle").textContent = (t === "dark") ? "☀️" : "🌙";
+    const next = t === "dark" ? "light" : "dark";
+    $("themeToggle").setAttribute("aria-label", "Switch to "+next+" mode");
+    $("themeToggle").title = "Switch to "+next+" mode";
+    $("themeToggle").setAttribute("aria-pressed", String(t === "dark"));
   };
   apply(theme);
   $("themeToggle").addEventListener("click", () => {
@@ -309,6 +339,10 @@ window.addEventListener("afterprint", () => {
   document.querySelectorAll("details.rep").forEach(d => { if (d.dataset.wasOpen === "0") d.open = false; });
 });
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function safeUrl(value){
+  const raw=String(value||"").trim(); if(!raw)return "";
+  try{const u=new URL(raw,location.href);return ["http:","https:","mailto:"].includes(u.protocol)&&/^(https?:|mailto:)/i.test(raw)?raw:"";}catch(_){return "";}
+}
 // rich-text display: sanitize stored HTML (allowlist) or escape plain text — public page, so this is the XSS guard
 function looksHtml(s){ return /<[a-z!\/][\s\S]*>|&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i.test(s||""); }
 function fixDoubled(s){ return String(s==null?"":s).replace(/&amp;(#?[a-z0-9]+;)/gi, "&$1"); }  // heal double-escaped entities
@@ -322,10 +356,15 @@ function sanitizeHtml(html){
       if (child.nodeType !== 1) { child.remove(); return; }
       const tag = child.tagName;
       if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); return; }
-      if (!RT_ALLOWED[tag]) { while (child.firstChild) node.insertBefore(child.firstChild, child); child.remove(); return; }
+      if (!RT_ALLOWED[tag]) {
+        walk(child);
+        while (child.firstChild) node.insertBefore(child.firstChild, child);
+        child.remove();
+        return;
+      }
       Array.from(child.attributes).forEach(a => {
         const name = a.name.toLowerCase();
-        if (tag === "A" && name === "href") { if (!/^(https?:|mailto:)/i.test((a.value||"").trim())) child.removeAttribute("href"); }
+        if (tag === "A" && name === "href") { const href=safeUrl(a.value); if(href)child.setAttribute("href",href);else child.removeAttribute("href"); }
         else child.removeAttribute(a.name);
       });
       if (tag === "A") { child.setAttribute("target","_blank"); child.setAttribute("rel","noopener noreferrer nofollow"); }
@@ -389,14 +428,25 @@ function taskCell(t){
 }
 
 function showMessage(title, body){
-  $("root").innerHTML = '<div class="muted-empty"><h2>'+esc(title)+'</h2><p>'+body+'</p></div>';
+  $("root").setAttribute("aria-busy", "false");
+  $("root").innerHTML = '<div class="muted-empty" role="alert"><h2>'+esc(title)+'</h2><p>'+body+'</p></div>';
 }
 
 (async function init(){
-  const token = new URLSearchParams(location.search).get("s");
-  if (!token) { showMessage("No dashboard link", "This page needs a share link. Ask the owner for the full URL (it ends with <b>?s=…</b>)."); return; }
+  const hashToken = new URLSearchParams(location.hash.replace(/^#/,"")).get("s");
+  const legacyToken = new URLSearchParams(location.search).get("s");
+  const token = hashToken || legacyToken;
+  if (!token) { showMessage("No dashboard link", "This page needs a complete share link from the tracker owner."); return; }
+  if (!hashToken && legacyToken) history.replaceState(null, "", location.pathname + "#s=" + encodeURIComponent(legacyToken));
 
-  const { data, error } = await sb.rpc("shared_dashboard", { p_token: token });
+  const { data:accessRaw, error:accessError } = await sb.rpc("validate_share_access", { p_token: token });
+  let access = Array.isArray(accessRaw) ? accessRaw[0] : accessRaw;
+  if (typeof access === "string") { try { access=JSON.parse(access); } catch(_){} }
+  if (accessError) { showMessage("Couldn’t validate link", "This share link cannot be verified. Ask the owner to update the tracker database migration."); return; }
+  if (!access || access.valid === false) { showMessage("Link not valid", "This share link is unknown, expired, or revoked. Ask the owner for a fresh link."); return; }
+  DASH_SCOPE = access.scope && typeof access.scope === "object" ? access.scope : { weeks:"current", include_kudos:false, include_summaries:true };
+
+  const { data, error } = await sb.rpc("secure_shared_dashboard", { p_token: token });
   if (error) { showMessage("Couldn’t load", esc(error.message)); return; }
   if (!data) { showMessage("Link not valid", "This share link is unknown or has been revoked. Ask the owner for a fresh link."); return; }
 
@@ -415,7 +465,7 @@ function showMessage(title, body){
   });
   // how many recent weeks of reports to show / print (remembered per browser)
   DASH_DATA = data;
-  $("weeksWrap").hidden = false;
+  $("weeksWrap").hidden = DASH_SCOPE.weeks === "current";
   let weeksPref = "all"; try { weeksPref = localStorage.getItem("dash_weeks") || "all"; } catch(e){}
   $("weeksShown").value = weeksPref;
   $("weeksShown").addEventListener("change", () => {
@@ -426,14 +476,20 @@ function showMessage(title, body){
   render(data);
 })();
 let DASH_DATA = null;
+let DASH_SCOPE = { weeks:"current", include_kudos:false, include_summaries:true };
 function weeksLimit(){ const v = ($("weeksShown") && $("weeksShown").value) || "all"; return v === "all" ? Infinity : (parseInt(v,10) || Infinity); }
 
 function render(data){
+  $("root").setAttribute("aria-busy", "false");
   refreshChartColors();
   CHART_DATA = [];
-  const wk = (data.weekly || []).slice();         // ascending by week_ending
-  const co = (data.carryover || []).slice();
-  const reports = (data.reports || []);            // descending by week_ending
+  let reports = (data.reports || []).slice();       // descending by week_ending
+  const scopeLimit = DASH_SCOPE.weeks === "current" ? 1 : DASH_SCOPE.weeks === "recent4" ? 4 : Infinity;
+  if (isFinite(scopeLimit)) reports = reports.slice(0, scopeLimit);
+  if (DASH_SCOPE.include_summaries === false) reports = reports.map(report=>({ ...report, ai_summary:"" }));
+  const allowedWeeks = new Set(reports.map(r=>r.week_ending));
+  const wk = (data.weekly || []).filter(r=>!allowedWeeks.size || allowedWeeks.has(r.week_ending)).slice();
+  const co = (data.carryover || []).filter(r=>!allowedWeeks.size || allowedWeeks.has(r.week_ending)).slice();
   if (!wk.length) { showMessage("Nothing to show yet", "No weekly reports have been saved for this dashboard."); return; }
 
   const weeks = wk.map(r => String(r.week_ending||"").slice(5));
@@ -489,7 +545,7 @@ function render(data){
         '<div class="stat-row">' + stat(carryNow,"carried into latest week","Open tasks in the latest week that also appeared in an earlier week") + '</div>' + agingList(aging)) +
     '</div>';
 
-  const kudos = (data.kudos || []);
+  const kudos = DASH_SCOPE.include_kudos ? (data.kudos || []) : [];
   const kudosHtml = kudos.length
     ? '<h2 class="sec">Kudos &amp; recognition</h2><div class="klist">' + kudos.map(k =>
         '<div class="kcardk">' +
@@ -529,7 +585,7 @@ function render(data){
 
   // featured executive summary — the latest week's published AI summary, if any
   const latestRep = reports.find(r => r.week_ending === latest.week_ending) || reports[0];
-  const execSummaryHtml = (latestRep && (latestRep.ai_summary||"").trim())
+  const execSummaryHtml = (DASH_SCOPE.include_summaries !== false && latestRep && (latestRep.ai_summary||"").trim())
     ? '<section class="execsum">' +
         '<div class="execsum-head"><h2>Executive summary</h2>' +
           '<span class="execsum-wk">week ending '+(prettyDate(latestRep.week_ending)||esc(latestRep.week_ending)) +
@@ -545,7 +601,7 @@ function render(data){
     ? '<p class="desc" style="margin:-6px 0 14px">Showing the latest '+shownReports.length+' of '+reports.length+' weeks. Use <b>Weeks</b> (top right) to show more.</p>' : '';
   const repHtml = '<h2 class="sec">Weekly reports</h2>' + moreNote + shownReports.map((r,idx) => reportBlock(r, idx===0)).join("");
 
-  $("root").innerHTML = execHtml + execSummaryHtml + '<section id="kpiSection">' + kpis + '</section>' + kudosHtml + repHtml;
+  $("root").innerHTML = execHtml + execSummaryHtml + '<section id="kpiSection" aria-labelledby="kpiHeading"><h2 class="sec" id="kpiHeading">Performance trends</h2>' + kpis + '</section>' + kudosHtml + repHtml;
   wireCharts();
 }
 function eTile(label, num, unit, sub, tone, trend){
@@ -575,10 +631,10 @@ function reportBlock(r, open){
   const blk = tasks.filter(t=>t.status==="Blocked").length;
   const risk = tasks.filter(t=>t.status==="At Risk").length;
   const rows = tasks.length ? tasks.map(t =>
-    '<tr><td>'+taskCell(t)+'</td>'
-    + '<td><span class="chip '+statusChipCls(t.status)+'">'+esc(t.status)+'</span></td>'
-    + '<td class="col-pri">'+esc(t.priority)+'</td>'
-    + '<td class="prog-cell">'+(+t.progress||0)+'%</td></tr>').join("")
+    '<tr><td data-label="Task">'+taskCell(t)+'</td>'
+    + '<td data-label="Status"><span class="chip '+statusChipCls(t.status)+'">'+esc(t.status)+'</span></td>'
+    + '<td class="col-pri" data-label="Priority">'+esc(t.priority)+'</td>'
+    + '<td class="prog-cell" data-label="Progress">'+(+t.progress||0)+'%</td></tr>').join("")
     : '<tr><td colspan="4" style="color:var(--mut)">No tasks recorded.</td></tr>';
   const sumHtml = (r.ai_summary && r.ai_summary.trim())
     ? '<div class="rep-summary">'+summaryHtml(r.ai_summary)+'</div>' : '';
@@ -605,15 +661,16 @@ function agingList(rows){
 }
 
 // ---- inline-SVG charts (no chart library) ----
-const CW=520, CH=170, PADL=30, PADB=22, PADT=12, PADR=12;
+const CW=520, CH=170, PADL=34, PADB=26, PADT=12, PADR=12;
 function xPos(i,n){ return PADL+(n<=1?(CW-PADL-PADR)/2:i*(CW-PADL-PADR)/(n-1)); }
 function bandX(i,n){ const w=(CW-PADL-PADR)/n; return PADL+i*w+w*0.5; }
 // ---- interactive tooltips: register per-week values, draw transparent hover columns ----
 let CHART_DATA = [];
 function regChart(rows, xs, series){ const c = CHART_DATA.length; CHART_DATA.push({ rows: rows||[], xs: xs||[], series: series||[] }); return c; }
+function bandA11y(c,i){ const row=(CHART_DATA[c]&&CHART_DATA[c].rows[i])||{}; const details=(row.lines||[]).map(v=>typeof v==="string"?v:v.t).join(", "); return ' tabindex="0" role="button" aria-label="'+esc((row.label||("Week "+(i+1)))+(details?": "+details:"")+(row.week?". Open week":""))+'"'; }
 function hoverBands(c, n){
   const full = CW-PADL-PADR, w = full/n; let out = "";
-  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"'+bandA11y(c,i)+'></rect>';
   return out;
 }
 // hover columns centered on arbitrary point x-positions (line charts use xPos spacing, not even bands)
@@ -622,7 +679,7 @@ function hoverBandsAt(c, xs){
   for (let i=0;i<n;i++){
     const left = i===0 ? PADL : (xs[i-1]+xs[i])/2;
     const right = i===n-1 ? (CW-PADR) : (xs[i]+xs[i+1])/2;
-    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"></rect>';
+    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"'+bandA11y(c,i)+'></rect>';
   }
   return out;
 }
@@ -678,7 +735,7 @@ function wireCharts(){
       const i = idxAt(e.clientX); const row = data.rows[i]; if (!row || !row.week) return;
       const rep = document.getElementById("rep-"+row.week); if (!rep) return;
       rep.open = true;
-      rep.scrollIntoView({ behavior:"smooth", block:"start" });
+      rep.scrollIntoView({ behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"start" });
       rep.classList.add("flash"); setTimeout(() => rep.classList.remove("flash"), 1300);
       hide();
     };
@@ -689,12 +746,32 @@ function wireCharts(){
     svg.addEventListener("pointerleave", hide);
     svg.addEventListener("pointercancel", hide);
     svg.addEventListener("click", drill);
+    svg.querySelectorAll(".hb").forEach((band,i) => {
+      band.addEventListener("focus", () => { const r=band.getBoundingClientRect(); show({clientX:r.left+r.width/2,clientY:r.top+r.height/2}); });
+      band.addEventListener("blur", hide);
+      band.addEventListener("keydown", e => {
+        if (e.key!=="Enter" && e.key!==" ") return;
+        e.preventDefault();
+        const row=data.rows[i]; if (!row || !row.week) return;
+        const rep=document.getElementById("rep-"+row.week); if (!rep) return;
+        rep.open=true;
+        rep.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+        rep.querySelector("summary")?.focus({preventScroll:true});
+        hide();
+      });
+    });
   });
 }
-function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
+function svgOpen(){ return '<svg class="chart" role="group" aria-label="Interactive KPI trend chart. Tab through each week for exact values." viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
 function axis(maxLabel){ return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
-  + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>'; }
-function xLabels(labels){ const n=labels.length; return labels.map((l,i)=>'<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join(""); }
+  + '<text x="'+(PADL-5)+'" y="'+(PADT+9)+'" font-size="11" fill="var(--ink-2)" text-anchor="end">'+maxLabel+'</text>'; }
+function xLabels(labels){ const n=labels.length; return labels.map((l,i)=>'<text x="'+xPos(i,n)+'" y="'+(CH-PADB+17)+'" font-size="11" fill="var(--ink-2)" text-anchor="middle">'+l+'</text>').join(""); }
+function chartDataTable(rows){
+  if (!Array.isArray(rows) || !rows.length) return "";
+  return '<details class="chart-data"><summary>View chart data</summary><div class="table-scroll"><table><thead><tr><th scope="col">Week</th><th scope="col">Values</th></tr></thead><tbody>'
+    + rows.map(row => '<tr><th scope="row">'+esc(row.label||row.week||"")+'</th><td>'+(row.lines||[]).map(v=>esc(typeof v==="string"?v:v.t)).join("; ")+'</td></tr>').join("")
+    + '</tbody></table></div></details>';
+}
 function yOf(v,max){ const h=CH-PADB-PADT; return CH-PADB-(max?Math.min(v,max)/max:0)*h; }
 function lineChart(labels, vals, color, fixedMax, tipRows){
   const max=fixedMax||Math.max(1,...vals); const n=labels.length;
@@ -703,7 +780,7 @@ function lineChart(labels, vals, color, fixedMax, tipRows){
   const dots=xs.map((x,i)=>'<circle class="pt" cx="'+x+'" cy="'+cy[i]+'" r="3" fill="'+color+'"/>').join("");
   const series=[{cy, color}];
   const c=regChart(tipRows, xs, series);
-  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBandsAt(c,xs)+'</svg>';
+  return svgOpen()+axis(max+(fixedMax===100?"%":""))+'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBandsAt(c,xs)+'</svg>'+chartDataTable(tipRows);
 }
 function barLineChart(labels, bars, line, tipRows){
   const bmax=Math.max(1,...bars); const lmax=100; const n=labels.length; const bw=(CW-PADL-PADR)/n*0.5;
@@ -715,7 +792,7 @@ function barLineChart(labels, bars, line, tipRows){
   const dots=xs.map((x,i)=>'<circle class="pt" cx="'+x+'" cy="'+cyL[i]+'" r="3" fill="'+COLORS.accent+'"/>').join("");
   const series=[{cy:cyL, color:COLORS.accent}];
   const c=regChart(tipRows, xs, series);
-  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBands(c,n)+'</svg>';
+  return svgOpen()+axis(bmax)+rects+'<polyline points="'+pts+'" fill="none" stroke="'+COLORS.accent+'" stroke-width="2"/>'+dots+cguide()+cfocus(series)+xLabels(labels)+hoverBands(c,n)+'</svg>'+chartDataTable(tipRows);
 }
 function stackedChart(labels, risk, blocked, tipRows){
   const n=labels.length; const max=Math.max(1,...labels.map((_,i)=>(risk[i]||0)+(blocked[i]||0))); const bw=(CW-PADL-PADR)/n*0.5;
@@ -725,7 +802,7 @@ function stackedChart(labels, risk, blocked, tipRows){
     return '<rect x="'+x+'" y="'+yB+'" width="'+bw+'" height="'+hB+'" fill="'+COLORS.blocked+'"/>'
          + '<rect x="'+x+'" y="'+yR+'" width="'+bw+'" height="'+hR+'" fill="'+COLORS.atrisk+'"/>'; }).join("");
   const c=regChart(tipRows, xs, []);
-  return svgOpen()+axis(max)+bars+cguide()+xLabels(labels)+hoverBands(c,n)+'</svg>';
+  return svgOpen()+axis(max)+bars+cguide()+xLabels(labels)+hoverBands(c,n)+'</svg>'+chartDataTable(tipRows);
 }
 </script>
 </body>

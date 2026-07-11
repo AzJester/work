@@ -1,92 +1,77 @@
 # `build-roadmap` Edge Function
 
-Powers the **✨ Build from description** button in `roadmap.html`. It takes a
-natural-language project description and returns a structured roadmap, calling
-Anthropic server-side so the API key never reaches the browser.
+Powers the **✨ Build from description** button in `roadmap.html`. It sends a
+bounded project description to Anthropic server-side and returns a validated,
+structured roadmap; the API key never reaches the browser.
 
-If this function isn't deployed the page still works — the template and form
-paths need no network. Only the AI drafting button needs it.
+The page's template and form workflows still work when this function is not
+deployed. Only AI roadmap drafting depends on it.
 
 ## Prerequisites
 
-- A Supabase project (the same one `roadmap.html` points at via `SUPABASE_URL`).
-- The [Supabase CLI](https://supabase.com/docs/guides/cli): `npm i -g supabase`.
-- An Anthropic API key (`sk-ant-…`) from https://console.anthropic.com.
+- The Supabase project used by `roadmap.html`.
+- The Supabase CLI.
+- An Anthropic API key.
+- The tracker-hardening database migration, which provides the authenticated
+  `consume_ai_quota` RPC.
+- [`../_shared/ai-edge.ts`](../_shared/ai-edge.ts), which is bundled with the
+  function at deploy time.
 
-## Deploy (three commands)
+## Deploy
 
-From the repo root:
+From the repository root:
 
 ```bash
-# 1. Link the CLI to your project (once). Find <project-ref> in your
-#    Supabase dashboard URL: https://supabase.com/dashboard/project/<project-ref>
 supabase link --project-ref <project-ref>
-
-# 2. Store your Anthropic key as a secret (the function reads it at runtime).
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-your-key-here
-
-# 3. Deploy the function.
-supabase functions deploy build-roadmap
+supabase db push
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-your-key-here AI_ALLOWED_EMAILS=you@example.com AI_ALLOWED_ORIGINS=https://azjester.github.io
+supabase functions deploy build-roadmap --no-verify-jwt
+supabase functions deploy roadmap-summary --no-verify-jwt
 ```
 
-That's it. Reload `roadmap.html`, sign in, and click **✨ Build from
-description** — it now calls the deployed function.
-
-### No CLI? Deploy from the dashboard
-
-1. Supabase dashboard → **Edge Functions** → **Create a function**, name it
-   exactly `build-roadmap`.
-2. Paste the contents of [`index.ts`](./index.ts) and **Deploy**.
-3. **Edge Functions → Secrets** → add `ANTHROPIC_API_KEY` = your key.
+The functions verify the signed-in user against Supabase Auth themselves, then
+consume a per-user quota before calling Anthropic. Keep the shared helper beside
+the function sources when deploying through the dashboard editor as well.
 
 ## Configuration
 
 | Secret | Required | Default | Notes |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | yes | — | Your Anthropic key. Uses your Anthropic credits. |
-| `ANTHROPIC_MODEL` | no | `claude-opus-4-8` | Override the model (reuses the same env name as the tracker's `extract-tasks`). |
-| `ALLOWED_EMAILS` | no | — | Comma-separated allow-list of accounts that may use the AI builder (e.g. `you@example.com`). Leave unset to allow any signed-in account. |
+| `ANTHROPIC_API_KEY` | yes | — | Server-side Anthropic key. |
+| `ANTHROPIC_ROADMAP_MODEL` | no | `ANTHROPIC_MODEL`, then `claude-opus-4-8` | Builder-only model override. |
+| `ANTHROPIC_ROADMAP_SUMMARY_MODEL` | no | `ANTHROPIC_MODEL`, then `claude-opus-4-8` | Narrative-only model override. |
+| `AI_ALLOWED_EMAILS` | yes* | — | Global account allowlist; the functions fail closed without this or an endpoint-specific/legacy fallback. |
+| `ALLOWED_EMAILS` | no | — | Legacy global allowlist fallback. |
+| `BUILD_ROADMAP_ALLOWED_EMAILS` | no | `AI_ALLOWED_EMAILS`, then `ALLOWED_EMAILS` | Builder-specific allowlist. |
+| `ROADMAP_SUMMARY_ALLOWED_EMAILS` | no | `AI_ALLOWED_EMAILS`, then `ALLOWED_EMAILS` | Narrative-specific allowlist. |
+| `ALLOWED_ORIGINS` | no | `https://azjester.github.io` | Comma-separated exact browser origins. |
+| `BUILD_ROADMAP_ALLOWED_ORIGINS` | no | global origin setting | Builder-specific origin override. |
+| `ROADMAP_SUMMARY_ALLOWED_ORIGINS` | no | global origin setting | Narrative-specific origin override. |
+| `BUILD_ROADMAP_QUOTA_LIMIT` | no | `10` | Calls allowed per fixed window and user. |
+| `ROADMAP_SUMMARY_QUOTA_LIMIT` | no | `20` | Narrative calls allowed per window and user. |
+| `*_QUOTA_WINDOW_SECONDS` | no | `3600` | Endpoint-specific fixed quota window. |
+| `*_UPSTREAM_TIMEOUT_MS` | no | `25000` | Anthropic timeout, clamped to 5–60 seconds. |
 
-The function is invoked with the project's publishable/anon key by the
-signed-in client, so keep JWT verification at its default — no
-`--no-verify-jwt` needed.
+Set `AI_ALLOWED_EMAILS` to the permitted account addresses and disable public
+sign-ups. Platform JWT verification is intentionally disabled at deployment so
+browser preflight can run; each function verifies the bearer token itself.
 
-## Access control (protect your Anthropic credits)
+## Builder contract
 
-The Anthropic key is yours, so the function only serves **signed-in, allow-listed**
-callers. It validates the caller's Supabase user token (sent automatically by the
-signed-in client) against GoTrue and rejects the anonymous publishable/anon key —
-so a random visitor to the public page can't spend your credits. `SUPABASE_URL`
-and `SUPABASE_ANON_KEY` are injected into every Edge Function automatically; you
-don't set them.
-
-To lock it to just you:
-
-1. Set the allow-list secret and redeploy:
-   ```bash
-   supabase secrets set ALLOWED_EMAILS=you@example.com
-   supabase functions deploy build-roadmap
-   ```
-   (Multiple people? Comma-separate: `ALLOWED_EMAILS=a@x.com,b@x.com`.)
-2. **Turn off public sign-ups** so nobody can create an account:
-   Supabase dashboard → **Authentication → Sign In / Providers → Email** (or
-   **Auth → Settings**) → disable **Allow new users to sign up**. Create your own
-   account first (or add it under **Authentication → Users**) if you haven't.
-
-With sign-ups off and `ALLOWED_EMAILS` set to your address, only you can invoke
-the AI builder even though the page itself stays public.
-
-## Contract
-
-**Request** (`POST`, JSON):
+Request (`POST`, JSON):
 
 ```json
-{ "prompt": "Launch a mobile app over four months…", "today": "2026-07-09", "templateHint": "software" }
+{
+  "prompt": "Launch a mobile app over four months",
+  "today": "2026-07-09",
+  "templateHint": "software"
+}
 ```
 
-`templateHint` is optional (`software | product | gtm | data | hiring`, or omitted).
+`templateHint` is optional and must be one of `software`, `product`, `gtm`,
+`data`, or `hiring`.
 
-**Response** (`200`):
+Successful response:
 
 ```json
 {
@@ -94,19 +79,31 @@ the AI builder even though the page itself stays public.
     "title": "Mobile App Launch",
     "subtitle": "Q3–Q4",
     "lanes": [
-      { "name": "Discovery", "items": [
-        { "kind": "bar", "label": "Research & scope", "start": "2026-07-09", "end": "2026-08-06", "status": "in_progress" },
-        { "kind": "milestone", "label": "Kickoff", "date": "2026-07-09", "status": "complete" }
-      ] }
+      {
+        "name": "Discovery",
+        "items": [
+          {
+            "kind": "bar",
+            "label": "Research & scope",
+            "start": "2026-07-09",
+            "end": "2026-08-06",
+            "status": "in_progress",
+            "note": "",
+            "gate": false
+          }
+        ]
+      }
     ]
-  }
+  },
+  "model": "claude-opus-4-8",
+  "request_id": "…",
+  "usage": {}
 }
 ```
 
-`status` ∈ `planned | in_progress | complete | at_risk | blocked | on_hold`.
-Bars carry `start` + `end`; milestones carry a single `date`. The function uses
-Claude tool-use so the model returns exactly this shape; `roadmap.html`
-normalizes and repairs it again on the client.
+The frontend relies only on `roadmap`; model, request, and usage metadata are
+additive. Status values are `planned`, `in_progress`, `complete`, `at_risk`,
+`blocked`, or `on_hold`. Bars use `start` and `end`; milestones use `date`.
 
-**On failure** the function returns a non-2xx status with `{ "error": "…" }`,
-which the page surfaces inline (the current roadmap is left untouched).
+Failures use a non-2xx response with a safe `{ "error", "code", "request_id" }`
+body. Provider details and secrets are logged only as non-sensitive event codes.
