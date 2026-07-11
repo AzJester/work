@@ -75,14 +75,6 @@ jobs:
             exit 1
           }
 
-      - name: Deploy bounded AI functions
-        if: steps.backend_changes.outputs.required == 'true'
-        shell: bash
-        run: |
-          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary; do
-            supabase functions deploy "$function_name" --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
-          done
-
       - name: Link production database
         if: steps.backend_changes.outputs.required == 'true'
         shell: bash
@@ -90,12 +82,41 @@ jobs:
           supabase init --force
           supabase link --project-ref "$PROJECT_ID"
 
+      - name: Verify migration history
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          history="$(supabase migration list --linked 2>&1)"
+          printf '%s\n' "$history"
+          remote_only="$(printf '%s\n' "$history" | awk -F '[|]' '
+            /^[[:space:]]*[0-9]*[[:space:]]*\|[[:space:]]*[0-9]+[[:space:]]*\|/ {
+              local_version = $1
+              remote_version = $2
+              gsub(/[[:space:]]/, "", local_version)
+              gsub(/[[:space:]]/, "", remote_version)
+              if (local_version == "" && remote_version != "") print remote_version
+            }
+          ')"
+          if [ -n "$remote_only" ]; then
+            echo "::error::Production migrations are missing from Git: $(printf '%s' "$remote_only" | paste -sd, -)"
+            exit 1
+          fi
+
       - name: Preview and apply migrations
         if: steps.backend_changes.outputs.required == 'true'
         shell: bash
         run: |
           supabase db push --dry-run
           supabase db push
+          supabase migration list --linked
+
+      - name: Deploy bounded AI functions
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary; do
+            supabase functions deploy "$function_name" --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
+          done
 
   deploy:
     needs: backend
