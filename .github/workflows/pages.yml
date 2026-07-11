@@ -18,7 +18,87 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: hqqwlkmggwgaoiyzgrhy
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect tracker backend changes
+        id: backend_changes
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || ! git rev-parse HEAD^ >/dev/null 2>&1; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD^ HEAD | grep -Eq '^(tracker\.html|dashboard\.html|sw\.js|manifest\.webmanifest|assets/vendor/|supabase/|\.github/workflows/pages\.yml$)'; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check deployment credentials
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error::Configure SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD repository secrets before publishing tracker changes."
+            exit 1
+          fi
+
+      - name: Install pinned Supabase CLI
+        if: steps.backend_changes.outputs.required == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.101.0
+
+      - name: Verify required Supabase secrets
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          names="$(supabase secrets list --project-ref "$PROJECT_ID")"
+          printf '%s' "$names" | grep -q 'ANTHROPIC_API_KEY' || {
+            echo "::error::Supabase secret ANTHROPIC_API_KEY is missing."
+            exit 1
+          }
+          printf '%s' "$names" | grep -Eq 'AI_ALLOWED_EMAILS|ALLOWED_EMAILS' || {
+            echo "::error::Set AI_ALLOWED_EMAILS (or legacy ALLOWED_EMAILS) before deploying fail-closed AI functions."
+            exit 1
+          }
+          printf '%s' "$names" | grep -Eq 'AI_ALLOWED_ORIGINS|ALLOWED_ORIGINS' || {
+            echo "::error::Set AI_ALLOWED_ORIGINS=https://azjester.github.io before deploying AI functions."
+            exit 1
+          }
+
+      - name: Deploy bounded AI functions
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary; do
+            supabase functions deploy "$function_name" --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
+          done
+
+      - name: Link production database
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          supabase init --force
+          supabase link --project-ref "$PROJECT_ID"
+
+      - name: Preview and apply migrations
+        if: steps.backend_changes.outputs.required == 'true'
+        shell: bash
+        run: |
+          supabase db push --dry-run
+          supabase db push
+
   deploy:
+    needs: backend
     runs-on: ubuntu-latest
     environment:
       name: github-pages

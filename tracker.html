@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shane's Weekly Tracker — Cloud</title>
+<meta name="referrer" content="no-referrer" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://hqqwlkmggwgaoiyzgrhy.supabase.co wss://hqqwlkmggwgaoiyzgrhy.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" />
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#4F46E5" />
 <link rel="apple-touch-icon" href="assets/tracker-icon-192.png" />
@@ -14,10 +16,10 @@
 <style>
   :root {
     --bg:#EEF1F7; --card:#FFFFFF; --line:#E7EAF1; --line-2:#D5DAE4;
-    --ink:#151A24; --ink-2:#454F63; --mut:#8A93A6;
+    --ink:#151A24; --ink-2:#454F63; --mut:#5F6B7C;
     --accent:#4F46E5; --accent-2:#6366F1; --accent-ink:#FFFFFF; --accent-soft:#EEEFFE; --ring:rgba(99,102,241,0.30);
-    --green:#0F8A4F; --green-bg:#E5F6EC;
-    --amber:#9A6700; --amber-bg:#FBF1D9;
+    --green:#08733F; --green-bg:#E5F6EC;
+    --amber:#795500; --amber-bg:#FBF1D9;
     --red:#C2362B; --red-bg:#FCEBE9;
     --slate:#475467; --slate-bg:#EDF0F5;
     --input-bg:#FBFCFE; --th-bg:#F6F7FB; --hover:#FBFBFE; --detail-bg:#FBFCFE; --track-bg:#E3E7F0;
@@ -30,7 +32,7 @@
   }
   :root[data-theme="dark"] {
     --bg:#0E1117; --card:#171B22; --line:#262C36; --line-2:#333B47;
-    --ink:#E7EBF2; --ink-2:#AEB6C4; --mut:#7E8796;
+    --ink:#E7EBF2; --ink-2:#BEC6D3; --mut:#9AA3B2;
     --accent:#7C83FF; --accent-2:#9AA0FF; --accent-soft:#1E2340; --ring:rgba(124,131,255,0.35);
     --green:#46D08A; --green-bg:#10271C;
     --amber:#E6B655; --amber-bg:#2A2310;
@@ -43,6 +45,7 @@
   }
   * { box-sizing:border-box; }
   html, body { margin:0; min-height:100%; }
+  [hidden] { display:none !important; }
   body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
     background:
       radial-gradient(1100px 520px at 88% -8%, rgba(99,102,241,0.10), transparent 60%),
@@ -91,7 +94,13 @@
   .gate input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .gate .btn { width:100%; padding:11px; font-size:14px; }
   .gate .alt { text-align:center; margin-top:14px; font-size:13px; color:var(--mut); }
-  .gate .alt a { cursor:pointer; }
+  .linkbtn { appearance:none; border:0; padding:0; margin:0; background:transparent; color:var(--accent);
+    font:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+  .linkbtn:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+  .auth-help { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:-5px 0 14px; font-size:12px; color:var(--mut); }
+  .auth-privacy { margin:16px 0 0; font-size:12px; color:var(--mut); line-height:1.5; }
+  .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important;
+    margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
   .note { font-size:12.5px; border-radius:9px; padding:10px 12px; margin-top:14px; line-height:1.5; }
   .note.err { color:var(--red); background:var(--red-bg); border:1px solid #F2C6C2; }
   .note.ok  { color:var(--green); background:var(--green-bg); border:1px solid #BFE6CD; }
@@ -99,13 +108,35 @@
   .note.hide { display:none; }
 
   /* ---- Tabs ---- */
-  .tabs { display:inline-flex; gap:3px; background:var(--track-bg); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); }
+  .tabs { display:inline-flex; gap:3px; max-width:100%; overflow-x:auto; background:var(--track-bg); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:18px; box-shadow:var(--shadow-sm); scrollbar-width:thin; }
   .tabs button { font-family:var(--disp); font-size:13px; font-weight:600; color:var(--ink-2); background:transparent;
     border:0; padding:8px 16px; border-radius:9px; cursor:pointer; transition:background .15s, color .15s, box-shadow .15s; }
   .tabs button:hover { color:var(--ink); }
   .tabs button.on { background:var(--card); color:var(--accent); box-shadow:var(--shadow-sm); }
   .tabs button:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
   .view[hidden] { display:none; }
+
+  .eyebrow { margin:0 0 4px; font-family:var(--mono); font-size:11.5px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--mut); }
+  .today-home-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:14px; box-shadow:var(--shadow); }
+  .today-home-head h2, #v-insights h2 { margin:0 0 4px; font-size:22px; }
+  .today-home-head .hint { margin:0; }
+  .today-home-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .today-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+  .today-stat { text-align:left; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; color:var(--ink); cursor:pointer; box-shadow:var(--shadow-sm); }
+  .today-stat:hover, .today-stat:focus-visible { border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); outline:none; }
+  .today-stat b { display:block; font-size:24px; line-height:1.1; }
+  .today-stat span { display:block; margin-top:3px; font-size:12.5px; color:var(--ink-2); }
+  .today-list { display:flex; flex-direction:column; gap:8px; }
+  .today-task { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 14px; align-items:center; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px 15px; color:var(--ink); cursor:pointer; box-shadow:var(--shadow-sm); }
+  .today-task:hover, .today-task:focus-visible { border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--ring); }
+  .today-task strong { overflow:hidden; text-overflow:ellipsis; }
+  .today-task .meta { grid-column:1 / -1; display:flex; gap:7px; flex-wrap:wrap; font-size:12px; color:var(--ink-2); }
+  .insights-top { min-height:24px; margin-bottom:6px; }
+  .insights-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+  .insight-card { display:flex; flex-direction:column; gap:4px; text-align:left; padding:18px; border:1px solid var(--line); border-radius:var(--radius); background:var(--card); color:var(--ink); cursor:pointer; box-shadow:var(--shadow-sm); }
+  .insight-card strong { font-size:16px; }
+  .insight-card span { font-size:12.5px; color:var(--ink-2); }
+  .insight-card:hover, .insight-card:focus-visible { border-color:var(--accent); outline:none; box-shadow:0 0 0 3px var(--ring); }
 
   /* ---- Report header ---- */
   .head { display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; background:var(--card);
@@ -119,10 +150,14 @@
 
   .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
   .actions .spacer { flex:1 1 auto; }
+  .filterbar { display:flex; align-items:end; gap:9px; flex-wrap:wrap; margin:-2px 0 12px; padding:10px 12px; background:var(--card); border:1px solid var(--line); border-radius:11px; }
+  .filterbar label { display:flex; flex-direction:column; gap:3px; font-size:11px; font-weight:700; color:var(--mut); }
+  .filterbar input, .filterbar select { min-height:34px; font:inherit; font-size:12.5px; color:var(--ink); background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:6px 8px; }
+  .filterbar #weekSearch { width:min(280px,70vw); }
+  .filterbar .spacer { flex:1 1 auto; }
   .sortlab { font-size:12px; color:var(--mut); display:inline-flex; align-items:center; gap:6px; }
   .sortlab select { font:inherit; font-size:12.5px; color:var(--ink-2); background:var(--input-bg); border:1px solid var(--line-2); border-radius:7px; padding:5px 7px; cursor:pointer; }
-  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; cursor:pointer; border-radius:6px; padding:2px 5px; }
-  .savestate:hover { color:var(--ink-2); background:var(--accent-soft); }
+  .savestate { font-family:var(--mono); font-size:11.5px; color:var(--mut); white-space:nowrap; border-radius:6px; padding:2px 5px; }
   .savestate.ok { color:var(--green); } .savestate.err { color:var(--red); } .savestate.busy { color:var(--amber); }
   .menuwrap { position:relative; display:inline-flex; }
   .menu { position:absolute; top:calc(100% + 6px); left:0; z-index:50; min-width:200px;
@@ -146,7 +181,7 @@
   table.tasks tbody td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
   table.tasks tbody tr:last-child td { border-bottom:0; }
   table.tasks tbody tr:not(.detail):hover td { background:var(--hover); }
-  .col-num { width:46px; color:var(--mut); font-family:var(--mono); font-size:12px; padding-top:11px !important; }
+  .col-num { width:82px; color:var(--mut); font-family:var(--mono); font-size:12px; padding-top:11px !important; }
   .col-num-inner { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
   .rowcaret { font-size:11px; line-height:1; color:var(--mut); background:transparent; border:0; cursor:pointer; padding:2px 1px; border-radius:4px; }
   .rowcaret:hover { color:var(--accent); background:var(--hover); }
@@ -185,7 +220,7 @@
   .dlab { display:flex; align-items:center; gap:9px; font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut); }
   .dlab .dl { width:42px; flex:0 0 auto; }
 
-  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px; padding:5px 10px; cursor:pointer; -webkit-appearance:none; appearance:none; }
+  select.chip { font:inherit; font-size:13px; font-weight:600; border:1px solid var(--line-2); border-radius:999px; padding:5px 28px 5px 10px; cursor:pointer; }
   select.chip:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
   select.chip.s-ontrack { color:var(--green); background:var(--green-bg); border-color:#BFE6CD; }
   select.chip.s-atrisk { color:var(--amber); background:var(--amber-bg); border-color:#EFD9A0; }
@@ -206,6 +241,13 @@
   .tlog { font-family:var(--disp); font-size:11.5px; font-weight:600; color:var(--accent); background:var(--accent-soft);
     border:1px solid #C9DBFF; border-radius:6px; padding:3px 9px; cursor:pointer; }
   .tlog:hover { filter:brightness(.98); }
+  .updates-head { margin-top:8px; }
+  .updates-list { display:flex; flex-direction:column; gap:5px; }
+  .update-entry { display:grid; grid-template-columns:72px minmax(0,1fr) 28px; gap:8px; align-items:start; padding:7px 8px; border:1px solid var(--line); border-radius:8px; background:var(--detail-bg); font-size:12.5px; }
+  .update-entry time { color:var(--mut); font-family:var(--mono); font-size:11px; }
+  .update-compose { display:flex; gap:7px; align-items:center; margin-top:6px; }
+  .update-compose input { flex:1 1 auto; min-width:0; font:inherit; font-size:13px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:8px; padding:7px 9px; }
+  .update-compose input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
 
   .aicount { font-family:var(--mono); font-size:11px; color:var(--mut); align-self:center; white-space:nowrap; }
   .aicount.all { color:var(--green); }
@@ -415,6 +457,10 @@
   .share-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
   .share-label { width:130px; font:inherit; font-size:12.5px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
   .share-url { flex:1 1 240px; min-width:0; font:inherit; font-size:12px; color:var(--ink-2); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:7px 9px; }
+  .share-options { flex:1 1 100%; display:flex; align-items:end; gap:10px 14px; flex-wrap:wrap; padding:7px 0 4px 138px; }
+  .share-options label { display:flex; flex-direction:column; gap:3px; font-size:11px; font-weight:700; color:var(--mut); }
+  .share-options label:has(input[type=checkbox]) { flex-direction:row; align-items:center; min-height:34px; }
+  .share-options input[type=date], .share-options select { min-height:34px; font:inherit; font-size:12px; color:var(--ink); background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
   .share-label:focus, .share-url:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
   .share-loading { font-size:12.5px; color:var(--ink-2); padding:6px 0; }
   .sharebar .note { font-size:12px; color:var(--ink-2); margin:6px 0 0; }
@@ -432,15 +478,20 @@
     table.tasks tr.detail[hidden] { display:none !important; }
     table.tasks tr:not(.detail) { padding:12px 12px 2px; }
     table.tasks tr:not(.detail) td { border:0 !important; padding:4px 0; }
+    table.tasks tr:not(.detail) td[data-label]::before { content:attr(data-label); display:block; margin:2px 0 3px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--mut); }
     table.tasks tr:not(.detail):hover td { background:transparent; }
     .col-num { font-size:11px; padding-top:0 !important; }
-    .col-status, .col-pri, .col-act { display:inline-block; vertical-align:middle; width:auto; margin-right:14px; }
+    .col-status, .col-pri, .col-act { display:inline-block; vertical-align:top; width:auto; margin-right:14px; }
     .col-prog { display:block; max-width:280px; }
     tr.detail td { display:block; padding:0 12px 16px; }
     tr.detail .col-num { display:none; }
     .meta-col { flex:1 1 100%; }
     .work-col { flex:1 1 100%; }
     .mini.project { width:100%; }
+    .today-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .insights-grid { grid-template-columns:1fr; }
+    .share-options { padding-left:0; }
+    .filterbar > label, .filterbar input, .filterbar select { width:100% !important; }
   }
   @media print {
     @page { margin:14mm; }
@@ -506,52 +557,71 @@
     </div>
     <div class="who-line" id="whoLine" hidden>
       <button class="btn ghost sm" id="themeToggle" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
-      <button class="btn ghost sm" id="shareToggle" type="button">Share dashboard ▾</button>
+      <button class="btn ghost sm" id="shareToggle" type="button" aria-controls="sharebar" aria-expanded="false">Share dashboard ▾</button>
       <button class="btn ghost sm" id="signout" type="button">Sign out</button>
     </div>
   </header>
 
   <!-- ============ AUTH GATE ============ -->
-  <section id="gate" class="gate" hidden>
+  <main id="gate" class="gate" hidden>
     <h2 id="gateTitle">Sign in</h2>
     <p class="sub" id="gateSub">Access your saved weekly reports and KPIs.</p>
     <form id="authForm">
       <label for="email">Email</label>
       <input id="email" type="email" autocomplete="username" placeholder="you@example.com" required />
       <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" minlength="6" required />
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" minlength="8" required aria-describedby="passwordHelp" />
+      <div class="auth-help">
+        <span id="passwordHelp">Use at least 8 characters.</span>
+        <button class="linkbtn" id="forgotPassword" type="button">Reset password</button>
+      </div>
       <button class="btn" id="authBtn" type="submit">Sign in</button>
     </form>
-    <div class="alt" id="authAlt">First time? <a id="toSignup">Create an account</a></div>
-    <div class="note hide" id="authNote"></div>
-  </section>
+    <div class="alt" id="authAlt">First time? <button class="linkbtn" id="toSignup" type="button">Create an account</button></div>
+    <div class="note hide" id="authNote" role="status" aria-live="polite"></div>
+    <p class="auth-privacy">Your tracker data is private to your account. AI actions identify what will be sent for processing before you run them.</p>
+  </main>
 
   <!-- ============ APP ============ -->
   <main id="app" hidden>
+    <section class="note info" id="offlineBanner" role="status" aria-live="polite" hidden>Offline — this app shell is available, and edits will stay queued on this device until the connection returns.</section>
     <section class="sharebar" id="sharebar" hidden>
       <div class="share-head">
         <strong>Read-only share links</strong>
         <button class="btn ghost sm" id="shareAdd" type="button">+ New link</button>
       </div>
       <div id="shareList"></div>
-      <p class="note">Each link opens a <b>read-only</b> dashboard — anyone with a link can view, no login.
-        Give a link a label (e.g., a person), <b>Copy</b> it, and <b>Revoke</b> any single link without
-        affecting the others.</p>
+      <p class="note">Each capability link opens a <b>read-only</b> dashboard. Choose its report range, included sections, and expiry; label it for the recipient, then revoke it at any time.</p>
     </section>
 
-    <div class="tabs" id="nav-tabs" role="tablist">
-      <button id="tab-week" class="on" type="button">This week</button>
-      <button id="tab-portfolio" type="button">Portfolio</button>
-      <button id="tab-projects" type="button">Projects</button>
-      <button id="tab-history" type="button">History</button>
-      <button id="tab-completed" type="button">Completed</button>
-      <button id="tab-kudos" type="button">Kudos</button>
-      <button id="tab-kpis" type="button">KPIs</button>
+    <div class="tabs" id="nav-tabs" role="tablist" aria-label="Tracker views">
+      <button id="tab-today" class="on" type="button" role="tab" aria-selected="true" aria-controls="v-today" tabindex="0">Today</button>
+      <button id="tab-week" type="button" role="tab" aria-selected="false" aria-controls="v-week" tabindex="-1">Week</button>
+      <button id="tab-portfolio" type="button" role="tab" aria-selected="false" aria-controls="v-portfolio" tabindex="-1">Portfolio</button>
+      <button id="tab-projects" type="button" role="tab" aria-selected="false" aria-controls="v-projects" tabindex="-1">Projects</button>
+      <button id="tab-insights" type="button" role="tab" aria-selected="false" aria-controls="v-insights" tabindex="-1">Insights</button>
     </div>
     <datalist id="projectOptions"></datalist>
 
+    <!-- ---- Today ---- -->
+    <section class="view" id="v-today" role="tabpanel" aria-labelledby="tab-today" tabindex="0">
+      <div class="today-home-head">
+        <div>
+          <p class="eyebrow">Daily focus</p>
+          <h2 id="todayHeading">Today</h2>
+          <p class="hint">Start with what is overdue, blocked, due today, or still needs an update.</p>
+        </div>
+        <div class="today-home-actions">
+          <button class="btn" id="todayQuickAdd" type="button">+ Quick add</button>
+          <button class="btn ghost" id="todayPlan" type="button">Plan my day</button>
+          <button class="btn ghost" id="todayCloseout" type="button">Close out day</button>
+        </div>
+      </div>
+      <div id="todayOverview" aria-live="polite"></div>
+    </section>
+
     <!-- ---- Editor ---- -->
-    <section class="view" id="v-week">
+    <section class="view" id="v-week" role="tabpanel" aria-labelledby="tab-week" tabindex="0" hidden>
       <section class="head">
         <div class="field">
           <label for="who">Prepared by</label>
@@ -601,7 +671,20 @@
             <option value="manual">Manual order</option>
           </select>
         </label>
-        <span class="savestate" id="savestate" role="button" tabindex="0" title="Saved automatically — click to save now">—</span>
+        <span class="savestate" id="savestate" role="status" aria-live="polite">—</span>
+      </div>
+
+      <div class="filterbar" aria-label="Task filters and bulk actions">
+        <label>Search <input id="weekSearch" type="search" placeholder="Task, project, update…" /></label>
+        <label>Status
+          <select id="weekFilterStatus"><option value="">All statuses</option><option>On Track</option><option>At Risk</option><option>Blocked</option><option>Done</option></select>
+        </label>
+        <label>Project <select id="weekFilterProject"><option value="">All projects</option></select></label>
+        <span class="spacer"></span>
+        <span id="bulkCount" class="muted-sm">0 selected</span>
+        <label>Set status <select id="bulkStatus"><option>On Track</option><option>At Risk</option><option>Blocked</option><option>Done</option></select></label>
+        <button class="btn ghost sm" id="bulkApply" type="button" disabled>Apply</button>
+        <button class="btn ghost sm" id="bulkClear" type="button" disabled>Clear</button>
       </div>
 
       <!-- Today panel: morning triage at a glance; click a chip to filter the list -->
@@ -637,8 +720,23 @@
         so you can log progress daily. Add checkable <b>action items</b> under any task and tick them off as you go.</p>
     </section>
 
+    <!-- ---- Insights hub ---- -->
+    <section class="view" id="v-insights" role="tabpanel" aria-labelledby="tab-insights" tabindex="0" hidden>
+      <div class="insights-top"><button class="linkbtn" id="insightsHome" type="button" hidden>← Insights home</button></div>
+      <div id="v-insights-home">
+        <p class="eyebrow">Review and report</p>
+        <h2>Insights</h2>
+        <p class="hint">Open historical reports, completed work, recognition, or performance trends.</p>
+        <div class="insights-grid">
+          <button class="insight-card" id="tab-history" type="button" aria-controls="v-history" aria-expanded="false"><strong>History</strong><span>Past weekly reports and exports</span></button>
+          <button class="insight-card" id="tab-completed" type="button" aria-controls="v-completed" aria-expanded="false"><strong>Completed</strong><span>Search and recall finished tasks</span></button>
+          <button class="insight-card" id="tab-kudos" type="button" aria-controls="v-kudos" aria-expanded="false"><strong>Kudos</strong><span>Recognition and praise</span></button>
+          <button class="insight-card" id="tab-kpis" type="button" aria-controls="v-kpis" aria-expanded="false"><strong>KPIs</strong><span>Throughput, risk, aging, and cycle time</span></button>
+        </div>
+      </div>
+
     <!-- ---- History ---- -->
-    <section class="view" id="v-history" hidden>
+    <section class="insight-panel" id="v-history" role="region" aria-labelledby="tab-history" hidden>
       <div class="htoolbar">
         <button class="btn ghost sm" id="historyCsv" type="button">⬇ Download all as CSV</button>
       </div>
@@ -646,7 +744,7 @@
     </section>
 
     <!-- ---- Completed archive ---- -->
-    <section class="view" id="v-completed" hidden>
+    <section class="insight-panel" id="v-completed" role="region" aria-labelledby="tab-completed" hidden>
       <div class="cbar">
         <input id="completedSearch" type="search" placeholder="Search completed tasks…" aria-label="Search completed tasks" />
         <label class="sortlab">Sort
@@ -666,7 +764,7 @@
     </section>
 
     <!-- ---- Kudos ---- -->
-    <section class="view" id="v-kudos" hidden>
+    <section class="insight-panel" id="v-kudos" role="region" aria-labelledby="tab-kudos" hidden>
       <div class="htoolbar" style="justify-content:space-between">
         <p class="hint" style="margin:0">Log praise &amp; recognition — it’s tracked here and appears on your shared dashboard.</p>
         <div class="htoolbar" style="gap:8px">
@@ -678,7 +776,7 @@
     </section>
 
     <!-- ---- KPIs ---- -->
-    <section class="view" id="v-kpis" hidden>
+    <section class="insight-panel" id="v-kpis" role="region" aria-labelledby="tab-kpis" hidden>
       <div class="htoolbar" style="justify-content:flex-end; margin-bottom:14px">
         <label class="sortlab">Weeks shown
           <select id="kpiWeeks">
@@ -689,9 +787,10 @@
       </div>
       <div id="kpiBody"></div>
     </section>
+    </section>
 
     <!-- ---- Portfolio (cross-project rollup) ---- -->
-    <section class="view" id="v-portfolio" hidden>
+    <section class="view" id="v-portfolio" role="tabpanel" aria-labelledby="tab-portfolio" tabindex="0" hidden>
       <div class="htoolbar" style="justify-content:space-between; margin-bottom:14px">
         <p class="hint" style="margin:0">Every project you track, rolled up across all your weeks — one glance at where each one stands.</p>
         <div class="htoolbar" style="gap:8px">
@@ -709,7 +808,7 @@
     </section>
 
     <!-- ---- Projects (registry + recurring templates) ---- -->
-    <section class="view" id="v-projects" hidden>
+    <section class="view" id="v-projects" role="tabpanel" aria-labelledby="tab-projects" tabindex="0" hidden>
       <div class="htoolbar" style="justify-content:space-between; margin-bottom:14px">
         <p class="hint" style="margin:0">Your projects — give each a colour, cadence and a reusable checklist, then drop that checklist into any week in one click.</p>
         <button class="btn" id="projAdd" type="button">+ New project</button>
@@ -718,11 +817,13 @@
     </section>
   </main>
 
-  <div id="aiModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="aiModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="aiModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>✨ AI weekly summary</strong><button class="ibtn" id="aiClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="aiModalTitle">✨ AI weekly summary</strong><button class="ibtn" id="aiClose" type="button" aria-label="Close AI weekly summary">✕</button></div>
+      <p class="note info ai-disclosure">This week’s task details, updates, action items, and kudos are sent to Anthropic to draft the summary.</p>
       <div class="modal-body" id="aiBody"></div>
       <div class="modal-foot">
+        <button class="btn sm" id="aiStart" type="button">Generate summary</button>
         <button class="btn ghost sm" id="aiEdit" type="button" hidden>Edit</button>
         <button class="btn ghost sm" id="aiCopy" type="button" hidden>Copy</button>
         <button class="btn ghost sm" id="aiRegen" type="button" hidden>Regenerate</button>
@@ -735,40 +836,44 @@
     </div>
   </div>
 
-  <div id="dayModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="dayModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="dayModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>✔ Close out my day</strong><button class="ibtn" id="dayClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="dayModalTitle">✔ Close out my day</strong><button class="ibtn" id="dayClose" type="button" aria-label="Close daily closeout">✕</button></div>
       <div class="modal-body" id="dayBody"></div>
       <div class="modal-foot" id="dayFoot"></div>
     </div>
   </div>
 
-  <div id="qcModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="qcModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="qcModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>Quick add</strong><button class="ibtn" id="qcClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="qcModalTitle">Quick add</strong><button class="ibtn" id="qcClose" type="button" aria-label="Close quick add">✕</button></div>
       <div class="modal-body">
-        <input class="qc-input" id="qcInput" type="text" placeholder="Task title  @project  !fri  #high" autocomplete="off" />
+        <label class="sr-only" for="qcInput">Task, project, due date, and priority</label>
+        <input class="qc-input" id="qcInput" type="text" placeholder="Task title  @project  !fri  #high" autocomplete="off" aria-describedby="qcHint" />
         <div class="qc-preview" id="qcPreview"></div>
-        <p class="qc-hint"><b>@</b>project · <b>!</b>today !tomorrow !fri !+3 !7/15 · <b>#</b>high #med #low — <b>Enter</b> to add, <b>Esc</b> to close</p>
+        <p class="qc-hint" id="qcHint"><b>@</b>project · <b>!</b>today !tomorrow !fri !+3 !7/15 · <b>#</b>high #med #low — <b>Enter</b> to add, <b>Esc</b> to close</p>
       </div>
     </div>
   </div>
 
-  <div id="ckModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="ckModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="ckModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>Jump to…</strong><button class="ibtn" id="ckClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="ckModalTitle">Jump to…</strong><button class="ibtn" id="ckClose" type="button" aria-label="Close command palette">✕</button></div>
       <div class="modal-body">
-        <input class="qc-input" id="ckInput" type="text" placeholder="Type a task, tab, or action…" autocomplete="off" />
-        <div class="ck-list" id="ckList"></div>
+        <label class="sr-only" for="ckInput">Search tasks, views, and actions</label>
+        <input class="qc-input" id="ckInput" type="text" placeholder="Type a task, view, or action…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="ckList" />
+        <div class="ck-list" id="ckList" role="listbox"></div>
       </div>
     </div>
   </div>
 
-  <div id="planModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="planModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="planModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>✨ Plan my day</strong><button class="ibtn" id="planClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="planModalTitle">✨ Plan my day</strong><button class="ibtn" id="planClose" type="button" aria-label="Close daily plan">✕</button></div>
+      <p class="note info ai-disclosure">Open-task details are sent to Anthropic to create this plan.</p>
       <div class="modal-body" id="planBody"></div>
       <div class="modal-foot">
+        <button class="btn sm" id="planStart" type="button">Create plan</button>
         <button class="btn ghost sm" id="planCopy" type="button" hidden>Copy</button>
         <button class="btn ghost sm" id="planRegen" type="button" hidden>Regenerate</button>
         <span class="spacer" style="flex:1 1 auto"></span>
@@ -777,11 +882,13 @@
     </div>
   </div>
 
-  <div id="notesModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="notesModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="notesModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>📝 Import notes</strong><button class="ibtn" id="notesClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="notesModalTitle">📝 Import notes</strong><button class="ibtn" id="notesClose" type="button" aria-label="Close note import">✕</button></div>
       <div class="modal-body" id="notesBody">
         <p class="hint" style="margin:0 0 8px">Paste the summary or transcript from your AI note taker (Plaud, Soundcore, Otter, Zoom, etc.). Claude pulls out tasks and action items you can add to this week — and your notes are saved to the week for reference.</p>
+        <p class="note info ai-disclosure">When you choose <b>Extract tasks</b>, these notes and your project names are sent to Anthropic through your private Supabase function. Remove confidential details you do not want processed.</p>
+        <label class="sr-only" for="notesInput">Meeting notes to process</label>
         <textarea id="notesInput" placeholder="Paste your meeting notes here…"></textarea>
         <div id="notesResult"></div>
       </div>
@@ -794,11 +901,13 @@
     </div>
   </div>
 
-  <div id="taskNotesModal" class="modal" hidden aria-modal="true" role="dialog">
+  <div id="taskNotesModal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="tnModalTitle">
     <div class="modal-card">
-      <div class="modal-head"><strong>✨ From notes</strong><button class="ibtn" id="tnClose" type="button" title="Close">✕</button></div>
+      <div class="modal-head"><strong id="tnModalTitle">✨ From notes</strong><button class="ibtn" id="tnClose" type="button" aria-label="Close task note import">✕</button></div>
       <div class="modal-body" id="tnBody">
         <p class="hint" id="tnHint" style="margin:0 0 8px">Paste this meeting's notes — Claude pulls action items and a concise summary for this task.</p>
+        <p class="note info ai-disclosure">The task title and pasted notes are sent to Anthropic when you choose <b>Extract</b>. Remove confidential details you do not want processed.</p>
+        <label class="sr-only" for="tnInput">Meeting notes for this task</label>
         <textarea id="tnInput" placeholder="Paste the meeting notes for this task here…"></textarea>
         <div id="tnResult"></div>
       </div>
@@ -811,9 +920,10 @@
     </div>
   </div>
 
-  <div id="toast" class="toast" hidden>
+  <div id="toast" class="toast" hidden role="status" aria-live="polite">
     <span id="toastMsg"></span>
     <button id="toastUndo" type="button">Undo</button>
+    <button id="toastDismiss" type="button" aria-label="Dismiss notification">Dismiss</button>
   </div>
 
 
@@ -930,8 +1040,9 @@
   .pf-card, .pj-card { transition: transform .14s ease, box-shadow .14s ease; }
   .pf-card:hover, .pj-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
   @media (prefers-reduced-motion: reduce) {
-    .detail-wrap, .citem input[type=checkbox]:checked { animation: none; }
-    .pf-card, .pj-card, .pf-card:hover, .pj-card:hover { transition: none; transform: none; }
+    html { scroll-behavior:auto !important; }
+    .detail-wrap, .citem input[type=checkbox]:checked, .spin { animation:none; }
+    .btn, .btn:hover, .btn:active, .pf-card, .pj-card, .pf-card:hover, .pj-card:hover { transition:none; transform:none; }
   }
 
   /* crisp inline-SVG icon buttons (replacing emoji) */
@@ -961,20 +1072,30 @@
   .rs-pg i { display:block; height:100%; background:var(--accent); border-radius:999px; }
 
   /* mobile / touch pass + floating add button */
-  .fab { display:none; position:fixed; right:18px; bottom:18px; z-index:60; width:54px; height:54px; border-radius:50%;
+  .fab { display:none; position:fixed; right:max(18px,env(safe-area-inset-right)); bottom:max(18px,env(safe-area-inset-bottom)); z-index:60; width:54px; height:54px; border-radius:50%;
     align-items:center; justify-content:center; font-size:28px; line-height:1; color:var(--accent-ink);
     background:linear-gradient(180deg, var(--accent-2), var(--accent)); border:1px solid var(--accent);
     box-shadow:0 10px 26px -6px rgba(79,70,229,.6); cursor:pointer; }
   @media (max-width:640px){
-    .ibtn { min-width:34px; min-height:34px; }
-    select.chip, .pri { min-height:34px; }
-    .tb-chip { padding:7px 13px; }
+    .ibtn { min-width:44px; min-height:44px; }
+    select.chip, .pri { min-height:44px; }
+    .tb-chip { min-height:44px; padding:8px 13px; }
     .fab { display:flex; }
-    /* tab bar: wrap into rows so Completed / Kudos / KPIs never fall off-screen */
-    .tabs { display:flex; flex-wrap:wrap; width:100%; }
-    .tabs button { flex:1 1 auto; text-align:center; padding:8px 10px; }
+    #add { display:none; }
+    .tabs { display:flex; flex-wrap:nowrap; width:100%; overflow-x:auto; }
+    .tabs button { flex:0 0 auto; text-align:center; min-height:44px; padding:8px 15px; }
+    .rowcaret, .citem .cdel, .citem .cmove, .dqbtn, .tlog, .addItem, .draghandle { min-width:44px; min-height:44px; }
+    .cell-input { border-color:var(--line); background:var(--input-bg); }
+    .modal { padding:0; align-items:stretch; }
+    .modal-card { width:100%; max-width:none; min-height:100dvh; max-height:100dvh; border-radius:0; }
+    .modal-foot { flex-wrap:wrap; position:sticky; bottom:0; background:var(--card); padding-bottom:max(12px,env(safe-area-inset-bottom)); }
+    .modal-foot .btn { min-height:44px; }
+    .today-home-actions, .today-home-actions .btn { width:100%; }
     /* long save/error messages must wrap, not push the page wider */
     .savestate { flex:1 1 100%; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+  }
+  @media (pointer:coarse){
+    .rowcaret, .citem .cdel, .citem .cmove, .dqbtn, .tlog, .addItem, .draghandle, .menuitem { min-width:44px; min-height:44px; }
   }
   @media print { .fab { display:none !important; } }
 
@@ -1004,13 +1125,15 @@
   .ck-empty { padding:14px 10px; font-size:12.5px; color:var(--mut); }
 </style>
 
+<script src="assets/vendor/supabase-js-2.110.2.umd.js"></script>
 <script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const { createClient } = globalThis.supabase;
 
 // ---- Supabase config (publishable key is safe to expose; Row Level Security protects data) ----
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const ALLOW_PUBLIC_SIGNUP = false; // personal tracker: invite users in Supabase; do not expose open AI-spending accounts
 
 const STATUSES = [
   { v:"On Track", cls:"s-ontrack" }, { v:"At Risk", cls:"s-atrisk" },
@@ -1050,12 +1173,42 @@ function shortDate(iso){
   const p = iso.split("-"); const d = new Date(+p[0], +p[1]-1, +p[2]);
   return d.toLocaleDateString(undefined,{ month:"short", day:"numeric" });
 }
-function blankRow(){ return { task:"", status:"On Track", pri:"Med", prog:0, note:"", project:"", due:"", items:[], started:"", completed:"" }; }
+function newLogicalId(){
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") return globalThis.crypto.randomUUID();
+  return "00000000-0000-4000-8000-" + Math.random().toString(16).slice(2).padEnd(12,"0").slice(0,12);
+}
+function blankRow(){ return { logicalId:newLogicalId(), task:"", status:"On Track", pri:"Med", prog:0, note:"", project:"", due:"", items:[], updates:[], deletedUpdateIds:[], blockedBy:"", waitingOn:"", followUp:"", started:"", completed:"" }; }
 function normItems(v){ return Array.isArray(v) ? v.filter(it => it && typeof it.text==="string").map(it => ({ text:it.text, done:!!it.done })) : []; }
+function normUpdates(v){ return Array.isArray(v) ? v.filter(u => u && typeof u.text === "string").map(u => ({ id:String(u.id||newLogicalId()), date:/^\d{4}-\d{2}-\d{2}$/.test(String(u.date||""))?String(u.date):todayIso(), text:String(u.text).trim() })).filter(u=>u.text) : []; }
+function normDeletedUpdateIds(v){ return Array.isArray(v) ? [...new Set(v.map(id=>String(id||"").trim().toLowerCase()).filter(Boolean))] : []; }
+function normDeletedUpdateGroups(groups){
+  const merged=new Map();
+  (Array.isArray(groups)?groups:[]).forEach(group=>{
+    const logicalId=String(group&&(group.logical_id||group.logicalId)||"").trim().toLowerCase();if(!logicalId)return;
+    const ids=merged.get(logicalId)||new Set();normDeletedUpdateIds(group.update_ids||group.deleted_update_ids||group.ids).forEach(id=>ids.add(id));merged.set(logicalId,ids);
+  });
+  return [...merged].map(([logical_id,ids])=>({logical_id,update_ids:[...ids]})).filter(group=>group.update_ids.length);
+}
+function collectDeletedUpdateGroups(){
+  return normDeletedUpdateGroups([...(state.deletedUpdates||[]),...state.rows.map(row=>({logical_id:row.logicalId,update_ids:row.deletedUpdateIds}))]);
+}
+function retainRowTombstones(row){
+  if(!row)return;state.deletedUpdates=normDeletedUpdateGroups([...(state.deletedUpdates||[]),{logical_id:row.logicalId,update_ids:row.deletedUpdateIds}]);
+}
+function latestUpdateText(row){ const updates=normUpdates(row.updates).slice().sort((a,b)=>b.date.localeCompare(a.date)); return updates.length ? updates[0].text : htmlToText(row.note||"").trim().split(/\r?\n/)[0]; }
 function statusClass(v){ const s = STATUSES.find(s=>s.v===v); return s?s.cls:"s-ontrack"; }
 function priClass(v){ return v==="High" ? "p-high" : v==="Low" ? "p-low" : "p-med"; }
 function autosize(ta){ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
-function esc(s){ return String(s==null?"":s); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function safeUrl(value){
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw, location.href);
+    if (!["http:","https:","mailto:"].includes(u.protocol)) return "";
+    return /^(https?:|mailto:)/i.test(raw) ? raw : u.href;
+  } catch (_) { return ""; }
+}
 
 // ---------- inline SVG icons (crisper than emoji, inherit currentColor) ----------
 const ICON_TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
@@ -1069,9 +1222,27 @@ function paintRange(rng){
 
 // ---------- app state ----------
 let session = null;
-let state = { who:"", week:"", rows:[], notes:"", ai:"" };
+let state = { who:"", week:"", rows:[], notes:"", ai:"", revision:null, deletedUpdates:[] };
 let reportId = null;
 let saveTimer = null;
+let saveChain = Promise.resolve();
+let saveGeneration = 0;
+let clientSnapshotVersion = Date.now() * 1000;
+const confirmedRevisions = new Map();
+const confirmedSnapshotVersions = new Map();
+let loadGeneration = 0;
+let dirty = false;
+let kudosList = null;
+let completedCache = null;
+let aiMarkdown = "";
+let aiLimitNotice = "";
+let PROJECTS = [];
+let projectsLoaded = false;
+let projLoadInflight = null;
+const selectedTaskIds = new Set();
+const kudosTimers = {};
+const shareTimers = {};
+const projSaveTimers = {};
 let sortMode = "status";
 try { const s = localStorage.getItem("tracker_sort"); if (s) sortMode = s; } catch(e){}
 let showDone = false;   // Done tasks move to the Completed tab; this reveals them in the editor
@@ -1080,11 +1251,36 @@ let showDone = false;   // Done tasks move to the Completed tab; this reveals th
 let undoTimer = null, undoFn = null;
 function showUndo(msg, fn){
   undoFn = fn; $("toastMsg").textContent = msg; $("toast").hidden = false;
-  clearTimeout(undoTimer); undoTimer = setTimeout(hideUndo, 8000);
+  clearTimeout(undoTimer); undoTimer = setTimeout(hideUndo, 15000);
 }
 function hideUndo(){ $("toast").hidden = true; undoFn = null; clearTimeout(undoTimer); }
-function isBlankRow(r){ return !(r.task&&r.task.trim()) && !(r.note&&r.note.trim()) && !(r.project&&r.project.trim()) && !(r.items&&r.items.length); }
+function isBlankRow(r){ return !(r.task&&r.task.trim()) && !(r.note&&r.note.trim()) && !(r.project&&r.project.trim()) && !(r.items&&r.items.length) && !(r.updates&&r.updates.length) && !(r.deletedUpdateIds&&r.deletedUpdateIds.length); }
 $("toastUndo").addEventListener("click", () => { const f = undoFn; hideUndo(); if (f) f(); });
+$("toastDismiss").addEventListener("click", hideUndo);
+
+const modalReturnFocus = new WeakMap();
+function showModal(id, focusId){
+  const modal=$(id); if(!modal) return;
+  modalReturnFocus.set(modal, document.activeElement); modal.hidden=false;
+  const app=$("app"), header=document.querySelector(".mast"); if(app) app.inert=true; if(header) header.inert=true;
+  requestAnimationFrame(()=>{ const target=(focusId&&$(focusId))||modal.querySelector("input,textarea,select,button,[tabindex]:not([tabindex='-1'])"); if(target) target.focus(); });
+}
+function hideModal(id){
+  const modal=$(id); if(!modal) return; modal.hidden=true;
+  const app=$("app"), header=document.querySelector(".mast"); if(app) app.inert=false; if(header) header.inert=false;
+  const prior=modalReturnFocus.get(modal); if(prior && prior.isConnected) prior.focus(); modalReturnFocus.delete(modal);
+}
+document.addEventListener("keydown", e => {
+  const modal=Array.from(document.querySelectorAll(".modal:not([hidden])")).pop(); if(!modal) return;
+  if(e.key==="Escape"){ e.preventDefault(); const close=modal.querySelector(".modal-head button"); if(close) close.click(); return; }
+  if(e.key!=="Tab") return;
+  const focusable=Array.from(modal.querySelectorAll("button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href],[tabindex]:not([tabindex='-1'])")).filter(el=>!el.hidden);
+  if(!focusable.length){ e.preventDefault(); modal.focus(); return; }
+  const first=focusable[0], last=focusable[focusable.length-1];
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+}, true);
+document.querySelectorAll(".modal").forEach(modal => modal.addEventListener("click",e=>{ if(e.target===modal){ const close=modal.querySelector(".modal-head button"); if(close) close.click(); } }));
 
 // ============ RICH TEXT (long-form fields: comments + kudos details) ============
 function escHtml(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
@@ -1102,11 +1298,17 @@ function sanitizeHtml(html){
       if (child.nodeType !== 1) { child.remove(); return; }
       const tag = child.tagName;
       if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); return; }
-      if (!RT_ALLOWED[tag]) { while (child.firstChild) node.insertBefore(child.firstChild, child); child.remove(); return; }
+      if (!RT_ALLOWED[tag]) {
+        walk(child);
+        while (child.firstChild) node.insertBefore(child.firstChild, child);
+        child.remove();
+        return;
+      }
       Array.from(child.attributes).forEach(a => {
         const name = a.name.toLowerCase();
         if (tag === "A" && name === "href") {
-          if (!/^(https?:|mailto:)/i.test((a.value||"").trim())) child.removeAttribute("href");
+          const href=safeUrl(a.value);
+          if(href) child.setAttribute("href",href); else child.removeAttribute("href");
         } else { child.removeAttribute(a.name); }
       });
       if (tag === "A") { child.setAttribute("target","_blank"); child.setAttribute("rel","noopener noreferrer nofollow"); }
@@ -1148,7 +1350,7 @@ const RT_BTNS = [["bold","<b>B</b>","Bold (Ctrl/Cmd+B)"],["italic","<i>I</i>","I
 function rtLinkOn(el){
   el.focus();
   const sel = window.getSelection(); const hasSel = sel && sel.toString().trim();
-  const url = prompt("Link URL:", "https://"); if (!url) return;
+  const url = safeUrl(prompt("Link URL:", "https://")); if (!url) { setSave("err", "Use an http, https, or mailto link."); return; }
   if (hasSel) document.execCommand("createLink", false, url);
   else document.execCommand("insertHTML", false, '<a href="'+escHtml(url)+'">'+escHtml(url)+'</a>');
 }
@@ -1158,6 +1360,7 @@ function makeRich(value, placeholder, onChange){
   const bar = document.createElement("div"); bar.className = "rt-bar";
   const el = document.createElement("div");
   el.className = "cell-input richtext"; el.contentEditable = "true"; el.dataset.ph = placeholder || "";
+  el.setAttribute("role", "textbox"); el.setAttribute("aria-multiline", "true"); el.setAttribute("aria-label", placeholder || "Rich text editor");
   value = fixDoubled(value || ""); el.innerHTML = sanitizeHtml(looksHtml(value) ? value : plainToHtml(value));
   rtPlaceholder(el);
   RT_BTNS.forEach(([cmd, label, title]) => {
@@ -1173,7 +1376,7 @@ function makeRich(value, placeholder, onChange){
   el.addEventListener("input", () => { rtPlaceholder(el); onChange(rtCurrent(el)); });
   el.addEventListener("blur", () => { rtLinkify(el); const clean = sanitizeHtml(el.innerHTML); if (clean !== el.innerHTML) el.innerHTML = clean; rtPlaceholder(el); onChange(rtCurrent(el)); });
   el.addEventListener("paste", (e) => { e.preventDefault(); const text = (e.clipboardData || window.clipboardData).getData("text/plain"); document.execCommand("insertText", false, text); });
-  el.addEventListener("keydown", (e) => { if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k") { e.preventDefault(); rtLinkOn(el); } });
+  el.addEventListener("keydown", (e) => { if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k") { e.preventDefault(); e.stopPropagation(); rtLinkOn(el); } });
   wrap.appendChild(bar); wrap.appendChild(el);
   return wrap;
 }
@@ -1182,17 +1385,30 @@ function makeRich(value, placeholder, onChange){
 let mode = "signin";
 function setNote(el, kind, msg){ el.className = "note " + kind; el.innerHTML = msg; el.classList.remove("hide"); }
 function clearNote(el){ el.classList.add("hide"); }
+$("authAlt").hidden = !ALLOW_PUBLIC_SIGNUP;
 
 $("authAlt").addEventListener("click", (e) => {
   if (!e.target || e.target.id !== "toSignup") return;
+  if (!ALLOW_PUBLIC_SIGNUP) return;
   mode = mode === "signin" ? "signup" : "signin";
   $("gateTitle").textContent = mode === "signup" ? "Create your account" : "Sign in";
+  $("gateSub").textContent = mode === "signup" ? "Create a verified account to keep your work private." : "Access your saved weekly reports and KPIs.";
   $("authBtn").textContent = mode === "signup" ? "Create account" : "Sign in";
   $("authAlt").innerHTML = mode === "signup"
-    ? 'Already have an account? <a id="toSignup">Sign in</a>'
-    : 'First time? <a id="toSignup">Create an account</a>';
+    ? 'Already have an account? <button class="linkbtn" id="toSignup" type="button">Sign in</button>'
+    : 'First time? <button class="linkbtn" id="toSignup" type="button">Create an account</button>';
   $("password").setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+  $("forgotPassword").hidden = mode === "signup";
   clearNote($("authNote"));
+});
+
+$("forgotPassword").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  const note = $("authNote"); clearNote(note);
+  if (!email) { setNote(note, "info", "Enter your email first, then choose Reset password."); $("email").focus(); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.href });
+  if (error) setNote(note, "err", esc(error.message || "Could not send the reset email."));
+  else setNote(note, "ok", "If an account exists for that email, a password-reset link is on its way.");
 });
 
 $("authForm").addEventListener("submit", async (e) => {
@@ -1204,10 +1420,9 @@ $("authForm").addEventListener("submit", async (e) => {
   clearNote(note);
   try {
     if (mode === "signup") {
-      const { error } = await sb.auth.signUp({ email, password });
-      if (error && !/already/i.test(error.message)) throw error;
-      const { error: e2 } = await sb.auth.signInWithPassword({ email, password });
-      if (e2) throw e2;
+      const { data, error } = await sb.auth.signUp({ email, password, options:{ emailRedirectTo:location.href } });
+      if (error) throw error;
+      if (!data.session) setNote(note, "ok", "Check your email to verify the account, then return here to sign in.");
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -1215,8 +1430,7 @@ $("authForm").addEventListener("submit", async (e) => {
   } catch (err) {
     btn.disabled = false; btn.textContent = label;
     if (/email not confirmed/i.test(err.message)) {
-      setNote(note, "info", 'Your account needs email confirmation turned off. In Supabase → '
-        + '<b>Authentication → Providers → Email</b>, switch off <b>“Confirm email,”</b> then sign in again.');
+      setNote(note, "info", "Check your inbox and verify your email before signing in.");
     } else if (/invalid login credentials/i.test(err.message)) {
       setNote(note, "err", "Email or password not recognized. New here? Use “Create an account.”");
     } else {
@@ -1228,27 +1442,54 @@ $("authForm").addEventListener("submit", async (e) => {
 });
 
 $("signout").addEventListener("click", async () => { await sb.auth.signOut(); });
-sb.auth.onAuthStateChange((_e, sess) => { applySession(sess); });
+sb.auth.onAuthStateChange((_e, sess) => { void applySession(sess); });
 
-function applySession(sess){
+let activeUserId = null;
+function resetUserState(){
+  clearTimeout(saveTimer); saveTimer = null; saveGeneration++; loadGeneration++; dirty = false;
+  confirmedRevisions.clear();confirmedSnapshotVersions.clear();
+  [kudosTimers, shareTimers, projSaveTimers].forEach(group => Object.keys(group).forEach(key => { clearTimeout(group[key]); delete group[key]; }));
+  reportId = null; state = { who:"", week:"", rows:[], notes:"", ai:"", revision:null, deletedUpdates:[] };
+  kudosList = null; completedCache = null; dayFilter = null; aiMarkdown = ""; aiLimitNotice="";
+  PROJECTS.splice(0, PROJECTS.length); projectsLoaded = false; projLoadInflight = null;
+  selectedTaskIds.clear();
+  ["rows","historyBody","completedBody","kudosBody","kpiBody","portfolioBody","projectsBody","todayOverview","shareList","aiBody","notesResult","tnResult","planBody","dayBody"].forEach(id => { const el=$(id); if(el) el.innerHTML=""; });
+  $("sharebar").hidden=true; $("shareToggle").setAttribute("aria-expanded","false"); $("who").value=""; $("week").value="";
+}
+async function applySession(sess){
+  const nextUserId = sess && sess.user ? sess.user.id : null;
+  if (activeUserId !== nextUserId) resetUserState();
+  activeUserId = nextUserId;
   session = sess;
   if (session && session.user) {
-    $("gate").hidden = true; $("app").hidden = false; $("whoLine").hidden = false;
+    $("gate").hidden = true; $("app").hidden = true; $("whoLine").hidden = false;
     if (!state.week) state.week = isoDate(comingFriday());
-    loadWeek();
-    renderWeekKudos();
-    loadProjects().then(() => { if (!$("v-week").hidden) renderRows(); }).catch(()=>{});
+    await loadWeek();
+    if (!session || session.user.id !== nextUserId) return;
+    $("app").hidden = false;
+    showTab("today");
+    await Promise.allSettled([renderWeekKudos(), loadProjects()]);
+    renderRows(); renderTodayView();
   } else {
+    resetUserState();
     $("app").hidden = true; $("whoLine").hidden = true; $("gate").hidden = false;
   }
 }
 
 // ============ EDITOR ============
 $("who").addEventListener("input", () => { state.who = $("who").value; scheduleSave(); });
-$("week").addEventListener("change", () => { state.week = $("week").value; loadWeek(); });
-$("weekPrev").addEventListener("click", () => { state.week = addDaysIso(state.week || todayIso(), -7); loadWeek(); });
-$("weekNext").addEventListener("click", () => { state.week = addDaysIso(state.week || todayIso(), 7); loadWeek(); });
-$("weekThis").addEventListener("click", () => { state.week = isoDate(comingFriday()); loadWeek(); });
+async function changeWeek(nextWeek){
+  if (!nextWeek || nextWeek === state.week) return;
+  const previousWeek = state.week;
+  clearTimeout(saveTimer); saveTimer = null;
+  if (dirty && !(await saveWeek(false))) { $("week").value = previousWeek; return; }
+  state.week = nextWeek;
+  if (!(await loadWeek()) && state.week === nextWeek) { state.week = previousWeek; await loadWeek(); }
+}
+$("week").addEventListener("change", () => { void changeWeek($("week").value); });
+$("weekPrev").addEventListener("click", () => { void changeWeek(addDaysIso(state.week || todayIso(), -7)); });
+$("weekNext").addEventListener("click", () => { void changeWeek(addDaysIso(state.week || todayIso(), 7)); });
+$("weekThis").addEventListener("click", () => { void changeWeek(isoDate(comingFriday())); });
 $("add").addEventListener("click", () => {
   state.rows.push(blankRow()); renderRows();
   const inputs = $("rows").querySelectorAll("textarea.cell-input.task");
@@ -1270,6 +1511,20 @@ $("carryBlank").addEventListener("click", () => {
 $("toggleDone").addEventListener("click", () => { showDone = !showDone; renderRows(); });
 $("logToday").addEventListener("click", logTodayAll);
 $("collapseAll").addEventListener("click", toggleCollapseAll);
+$("weekSearch").addEventListener("input", renderRows);
+$("weekFilterStatus").addEventListener("change", renderRows);
+$("weekFilterProject").addEventListener("change", renderRows);
+$("bulkApply").addEventListener("click", () => {
+  const status = $("bulkStatus").value;
+  state.rows.forEach(row => {
+    if (!selectedTaskIds.has(row.logicalId)) return;
+    row.status = status;
+    if (status === "Done") { row.completed = row.completed || todayIso(); row.prog = 100; }
+    else row.completed = "";
+  });
+  selectedTaskIds.clear(); renderRows(); scheduleSave();
+});
+$("bulkClear").addEventListener("click", () => { selectedTaskIds.clear(); renderRows(); });
 // "⋯ More" overflow menu — toggle, and close on item pick / outside click / Escape
 (function(){
   const wrap = $("moreWrap"), btn = $("moreBtn"), menu = $("moreMenu");
@@ -1279,21 +1534,23 @@ $("collapseAll").addEventListener("click", toggleCollapseAll);
     e.stopPropagation();
     const open = menu.hidden;
     menu.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { const first=menu.querySelector('[role="menuitem"]'); if(first) first.focus(); }
   });
   menu.addEventListener("click", close);
+  menu.addEventListener("keydown", e => {
+    const items=Array.from(menu.querySelectorAll('[role="menuitem"]')); if(!items.length)return;
+    const at=Math.max(0,items.indexOf(document.activeElement)); let next=at;
+    if(e.key==="ArrowDown")next=(at+1)%items.length;else if(e.key==="ArrowUp")next=(at-1+items.length)%items.length;else if(e.key==="Home")next=0;else if(e.key==="End")next=items.length-1;else if(e.key==="Escape"){close();btn.focus();return;}else return;
+    e.preventDefault();items[next].focus();
+  });
   document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) close(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-})();
-// The "saved" chip doubles as a manual save trigger (autosave still runs as you type)
-(function(){
-  const chip = $("savestate");
-  if (!chip) return;
-  chip.addEventListener("click", () => saveWeek(true));
-  chip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); saveWeek(true); } });
 })();
 // Alt+↑ / Alt+↓ — jump to the previous/next task (expand it and focus its comment box)
 document.addEventListener("keydown", (e) => {
   if (!e.altKey || e.ctrlKey || e.metaKey) return;
+  const target = e.target;
+  if (target && (target.matches("input, textarea, select") || target.isContentEditable)) return;
   if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
   if ($("v-week").hidden || !visibleOrder.length) return;
   e.preventDefault();
@@ -1312,9 +1569,193 @@ document.addEventListener("keydown", (e) => {
 
 function setSave(kind, msg){ const el = $("savestate"); el.className = "savestate " + kind; el.textContent = msg; }
 function scheduleSave(){
+  dirty = true;
   setSave("busy", "Editing…");
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveWeek(false), 1100);
+  saveTimer = setTimeout(() => { saveTimer = null; void saveWeek(false); }, 1100);
+}
+
+function rowFromDb(t){
+  return { logicalId:t.logical_id || newLogicalId(), task:t.task || "", status:t.status || "On Track", pri:t.priority || "Med", prog:+t.progress || 0,
+    note:t.note || "", project:t.project || "", due:t.due_date || "", items:normItems(t.items), updates:normUpdates(t.updates), deletedUpdateIds:normDeletedUpdateIds(t.deleted_update_ids),
+    blockedBy:t.blocked_by || "", waitingOn:t.waiting_on || "", followUp:t.follow_up_on || "",
+    started:t.started_on || "", completed:t.completed_on || "" };
+}
+function rowForSave(r, position){
+  return { logical_id:r.logicalId || (r.logicalId=newLogicalId()), position, task:String(r.task||""), status:r.status || "On Track",
+    priority:r.pri || "Med", progress:+r.prog || 0, note:r.note || "", project:r.project || "", due_date:r.due || null,
+    items:normItems(r.items), updates:normUpdates(r.updates), deleted_update_ids:normDeletedUpdateIds(r.deletedUpdateIds), blocked_by:r.blockedBy || "", waiting_on:r.waitingOn || "",
+    follow_up_on:r.followUp || null, started_on:r.started || null, completed_on:r.completed || null };
+}
+function saveSnapshot(){
+  return { userId:session && session.user ? session.user.id : null, week:state.week, who:state.who, notes:state.notes || "", ai:state.ai || "",
+    reportId:reportId||null,revision:state.revision, tasks:state.rows.map(rowForSave).filter(r => r.task.trim() || htmlToText(r.note).trim() || r.items.length || r.updates.length || r.deleted_update_ids.length),
+    deletedUpdates:collectDeletedUpdateGroups() };
+}
+function snapshotKey(s){ return JSON.stringify([s.week,s.who,s.notes,s.ai,s.reportId||null,s.tasks,normDeletedUpdateGroups(s.deletedUpdates),!!s.deleteWeek]); }
+function nextSnapshotVersion(){ clientSnapshotVersion=Math.max(clientSnapshotVersion+1,Date.now()*1000);return clientSnapshotVersion; }
+function snapshotVersion(snapshot){const value=Number(snapshot&&snapshot.clientVersion);return Number.isFinite(value)?value:0;}
+function revisionKey(snapshot){return String(snapshot.userId||"")+"|"+String(snapshot.week||"");}
+function rememberConfirmedRevision(snapshot,revision){
+  const key=revisionKey(snapshot);
+  if(revision!==null&&Number.isFinite(+revision))confirmedRevisions.set(key,+revision);
+  const version=snapshotVersion(snapshot);if(version)confirmedSnapshotVersions.set(key,Math.max(version,confirmedSnapshotVersions.get(key)||0));
+}
+function forgetConfirmedSnapshot(snapshot){const key=revisionKey(snapshot);confirmedRevisions.delete(key);confirmedSnapshotVersions.delete(key);}
+function rebaseSnapshotRevision(snapshot){
+  let revision=snapshot.revision;
+  let expectedReportId=snapshot.reportId||null;
+  const known=confirmedRevisions.get(revisionKey(snapshot));
+  if(Number.isFinite(known)&&(revision===null||!Number.isFinite(+revision)||known>+revision))revision=known;
+  if(session&&session.user&&session.user.id===snapshot.userId&&state.week===snapshot.week){
+    if(state.revision!==null&&Number.isFinite(+state.revision)&&(revision===null||!Number.isFinite(+revision)||+state.revision>+revision))revision=+state.revision;
+    if(!expectedReportId&&reportId)expectedReportId=reportId;
+  }
+  return revision===snapshot.revision&&expectedReportId===(snapshot.reportId||null)?snapshot:{...snapshot,revision,reportId:expectedReportId};
+}
+function acknowledgedUpdateIds(snapshot){
+  const groups=normDeletedUpdateGroups([...(snapshot.deletedUpdates||[]),...(snapshot.tasks||[]).map(task=>({logical_id:task.logical_id,update_ids:task.deleted_update_ids}))]);
+  return new Map(groups.map(group=>[group.logical_id,new Set(group.update_ids)]));
+}
+function reconcileSnapshotAfterAcknowledgement(snapshot,acknowledged,revision){
+  const deletedByTask=acknowledgedUpdateIds(acknowledged);
+  const deletedUpdates=normDeletedUpdateGroups(snapshot.deletedUpdates).map(group=>({logical_id:group.logical_id,update_ids:group.update_ids.filter(id=>!deletedByTask.get(group.logical_id)?.has(id))})).filter(group=>group.update_ids.length);
+  return {...snapshot,reportId:snapshot.reportId||acknowledged.reportId||null,revision,deletedUpdates,tasks:(snapshot.tasks||[]).map(task=>{
+    const ids=deletedByTask.get(String(task.logical_id||""));if(!ids||!ids.size)return task;
+    return {...task,deleted_update_ids:normDeletedUpdateIds(task.deleted_update_ids).filter(id=>!ids.has(id)),updates:normUpdates(task.updates).filter(update=>!ids.has(String(update.id||"").toLowerCase()))};
+  })};
+}
+function acknowledgedSnapshot(snapshot,revision){
+  return reconcileSnapshotAfterAcknowledgement(snapshot,snapshot,revision);
+}
+function applyAcknowledgedUpdateDeletions(rows,snapshot){
+  const deletedByTask=acknowledgedUpdateIds(snapshot);
+  rows.forEach(row=>{
+    const ids=deletedByTask.get(String(row.logicalId||"")); if(!ids||!ids.size)return;
+    row.deletedUpdateIds=normDeletedUpdateIds(row.deletedUpdateIds).filter(id=>!ids.has(id));
+    row.updates=normUpdates(row.updates).filter(update=>!ids.has(String(update.id||"").toLowerCase()));
+  });
+  state.deletedUpdates=normDeletedUpdateGroups(state.deletedUpdates).map(group=>({logical_id:group.logical_id,update_ids:group.update_ids.filter(id=>!deletedByTask.get(group.logical_id)?.has(id))})).filter(group=>group.update_ids.length);
+}
+function pendingSaveKey(snapshot){ return "tracker_pending_v1_"+snapshot.userId+"_"+snapshot.week; }
+function cachedWeekKey(userId,week){ return "tracker_cache_v1_"+userId+"_"+week; }
+function cacheSnapshot(snapshot){ try { localStorage.setItem(cachedWeekKey(snapshot.userId,snapshot.week),JSON.stringify(snapshot)); } catch(_){} }
+function readStoredSnapshot(key){let snapshot=null;try{const raw=localStorage.getItem(key);snapshot=raw?JSON.parse(raw):null;}catch(_){}return snapshot;}
+function storePendingSnapshot(snapshot){
+  const key=pendingSaveKey(snapshot);const current=readStoredSnapshot(key);
+  const newest=current&&snapshotVersion(current)>snapshotVersion(snapshot)?current:snapshot;
+  if(newest===snapshot){try{localStorage.setItem(key,JSON.stringify(snapshot));}catch(_){}}
+  cacheSnapshot(newest);return newest;
+}
+function reconcilePendingSnapshotAfterSave(savedSnapshot,revision,key=pendingSaveKey(savedSnapshot)){
+  const current=readStoredSnapshot(key);if(!current)return null;
+  if(snapshotKey(current)===snapshotKey(savedSnapshot)||snapshotVersion(current)<=snapshotVersion(savedSnapshot)){
+    try{localStorage.removeItem(key);}catch(_){return current;}
+    return null;
+  }
+  const rebased=reconcileSnapshotAfterAcknowledgement(current,savedSnapshot,revision);
+  try{localStorage.setItem(key,JSON.stringify(rebased));}catch(_){return current;}
+  cacheSnapshot(rebased);return rebased;
+}
+function restoreCachedWeek(userId,week){
+  let snapshot; try{snapshot=JSON.parse(localStorage.getItem(cachedWeekKey(userId,week)));}catch(_){return false;} if(!snapshot)return false;
+  reportId=snapshot.reportId||null;state.who=snapshot.who||"";state.week=week;state.notes=snapshot.notes||"";state.ai=snapshot.ai||"";state.revision=snapshot.revision??null;state.deletedUpdates=normDeletedUpdateGroups(snapshot.deletedUpdates);state.rows=(snapshot.tasks||[]).map(t=>rowFromDb(t));
+  rememberConfirmedRevision({userId,week},state.revision);
+  if(!state.rows.length)state.rows=[blankRow()];$("who").value=state.who;$("week").value=week;renderRows();renderTodayView();return true;
+}
+function queueOfflineSnapshot(snapshot){
+  storePendingSnapshot(snapshot);
+  dirty = true; $("offlineBanner").hidden=false; setSave("busy","Offline · changes queued on this device");
+}
+async function sendSnapshot(snapshot,deleteWeek=false){
+  return sb.rpc("save_week_atomic", {
+    p_week_ending:snapshot.week, p_prepared_by:snapshot.who, p_meeting_notes:snapshot.notes,
+    p_ai_summary:snapshot.ai, p_expected_revision:snapshot.revision, p_tasks:snapshot.tasks,
+    p_deleted_updates:normDeletedUpdateGroups(snapshot.deletedUpdates),p_expected_report_id:snapshot.reportId||null,p_delete_week:!!(deleteWeek||snapshot.deleteWeek)
+  });
+}
+function rpcPayload(data){
+  let result=Array.isArray(data)?data[0]:data;
+  if(typeof result==="string"){try{result=JSON.parse(result);}catch(_){result=null;}}
+  return result&&typeof result==="object"?result:{};
+}
+function saveResult(data,snapshot){
+  const result=rpcPayload(data);
+  return {
+    reportId:result&&(result.report_id??result.id)||null,
+    revision:result&&Number.isFinite(+result.revision)?+result.revision:((snapshot.revision||0)+1)
+  };
+}
+async function flushOfflineSnapshots(){
+  if (!session || !navigator.onLine) return;
+  const prefix="tracker_pending_v1_"+session.user.id+"_";
+  const keys=[]; for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(key&&key.startsWith(prefix))keys.push(key); }
+  for(const key of keys){
+    let attempts=0;
+    while(navigator.onLine&&attempts++<20){
+      let snapshot=readStoredSnapshot(key);
+      if(!snapshot){try{localStorage.removeItem(key);}catch(_){}break;}
+      snapshot=storePendingSnapshot(rebaseSnapshotRevision(snapshot));
+      const response=await (saveChain=saveChain.catch(()=>false).then(()=>{
+        const current=readStoredSnapshot(key);
+        if(!current||snapshotVersion(current)!==snapshotVersion(snapshot)||snapshotKey(current)!==snapshotKey(snapshot))return {skipped:true};
+        if(snapshotVersion(snapshot)&&(confirmedSnapshotVersions.get(revisionKey(snapshot))||0)>=snapshotVersion(snapshot)){
+          reconcilePendingSnapshotAfterSave(snapshot,confirmedRevisions.get(revisionKey(snapshot))??snapshot.revision,key);return {skipped:true};
+        }
+        snapshot=rebaseSnapshotRevision(current);storePendingSnapshot(snapshot);return sendSnapshot(snapshot);
+      }));
+      if(response&&response.skipped)continue;
+      if(!response||response.error){setSave("err","Queued changes need attention: "+(response&&response.error?response.error.message:"Unable to sync."));return;}
+      if(snapshot.deleteWeek){
+        const outcome=rpcPayload(response.data);
+        const pending=reconcilePendingSnapshotAfterSave(snapshot,Number.isFinite(+outcome.preserved_revision)?+outcome.preserved_revision:null,key);forgetConfirmedSnapshot(snapshot);
+        if(outcome.target_deleted===false&&outcome.preserved_report_id){
+          if(session&&session.user.id===snapshot.userId&&state.week===snapshot.week){
+            applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+            if(pending){dirty=true;renderRows();renderTodayView();setSave("err","A newer copy of this week was kept. Reload before reviewing queued edits.");return;}
+            dirty=false;const loaded=await loadWeek();setSave("err",loaded?"A newer copy of this week was kept.":"A newer copy exists, but it could not be loaded. Retry before editing.");
+          }
+          else if(!pending){try{localStorage.removeItem(cachedWeekKey(snapshot.userId,snapshot.week));}catch(_){} }
+          if(pending)continue;
+          break;
+        }
+        if(session&&session.user.id===snapshot.userId&&state.week===snapshot.week){
+          reportId=null;state.revision=null;applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+          if(pending){dirty=true;renderRows();renderTodayView();}
+          else{state.rows=[blankRow(),blankRow(),blankRow()];state.notes="";state.ai="";state.deletedUpdates=[];dirty=false;renderRows();renderTodayView();setSave("","Week deleted");}
+        }
+        if(!pending){try{localStorage.removeItem(cachedWeekKey(snapshot.userId,snapshot.week));}catch(_){}break;}
+        continue;
+      }
+      const next=saveResult(response.data,snapshot);
+      snapshot={...snapshot,reportId:next.reportId||snapshot.reportId||null};
+      rememberConfirmedRevision(snapshot,next.revision);
+      if(session&&session.user.id===snapshot.userId&&state.week===snapshot.week){
+        state.revision=next.revision; reportId=next.reportId||reportId;
+        const currentMatchesQueued=snapshotKey(saveSnapshot())===snapshotKey(snapshot);
+        if(currentMatchesQueued){
+          applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+          dirty=false;
+        }else if(!dirty){
+          state.who=snapshot.who||"";state.notes=snapshot.notes||"";state.ai=snapshot.ai||"";
+          state.deletedUpdates=normDeletedUpdateGroups(snapshot.deletedUpdates);
+          state.rows=(snapshot.tasks||[]).map(rowFromDb);if(!state.rows.length)state.rows=[blankRow()];
+          applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+          $("who").value=state.who;renderRows();renderTodayView();dirty=false;
+        }else{
+          applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+          renderRows();renderTodayView();dirty=true;
+        }
+      }
+      const pending=reconcilePendingSnapshotAfterSave(snapshot,next.revision,key);
+      if(!pending){cacheSnapshot(acknowledgedSnapshot(snapshot,next.revision));break;}
+    }
+    if(readStoredSnapshot(key)&&navigator.onLine){setSave("busy","More queued edits arrived; continuing sync…");setTimeout(()=>void flushOfflineSnapshots(),100);return;}
+  }
+  if(keys.length){
+    if(dirty){setSave("busy","Queued changes synced; saving newer edits…");void saveWeek(false);}
+    else setSave("ok","Queued changes synced ✓");
+  }
 }
 
 async function fetchCarryForward(week){
@@ -1322,111 +1763,167 @@ async function fetchCarryForward(week){
   const { data: prev, error } = await sb.from("reports")
     .select("id, week_ending").lt("week_ending", week)
     .order("week_ending", { ascending:false }).limit(1);
-  if (error || !prev || !prev.length) return null;
+  if (error) throw error;
+  if (!prev || !prev.length) return null;
   const { data: ts, error: e2 } = await sb.from("tasks")
-    .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on")
+    .select("logical_id,task,status,priority,progress,note,project,due_date,items,updates,blocked_by,waiting_on,follow_up_on,started_on,completed_on")
     .eq("report_id", prev[0].id).neq("status", "Done").order("position");
-  if (e2 || !ts || !ts.length) return null;
+  if (e2) throw e2;
+  if (!ts || !ts.length) return null;
   return {
     fromWeek: prev[0].week_ending,
-    rows: ts.map(t => ({ task:t.task, status:t.status, pri:t.priority, prog:t.progress,
-                         note:t.note, project:t.project||"", due:t.due_date||"", items:normItems(t.items),
-                         started:t.started_on||"", completed:t.completed_on||"" }))
+    rows: ts.map(rowFromDb)
   };
 }
 
 async function loadWeek(){
+  const token = ++loadGeneration;
+  const targetWeek = state.week;
+  const previous = { state:{ ...state, deletedUpdates:normDeletedUpdateGroups(state.deletedUpdates), rows:state.rows.map(r=>({ ...r, items:normItems(r.items), updates:normUpdates(r.updates) })) }, reportId };
   $("who").value = state.who;
-  $("week").value = state.week;
+  $("week").value = targetWeek;
   $("carryBanner").hidden = true;
   setSave("busy", "Loading…");
   try {
     const { data: reps, error } = await sb.from("reports")
-      .select("id, prepared_by, meeting_notes, ai_summary").eq("week_ending", state.week).limit(1);
+      .select("id, prepared_by, meeting_notes, ai_summary, revision").eq("week_ending", targetWeek).limit(1);
     if (error) throw error;
+    if (token !== loadGeneration || state.week !== targetWeek) return false;
     if (reps && reps.length) {
       reportId = reps[0].id;
       state.who = reps[0].prepared_by || state.who || "";
       state.notes = reps[0].meeting_notes || "";
       state.ai = reps[0].ai_summary || "";
+      state.revision = Number.isFinite(+reps[0].revision) ? +reps[0].revision : 0;
+      state.deletedUpdates=[];
+      rememberConfirmedRevision({userId:session.user.id,week:targetWeek},state.revision);
       const { data: ts, error: e2 } = await sb.from("tasks")
-        .select("task,status,priority,progress,note,project,due_date,items,started_on,completed_on").eq("report_id", reportId).order("position");
+        .select("logical_id,task,status,priority,progress,note,project,due_date,items,updates,blocked_by,waiting_on,follow_up_on,started_on,completed_on").eq("report_id", reportId).order("position");
       if (e2) throw e2;
-      state.rows = (ts || []).map(t => ({ task:t.task, status:t.status, pri:t.priority, prog:t.progress,
-                                          note:t.note, project:t.project||"", due:t.due_date||"", items:normItems(t.items),
-                                          started:t.started_on||"", completed:t.completed_on||"" }));
+      if (token !== loadGeneration || state.week !== targetWeek) return false;
+      state.rows = (ts || []).map(rowFromDb);
       if (!state.rows.length) state.rows = [ blankRow() ];
       $("who").value = state.who;
-      renderRows();
+      dirty = false; renderRows(); renderTodayView();
+      cacheSnapshot(saveSnapshot());
       setSave("ok", "Loaded · saved");
     } else {
       reportId = null;
       state.notes = "";
       state.ai = "";
-      const carried = await fetchCarryForward(state.week);
+      state.revision = null;
+      state.deletedUpdates=[];
+      forgetConfirmedSnapshot({userId:session.user.id,week:targetWeek});
+      const carried = await fetchCarryForward(targetWeek);
+      if (token !== loadGeneration || state.week !== targetWeek) return false;
       if (carried) {
         state.rows = carried.rows;
         $("carryText").innerHTML = "Carried <b>" + carried.rows.length + "</b> unfinished task"
           + (carried.rows.length===1?"":"s") + " from <b>" + (prettyDate(carried.fromWeek)||carried.fromWeek)
           + "</b>. Edit or Save to keep them.";
         $("carryBanner").hidden = false;
-        renderRows();
+        dirty = false; renderRows(); renderTodayView();
+        cacheSnapshot(saveSnapshot());
         setSave("", "New week — not saved yet");
       } else {
         state.rows = [ blankRow(), blankRow(), blankRow() ];
-        renderRows();
+        dirty = false; renderRows(); renderTodayView();
+        cacheSnapshot(saveSnapshot());
         setSave("", "New week — not saved yet");
       }
     }
+    return true;
   } catch (err) {
-    setSave("err", "Load failed: " + (err.message || err));
+    if (token !== loadGeneration) return false;
+    if(!navigator.onLine && session && restoreCachedWeek(session.user.id,targetWeek)){setSave("busy","Offline · showing the last cached copy");return true;}
+    state = previous.state; reportId = previous.reportId;
+    $("week").value = state.week; $("who").value = state.who; renderRows(); renderTodayView();
+    setSave("err", "Load failed — still showing " + (prettyDate(state.week)||state.week) + ": " + (err.message || err));
+    return false;
   }
 }
 
-async function saveWeek(explicit){
-  if (!session) return;
-  setSave("busy", "Saving…");
-  try {
-    const { data: rep, error } = await sb.from("reports")
-      .upsert({ user_id: session.user.id, week_ending: state.week, prepared_by: state.who, meeting_notes: state.notes || "", ai_summary: state.ai || "" },
-              { onConflict: "user_id,week_ending" })
-      .select("id").single();
-    if (error) throw error;
-    reportId = rep.id;
-    $("carryBanner").hidden = true;
-    const { error: dErr } = await sb.from("tasks").delete().eq("report_id", reportId);
-    if (dErr) throw dErr;
-    const payload = state.rows
-      .map((r, i) => ({ report_id: reportId, position: i, task: r.task, status: r.status,
-                        priority: r.pri, progress: r.prog, note: r.note,
-                        project: r.project || "", due_date: r.due || null,
-                        items: normItems(r.items),
-                        started_on: r.started || null, completed_on: r.completed || null }))
-      .filter(r => (r.task && r.task.trim()) || (r.note && r.note.trim()) || (r.items && r.items.length));
-    if (payload.length) {
-      const { error: iErr } = await sb.from("tasks").insert(payload);
-      if (iErr) throw iErr;
+function saveWeek(explicit){
+  if (!session || !session.user || !state.week) return Promise.resolve(false);
+  let snapshot = {...saveSnapshot(),clientVersion:nextSnapshotVersion()};
+  const generation = ++saveGeneration;
+  storePendingSnapshot(snapshot);
+  if (!navigator.onLine) { queueOfflineSnapshot(snapshot); return Promise.resolve(true); }
+  dirty = true; setSave("busy", "Saving…");
+  saveChain = saveChain.catch(()=>false).then(async () => {
+    if (!session || session.user.id !== snapshot.userId) return false;
+    const key=pendingSaveKey(snapshot);const version=snapshotVersion(snapshot);
+    if(version&&(confirmedSnapshotVersions.get(revisionKey(snapshot))||0)>=version){
+      reconcilePendingSnapshotAfterSave(snapshot,confirmedRevisions.get(revisionKey(snapshot))??snapshot.revision,key);return true;
     }
-    setSave("ok", "Saved ✓ " + new Date().toLocaleTimeString());
-  } catch (err) {
-    setSave("err", "Save failed: " + (err.message || err));
-  }
+    const latestPending=readStoredSnapshot(key);
+    if(latestPending&&snapshotVersion(latestPending)>version)return true;
+    snapshot=rebaseSnapshotRevision(snapshot);storePendingSnapshot(snapshot);
+    const { data, error } = await sendSnapshot(snapshot);
+    if (error) {
+      const conflict = /revision|conflict|stale/i.test(error.message || "");
+      if (!conflict && /fetch|network|offline/i.test(error.message||"")) { queueOfflineSnapshot(snapshot); return true; }
+      if (generation === saveGeneration) setSave("err", conflict ? "Save conflict — reload this week before editing further." : "Save failed: " + (error.message || error));
+      if (conflict) showUndo("A newer copy exists on the server", () => { void loadWeek(); });
+      return false;
+    }
+    const result=saveResult(data,snapshot);
+    snapshot={...snapshot,reportId:result.reportId||snapshot.reportId||null};
+    rememberConfirmedRevision(snapshot,result.revision);
+    if (state.week === snapshot.week && session && session.user.id === snapshot.userId) {
+      reportId = result.reportId || reportId;
+      state.revision = result.revision;
+      const currentMatchesSnapshot=snapshotKey(saveSnapshot())===snapshotKey({ ...snapshot, revision:state.revision });
+      applyAcknowledgedUpdateDeletions(state.rows,snapshot);
+      if (currentMatchesSnapshot) dirty = false;
+      $("carryBanner").hidden = true;
+      if (generation === saveGeneration) setSave("ok", "Saved ✓ " + new Date().toLocaleTimeString());
+    }
+    const pending=reconcilePendingSnapshotAfterSave(snapshot,result.revision);
+    if(!pending)cacheSnapshot(acknowledgedSnapshot(snapshot,result.revision));
+    return true;
+  }).catch(err => { if (generation === saveGeneration) setSave("err", "Save failed: " + (err.message || err)); return false; });
+  return saveChain;
 }
 
 $("del").addEventListener("click", async () => {
-  if (!reportId) { state.rows = [ blankRow(), blankRow(), blankRow() ]; renderRows(); return; }
-  const snap = { who: state.who, week: state.week, notes: state.notes, ai: state.ai,
-    rows: state.rows.map(r => ({ ...r, items:(r.items||[]).map(x=>({...x})) })) };
-  setSave("busy", "Deleting…");
-  const { error } = await sb.from("reports").delete().eq("id", reportId);
-  if (error) { setSave("err", "Delete failed: " + error.message); return; }
-  reportId = null; state.rows = [ blankRow(), blankRow(), blankRow() ]; state.notes = ""; state.ai = "";
-  renderRows(); setSave("", "Week deleted");
-  showUndo("Week deleted", async () => {
-    state.who = snap.who; state.week = snap.week; state.rows = snap.rows; state.notes = snap.notes; state.ai = snap.ai;
-    $("who").value = state.who; $("week").value = state.week;
-    renderRows(); await saveWeek(true);
-  });
+  const identity={userId:session.user.id,week:state.week};
+  if(!navigator.onLine){setSave("err","Go online before deleting this week so pending update deletions can be protected.");return;}
+  clearTimeout(saveTimer); saveTimer=null; saveGeneration++;
+  const app=$("app");app.setAttribute("inert","");app.setAttribute("aria-busy","true");
+  try{
+    await saveChain.catch(()=>false);
+    if(!reportId){
+      setSave("busy","Checking this week…");
+      const {data:existing,error:lookupError}=await sb.from("reports").select("id,revision").eq("week_ending",state.week).limit(1);
+      if(lookupError){setSave("err","Delete check failed: "+lookupError.message);return;}
+      if(existing&&existing.length){reportId=existing[0].id;state.revision=Number.isFinite(+existing[0].revision)?+existing[0].revision:0;rememberConfirmedRevision({...identity,reportId},state.revision);}
+    }
+    if(!reportId&&!collectDeletedUpdateGroups().length){
+      try{localStorage.removeItem(pendingSaveKey(identity));localStorage.removeItem(cachedWeekKey(identity.userId,identity.week));}catch(_){}
+      forgetConfirmedSnapshot(identity);state.rows=[blankRow(),blankRow(),blankRow()];state.notes="";state.ai="";state.revision=null;state.deletedUpdates=[];dirty=false;renderRows();return;
+    }
+    const snap={who:state.who,week:state.week,notes:state.notes,ai:state.ai,revision:state.revision,deletedUpdates:normDeletedUpdateGroups(state.deletedUpdates),
+      rows:state.rows.map(r=>({...r,items:(r.items||[]).map(x=>({...x})),updates:normUpdates(r.updates).map(x=>({...x})),deletedUpdateIds:normDeletedUpdateIds(r.deletedUpdateIds)}))};
+    let deleteSnapshot={...saveSnapshot(),clientVersion:nextSnapshotVersion(),deleteWeek:true};
+    storePendingSnapshot(deleteSnapshot);deleteSnapshot=rebaseSnapshotRevision(deleteSnapshot);
+    setSave("busy","Deleting…");
+    const response=await (saveChain=saveChain.catch(()=>false).then(()=>sendSnapshot(deleteSnapshot,true)));
+    if(!response||response.error){dirty=true;setSave("err","Delete failed: "+(response&&response.error?response.error.message:"Unable to reach Supabase."));return;}
+    const outcome=rpcPayload(response.data);
+    try{localStorage.removeItem(pendingSaveKey(identity));localStorage.removeItem(cachedWeekKey(identity.userId,identity.week));}catch(_){}
+    if(outcome.target_deleted===false&&outcome.preserved_report_id){
+      forgetConfirmedSnapshot(identity);applyAcknowledgedUpdateDeletions(state.rows,deleteSnapshot);dirty=false;
+      const loaded=await loadWeek();setSave("err",loaded?"A newer copy of this week was kept. Review it, then delete again if intended.":"A newer copy exists, but it could not be loaded. Retry before editing.");return;
+    }
+    forgetConfirmedSnapshot(identity);snap.deletedUpdates=[];snap.rows.forEach(row=>{row.deletedUpdateIds=[];});
+    reportId=null;state.rows=[blankRow(),blankRow(),blankRow()];state.notes="";state.ai="";state.revision=null;state.deletedUpdates=[];dirty=false;
+    renderRows();setSave("","Week deleted");
+    showUndo("Week deleted",async()=>{
+      state.who=snap.who;state.week=snap.week;state.rows=snap.rows;state.notes=snap.notes;state.ai=snap.ai;state.revision=null;state.deletedUpdates=[];
+      $("who").value=state.who;$("week").value=state.week;renderRows();await saveWeek(true);
+    });
+  }finally{app.removeAttribute("inert");app.removeAttribute("aria-busy");}
 });
 
 // display order without mutating manual order; returns [{row, idx}]
@@ -1462,6 +1959,19 @@ function displayOrder(){
   });
 }
 
+function updateBulkUi(){
+  const count = selectedTaskIds.size;
+  $("bulkCount").textContent = count + " selected";
+  $("bulkApply").disabled = !count; $("bulkClear").disabled = !count;
+}
+function refreshWeekProjectFilter(){
+  const select = $("weekFilterProject"); if (!select) return;
+  const current = select.value;
+  const names = [...new Set(state.rows.map(r=>(r.project||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  select.innerHTML = '<option value="">All projects</option>' + names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("");
+  if (names.includes(current)) select.value = current;
+}
+
 function renderRows(){
   const rowsEl = $("rows"); rowsEl.innerHTML = "";
   // first render after a (re)load: seed collapse state from this week's saved preference
@@ -1471,35 +1981,50 @@ function renderRows(){
   // Done tasks live on the Completed tab; hide them here unless "Show done" is on.
   let visible = showDone ? order : order.filter(it => it.row.status !== "Done");
   if (dayFilter) visible = visible.filter(it => rowMatchesDayFilter(it.row, dayFilter));
+  const search = ($("weekSearch").value || "").trim().toLowerCase();
+  const statusFilter = $("weekFilterStatus").value;
+  const projectFilter = $("weekFilterProject").value;
+  if (search) visible = visible.filter(it => [it.row.task,it.row.project,htmlToText(it.row.note),it.row.blockedBy,it.row.waitingOn,...normUpdates(it.row.updates).map(u=>u.text)].join(" ").toLowerCase().includes(search));
+  if (statusFilter) visible = visible.filter(it => it.row.status === statusFilter);
+  if (projectFilter) visible = visible.filter(it => (it.row.project||"").trim() === projectFilter);
   visibleOrder = visible;
+  refreshWeekProjectFilter(); updateBulkUi();
   updateDoneToggle();
   if (!visible.length) { renderEmptyWeek(rowsEl); pendingFocus = null; pendingFocusEl = null; updateDailyBar(); return; }
   visible.forEach((item, dispIdx) => {
     const row = item.row, i = item.idx;
+    if (!row.logicalId) row.logicalId = newLogicalId();
     if (!Array.isArray(row.items)) row.items = [];
+    if (!Array.isArray(row.updates)) row.updates = [];
     let startedInput, completedInput, dueInput, counter, note;
 
     // ---------- main row: title + status / priority / progress / delete ----------
     const open = rowOpen(row); row._open = open;
+    const detailId = "task-detail-" + row.logicalId;
     const tr = document.createElement("tr"); tr.className = (open ? "" : "collapsed") + " edge-" + statusClass(row.status); tr.dataset.disp = dispIdx;
 
     const tdNum = document.createElement("td"); tdNum.className = "col-num";
     const caret = document.createElement("button"); caret.type = "button"; caret.className = "rowcaret";
     caret.textContent = open ? "▾" : "▸"; caret.title = open ? "Collapse task" : "Expand task";
-    caret.setAttribute("aria-label", caret.title);
+    caret.setAttribute("aria-label", caret.title); caret.setAttribute("aria-expanded", String(open)); caret.setAttribute("aria-controls", detailId);
     caret.addEventListener("click", () => { row._open = !open; renderRows(); });
+    const selectRow = document.createElement("input"); selectRow.type = "checkbox"; selectRow.className = "rowselect";
+    selectRow.checked = selectedTaskIds.has(row.logicalId); selectRow.setAttribute("aria-label", "Select task " + (row.task || (dispIdx+1)));
+    selectRow.addEventListener("change", () => { if (selectRow.checked) selectedTaskIds.add(row.logicalId); else selectedTaskIds.delete(row.logicalId); updateBulkUi(); });
     const rnum = document.createElement("span"); rnum.className = "rnum"; rnum.textContent = dispIdx+1;
-    const dot = document.createElement("span"); dot.className = "updot";
+    const dot = document.createElement("span"); dot.className = "updot"; dot.setAttribute("aria-hidden","true");
     if (needsUpdate(row)) { dot.classList.add("need"); dot.title = "No update logged today"; }
     else if (isActiveRow(row) && updatedToday(row)) { dot.classList.add("ok"); dot.title = "Updated today"; }
     else { dot.classList.add("none"); }
     const numInner = document.createElement("div"); numInner.className = "col-num-inner";
-    numInner.appendChild(caret); numInner.appendChild(rnum); numInner.appendChild(dot);
+    numInner.appendChild(selectRow); numInner.appendChild(caret); numInner.appendChild(rnum); numInner.appendChild(dot);
+    const updateState = document.createElement("span"); updateState.className="sr-only"; updateState.textContent = needsUpdate(row) ? "Needs an update today" : (updatedToday(row) ? "Updated today" : ""); numInner.appendChild(updateState);
     tdNum.appendChild(numInner); tr.appendChild(tdNum);
 
-    const tdTask = document.createElement("td");
+    const tdTask = document.createElement("td"); tdTask.dataset.label = "Task";
     const task = document.createElement("textarea");
     task.className = "cell-input task"; task.rows = 1; task.placeholder = "What you worked on"; task.value = row.task;
+    task.setAttribute("aria-label", "Task " + (dispIdx+1) + " title");
     task.addEventListener("input", () => {
       row.task = task.value; autosize(task);
       if (!row.started && task.value.trim()) { row.started = todayIso(); if (startedInput) startedInput.value = row.started; }
@@ -1521,8 +2046,8 @@ function renderRows(){
     tdTask.appendChild(sub);
     tr.appendChild(tdTask);
 
-    const tdStatus = document.createElement("td"); tdStatus.className = "col-status";
-    const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status);
+    const tdStatus = document.createElement("td"); tdStatus.className = "col-status"; tdStatus.dataset.label = "Status";
+    const sel = document.createElement("select"); sel.className = "chip " + statusClass(row.status); sel.setAttribute("aria-label", "Status for task " + (dispIdx+1));
     STATUSES.forEach(s => { const o = document.createElement("option"); o.value = s.v; o.textContent = s.v; if (s.v===row.status) o.selected = true; sel.appendChild(o); });
     sel.addEventListener("change", () => {
       row.status = sel.value; sel.className = "chip " + statusClass(row.status);
@@ -1535,25 +2060,25 @@ function renderRows(){
     });
     tdStatus.appendChild(sel); tr.appendChild(tdStatus);
 
-    const tdPri = document.createElement("td"); tdPri.className = "col-pri";
-    const pri = document.createElement("select"); pri.className = "pri " + priClass(row.pri);
+    const tdPri = document.createElement("td"); tdPri.className = "col-pri"; tdPri.dataset.label = "Priority";
+    const pri = document.createElement("select"); pri.className = "pri " + priClass(row.pri); pri.setAttribute("aria-label", "Priority for task " + (dispIdx+1));
     PRIORITIES.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; if (p===row.pri) o.selected = true; pri.appendChild(o); });
     pri.addEventListener("change", () => { row.pri = pri.value; pri.className = "pri " + priClass(row.pri); scheduleSave(); });
     tdPri.appendChild(pri); tr.appendChild(tdPri);
 
-    const tdProg = document.createElement("td"); tdProg.className = "col-prog";
+    const tdProg = document.createElement("td"); tdProg.className = "col-prog"; tdProg.dataset.label = "Progress";
     const wrap = document.createElement("div"); wrap.className = "prog";
-    const rng = document.createElement("input"); rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog;
+    const rng = document.createElement("input"); rng.type = "range"; rng.min = "0"; rng.max = "100"; rng.step = "5"; rng.value = row.prog; rng.setAttribute("aria-label", "Progress for task " + (dispIdx+1));
     paintRange(rng);
     const pv = document.createElement("span"); pv.className = "pv"; pv.textContent = row.prog + "%";
     rng.addEventListener("input", () => { row.prog = parseInt(rng.value,10)||0; pv.textContent = row.prog + "%"; paintRange(rng); scheduleSave(); });
     wrap.appendChild(rng); wrap.appendChild(pv); tdProg.appendChild(wrap); tr.appendChild(tdProg);
 
-    const tdAct = document.createElement("td"); tdAct.className = "col-act";
+    const tdAct = document.createElement("td"); tdAct.className = "col-act"; tdAct.dataset.label = "Actions";
     const grp = document.createElement("div"); grp.className = "rowbtns";
     if (manual) {
-      const handle = document.createElement("span");
-      handle.className = "draghandle"; handle.textContent = "⠿"; handle.title = "Drag to reorder";
+      const handle = document.createElement("button"); handle.type = "button";
+      handle.className = "draghandle"; handle.textContent = "⠿"; handle.title = "Drag to reorder"; handle.setAttribute("aria-label", "Drag task to reorder");
       handle.addEventListener("mousedown", () => { tr.draggable = true; });
       handle.addEventListener("touchstart", () => { tr.draggable = true; }, { passive:true });
       tr.addEventListener("dragstart", (e) => {
@@ -1569,6 +2094,7 @@ function renderRows(){
     }
     const del = mkIbtn(ICON_TRASH,"Delete this task",() => {
       const removed = state.rows[i], at = i;
+      retainRowTombstones(removed);
       state.rows.splice(i,1); if(!state.rows.length) state.rows=[blankRow()];
       renderRows(); scheduleSave();
       showUndo("Task deleted", () => {
@@ -1582,7 +2108,7 @@ function renderRows(){
     rowsEl.appendChild(tr);
 
     // ---------- detail row: project + dates (left) | comments + action items (fills the width) ----------
-    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open; dtr.dataset.disp = dispIdx;
+    const dtr = document.createElement("tr"); dtr.className = "detail"; dtr.hidden = !open; dtr.dataset.disp = dispIdx; dtr.id = detailId;
     const dspacer = document.createElement("td"); dspacer.className = "col-num"; dtr.appendChild(dspacer);
     const dtd = document.createElement("td"); dtd.colSpan = 5;
     const dwrap = document.createElement("div"); dwrap.className = "detail-wrap";
@@ -1607,6 +2133,12 @@ function renderRows(){
     completedInput = document.createElement("input");
     completedInput.className = "mini date"; completedInput.type = "date"; completedInput.title = "Date completed"; completedInput.value = row.completed || "";
     completedInput.addEventListener("change", () => { row.completed = completedInput.value; scheduleSave(); });
+    const blockedInput = document.createElement("input"); blockedInput.className = "mini"; blockedInput.type = "text"; blockedInput.placeholder = "Dependency or blocker"; blockedInput.value = row.blockedBy || "";
+    blockedInput.addEventListener("input", () => { row.blockedBy = blockedInput.value; scheduleSave(); });
+    const waitingInput = document.createElement("input"); waitingInput.className = "mini"; waitingInput.type = "text"; waitingInput.placeholder = "Person / team"; waitingInput.value = row.waitingOn || "";
+    waitingInput.addEventListener("input", () => { row.waitingOn = waitingInput.value; scheduleSave(); });
+    const followInput = document.createElement("input"); followInput.className = "mini date"; followInput.type = "date"; followInput.value = row.followUp || "";
+    followInput.addEventListener("change", () => { row.followUp = followInput.value; scheduleSave(); });
     const setDue = (iso) => { dueInput.value = iso; row.due = iso; markOverdue(dueInput, row); if (sortMode==="due") renderRows(); scheduleSave(); };
     const dueQuick = document.createElement("span"); dueQuick.className = "dquick";
     dueQuick.appendChild(mkMini("Today", "Set due to today", () => setDue(todayIso())));
@@ -1619,6 +2151,9 @@ function renderRows(){
     meta.appendChild(dateField("Due", dueInput, dueQuick));
     meta.appendChild(dateField("Start", startedInput, startQuick));
     meta.appendChild(dateField("Done", completedInput, doneQuick));
+    meta.appendChild(dateField("Blocked by", blockedInput));
+    meta.appendChild(dateField("Waiting on", waitingInput));
+    meta.appendChild(dateField("Follow up", followInput));
 
     // work column (comments + action items) — fills the remaining width
     const work = document.createElement("div"); work.className = "work-col";
@@ -1628,19 +2163,29 @@ function renderRows(){
     note = noteWrap.querySelector(".richtext"); note.classList.add("note");
     if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "note") pendingFocusEl = note;
     work.appendChild(noteWrap);
-    const logWrap = document.createElement("div"); logWrap.className = "logbtn";
-    const logBtn = document.createElement("button"); logBtn.type = "button"; logBtn.className = "tlog"; logBtn.textContent = "＋ today";
-    logBtn.title = "Add a dated line for today";
-    logBtn.addEventListener("click", () => {
-      const stamp = shortDate(todayIso()) + ": ";
-      const existing = note.innerHTML.trim(); const hadContent = existing && existing !== "<br>";
-      note.innerHTML = escHtml(stamp) + (hadContent ? "<br>" + note.innerHTML : "");
-      rtPlaceholder(note); row.note = rtCurrent(note); scheduleSave();
-      note.focus();
-      const first = note.firstChild;
-      if (first && first.nodeType === 3) { const sel = window.getSelection(); const r = document.createRange(); r.setStart(first, first.length); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
+    const updatesHead = document.createElement("div"); updatesHead.className = "cmh updates-head"; updatesHead.textContent = "Daily updates"; work.appendChild(updatesHead);
+    const updatesList = document.createElement("div"); updatesList.className = "updates-list";
+    normUpdates(row.updates).slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(update => {
+      const entry = document.createElement("div"); entry.className = "update-entry";
+      const when = document.createElement("time"); when.dateTime = update.date; when.textContent = shortDate(update.date);
+      const textNode = document.createElement("span"); textNode.textContent = update.text;
+      const remove = document.createElement("button"); remove.type="button"; remove.className="cdel"; remove.textContent="✕"; remove.setAttribute("aria-label", "Delete update from " + shortDate(update.date));
+      remove.addEventListener("click", () => {
+        const pendingDeletedUpdateIds=normDeletedUpdateIds([...(row.deletedUpdateIds||[]),update.id]);
+        if(pendingDeletedUpdateIds.length>100){setSave("err","Sync this task before deleting more updates.");return;}
+        row.deletedUpdateIds=pendingDeletedUpdateIds;
+        row.updates=normUpdates(row.updates).filter(u=>u.id!==update.id);
+        renderRows(); scheduleSave();
+      });
+      entry.appendChild(when); entry.appendChild(textNode); entry.appendChild(remove); updatesList.appendChild(entry);
     });
-    logWrap.appendChild(logBtn); work.appendChild(logWrap);
+    work.appendChild(updatesList);
+    const logWrap = document.createElement("div"); logWrap.className = "update-compose";
+    const updateInput = document.createElement("input"); updateInput.type="text"; updateInput.placeholder="What changed today?"; updateInput.setAttribute("aria-label", "New update for " + (row.task || "task"));
+    const logBtn = document.createElement("button"); logBtn.type = "button"; logBtn.className = "tlog"; logBtn.textContent = "Add update";
+    const addUpdate = () => { const text=updateInput.value.trim(); if(!text){ updateInput.focus(); return; } row.updates = normUpdates(row.updates); row.updates.unshift({ id:newLogicalId(), date:todayIso(), text }); renderRows(); scheduleSave(); };
+    logBtn.addEventListener("click", addUpdate); updateInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); addUpdate(); } });
+    logWrap.appendChild(updateInput); logWrap.appendChild(logBtn); work.appendChild(logWrap);
 
     const aih = document.createElement("div"); aih.className = "ai-head";
     const aihl = document.createElement("span"); aihl.textContent = "Action items"; aih.appendChild(aihl);
@@ -1658,6 +2203,7 @@ function renderRows(){
       cb.title = "Mark done"; cb.setAttribute("aria-label", "Mark action item done");
       cb.addEventListener("change", () => { it.done = cb.checked; ci.classList.toggle("done", cb.checked); updateCounter(counter, row); scheduleSave(); });
       const tx = document.createElement("input"); tx.type = "text"; tx.value = it.text; tx.placeholder = "Action item";
+      tx.setAttribute("aria-label", "Action item " + (k+1) + " for " + (row.task || "task"));
       tx.addEventListener("input", () => { it.text = tx.value; scheduleSave(); });
       tx.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -1669,15 +2215,18 @@ function renderRows(){
       });
       if (pendingFocus && pendingFocus.row === row && pendingFocus.type === "item" && pendingFocus.k === k) pendingFocusEl = tx;
       const xb = document.createElement("button"); xb.type = "button"; xb.className = "cdel"; xb.textContent = "✕"; xb.title = "Remove action item";
+      xb.setAttribute("aria-label","Remove action item " + (k+1));
       xb.addEventListener("click", () => {
         const removed = it, at = k;
         row.items.splice(k,1); updateCounter(counter, row); renderRows(); scheduleSave();
         showUndo("Action item deleted", () => { row.items.splice(Math.min(at,row.items.length),0,removed); updateCounter(counter,row); renderRows(); scheduleSave(); });
       });
       const up = document.createElement("button"); up.type = "button"; up.className = "cmove"; up.textContent = "▲"; up.title = "Move action item up";
+      up.setAttribute("aria-label","Move action item up");
       up.disabled = (k === 0);
       up.addEventListener("click", () => moveItem(row, k, -1));
       const dn = document.createElement("button"); dn.type = "button"; dn.className = "cmove"; dn.textContent = "▼"; dn.title = "Move action item down";
+      dn.setAttribute("aria-label","Move action item down");
       dn.disabled = (k === row.items.length - 1);
       dn.addEventListener("click", () => moveItem(row, k, 1));
       ci.appendChild(cb); ci.appendChild(tx); ci.appendChild(up); ci.appendChild(dn); ci.appendChild(xb); list.appendChild(ci);
@@ -1737,7 +2286,7 @@ function todayStamp(){ return shortDate(todayIso()); }
 function isActiveRow(row){ return !!(row.task && row.task.trim()) && row.status !== "Done"; }
 function updatedToday(row){
   if (row.completed === todayIso() || row.started === todayIso()) return true;
-  return (row.note || "").indexOf(todayStamp()) !== -1;
+  return normUpdates(row.updates).some(update => update.date === todayIso());
 }
 function needsUpdate(row){ return isActiveRow(row) && !updatedToday(row); }
 function rowOpen(row){ return (row._open !== undefined) ? row._open : !(row.task && row.task.trim()); }
@@ -1759,10 +2308,8 @@ function restoreOpenState(){
   } catch(e){}
 }
 function stampTodayNote(row){
-  const stamp = todayStamp() + ": ";
-  const cur = richDisplay(row.note || "");           // normalize plain-or-HTML to safe HTML
-  const had = cur.trim() && cur.trim() !== "<br>";
-  row.note = escHtml(stamp) + (had ? "<br>" + cur : "");
+  row.updates = normUpdates(row.updates);
+  if (!row.updates.some(update => update.date === todayIso())) row.updates.unshift({ id:newLogicalId(), date:todayIso(), text:"Checked in" });
 }
 function logTodayAll(){
   const targets = state.rows.filter(needsUpdate);
@@ -1803,6 +2350,43 @@ function renderTodayBar(){
     + chip("blocked", n.blocked + " blocked", "bad")
     + (dayFilter ? '<button type="button" class="tb-chip" data-f="">✕ Show all</button>' : '');
 }
+function renderTodayView(){
+  const root = $("todayOverview"); if (!root) return;
+  $("todayHeading").textContent = "Today · " + shortDate(todayIso());
+  const rows = state.rows.filter(r => r.task && r.task.trim() && r.status !== "Done");
+  root.innerHTML = "";
+  const summary = document.createElement("div"); summary.className = "today-summary";
+  const specs = [
+    ["needs","Need update",rows.filter(needsUpdate).length],
+    ["due","Due today",rows.filter(r=>rowMatchesDayFilter(r,"due")).length],
+    ["overdue","Overdue",rows.filter(r=>rowMatchesDayFilter(r,"overdue")).length],
+    ["blocked","Blocked",rows.filter(r=>rowMatchesDayFilter(r,"blocked")).length]
+  ];
+  specs.forEach(([key,label,count]) => {
+    const button=document.createElement("button"); button.type="button"; button.className="today-stat";
+    const num=document.createElement("b"); num.textContent=count; const textNode=document.createElement("span"); textNode.textContent=label;
+    button.appendChild(num); button.appendChild(textNode);
+    button.addEventListener("click",()=>{ dayFilter=key; showTab("week"); renderRows(); }); summary.appendChild(button);
+  });
+  root.appendChild(summary);
+  const relevant = rows.filter(r => needsUpdate(r) || rowMatchesDayFilter(r,"due") || rowMatchesDayFilter(r,"overdue") || rowMatchesDayFilter(r,"blocked"));
+  const ranked = (relevant.length ? relevant : rows).slice().sort((a,b) => {
+    const score = r => (rowMatchesDayFilter(r,"overdue")?50:0)+(r.status==="Blocked"?40:0)+(rowMatchesDayFilter(r,"due")?30:0)+(r.pri==="High"?20:r.pri==="Med"?10:0)+(needsUpdate(r)?5:0);
+    return score(b)-score(a) || String(a.due||"9999").localeCompare(String(b.due||"9999"));
+  });
+  if (!ranked.length) { const empty=document.createElement("div"); empty.className="muted-empty"; empty.textContent="Nothing active this week. Add a task when something new comes in."; root.appendChild(empty); return; }
+  const list=document.createElement("div"); list.className="today-list";
+  ranked.forEach(row => {
+    const button=document.createElement("button"); button.type="button"; button.className="today-task";
+    const title=document.createElement("strong"); title.textContent=row.task; const status=document.createElement("span"); status.className="badge "+(row.status==="Blocked"?"blk":row.status==="At Risk"?"risk":"tot"); status.textContent=row.status;
+    const meta=document.createElement("span"); meta.className="meta";
+    [row.project, row.pri+" priority", row.due?(row.due<todayIso()?"Overdue ":"Due ")+shortDate(row.due):"", row.blockedBy?"Blocked by "+row.blockedBy:"", row.waitingOn?"Waiting on "+row.waitingOn:""].filter(Boolean).forEach(textValue=>{ const s=document.createElement("span"); s.textContent=textValue; meta.appendChild(s); });
+    button.appendChild(title); button.appendChild(status); button.appendChild(meta);
+    button.addEventListener("click",()=>{ dayFilter=null; row._open=true; pendingFocus={row,type:"note"}; showTab("week"); renderRows(); });
+    list.appendChild(button);
+  });
+  root.appendChild(list);
+}
 $("todayBar").addEventListener("click", (e) => {
   const b = e.target.closest(".tb-chip"); if (!b) return;
   const f = b.getAttribute("data-f") || null;
@@ -1831,6 +2415,7 @@ function renderWeekGlance(){
 }
 function updateDailyBar(){
   renderTodayBar();
+  renderTodayView();
   renderWeekGlance();
   const n = state.rows.filter(needsUpdate).length;
   const lt = $("logToday");
@@ -1867,9 +2452,10 @@ function renderEmptyWeek(rowsEl){
   const doneN = state.rows.filter(r => r.status === "Done").length;
   const tr = document.createElement("tr");
   const td = document.createElement("td"); td.colSpan = 6; td.className = "empty-week";
-  td.innerHTML = doneN
-    ? '✓ Every task this week is <b>done</b> — saved in this week’s report and on the <b>Completed</b> tab. <a id="revealDone">Show them here</a>'
-    : 'No tasks yet — click <b>+ Add task</b> to start this week.';
+  if (doneN) {
+    td.appendChild(document.createTextNode("✓ Every task this week is done — saved in this week’s report and on the Completed tab. "));
+    const reveal=document.createElement("button"); reveal.type="button"; reveal.className="linkbtn"; reveal.id="revealDone"; reveal.textContent="Show them here"; td.appendChild(reveal);
+  } else td.textContent = "No tasks yet — choose + Add task to start this week.";
   tr.appendChild(td); rowsEl.appendChild(tr);
   const rd = $("revealDone");
   if (rd) rd.addEventListener("click", () => { showDone = true; renderRows(); });
@@ -1937,7 +2523,11 @@ $("copy").addEventListener("click", function(){
 $("print").addEventListener("click", () => window.print());
 
 // ============ CSV EXPORT ============
-function csvEscape(v){ v = String(v==null?"":v); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function csvEscape(v){
+  v = String(v==null?"":v);
+  if (/^[=+\-@]/.test(v)) v = "'" + v;
+  return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+}
 function downloadCSV(filename, rows){
   const text = rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
   const blob = new Blob(["﻿"+text], { type:"text/csv;charset=utf-8" });   // BOM → opens cleanly in Excel
@@ -1990,13 +2580,28 @@ async function exportKudosCSV(btn){
 }
 
 // ============ TABS ============
-const tabs = { week:["tab-week","v-week"], portfolio:["tab-portfolio","v-portfolio"], projects:["tab-projects","v-projects"],
-               history:["tab-history","v-history"], completed:["tab-completed","v-completed"],
-               kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
+const topTabs = { today:["tab-today","v-today"], week:["tab-week","v-week"], portfolio:["tab-portfolio","v-portfolio"], projects:["tab-projects","v-projects"], insights:["tab-insights","v-insights"] };
+const insightViews = { history:["tab-history","v-history"], completed:["tab-completed","v-completed"], kudos:["tab-kudos","v-kudos"], kpis:["tab-kpis","v-kpis"] };
+const tabs = { ...topTabs, ...insightViews };
+let currentView = "today";
 function showTab(name){
-  Object.entries(tabs).forEach(([k,[btn,view]]) => {
-    $(btn).classList.toggle("on", k===name); $(view).hidden = (k!==name);
+  if (!tabs[name]) name = "today";
+  currentView = name;
+  const topName = insightViews[name] ? "insights" : name;
+  Object.entries(topTabs).forEach(([k,[btn,view]]) => {
+    const active = k === topName;
+    $(btn).classList.toggle("on", active); $(btn).setAttribute("aria-selected", String(active)); $(btn).tabIndex = active ? 0 : -1;
+    $(view).hidden = !active;
   });
+  const insightHome = $("v-insights-home");
+  if (insightHome) insightHome.hidden = topName !== "insights" || !!insightViews[name];
+  $("insightsHome").hidden = topName !== "insights" || !insightViews[name];
+  Object.entries(insightViews).forEach(([k,[btn,view]]) => {
+    const active = topName === "insights" && k === name;
+    $(btn).setAttribute("aria-expanded", String(active));
+    $(view).hidden = !active;
+  });
+  if (name === "today") renderTodayView();
   if (name === "portfolio") loadPortfolio();
   if (name === "projects") renderProjects();
   if (name === "history") loadHistory();
@@ -2004,13 +2609,28 @@ function showTab(name){
   if (name === "kudos") loadKudos();
   if (name === "kpis") loadKpis();
 }
+$("tab-today").addEventListener("click", () => showTab("today"));
 $("tab-week").addEventListener("click", () => showTab("week"));
 $("tab-portfolio").addEventListener("click", () => showTab("portfolio"));
 $("tab-projects").addEventListener("click", () => showTab("projects"));
+$("tab-insights").addEventListener("click", () => showTab("insights"));
 $("tab-history").addEventListener("click", () => showTab("history"));
 $("tab-completed").addEventListener("click", () => showTab("completed"));
 $("tab-kudos").addEventListener("click", () => showTab("kudos"));
 $("tab-kpis").addEventListener("click", () => showTab("kpis"));
+$("insightsHome").addEventListener("click", () => showTab("insights"));
+$("nav-tabs").addEventListener("keydown", e => {
+  if (!["ArrowLeft","ArrowRight","Home","End"].includes(e.key)) return;
+  e.preventDefault();
+  const buttons = Object.values(topTabs).map(([id])=>$(id));
+  let index = Math.max(0, buttons.indexOf(document.activeElement));
+  if (e.key === "Home") index = 0; else if (e.key === "End") index = buttons.length-1;
+  else index = (index + (e.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+  buttons[index].focus(); buttons[index].click();
+});
+$("todayQuickAdd").addEventListener("click", openQuickCapture);
+$("todayPlan").addEventListener("click", () => $("planDay").click());
+$("todayCloseout").addEventListener("click", openDayWizard);
 try { const kw = localStorage.getItem("tracker_kpi_weeks"); if (kw) $("kpiWeeks").value = kw; } catch(e){}
 $("kpiWeeks").addEventListener("change", () => {
   try { localStorage.setItem("tracker_kpi_weeks", $("kpiWeeks").value); } catch(e){}
@@ -2019,8 +2639,6 @@ $("kpiWeeks").addEventListener("change", () => {
 $("historyCsv").addEventListener("click", function(){ exportAllCSV(this); });
 
 // ============ KUDOS ============
-let kudosList = null;
-const kudosTimers = {};
 $("addKudos").addEventListener("click", addKudos);
 $("kudosCsv").addEventListener("click", function(){ exportKudosCSV(this); });
 async function loadKudos(){
@@ -2045,13 +2663,15 @@ async function addKudos(){
 function scheduleKudosSave(k){
   clearTimeout(kudosTimers[k.id]);
   kudosTimers[k.id] = setTimeout(async () => {
-    await sb.from("kudos").update({ kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details }).eq("id", k.id);
+    const { error } = await sb.from("kudos").update({ kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details }).eq("id", k.id);
+    if (error) setSave("err", "Kudos change was not saved: " + error.message);
   }, 700);
 }
-function deleteKudos(k){
+async function deleteKudos(k){
   const idx = kudosList.findIndex(x => x.id === k.id); if (idx < 0) return;
   kudosList.splice(idx, 1); renderKudos();
-  sb.from("kudos").delete().eq("id", k.id);
+  const { error } = await sb.from("kudos").delete().eq("id", k.id);
+  if (error) { kudosList.splice(Math.min(idx,kudosList.length),0,k); renderKudos(); setSave("err","Kudos was not deleted: "+error.message); return; }
   showUndo("Kudos deleted", async () => {
     const { data } = await sb.from("kudos")
       .insert({ user_id: session.user.id, kudos_date: k.kudos_date || null, source: k.source, title: k.title, details: k.details })
@@ -2089,7 +2709,6 @@ function renderKudos(){
 }
 
 // ============ COMPLETED ARCHIVE ============
-let completedCache = null;
 async function loadCompleted(){
   const body = $("completedBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Loading completed tasks…</div>';
@@ -2230,7 +2849,7 @@ async function loadKpis(){
   refreshChartColors();
   const body = $("kpiBody");
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Crunching KPIs…</div>';
-  const [{ data: wkRaw, error: e1 }, { data: co, error: e2 }, { data: comp }, { data: proj }, { data: kud }, { data: texp }] = await Promise.all([
+  const [{ data: wkRaw, error: e1 }, { data: co, error: e2 }, { data: comp, error:e3 }, { data: proj, error:e4 }, { data: kud, error:e5 }, { data: texp, error:e6 }] = await Promise.all([
     sb.from("kpi_weekly").select("week_ending,total_tasks,done,on_track,at_risk,blocked,completion_rate,avg_progress").order("week_ending", { ascending:true }),
     sb.from("kpi_carryover").select("week_ending,task,status,prior_weeks_seen").order("prior_weeks_seen", { ascending:false }),
     sb.from("completed_tasks").select("started_on,completed_on,due_date"),
@@ -2238,7 +2857,8 @@ async function loadKpis(){
     sb.from("kudos").select("kudos_date,source,title").order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false }),
     sb.from("task_export").select("week_ending,task,status")
   ]);
-  if (e1 || e2) { body.innerHTML = '<div class="muted-empty">Could not load KPIs: '+esc((e1||e2).message)+'</div>'; return; }
+  const kpiError = e1||e2||e3||e4||e5||e6;
+  if (kpiError) { body.innerHTML = '<div class="muted-empty">KPI data is incomplete, so no misleading totals are shown. '+esc(kpiError.message)+'</div>'; return; }
   if (!wkRaw || !wkRaw.length) { body.innerHTML = '<div class="muted-empty">No data yet — save a week or two and KPIs will populate here.</div>'; return; }
   // limit the per-week trend charts to the chosen number of recent weeks
   const kwv = ($("kpiWeeks") && $("kpiWeeks").value) || "all";
@@ -2278,8 +2898,8 @@ async function loadKpis(){
   const tipTrend = wk.map(r => ({ label: wkLabel(r), week: r.week_ending, lines: trendLines(r) }));
   const tipProgress = wk.map(r => ({ label: wkLabel(r), week: r.week_ending,
     lines: [ {t:(+r.avg_progress||0)+"% average progress", c:COLORS.accent} ] }));
-  const totalDone = wk.reduce((a,r)=>a+(+r.done||0),0);
-  const totalTasks = wk.reduce((a,r)=>a+(+r.total_tasks||0),0);
+  const totalDone = wkRaw.reduce((a,r)=>a+(+r.done||0),0);
+  const totalTasks = wkRaw.reduce((a,r)=>a+(+r.total_tasks||0),0);
   const overallRate = totalTasks ? Math.round(100*totalDone/totalTasks) : 0;
   const latest = wk[wk.length-1];
   const carryNow = (co||[]).filter(r => r.week_ending===latest.week_ending && +r.prior_weeks_seen>0 && r.status!=="Done").length;
@@ -2289,7 +2909,7 @@ async function loadKpis(){
   body.innerHTML =
     '<div class="kgrid">' +
       kcard("Completion & throughput", "Tasks completed per week and % completion rate.",
-        '<div class="stat-row">' + stat(overallRate+"%","overall completion") + stat(totalDone,"tasks done (all weeks)") + stat(wk.length,"weeks tracked") + '</div>' +
+        '<div class="stat-row">' + stat(overallRate+"%","overall completion · all data") + stat(totalDone,"task snapshots done · all data") + stat(wkRaw.length,"weeks tracked") + '</div>' +
         barLineChart(weeks, wk.map(r=>+r.done||0), wk.map(r=>+r.completion_rate||0), tipCompletion) +
         legend([["Done / week",COLORS.done],["Completion %",COLORS.accent]])) +
       kcard("Blocked & at-risk trend", "Count of blocked and at-risk tasks across weeks.",
@@ -2314,6 +2934,10 @@ async function loadKpis(){
               + '<span class="wks">'+(k.kudos_date?shortDate(k.kudos_date):"")+'</span></li>').join("") + '</ul>'
           : '<p class="desc" style="margin:0">Log praise on the <b>Kudos</b> tab and it’ll appear here.</p>') +
     '</div>';
+  const accessible = document.createElement("table"); accessible.className="sr-only";
+  accessible.innerHTML = '<caption>Weekly KPI data</caption><thead><tr><th>Week ending</th><th>Total tasks</th><th>Done</th><th>Completion</th><th>At risk</th><th>Blocked</th><th>Average progress</th></tr></thead><tbody>'
+    + wk.map(r=>'<tr><th>'+esc(prettyDate(r.week_ending)||r.week_ending)+'</th><td>'+esc(r.total_tasks)+'</td><td>'+esc(r.done)+'</td><td>'+esc(r.completion_rate)+'%</td><td>'+esc(r.at_risk)+'</td><td>'+esc(r.blocked)+'</td><td>'+esc(r.avg_progress)+'%</td></tr>').join("") + '</tbody>';
+  body.appendChild(accessible);
   wireCharts();
 }
 function hbar(pct){
@@ -2340,23 +2964,24 @@ function agingList(rows){
 }
 
 // ---- tiny inline-SVG charts (no chart library) ----
-const CW = 520, CH = 170, PADL = 30, PADB = 22, PADT = 12, PADR = 12;
+const CW = 520, CH = 170, PADL = 34, PADB = 26, PADT = 12, PADR = 12;
 function xPos(i, n){ return PADL + (n<=1 ? (CW-PADL-PADR)/2 : i*(CW-PADL-PADR)/(n-1)); }
 function bandX(i, n){ const w=(CW-PADL-PADR)/n; return PADL + i*w + w*0.5; }
-function svgOpen(){ return '<svg class="chart" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
+function svgOpen(){ return '<svg class="chart" role="group" aria-label="Interactive KPI trend chart. Tab through each week for exact values." viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="xMidYMid meet">'; }
 function axis(maxLabel){
   return '<line x1="'+PADL+'" y1="'+(CH-PADB)+'" x2="'+(CW-PADR)+'" y2="'+(CH-PADB)+'" stroke="#E2E7EF"/>'
-       + '<text x="'+(PADL-4)+'" y="'+(PADT+8)+'" font-size="9" fill="#7C889B" text-anchor="end">'+maxLabel+'</text>';
+       + '<text x="'+(PADL-5)+'" y="'+(PADT+9)+'" font-size="11" fill="var(--ink-2)" text-anchor="end">'+maxLabel+'</text>';
 }
 function xLabels(labels){ const n = labels.length;
-  return labels.map((l,i) => '<text x="'+xPos(i,n)+'" y="'+(CH-PADB+13)+'" font-size="9" fill="#7C889B" text-anchor="middle">'+l+'</text>').join(""); }
+  return labels.map((l,i) => '<text x="'+xPos(i,n)+'" y="'+(CH-PADB+17)+'" font-size="11" fill="var(--ink-2)" text-anchor="middle">'+l+'</text>').join(""); }
 function yOf(v, max){ const h = CH-PADB-PADT; return CH-PADB - (max?Math.min(v,max)/max:0)*h; }
 // ---- interactive hover: register per-week data + geometry, draw hover columns ----
 let CHART_DATA = [];
 function regChart(rows, xs, series){ const c = CHART_DATA.length; CHART_DATA.push({ rows: rows||[], xs: xs||[], series: series||[] }); return c; }
+function bandA11y(c,i){ const row=(CHART_DATA[c]&&CHART_DATA[c].rows[i])||{}; const details=(row.lines||[]).map(v=>typeof v==="string"?v:v.t).join(", "); return ' tabindex="0" role="button" aria-label="'+esc((row.label||("Week "+(i+1)))+(details?": "+details:"")+(row.week?". Open week":""))+'"'; }
 function hoverBands(c, n){
   const full = CW-PADL-PADR, w = full/n; let out = "";
-  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"></rect>';
+  for (let i=0;i<n;i++) out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+(PADL+i*w)+'" y="'+PADT+'" width="'+w+'" height="'+(CH-PADB-PADT)+'"'+bandA11y(c,i)+'></rect>';
   return out;
 }
 function hoverBandsAt(c, xs){
@@ -2364,7 +2989,7 @@ function hoverBandsAt(c, xs){
   for (let i=0;i<n;i++){
     const left = i===0 ? PADL : (xs[i-1]+xs[i])/2;
     const right = i===n-1 ? (CW-PADR) : (xs[i]+xs[i+1])/2;
-    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"></rect>';
+    out += '<rect class="hb" data-c="'+c+'" data-i="'+i+'" x="'+left+'" y="'+PADT+'" width="'+(right-left)+'" height="'+(CH-PADB-PADT)+'"'+bandA11y(c,i)+'></rect>';
   }
   return out;
 }
@@ -2413,7 +3038,7 @@ function wireCharts(){
     };
     const drill = (e) => {
       const i = idxAt(e.clientX); const row = data.rows[i]; if (!row || !row.week) return;
-      hide(); state.week = row.week; showTab("week"); loadWeek();
+      hide(); showTab("week"); void changeWeek(row.week);
     };
     svg.addEventListener("pointerenter", show);
     svg.addEventListener("pointermove", show);
@@ -2421,6 +3046,11 @@ function wireCharts(){
     svg.addEventListener("pointerleave", hide);
     svg.addEventListener("pointercancel", hide);
     svg.addEventListener("click", drill);
+    svg.querySelectorAll(".hb").forEach((band,i) => {
+      band.addEventListener("focus", () => { const r=band.getBoundingClientRect(); show({clientX:r.left+r.width/2,clientY:r.top+r.height/2}); });
+      band.addEventListener("blur", hide);
+      band.addEventListener("keydown", e => { if(e.key!=="Enter"&&e.key!==" ")return;e.preventDefault();const row=data.rows[i];if(row&&row.week){hide();showTab("week");void changeWeek(row.week);} });
+    });
   });
 }
 function lineChart(labels, vals, color, fixedMax, tipRows){
@@ -2457,16 +3087,16 @@ function stackedChart(labels, risk, blocked, tipRows){
 }
 
 // ============ SHARE LINKS (per recipient) ============
-function shareUrlFor(token){ return new URL("dashboard.html", location.href).href + "?s=" + token; }
-const shareTimers = {};
+function shareUrlFor(token){ return new URL("dashboard.html", location.href).href + "#s=" + encodeURIComponent(token); }
 $("shareToggle").addEventListener("click", () => {
   const bar = $("sharebar");
-  if (!bar.hidden) { bar.hidden = true; return; }
-  bar.hidden = false; loadShares();
+  if (!bar.hidden) { bar.hidden = true; $("shareToggle").setAttribute("aria-expanded","false"); return; }
+  bar.hidden = false; $("shareToggle").setAttribute("aria-expanded","true"); loadShares();
 });
 $("shareAdd").addEventListener("click", async function () {
   const btn = this; const orig = btn.textContent; btn.disabled = true; btn.textContent = "Creating…";
-  const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "" }).select("token,label").single();
+  const defaults = { weeks:"current", include_kudos:false, include_summaries:true };
+  const { data, error } = await sb.from("shares").insert({ user_id: session.user.id, label: "", expires_at:addDaysIso(todayIso(),30), scope:defaults }).select("token,label").single();
   if (error) { btn.disabled = false; btn.textContent = orig; alert("Could not create link: " + error.message); return; }
   btn.disabled = false; btn.textContent = orig;
   loadShares();
@@ -2474,7 +3104,7 @@ $("shareAdd").addEventListener("click", async function () {
 async function loadShares(){
   const list = $("shareList");
   list.innerHTML = '<div class="share-loading"><span class="spin"></span> Loading…</div>';
-  const { data, error } = await sb.from("shares").select("token,label,created_at")
+  const { data, error } = await sb.from("shares").select("token,label,created_at,expires_at,last_used_at,scope")
     .eq("revoked", false).order("created_at", { ascending:true });
   if (error) { list.innerHTML = '<div class="share-loading">Error: '+esc(error.message)+'</div>'; return; }
   if (!data || !data.length) { list.innerHTML = '<div class="share-loading">No links yet — click <b>+ New link</b> to create one.</div>'; return; }
@@ -2484,8 +3114,8 @@ async function loadShares(){
     const label = document.createElement("input"); label.className = "share-label"; label.type = "text";
     label.placeholder = "Label (e.g. CEO)"; label.value = s.label || "";
     label.addEventListener("input", () => {
-      clearTimeout(shareTimers[s.token]);
-      shareTimers[s.token] = setTimeout(() => { sb.from("shares").update({ label: label.value }).eq("token", s.token); }, 600);
+      clearTimeout(shareTimers[s.token+":label"]);
+      shareTimers[s.token+":label"] = setTimeout(async () => { const {error}=await sb.from("shares").update({ label: label.value }).eq("token", s.token); if(error) setSave("err","Share label was not saved: "+error.message); }, 600);
     });
     // always the full, direct dashboard link — no third-party shortener, no interstitial page
     const url = document.createElement("input"); url.className = "share-url"; url.type = "text"; url.readOnly = true;
@@ -2498,10 +3128,22 @@ async function loadShares(){
       else { try { document.execCommand("copy"); done(); } catch(e){} }
     });
     row.appendChild(label); row.appendChild(url); row.appendChild(copy);
+    const options = document.createElement("div"); options.className="share-options";
+    const scope = s.scope && typeof s.scope === "object" ? s.scope : { weeks:"current", include_kudos:false, include_summaries:true };
+    const weeksLabel=document.createElement("label"); weeksLabel.textContent="Reports";
+    const weeks=document.createElement("select"); [["current","Current week"],["recent4","Latest 4 weeks"],["all","All history"]].forEach(([value,textValue])=>{ const o=document.createElement("option");o.value=value;o.textContent=textValue;if(scope.weeks===value)o.selected=true;weeks.appendChild(o); }); weeksLabel.appendChild(weeks);
+    const expiryLabel=document.createElement("label"); expiryLabel.textContent="Expires"; const expiry=document.createElement("input");expiry.type="date";expiry.value=String(s.expires_at||"").slice(0,10);expiryLabel.appendChild(expiry);
+    const kudosLabel=document.createElement("label"); const kudos=document.createElement("input");kudos.type="checkbox";kudos.checked=!!scope.include_kudos;kudosLabel.appendChild(kudos);kudosLabel.appendChild(document.createTextNode(" Include kudos"));
+    const summaryLabel=document.createElement("label"); const summaries=document.createElement("input");summaries.type="checkbox";summaries.checked=scope.include_summaries!==false;summaryLabel.appendChild(summaries);summaryLabel.appendChild(document.createTextNode(" Include AI summaries"));
+    const used=document.createElement("span");used.className="muted-sm";used.textContent=s.last_used_at?"Last opened "+new Date(s.last_used_at).toLocaleDateString():"Not opened yet";
+    const saveScope=async()=>{ const nextScope={weeks:weeks.value,include_kudos:kudos.checked,include_summaries:summaries.checked}; const {error}=await sb.from("shares").update({scope:nextScope,expires_at:expiry.value||null}).eq("token",s.token); if(error)setSave("err","Share settings were not saved: "+error.message);else setSave("ok","Share settings saved"); };
+    [weeks,expiry,kudos,summaries].forEach(control=>control.addEventListener("change",saveScope));
+    options.appendChild(weeksLabel);options.appendChild(expiryLabel);options.appendChild(kudosLabel);options.appendChild(summaryLabel);options.appendChild(used);row.appendChild(options);
     const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "btn ghost sm danger"; revoke.textContent = "Revoke";
     revoke.addEventListener("click", async () => {
       if (!confirm("Revoke this link" + (s.label ? ' for “'+s.label+'”' : "") + "? It stops working immediately.")) return;
-      await sb.from("shares").update({ revoked: true }).eq("token", s.token);
+      const { error } = await sb.from("shares").update({ revoked: true }).eq("token", s.token);
+      if (error) { setSave("err", "Could not revoke link: " + error.message); return; }
       loadShares();
     });
     row.appendChild(revoke);
@@ -2541,11 +3183,12 @@ async function renderWeekKudos(){
 }
 
 // ============ AI WEEKLY SUMMARY ============
-let aiMarkdown = "";
 let aiMode = "preview";   // or "edit"
-function openAi(){ $("aiModal").hidden = false; }
-function closeAi(){ $("aiModal").hidden = true; }
-$("aiSummary").addEventListener("click", draftSummary);
+function openAi(){ showModal("aiModal"); }
+function closeAi(){ hideModal("aiModal"); }
+function prepareAiSummary(){ aiLimitNotice=""; openAi(); $("aiBody").innerHTML='<div class="muted-empty">Review the data-use notice above, then choose <b>Generate summary</b>.</div>'; $("aiStart").hidden=false; $("aiStart").textContent="Generate summary"; ["aiEdit","aiCopy","aiRegen","aiSend","aiUnpublish"].forEach(id=>$(id).hidden=true); }
+$("aiSummary").addEventListener("click", prepareAiSummary);
+$("aiStart").addEventListener("click", draftSummary);
 $("aiClose").addEventListener("click", closeAi);
 $("aiDone").addEventListener("click", closeAi);
 $("aiRegen").addEventListener("click", draftSummary);
@@ -2637,35 +3280,48 @@ async function copyRich(html, plain){
 }
 function renderAiView(){
   const body = $("aiBody");
+  const notice=aiLimitNotice?'<p class="note info">'+esc(aiLimitNotice)+'</p>':"";
   $("aiEdit").textContent = (aiMode === "edit") ? "Preview" : "Edit";
   if (aiMode === "edit") {
-    body.innerHTML = "";
+    body.innerHTML = notice;
     const ta = document.createElement("textarea"); ta.value = aiMarkdown;
     ta.addEventListener("input", () => { aiMarkdown = ta.value; });
     body.appendChild(ta);
   } else {
-    body.innerHTML = '<div class="ai-rendered">' + sanitizeHtml(mdToHtml(aiMarkdown)) + '</div>';
+    body.innerHTML = notice+'<div class="ai-rendered">' + sanitizeHtml(mdToHtml(aiMarkdown)) + '</div>';
   }
 }
 async function draftSummary(){
   openAi(); aiMode = "preview";
+  $("aiStart").hidden = true;
   $("aiBody").innerHTML = '<div class="ai-load"><span class="spin"></span> Drafting your weekly summary…</div>';
   ["aiEdit","aiCopy","aiRegen","aiSend","aiUnpublish"].forEach(id => $(id).hidden = true);
   $("aiDash").textContent = ""; $("aiDash").className = "ai-dash";
   try {
-    const tasks = state.rows
-      .filter(r => (r.task && r.task.trim()) || htmlToText(r.note).trim() || (r.items && r.items.length))
-      .map(r => ({ task:(r.task||"").trim(), status:r.status, priority:r.pri, progress:r.prog,
-                   project:(r.project||"").trim(), due:r.due||"", started:r.started||"", completed:r.completed||"",
-                   update: htmlToText(r.note), items: normItems(r.items) }));
+    aiLimitNotice="";
+    const sourceTaskRows=state.rows.filter(r => (r.task && r.task.trim()) || htmlToText(r.note).trim() || (r.items && r.items.length));
+    const taskCandidates = sourceTaskRows.map(r => ({ task:(r.task||"").trim().slice(0,300), status:r.status, priority:r.pri, progress:Math.max(0,Math.min(100,+r.prog||0)),
+                   project:(r.project||"").trim().slice(0,120), due:r.due||"", started:r.started||"", completed:r.completed||"",
+                   update:latestUpdateText(r).slice(0,1000), updates:normUpdates(r.updates).slice(0,5).map(u=>({...u,text:u.text.slice(0,2000)})),
+                   blocked_by:(r.blockedBy||"").slice(0,300), waiting_on:(r.waitingOn||"").slice(0,200), follow_up_on:r.followUp||"",
+                   items:normItems(r.items).slice(0,10).map(i=>({...i,text:i.text.slice(0,300)})) }));
+    const tasks=[]; let taskChars=0;
+    for(const candidate of taskCandidates.slice(0,100)){const weight=JSON.stringify(candidate).length;if(tasks.length&&taskChars+weight>65000)break;tasks.push(candidate);taskChars+=weight;}
     let kudos = kudosList;
     if (!kudos) {
-      const { data } = await sb.from("kudos").select("kudos_date,source,title,details")
-        .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false });
+      const { data, error:kudosError } = await sb.from("kudos").select("kudos_date,source,title,details")
+        .order("kudos_date", { ascending:false, nullsFirst:false }).order("created_at", { ascending:false }).limit(50);
+      if(kudosError)throw kudosError;
       kudos = data || [];
     }
-    const kud = (kudos || []).map(k => ({ date:k.kudos_date, source:(k.source||"").trim(), title:(k.title||"").trim(), details: htmlToText(k.details) }));
-    const { data, error } = await sb.functions.invoke("weekly-summary", { body: { week_ending: state.week, prepared_by: state.who, tasks, kudos: kud } });
+    const kud=[];let kudosChars=0;const kudosCandidates=(kudos||[]).slice(0,50).map(k=>({date:k.kudos_date,source:(k.source||"").trim().slice(0,200),title:(k.title||"").trim().slice(0,400),details:htmlToText(k.details).slice(0,4000)}));
+    for(const candidate of kudosCandidates){const weight=JSON.stringify(candidate).length;if(kud.length&&kudosChars+weight>12000)break;kud.push(candidate);kudosChars+=weight;}
+    const notices=[];
+    if(tasks.length<taskCandidates.length)notices.push("using "+tasks.length+" of "+taskCandidates.length+" tasks");
+    if(sourceTaskRows.some(r=>normUpdates(r.updates).length>5||normItems(r.items).length>10))notices.push("using the 5 latest updates and 10 action items per task");
+    if(kud.length<(kudos||[]).length)notices.push("using "+kud.length+" of "+(kudos||[]).length+" kudos");
+    aiLimitNotice=notices.length?"For a reliable AI request, this draft is "+notices.join("; ")+".":"";
+    const { data, error } = await sb.functions.invoke("weekly-summary", { body: { week_ending: state.week, prepared_by: state.who.slice(0,160), tasks, kudos: kud } });
     if (error) {
       let msg = error.message || "Request failed.";
       try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){}
@@ -2677,6 +3333,7 @@ async function draftSummary(){
     renderAiView();
     updateAiDash();
   } catch (e) {
+    $("aiStart").hidden = false; $("aiStart").textContent = "Try again";
     $("aiBody").innerHTML = '<div class="ai-err"><b>Couldn’t generate the summary.</b><br>' + escHtml(e.message || String(e))
       + '<br><br>If this says the key isn’t configured, add an <b>ANTHROPIC_API_KEY</b> secret to your Supabase project (Edge Functions → Secrets), then try again.</div>';
   }
@@ -2690,14 +3347,13 @@ function openNotes(){
   proposed = [];
   $("notesAdd").hidden = true;
   $("notesSaved").textContent = state.notes && state.notes.trim() ? "Notes saved to this week." : "";
-  $("notesModal").hidden = false;
-  $("notesInput").focus();
+  showModal("notesModal", "notesInput");
 }
 function closeNotes(){
   // persist any edits to the pasted notes before closing
   const v = $("notesInput").value;
   if (v !== (state.notes || "")) { state.notes = v; if (session) saveWeek(true); }
-  $("notesModal").hidden = true;
+  hideModal("notesModal");
 }
 $("importNotes").addEventListener("click", openNotes);
 $("notesClose").addEventListener("click", closeNotes);
@@ -2752,6 +3408,7 @@ function renderProposals(){
 async function extractNotes(){
   const notes = $("notesInput").value.trim();
   if (!notes) { $("notesInput").focus(); return; }
+  if(notes.length>40000){$("notesResult").innerHTML='<div class="ai-err"><b>These notes are too long to process safely.</b><br>Trim them to 40,000 characters or split them into smaller meetings.</div>';$("notesAdd").hidden=true;return;}
   // save the pasted notes to this week first
   state.notes = $("notesInput").value;
   if (session) saveWeek(true);
@@ -2760,7 +3417,7 @@ async function extractNotes(){
   $("notesResult").innerHTML = '<p class="np-head"><span class="spin"></span> Reading your notes…</p>';
   $("notesAdd").hidden = true;
   try {
-    const projects = [...new Set(state.rows.map(r => (r.project||"").trim()).filter(Boolean))];
+    const projects = [...new Set(state.rows.map(r => (r.project||"").trim().slice(0,120)).filter(Boolean))].slice(0,100);
     const { data, error } = await sb.functions.invoke("extract-tasks", { body: { notes, today: todayIso(), projects } });
     if (error) {
       let msg = error.message || "Request failed.";
@@ -2787,7 +3444,7 @@ function addProposed(){
   picked.forEach(p => state.rows.push(rowFromProposed(p)));
   renderRows();
   if (session) saveWeek(true);
-  $("notesModal").hidden = true;
+  hideModal("notesModal");
   showTab("week");
   const n = picked.length;
   setSave("ok", "Added " + n + " task" + (n===1?"":"s") + " from notes");
@@ -2807,10 +3464,9 @@ function openTaskNotes(row){
   $("tnHint").innerHTML = title
     ? 'Paste the notes from your meeting for <b>' + escHtml(title) + '</b> — Claude pulls action items and a concise summary for this task.'
     : "Paste this meeting's notes — Claude pulls action items and a concise summary for this task.";
-  $("taskNotesModal").hidden = false;
-  $("tnInput").focus();
+  showModal("taskNotesModal", "tnInput");
 }
-function closeTaskNotes(){ $("taskNotesModal").hidden = true; tnTarget = null; }
+function closeTaskNotes(){ hideModal("taskNotesModal"); tnTarget = null; }
 $("tnClose").addEventListener("click", closeTaskNotes);
 $("tnDone").addEventListener("click", closeTaskNotes);
 $("taskNotesModal").addEventListener("click", (e) => { if (e.target === $("taskNotesModal")) closeTaskNotes(); });
@@ -2855,11 +3511,12 @@ async function extractTaskNotes(){
   if (!tnTarget) return;
   const notes = $("tnInput").value.trim();
   if (!notes) { $("tnInput").focus(); return; }
+  if(notes.length>40000){$("tnResult").innerHTML='<div class="ai-err"><b>These notes are too long to process safely.</b><br>Trim them to 40,000 characters or split them into smaller meetings.</div>';$("tnAdd").hidden=true;return;}
   const btn = $("tnExtract"); const orig = btn.textContent; btn.disabled = true; btn.textContent = "Extracting…";
   $("tnResult").innerHTML = '<p class="np-head"><span class="spin"></span> Reading your notes…</p>';
   $("tnAdd").hidden = true;
   try {
-    const { data, error } = await sb.functions.invoke("task-actions", { body: { task: tnTarget.task || "", notes, today: todayIso() } });
+    const { data, error } = await sb.functions.invoke("task-actions", { body: { task:(tnTarget.task||"").slice(0,300), notes, today: todayIso() } });
     if (error) {
       let msg = error.message || "Request failed.";
       try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch(_){}
@@ -2905,6 +3562,8 @@ $("tnAdd").addEventListener("click", addTaskNotes);
     if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
     else document.documentElement.removeAttribute("data-theme");
     $("themeToggle").innerHTML = (t === "dark") ? ICON_SUN : ICON_MOON;
+    $("themeToggle").setAttribute("aria-label", t === "dark" ? "Switch to light mode" : "Switch to dark mode");
+    $("themeToggle").setAttribute("aria-pressed", String(t === "dark"));
   };
   apply(theme);
   $("themeToggle").addEventListener("click", () => {
@@ -2921,15 +3580,12 @@ $("tnAdd").addEventListener("click", addTaskNotes);
 // existing data, the offline file, the KPI "by project" view and the dashboard);
 // this layer adds colour, cadence, owner, links and a reusable checklist per project.
 // ============================================================================
-const PROJ_LS = "tracker_projects_v1";
+const PROJ_LS = "tracker_projects_v2";
 const PROJ_COLORS = ["#4F46E5","#0EA5E9","#1A8A4E","#D9A300","#B42318","#7C3AED","#DB2777","#0D9488","#EA580C","#475569"];
 const P_TYPES = ["","Content","Product","Program","Engineering","Operations","Research","Other"];
 const P_STATUS = ["Active","Paused","Done"];
 const P_CAD = ["None","Weekly","Biweekly","Monthly"];
-let PROJECTS = [];            // [{id, name, doc:{color,type,status,cadence,owner,links[],template:{items[]},archived}}]
-let projectsLoaded = false;
 let projTableOk = true;       // flips false if the projects table isn't provisioned → localStorage only
-const projSaveTimers = {};
 
 function pnorm(s){ return String(s||"").trim().toLowerCase(); }
 function pid(name){ const base = pnorm(name).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,32) || "p"; return base + "-" + Math.random().toString(36).slice(2,7); }
@@ -2937,8 +3593,9 @@ function hashOf(s){ let h=0; const t=pnorm(s); for(let i=0;i<t.length;i++) h=(h*
 function findProject(name){ const k = pnorm(name); return PROJECTS.find(p => pnorm(p.name)===k) || null; }
 function projectColor(name){ if(!name || !name.trim()) return null; const p=findProject(name); if(p && p.doc && p.doc.color) return p.doc.color; return PROJ_COLORS[hashOf(name)%PROJ_COLORS.length]; }
 
-function projLoadLocal(){ try { const v=JSON.parse(localStorage.getItem(PROJ_LS)); return Array.isArray(v)?v:[]; } catch(e){ return []; } }
-function projSaveLocal(){ try { localStorage.setItem(PROJ_LS, JSON.stringify(PROJECTS)); } catch(e){} }
+function projLsKey(){ return PROJ_LS + "_" + (session && session.user ? session.user.id : "signed-out"); }
+function projLoadLocal(){ try { const v=JSON.parse(localStorage.getItem(projLsKey())); return Array.isArray(v)?v:[]; } catch(e){ return []; } }
+function projSaveLocal(){ try { localStorage.setItem(projLsKey(), JSON.stringify(PROJECTS)); } catch(e){} }
 
 function seedProjects(){
   const mk = (name, doc) => ({ id: pid(name), name, doc });
@@ -2958,13 +3615,13 @@ async function upsertProjectCloud(p){
     { id:p.id, user_id:session.user.id, name:p.name, doc:p.doc||{}, updated_at:new Date().toISOString() },
     { onConflict:"id" });
   if (error && (error.code==="42P01" || /relation .*projects.* does not exist/i.test(error.message||""))) projTableOk=false;
+  else if (error) setSave("err", "Project change was not saved: " + error.message);
 }
 function persistProject(p){
   projSaveLocal();
   clearTimeout(projSaveTimers[p.id]);
   projSaveTimers[p.id] = setTimeout(() => upsertProjectCloud(p), 500);
 }
-let projLoadInflight = null;
 async function loadProjects(){
   // single-flight: sign-in and tab clicks can all request a load at once — share one
   // in-flight fetch so an empty table can't be seeded more than once (dupe-seed race)
@@ -3067,7 +3724,7 @@ function pfCard(proj, a){
   if (a.overdue)   pills.push('<span class="pf-pill bad">'+a.overdue+' overdue</span>');
   pills.push('<span class="pf-pill good">'+a.done+' done</span>');
   const cad = (doc.cadence && doc.cadence!=="None") ? '<span class="pf-cad">'+esc(doc.cadence)+'</span>' : '';
-  const links = (doc.links||[]).filter(l=>l.url).map(l=>'<a href="'+escHtml(l.url)+'" target="_blank" rel="noopener">'+escHtml(l.label||l.url)+'</a>').join("");
+  const links = (doc.links||[]).map(l=>({ ...l, safe:safeUrl(l.url) })).filter(l=>l.safe).map(l=>'<a href="'+escHtml(l.safe)+'" target="_blank" rel="noopener noreferrer">'+escHtml(l.label||l.url)+'</a>').join("");
   const nextDue = a.nextDue ? '<div class="o">🗓 Next due <b>'+shortDate(a.nextDue)+'</b></div>' : '';
   const lastA = a.lastWk ? '<span class="pf-when">last active '+shortDate(a.lastWk)+'</span>' : '';
   const canStart = proj && !doc.archived && doc.template && doc.template.items && doc.template.items.length;
@@ -3075,7 +3732,7 @@ function pfCard(proj, a){
   const div = document.createElement("div"); div.className = "pf-card" + (doc.archived ? " arch" : "");
   div.innerHTML =
     '<div class="pf-head"><span class="pf-dot" style="background:'+color+'"></span><span class="pf-name">'+escHtml(a.name)+'</span>'+cad+'</div>'
-    +'<div class="pf-topline"><span class="pf-pct">'+pct+'%</span><span class="pf-pctl">complete · '+a.done+'/'+a.total+' all-time</span></div>'
+    +'<div class="pf-topline"><span class="pf-pct">'+pct+'%</span><span class="pf-pctl">complete · '+a.done+'/'+a.total+' unique tasks</span></div>'
     + bar
     +'<div class="pf-stats">'+pills.join("")+'</div>'
     +'<div class="pf-open">'+nextDue+'</div>'
@@ -3089,7 +3746,7 @@ async function loadPortfolio(){
   body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Building portfolio…</div>';
   const [{ data: reps, error:e1 }, { data: tks, error:e2 }, rmRes] = await Promise.all([
     sb.from("reports").select("id,week_ending"),
-    sb.from("tasks").select("report_id,project,status,due_date"),
+    sb.from("tasks").select("report_id,logical_id,project,status,due_date"),
     sb.from("roadmaps").select("id,title,subtitle,updated_at,doc").then(r=>r, ()=>({data:null}))
   ]);
   if (e1 || e2){ body.innerHTML = '<div class="muted-empty">Could not load portfolio: '+esc((e1||e2).message)+'</div>'; return; }
@@ -3098,21 +3755,24 @@ async function loadPortfolio(){
   const keyFor = (name) => { const p=findProject(name); return p?pnorm(p.name):pnorm(name); };
   const agg = {};
   const A = (k,name) => agg[k] || (agg[k] = { name, total:0, done:0, cur:{done:0,ontrack:0,atrisk:0,blocked:0}, lastWk:"", nextDue:null, overdue:0 });
+  const latestSnapshots = new Map();
   (tks||[]).forEach(t => {
     const raw = (t.project||"").trim();
     const k = raw ? keyFor(raw) : "__untagged__";
     const name = raw ? ((findProject(raw)||{}).name || raw) : "— Untagged —";
     const wk = wkOf[t.report_id] || "";
     const a = A(k,name);
-    a.total++; if (t.status==="Done") a.done++;
     if (wk > a.lastWk) a.lastWk = wk;
-    if (t.status!=="Done" && t.due_date){ if (a.nextDue===null || t.due_date<a.nextDue) a.nextDue=t.due_date; if (t.due_date<today) a.overdue++; }
+    const logical = t.logical_id || (t.report_id+":"+(t.project||"")+":"+(t.due_date||""));
+    const mapKey = k+":"+logical; const prior = latestSnapshots.get(mapKey);
+    if (!prior || wk > prior.week) latestSnapshots.set(mapKey,{...t,k,name,week:wk});
   });
-  (tks||[]).forEach(t => {
-    const raw = (t.project||"").trim();
-    const k = raw ? keyFor(raw) : "__untagged__";
+  latestSnapshots.forEach(t => {
+    const k=t.k;
     const a = agg[k]; if(!a) return;
-    if ((wkOf[t.report_id]||"") !== a.lastWk) return;
+    a.total++; if(t.status==="Done")a.done++;
+    if(t.status!=="Done"&&t.due_date){ if(a.nextDue===null||t.due_date<a.nextDue)a.nextDue=t.due_date;if(t.due_date<today)a.overdue++; }
+    if (t.week !== a.lastWk) return;
     if (t.status==="Done") a.cur.done++;
     else if (t.status==="At Risk") a.cur.atrisk++;
     else if (t.status==="Blocked") a.cur.blocked++;
@@ -3228,10 +3888,13 @@ async function renderProjects(){
   const grid = $("pjGrid");
   PROJECTS.forEach(p => grid.appendChild(projectCard(p)));
 }
-function deleteProject(p){
+async function deleteProject(p){
   const idx = PROJECTS.findIndex(x => x.id === p.id); if (idx < 0) return;
   PROJECTS.splice(idx,1); projSaveLocal(); renderProjects(); refreshProjectOptions();
-  if (session && projTableOk) sb.from("projects").delete().eq("id", p.id);
+  if (session && projTableOk) {
+    const { error } = await sb.from("projects").delete().eq("id", p.id);
+    if (error) { PROJECTS.splice(Math.min(idx,PROJECTS.length),0,p); projSaveLocal(); renderProjects(); refreshProjectOptions(); setSave("err","Project was not deleted: "+error.message); return; }
+  }
   showUndo("Project “"+(p.name||"")+"” deleted", async () => {
     PROJECTS.splice(Math.min(idx, PROJECTS.length), 0, p); projSaveLocal(); renderProjects(); refreshProjectOptions();
     if (session && projTableOk) await upsertProjectCloud(p);
@@ -3249,32 +3912,38 @@ $("pfRefresh").addEventListener("click", loadPortfolio);
 // Sends this week's open tasks to the plan-day edge function (same JWT-gated
 // pattern as the weekly summary) and renders a prioritized plan for today.
 let planMd = "";
+function preparePlanDay(){ showModal("planModal"); $("planBody").innerHTML='<div class="muted-empty">Review the data-use notice above, then choose <b>Create plan</b>.</div>'; $("planStart").hidden=false; $("planStart").textContent="Create plan"; $("planCopy").hidden=true; $("planRegen").hidden=true; }
 async function runPlanDay(){
   const body = $("planBody");
+  $("planStart").hidden = true;
   $("planCopy").hidden = true; $("planRegen").hidden = true;
-  const open = state.rows.filter(r => r.task && r.task.trim() && r.status !== "Done").map(r => ({
-    task: r.task, project: r.project || "", status: r.status, priority: r.pri, progress: r.prog,
-    due: r.due || "", latest_note: htmlToText(r.note).trim().split(/\r?\n/)[0].slice(0, 140),
-    actions_remaining: normItems(r.items).filter(i => !i.done).map(i => i.text).slice(0, 6)
+  const planCandidates=state.rows.filter(r=>r.task&&r.task.trim()&&r.status!=="Done").map(r=>({
+    task:r.task.slice(0,300),project:(r.project||"").slice(0,120),status:r.status,priority:r.pri,progress:Math.max(0,Math.min(100,+r.prog||0)),
+    due:r.due||"",latest_note:latestUpdateText(r).slice(0,140),blocked_by:(r.blockedBy||"").slice(0,300),waiting_on:(r.waitingOn||"").slice(0,200),follow_up_on:r.followUp||"",
+    actions_remaining:normItems(r.items).filter(i=>!i.done).map(i=>i.text.slice(0,240)).slice(0,6)
   }));
+  const open=[];let planChars=0;
+  for(const candidate of planCandidates.slice(0,50)){const weight=candidate.task.length+candidate.project.length+candidate.latest_note.length+candidate.blocked_by.length+candidate.waiting_on.length+candidate.actions_remaining.reduce((n,a)=>n+a.length,0);if(open.length&&planChars+weight>22000)break;open.push(candidate);planChars+=weight;}
+  const planNotice=open.length<planCandidates.length?"Using "+open.length+" of "+planCandidates.length+" open tasks to stay within the secure planning limit.":"";
   if (!open.length){ body.innerHTML = '<div class="muted-empty">No open tasks this week — nothing to plan. 🎉</div>'; return; }
-  body.innerHTML = '<div class="muted-empty"><span class="spin"></span> Planning your day…</div>';
+  body.innerHTML = (planNotice?'<p class="note info">'+esc(planNotice)+'</p>':"")+'<div class="muted-empty"><span class="spin"></span> Planning your day…</div>';
   try {
     const { data: d, error: er } = await sb.functions.invoke("plan-day", { body: { today: todayIso(), week_ending: state.week, tasks: open } });
     let msg = er ? (er.message || "Request failed.") : (d && d.error);
     if (er) { try { const b = await er.context.json(); if (b && b.error) msg = b.error; } catch(_){} }
     if (msg) throw new Error(msg);
     planMd = d.plan || "";
-    body.innerHTML = '<div class="ai-rendered">' + sanitizeHtml(mdToHtml(planMd)) + '</div>';
+    body.innerHTML = (planNotice?'<p class="note info">'+esc(planNotice)+'</p>':"")+'<div class="ai-rendered">' + sanitizeHtml(mdToHtml(planMd)) + '</div>';
     $("planCopy").hidden = false; $("planRegen").hidden = false;
   } catch (e) {
     body.innerHTML = '<div class="muted-empty">Could not plan the day: ' + escHtml(e.message || String(e)) + '</div>';
-    $("planRegen").hidden = false;
+    $("planStart").hidden = false; $("planStart").textContent = "Try again";
   }
 }
-$("planDay").addEventListener("click", () => { $("planModal").hidden = false; runPlanDay(); });
-$("planClose").addEventListener("click", () => { $("planModal").hidden = true; });
-$("planDone").addEventListener("click", () => { $("planModal").hidden = true; });
+$("planDay").addEventListener("click", preparePlanDay);
+$("planStart").addEventListener("click", runPlanDay);
+$("planClose").addEventListener("click", () => { hideModal("planModal"); });
+$("planDone").addEventListener("click", () => { hideModal("planModal"); });
 $("planRegen").addEventListener("click", runPlanDay);
 $("planCopy").addEventListener("click", async function(){
   const ok = await copyRich('<div>' + sanitizeHtml(mdToHtml(planMd)) + '</div>', planMd);
@@ -3286,11 +3955,11 @@ let dwQueue = [], dwIdx = 0, dwUpdated = 0;
 function openDayWizard(){
   dwQueue = state.rows.filter(r => needsUpdate(r));
   dwIdx = 0; dwUpdated = 0;
-  $("dayModal").hidden = false;
+  showModal("dayModal");
   renderDayStep();
 }
 function closeDayWizard(){
-  $("dayModal").hidden = true;
+  hideModal("dayModal");
   renderRows();
   if (dwUpdated) scheduleSave();
 }
@@ -3353,9 +4022,8 @@ function renderDayStep(){
   const save = document.createElement("button"); save.type="button"; save.className="btn sm"; save.textContent="Save & next";
   save.addEventListener("click", () => {
     const txt = note.value.trim();
-    const hadContent = (row.note||"").trim() && row.note !== "<br>";
-    if (txt) row.note = escHtml(shortDate(todayIso()) + ": " + txt) + (hadContent ? "<br>" + row.note : "");
-    else if (!updatedToday(row)) row.note = escHtml(shortDate(todayIso()) + ": ") + (hadContent ? "<br>" + row.note : "");
+    row.updates = normUpdates(row.updates);
+    if (txt || !updatedToday(row)) row.updates.unshift({ id:newLogicalId(), date:todayIso(), text:txt || "Checked in" });
     dwUpdated++; dwIdx++; renderDayStep();
   });
   foot.appendChild(count); foot.appendChild(spacer); foot.appendChild(skip); foot.appendChild(save);
@@ -3427,7 +4095,7 @@ function qcRender(){
   $("qcPreview").innerHTML = chips.join("");
   return p;
 }
-function openQuickCapture(){ $("qcModal").hidden = false; $("qcInput").value = ""; $("qcPreview").innerHTML = ""; $("qcInput").focus(); }
+function openQuickCapture(){ $("qcInput").value = ""; $("qcPreview").innerHTML = ""; showModal("qcModal","qcInput"); }
 function qcAdd(){
   const p = qcRender();
   if (!p.task){ $("qcInput").focus(); return; }
@@ -3437,13 +4105,13 @@ function qcAdd(){
   if (state.rows.length === 1 && isBlankRow(state.rows[0])) state.rows = [];
   state.rows.push(r);
   if (p.project) registerProjectName(p.project);
-  $("qcModal").hidden = true;
+  hideModal("qcModal");
   showTab("week"); renderRows(); scheduleSave();
   setSave("", "Added “" + p.task.slice(0,40) + "”" + (p.due ? " · due " + shortDate(p.due) : ""));
 }
 $("qcInput").addEventListener("input", qcRender);
 $("qcInput").addEventListener("keydown", (e) => { if (e.key === "Enter"){ e.preventDefault(); qcAdd(); } });
-$("qcClose").addEventListener("click", () => { $("qcModal").hidden = true; });
+$("qcClose").addEventListener("click", () => { hideModal("qcModal"); });
 
 // ============ COMMAND PALETTE — Ctrl/Cmd+K ============
 let ckItems = [], ckActive = 0;
@@ -3453,13 +4121,13 @@ function ckBuild(){
     { label:"Add empty task", kind:"action", run:() => { showTab("week"); $("add").click(); } },
     { label:"Log today into all tasks", kind:"action", run:() => { showTab("week"); logTodayAll(); } },
     { label:"Close out my day", kind:"action", run:openDayWizard },
-    { label:"✨ Plan my day", kind:"action", run:() => { $("planModal").hidden = false; runPlanDay(); } },
+    { label:"✨ Plan my day", kind:"action", run:() => $("planDay").click() },
     { label:"✨ Draft weekly summary", kind:"action", run:() => $("aiSummary").click() },
     { label:"📝 Import meeting notes", kind:"action", run:() => $("importNotes").click() },
     { label:"Toggle dark mode", kind:"action", run:() => $("themeToggle").click() },
     { label:"Save now", kind:"action", run:() => saveWeek(true) },
   ];
-  const names = { week:"This week", portfolio:"Portfolio", projects:"Projects", history:"History", completed:"Completed", kudos:"Kudos", kpis:"KPIs" };
+  const names = { today:"Today", week:"Week", portfolio:"Portfolio", projects:"Projects", insights:"Insights", history:"History", completed:"Completed", kudos:"Kudos", kpis:"KPIs" };
   Object.keys(tabs).forEach(k => items.push({ label:"Go to " + names[k], kind:"tab", run:() => showTab(k) }));
   state.rows.forEach(r => {
     if (r.task && r.task.trim()) items.push({ label:r.task.trim().slice(0,70), kind:"task", run:() => {
@@ -3476,21 +4144,23 @@ function ckRender(){
   list.innerHTML = vis.length ? "" : '<div class="ck-empty">No matches.</div>';
   vis.forEach((it, i) => {
     const d = document.createElement("div"); d.className = "ck-item" + (i === ckActive ? " active" : "");
+    d.id = "ck-option-" + i; d.setAttribute("role","option"); d.setAttribute("aria-selected",String(i===ckActive));
     d.innerHTML = '<span>' + escHtml(it.label) + '</span><span class="ck-kind">' + it.kind + '</span>';
-    d.addEventListener("click", () => { $("ckModal").hidden = true; it.run(); });
+    d.addEventListener("click", () => { hideModal("ckModal"); it.run(); });
     list.appendChild(d);
   });
+  $("ckInput").setAttribute("aria-activedescendant", vis.length ? "ck-option-"+ckActive : "");
   list._vis = vis;
 }
-function openPalette(){ ckItems = ckBuild(); ckActive = 0; $("ckModal").hidden = false; $("ckInput").value = ""; ckRender(); $("ckInput").focus(); }
+function openPalette(){ ckItems = ckBuild(); ckActive = 0; $("ckInput").value = ""; ckRender(); showModal("ckModal","ckInput"); }
 $("ckInput").addEventListener("input", () => { ckActive = 0; ckRender(); });
 $("ckInput").addEventListener("keydown", (e) => {
   const vis = $("ckList")._vis || [];
   if (e.key === "ArrowDown"){ e.preventDefault(); ckActive = Math.min(ckActive + 1, vis.length - 1); ckRender(); }
   else if (e.key === "ArrowUp"){ e.preventDefault(); ckActive = Math.max(ckActive - 1, 0); ckRender(); }
-  else if (e.key === "Enter"){ e.preventDefault(); const it = vis[ckActive]; if (it){ $("ckModal").hidden = true; it.run(); } }
+  else if (e.key === "Enter"){ e.preventDefault(); const it = vis[ckActive]; if (it){ hideModal("ckModal"); it.run(); } }
 });
-$("ckClose").addEventListener("click", () => { $("ckModal").hidden = true; });
+$("ckClose").addEventListener("click", () => { hideModal("ckModal"); });
 
 // global hotkeys: N = quick add · Ctrl/Cmd+K = palette · Esc closes these overlays
 function anyModalOpen(){ return Array.from(document.querySelectorAll(".modal")).some(m => !m.hidden); }
@@ -3498,13 +4168,8 @@ document.addEventListener("keydown", (e) => {
   const t = e.target;
   const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && String(e.key).toLowerCase() === "k"){
+    if (typing) return;
     if (!session) return; e.preventDefault(); openPalette(); return;
-  }
-  if (e.key === "Escape"){
-    [["qcModal"],["ckModal"],["dayModal", closeDayWizard],["planModal"]].forEach(([id, closer]) => {
-      const m = $(id); if (m && !m.hidden){ if (closer) closer(); else m.hidden = true; }
-    });
-    return;
   }
   if (!typing && !anyModalOpen() && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "n" || e.key === "N")){
     if (!session) return; e.preventDefault(); openQuickCapture();
@@ -3536,13 +4201,20 @@ $("rows").addEventListener("drop", (e) => {
   renderRows(); scheduleSave();
 });
 
-// PWA: installable app shell (no caching — always loads fresh)
-if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+// PWA: cached app shell plus a user-scoped offline save queue.
+function updateOnlineState(){
+  const offline=!navigator.onLine; $("offlineBanner").hidden=!offline;
+  if(offline)setSave("busy",dirty?"Offline · changes queued on this device":"Offline · read-only until you edit");
+  else void flushOfflineSnapshots();
+}
+window.addEventListener("online",updateOnlineState); window.addEventListener("offline",updateOnlineState);
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(err => setSave("err","Offline shell unavailable: "+err.message));
 $("fabAdd").addEventListener("click", () => { $("add").click(); });
 
 (async function init(){
   const { data } = await sb.auth.getSession();
-  applySession(data.session);
+  await applySession(data.session);
+  updateOnlineState();
 })();
 </script>
 </body>

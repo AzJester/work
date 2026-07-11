@@ -1,0 +1,15 @@
+{
+  "name": "azjester-work-static-checks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/tracker-hardening.test.mjs",
+    "build:vendor": "node scripts/build-vendor.mjs"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.110.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
