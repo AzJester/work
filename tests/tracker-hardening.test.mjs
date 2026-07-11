@@ -383,7 +383,11 @@ test("legacy share rows are visible and revocable under one non-null lifecycle c
 test("Pages publication is gated on backend deployment", () => {
   assert.match(pagesWorkflow, /SUPABASE_ACCESS_TOKEN:[\s\S]*SUPABASE_DB_PASSWORD:/);
   assert.match(pagesWorkflow, /ANTHROPIC_API_KEY[\s\S]*AI_ALLOWED_EMAILS[\s\S]*AI_ALLOWED_ORIGINS/, "Backend gate must verify every required Edge Function secret");
-  assert.match(pagesWorkflow, /supabase functions deploy[\s\S]*supabase db push/);
+  assert.match(
+    pagesWorkflow,
+    /supabase migration list --linked[\s\S]*supabase db push --dry-run[\s\S]*supabase db push[\s\S]*supabase functions deploy/,
+    "Migration history and database changes must succeed before Edge Functions deploy",
+  );
   assert.match(pagesWorkflow, /deploy:\s*\r?\n\s+needs:\s*backend/, "Pages deploy job must wait for backend");
 });
 
