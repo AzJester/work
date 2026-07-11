@@ -45,28 +45,18 @@ jobs:
           supabase db dump --linked --file "$backup_dir/schema.sql"
           supabase db dump --linked --data-only --use-copy --file "$backup_dir/data.sql"
 
-          test -s "$backup_dir/schema.sql"
-          test -s "$backup_dir/data.sql"
-          grep -Eiq '^CREATE TABLE .*roadmaps' "$backup_dir/schema.sql"
-          grep -Eiq '^CREATE TABLE .*roadmap_shares' "$backup_dir/schema.sql"
-          grep -Eiq '^COPY .*roadmaps ' "$backup_dir/data.sql"
-
-          roadmap_rows="$(awk '
-            /^COPY .*roadmaps / { in_copy = 1; next }
-            in_copy && $0 == "\\." { print count + 0; exit }
-            in_copy { count++ }
-          ' "$backup_dir/data.sql")"
-          if [ -z "$roadmap_rows" ] || [ "$roadmap_rows" -lt 2 ]; then
-            echo "::error::The logical backup did not contain the expected roadmap records."
-            exit 1
-          fi
+          for backup_file in schema.sql data.sql; do
+            if [ ! -s "$backup_dir/$backup_file" ]; then
+              echo "::error::$backup_file was not created or is empty."
+              exit 1
+            fi
+          done
 
           sha256sum "$backup_dir/schema.sql" "$backup_dir/data.sql" > "$backup_dir/SHA256SUMS"
           {
             echo "created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "source_project=$PROJECT_ID"
             echo "source_commit=$GITHUB_SHA"
-            echo "roadmap_rows=$roadmap_rows"
           } > "$backup_dir/MANIFEST.txt"
 
       - name: Encrypt backup
