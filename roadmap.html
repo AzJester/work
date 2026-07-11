@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://hqqwlkmggwgaoiyzgrhy.supabase.co wss://hqqwlkmggwgaoiyzgrhy.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'" />
 <title>Roadmap Builder</title>
 <meta name="description" content="Build clean project roadmaps — from a template, a form, or a plain-language description. Track a whole portfolio of roadmaps, add lanes, milestones, statuses and dates, then export or share a professional timeline." />
 <style>
@@ -10,11 +12,11 @@
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
     --bg:#f4f6fb; --card:#ffffff; --line:#e7eaf1; --line-2:#d3d8e6;
     --bg-wash:radial-gradient(1100px 460px at 50% -8%, rgba(0,115,234,0.06), rgba(0,115,234,0) 62%);
-    --ink:#2b2d34; --ink-2:#5f6472; --mut:#9296a5;
+    --ink:#252831; --ink-2:#515767; --mut:#697181;
     --accent:#0073ea; --accent-2:#0060b9; --accent-soft:#e6f1fd; --ring:rgba(0,115,234,0.30);
     --btn-ink:#ffffff;   /* text on accent-filled buttons — dark navy in dark mode, where the accent is light */
-    --s-planned:#94a3b8; --s-progress:#f59e0b; --s-complete:#12a56b; --s-risk:#e0485a;
-    --s-blocked:#7c5cf0; --s-onhold:#64748b; --s-milestone:#0073ea;
+    --s-planned:#64748b; --s-progress:#b86500; --s-complete:#087a4c; --s-risk:#c83247;
+    --s-blocked:#6841d8; --s-onhold:#526071; --s-milestone:#0073ea;
     --ok:#00854d; --ok-bg:#e4f7ee; --err:#c2362b; --err-bg:#fdecea; --info:#0060b9; --info-bg:#e6f1fd;
     --input-bg:#ffffff;
     --radius:12px; --radius-sm:8px; --radius-lg:14px; --pill:999px;
@@ -37,6 +39,12 @@
     --shadow-lg:0 26px 64px -26px rgba(0,0,0,0.75);
   }
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important;
+    overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
+  .skip-link { position:fixed; left:12px; top:10px; z-index:100; padding:9px 13px; border-radius:8px; color:var(--btn-ink);
+    background:var(--accent); transform:translateY(-160%); transition:transform .12s; }
+  .skip-link:focus { transform:translateY(0); }
   html, body { margin:0; min-height:100%; }
   body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
     background:var(--bg-wash), var(--bg); background-attachment:fixed; }
@@ -122,6 +130,11 @@
     border-radius:var(--radius); padding:10px 12px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
   .toolbar .sep { width:1px; align-self:stretch; background:var(--line); margin:2px 2px; }
   .toolbar .grow { flex:1 1 auto; }
+  .save-status { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 9px; border-radius:999px;
+    color:var(--ink-2); background:var(--bg); border:1px solid var(--line); font-family:var(--mono); font-size:10.5px; white-space:nowrap; }
+  .save-status[data-state="pending"] { color:var(--info); background:var(--info-bg); }
+  .save-status[data-state="error"], .save-status[data-state="conflict"] { color:var(--err); background:var(--err-bg); }
+  .save-status[data-state="synced"] { color:var(--ok); background:var(--ok-bg); }
   select.sel, input.txt { font-family:var(--disp); font-size:13px; color:var(--ink); background:var(--input-bg);
     border:1px solid var(--line-2); border-radius:8px; padding:7px 10px; cursor:pointer; }
   select.sel:focus, input.txt:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
@@ -212,8 +225,8 @@
   select.chip:hover { filter:brightness(1.05); }
   select.chip:active { transform:scale(0.97); }
   select.chip:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
-  select.chip.s-planned { background:var(--s-planned); color:#3a3a44; }
-  select.chip.s-progress { background:var(--s-progress); color:#3f2a00; }
+  select.chip.s-planned { background:var(--s-planned); color:#fff; }
+  select.chip.s-progress { background:var(--s-progress); color:#fff; }
   select.chip.s-complete { background:var(--s-complete); }
   select.chip.s-risk { background:var(--s-risk); }
   select.chip.s-blocked { background:var(--s-blocked); }
@@ -234,6 +247,10 @@
     padding:16px 16px 14px 18px; cursor:pointer; display:flex; flex-direction:column; gap:10px; overflow:hidden;
     transition:box-shadow .15s, transform .1s, border-color .15s; }
   .rm-card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--rm-accent, var(--accent)); }
+  .rm-card > :not(.rm-open) { position:relative; z-index:1; pointer-events:none; }
+  .rm-card .rm-acts, .rm-card .rm-acts * { pointer-events:auto; }
+  .rm-open { position:absolute; inset:0; z-index:1; border:0; border-radius:inherit; background:transparent; cursor:pointer; }
+  .rm-open:focus-visible { outline:3px solid var(--accent); outline-offset:-3px; }
   .rm-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); border-color:var(--line-2); }
   .rm-card:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
   .rm-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
@@ -282,6 +299,10 @@
   .note.ok { color:var(--ok); background:var(--ok-bg); }
   .note.info { color:var(--info); background:var(--info-bg); }
   .note.hide { display:none; }
+  .undo-bar { position:fixed; left:50%; bottom:18px; z-index:45; transform:translateX(-50%); max-width:min(560px,calc(100vw - 24px));
+    display:flex; align-items:center; gap:12px; padding:10px 12px 10px 14px; border-radius:11px; color:var(--ink); background:var(--card);
+    border:1px solid var(--line-2); box-shadow:var(--shadow-lg); }
+  .undo-bar span { flex:1 1 auto; font-size:13px; }
   .spin { display:inline-block; width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;
     border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
@@ -324,6 +345,10 @@
   .pw-rules li.ok .pw-x { color:var(--ok); }
   .share-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
   .share-row input { flex:1 1 auto; font-family:var(--mono); font-size:12px; }
+  .share-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+  .share-entry { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; }
+  .share-entry .grow { flex:1 1 auto; min-width:0; }
+  .share-entry .meta { color:var(--mut); font-size:11px; }
 
   /* ---------- read-only mode ---------- */
   body.readonly .app-only { display:none !important; }
@@ -391,6 +416,64 @@
     background:var(--card); border:1px solid var(--line-2); border-radius:7px; padding:6px 10px; }
   .pub-url .pub-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
 
+  /* ---------- accessible timeline data ---------- */
+  .timeline-data { border-top:1px solid var(--line); background:var(--card); }
+  .timeline-data summary { cursor:pointer; padding:11px 16px; color:var(--ink-2); font-weight:700; font-size:12.5px; }
+  .timeline-table-wrap { overflow-x:auto; padding:0 16px 14px; }
+  .timeline-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .timeline-table th, .timeline-table td { padding:8px 9px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+  .timeline-table th { color:var(--ink-2); font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; }
+  .timeline-table td:first-child { font-weight:700; }
+  .timeline-empty { color:var(--mut); padding:10px 0; }
+
+  @media (max-width: 720px) {
+    .wrap { padding:14px 10px 76px; }
+    .mast { align-items:center; margin-bottom:12px; }
+    .brand { flex-basis:100%; gap:10px; }
+    .brand .mark, .brand .mark .brand-logo { width:42px; height:42px; }
+    input.title-in, .ov-h1 { font-size:22px; }
+    .mast-tools { width:100%; justify-content:space-between; margin-top:0; }
+    .toolbar { align-items:stretch; padding:9px; gap:6px; }
+    .toolbar .grow, .toolbar .sep { display:none; }
+    .toolbar > select, .toolbar > .menu, .toolbar > button { flex:1 1 calc(50% - 6px); min-width:0; }
+    .toolbar .menu > button { width:100%; }
+    .save-status { flex:1 1 100%; justify-content:center; order:20; }
+    .card .card-head { align-items:flex-start; padding:11px 12px; }
+    .tl-tools { flex-wrap:wrap; justify-content:flex-end; }
+    .tl-scroll { display:none; }
+    .timeline-data { border-top:0; }
+    .timeline-data summary { display:none; }
+    .timeline-data .timeline-table-wrap { display:block; padding:0 10px 12px; }
+    .timeline-data:not([open]) .timeline-table-wrap { display:block; }
+    .timeline-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+    .timeline-table, .timeline-table tbody, .timeline-table tr, .timeline-table td { display:block; width:100%; }
+    .timeline-table tr { margin:0 0 10px; padding:10px; border:1px solid var(--line); border-radius:9px; }
+    .timeline-table td { display:grid; grid-template-columns:88px 1fr; gap:8px; border:0; padding:3px 0; }
+    .timeline-table td::before { content:attr(data-label); color:var(--mut); font-family:var(--mono); font-size:10px; text-transform:uppercase; }
+    .lane { margin:10px 8px; }
+    .lane-head { flex-wrap:wrap; }
+    .lane-head input.lane-name { flex-basis:calc(100% - 34px); }
+    .lane-head .icon-btn { width:34px; height:34px; }
+    .item { align-items:stretch; padding:8px 2px; }
+    .item .drag { display:none; }
+    .item select.kind, .item select.chip { flex:1 1 calc(50% - 5px); }
+    .item input.lbl { flex-basis:100%; order:-1; }
+    .item input[type="date"] { flex:1 1 42%; min-width:0; }
+    .item input.note-inp { margin-left:0; }
+    .rm-acts { opacity:1; }
+    .pub-url { flex-wrap:wrap; }
+    .pub-url .pub-input { flex-basis:100%; order:2; }
+  }
+
+  @media (pointer:coarse) {
+    .rm-acts { opacity:1; }
+    .btn, .icon-btn, .menu-item, select.sel { min-height:42px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
   /* ---------- print ---------- */
   @media print {
     :root { --bg:#fff; --card:#fff; --bg-wash:none; }
@@ -403,7 +486,7 @@
     .card { border:none; box-shadow:none; margin-bottom:12px; break-inside:avoid; }
     .card .card-head { border-bottom:1px solid #e2e2e2; }
     .legend { background:#fff; }
-    .tl-scroll { overflow:visible !important; }
+    .tl-scroll { display:block !important; overflow:visible !important; }
     /* Fit the timeline to the printable page width instead of its (wide) on-screen
        pixel width — the fixed width otherwise overflows the page and leaves a big blank band. */
     svg.gantt { width:100% !important; height:auto !important; min-width:0 !important; }
@@ -419,10 +502,12 @@
 </style>
 </head>
 <body>
+<a class="skip-link" href="#mainContent">Skip to roadmap content</a>
 <div class="wrap">
+  <h1 class="sr-only">Roadmap Builder</h1>
 
   <!-- masthead -->
-  <div class="mast">
+  <header class="mast">
     <div class="brand">
       <div class="mark">
         <img class="brand-logo logo-light" src="assets/dst-logo-black.png" alt="Dr. Shane Turner" />
@@ -431,9 +516,12 @@
       <div class="titlewrap">
         <div class="eyebrow" id="eyebrow">Roadmap Builder</div>
         <div id="editorTitle" class="editor-view">
-          <input id="titleIn" class="title-in" type="text" placeholder="Untitled roadmap" />
-          <input id="subIn" class="sub-in" type="text" placeholder="Add a subtitle (optional)" />
-          <input id="premiseIn" class="premise-in" type="text" placeholder="Add a one-line premise (optional) — the key condition or takeaway" />
+          <label class="sr-only" for="titleIn">Roadmap title</label>
+          <input id="titleIn" class="title-in" type="text" maxlength="500" placeholder="Untitled roadmap" />
+          <label class="sr-only" for="subIn">Roadmap subtitle</label>
+          <input id="subIn" class="sub-in" type="text" maxlength="1000" placeholder="Add a subtitle (optional)" />
+          <label class="sr-only" for="premiseIn">Roadmap premise</label>
+          <input id="premiseIn" class="premise-in" type="text" maxlength="2000" placeholder="Add a one-line premise (optional) — the key condition or takeaway" />
         </div>
         <div id="overviewTitle" class="app-only">
           <div class="ov-h1">Portfolio</div>
@@ -459,12 +547,13 @@
         <span class="ts-knob" aria-hidden="true"></span>
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- toolbar -->
-  <div class="toolbar app-only editor-view" id="toolbar">
-    <select id="rmPicker" class="sel" title="Switch roadmap"></select>
-    <button id="rmNew" class="btn ghost sm">＋ New</button>
+  <nav class="toolbar app-only editor-view" id="toolbar" aria-label="Roadmap actions">
+    <label class="sr-only" for="rmPicker">Current roadmap</label>
+    <select id="rmPicker" class="sel" title="Switch roadmap" aria-label="Current roadmap"></select>
+    <button id="rmNew" class="btn ghost sm" type="button">＋ New</button>
     <div class="menu" data-menu>
       <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More roadmap actions">⋯</button>
       <div class="menu-list" role="menu" hidden>
@@ -490,6 +579,7 @@
         <button class="menu-item" data-act="png" role="menuitem">PNG image</button>
         <button class="menu-item" data-act="html" role="menuitem">HTML page</button>
         <button class="menu-item" data-act="json" role="menuitem">JSON</button>
+        <button class="menu-item" data-act="portfolio" role="menuitem">Full portfolio backup</button>
         <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
       </div>
     </div>
@@ -507,14 +597,14 @@
         <button class="menu-item" data-act="open" role="menuitem">Open from cloud…</button>
         <button class="menu-item" data-act="share" role="menuitem">Share link…</button>
         <button class="menu-item" id="publicItem" data-act="public" role="menuitem">🌐 Make public</button>
-        <button class="menu-item" id="allUsersItem" data-act="allusers" role="menuitem" hidden>👥 All users’ roadmaps…</button>
       </div>
     </div>
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
+    <span id="saveStatus" class="save-status" data-state="local" role="status" aria-live="polite">Saved locally</span>
     <input id="fileIn" type="file" accept="application/json,.json" hidden />
     <input id="jiraIn" type="file" accept=".csv,text/csv" hidden />
-  </div>
+  </nav>
 
   <!-- public link (shown for the owner when the current roadmap is public) -->
   <div id="publicUrlBar" class="pub-url app-only editor-view" hidden>
@@ -526,10 +616,12 @@
   </div>
 
   <!-- global feedback -->
-  <div id="topNote" class="note info hide app-only" role="status"></div>
+  <div id="topNote" class="note info hide app-only" role="status" aria-live="polite"></div>
+
+  <main id="mainContent" tabindex="-1" aria-busy="true">
 
   <!-- overview / portfolio -->
-  <div id="overviewView" class="app-only"><div id="overviewGrid" class="ov-grid"></div></div>
+  <section id="overviewView" class="app-only" aria-label="Roadmap portfolio"><div id="overviewGrid" class="ov-grid"></div></section>
 
   <!-- at-a-glance stat chips (auto-derived) -->
   <div id="statChips" class="stat-chips editor-view" hidden></div>
@@ -552,7 +644,7 @@
       <button id="draftKeep" class="btn sm">Keep</button>
       <button id="draftDiscard" class="btn ghost sm">Discard</button>
     </div>
-    <div class="tl-scroll"><div id="gantt"></div></div>
+    <div class="tl-scroll" tabindex="0" aria-label="Scrollable roadmap timeline"><div id="gantt"></div></div>
     <div class="legend">
       <span class="li lead">Bar = lane · dot = status</span>
       <span class="li"><span class="sw dot" style="background:var(--s-planned)"></span>Planned</span>
@@ -564,6 +656,10 @@
       <span class="li"><span class="dia" style="background:var(--s-milestone)"></span>Milestone</span>
       <span class="li"><span class="today-sw"></span>Today</span>
     </div>
+    <details id="timelineDetails" class="timeline-data">
+      <summary>Timeline details (accessible list)</summary>
+      <div id="timelineTable" class="timeline-table-wrap"></div>
+    </details>
   </div>
 
   <!-- progress summary (auto-computed from the roadmap) -->
@@ -595,7 +691,8 @@
       <span class="mono">context for this roadmap</span>
     </div>
     <div class="notes-body">
-      <textarea id="rmNotes" class="rm-notes" placeholder="Notes, context, links, open questions… (saved with this roadmap)"></textarea>
+      <label class="sr-only" for="rmNotes">Roadmap notes</label>
+      <textarea id="rmNotes" class="rm-notes" maxlength="20000" placeholder="Notes, context, links, open questions… (saved with this roadmap)"></textarea>
     </div>
   </div>
 
@@ -606,8 +703,10 @@
       <span class="mono">bars = phases · diamonds = milestones</span>
     </div>
     <div id="editor"></div>
-    <button id="addLane" class="btn add add-lane">＋ Add lane</button>
+    <button id="addLane" class="btn add add-lane" type="button">＋ Add lane</button>
   </div>
+
+  </main>
 
   <!-- footer -->
   <footer class="site-footer">
@@ -618,22 +717,26 @@
 
 </div>
 
+<div id="undoBar" class="undo-bar" role="status" aria-live="polite" hidden>
+  <span id="undoText"></span><button id="undoBtn" class="btn sm" type="button">Undo</button>
+</div>
+
 <!-- AI modal -->
-<div id="aiModal" class="modal" hidden>
+<div id="aiModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle" hidden>
   <div class="modal-card">
     <div class="modal-head">
-      <h3>✨ Build a roadmap from a description</h3>
-      <button id="aiClose" class="icon-btn">✕</button>
+      <h3 id="aiModalTitle">✨ Build a roadmap from a description</h3>
+      <button id="aiClose" class="icon-btn" type="button" aria-label="Close AI roadmap dialog">✕</button>
     </div>
     <div class="modal-body">
       <div class="row">
-        <label class="fld">Describe the project, phases, and any known dates</label>
-        <textarea id="aiText" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch.
+        <label class="fld" for="aiText">Describe the project, phases, and any known dates</label>
+        <textarea id="aiText" maxlength="12000" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch.
 
 You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export — Claude will structure it. (For a deterministic Jira import, use Export ▾ → Import Jira CSV instead.)"></textarea>
       </div>
       <div class="row">
-        <label class="fld">Template hint (optional)</label>
+        <label class="fld" for="aiHint">Template hint (optional)</label>
         <select id="aiHint" class="sel" style="width:100%">
           <option value="">No hint — infer from my description</option>
           <option value="software">Software Dev (Agile/SDLC)</option>
@@ -643,7 +746,7 @@ You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export
           <option value="hiring">Hiring / team build</option>
         </select>
       </div>
-      <div id="aiNote" class="note info hide"></div>
+      <div id="aiNote" class="note info hide" role="status" aria-live="polite"></div>
     </div>
     <div class="modal-foot">
       <button id="aiCancel" class="btn ghost">Cancel</button>
@@ -653,17 +756,18 @@ You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export
 </div>
 
 <!-- Cloud modal -->
-<div id="cloudModal" class="modal" hidden>
+<div id="cloudModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cloudTitle" hidden>
   <div class="modal-card">
     <div class="modal-head">
       <h3 id="cloudTitle">Sign in to sync</h3>
-      <button id="cloudClose" class="icon-btn">✕</button>
+      <button id="cloudClose" class="icon-btn" type="button" aria-label="Close cloud dialog">✕</button>
     </div>
     <div class="modal-body" id="cloudBody"></div>
     <div class="modal-foot" id="cloudFoot"></div>
   </div>
 </div>
 
+<script src="assets/vendor/supabase-js-2.110.2.umd.js"></script>
 <script type="module">
 /* =========================================================================
    Roadmap Builder — single-file, no-build. Local-first (localStorage);
@@ -674,8 +778,10 @@ You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY  = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const LS_KEY = "roadmap_builder_v1";
+const ACCOUNT_KEY_PREFIX = "roadmap_builder_v2:";
+const LEGACY_CLAIM_KEY = "roadmap_builder_v1_claimed_by";
 const THEME_KEY = "roadmap_theme";
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "2.0.0";
 
 // The super-owner account: this email sees an "All users' roadmaps" admin view
 // (read-only, across every account). It only gates the *UI* — the server enforces
@@ -690,6 +796,7 @@ const PW_RULES = [
   { re:/.{12,}/,      label:"At least 12 characters" },
   { re:/[a-z]/,       label:"A lowercase letter"     },
   { re:/[A-Z]/,       label:"An uppercase letter"    },
+  { re:/[0-9]/,       label:"A number"                },
   { re:/[^A-Za-z0-9]/,label:"A special character"    },
 ];
 function pwChecks(v){ return PW_RULES.map(r => ({ ok:r.re.test(v||""), label:r.label })); }
@@ -704,20 +811,47 @@ const STATUSES = [
   { v:"on_hold",     label:"On hold",     cls:"s-onhold"   },
 ];
 const STATUS_SET = new Set(STATUSES.map(s => s.v));
-const STATUS_COLOR = { planned:"#94a3b8", in_progress:"#f59e0b", complete:"#12a56b", at_risk:"#e0485a", blocked:"#7c5cf0", on_hold:"#64748b" };
-const STATUS_TEXT  = { planned:"#3a3a44", in_progress:"#3f2a00", complete:"#ffffff", at_risk:"#ffffff", blocked:"#ffffff", on_hold:"#ffffff" };
+const STATUS_COLOR = { planned:"#64748b", in_progress:"#b86500", complete:"#087a4c", at_risk:"#c83247", blocked:"#6841d8", on_hold:"#526071" };
+const STATUS_TEXT  = { planned:"#ffffff", in_progress:"#ffffff", complete:"#ffffff", at_risk:"#ffffff", blocked:"#ffffff", on_hold:"#ffffff" };
 const MILE_BLUE = "#0073ea";
 const GROUP_COLORS = ["#0073ea","#00c875","#a25ddc","#fdab3d","#e2445c","#00d2d2","#ff642e","#579bfc","#037f4c","#9d50dd"];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+function boundedString(value, max){
+  const text=String(value == null ? "" : value);
+  if (text.length>max) throw new Error("Roadmap text exceeds the "+max+" character safety limit.");
+  return text;
+}
+function safeShallowCopy(value){
+  const out={};
+  if (!value || typeof value!=="object") return out;
+  Object.keys(value).forEach(k=>{ if (k!=="__proto__" && k!=="prototype" && k!=="constructor") out[k]=value[k]; });
+  return out;
+}
+function safeId(value, prefix){
+  const id = String(value || "");
+  return /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/.test(id) ? id : uid(prefix);
+}
+function safeColor(value, fallback){
+  const color = String(value || "").trim().toLowerCase();
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
+}
+function safeTimestamp(value,fallback){
+  const text=String(value||"");
+  return text.length<=40&&Number.isFinite(Date.parse(text))?text:fallback;
+}
 
 /* ---------- date helpers (timezone-safe: never new Date("YYYY-MM-DD")) ---------- */
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
 function pad2(n){ return String(n).padStart(2,"0"); }
 function toIso(dt){ return dt.getFullYear()+"-"+pad2(dt.getMonth()+1)+"-"+pad2(dt.getDate()); }
 function todayIso(){ return toIso(new Date()); }
-function isIso(s){ return typeof s==="string" && ISO_RE.test(s); }
+function isIso(s){
+  if (typeof s!=="string" || !ISO_RE.test(s)) return false;
+  const [y,m,d]=s.split("-").map(Number), dt=new Date(y,m-1,d);
+  return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+}
 function dateOf(iso){ const [y,m,d] = iso.split("-").map(Number); return new Date(y, m-1, d); }
 function msOf(iso){ return dateOf(iso).getTime(); }
 function firstOfMonth(iso){ const [y,m] = iso.split("-").map(Number); return new Date(y, m-1, 1); }
@@ -733,7 +867,7 @@ function uid(prefix){ _seq++; return prefix + "_" + Date.now().toString(36) + _s
 /* =========================================================================
    State
    ========================================================================= */
-let store = { version:1, activeId:null, roadmaps:{} };
+let store = { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{} };
 let doc = null;                 // active roadmap
 let mode = "editor";            // "editor" | "overview"
 let zoom = 1;                   // timeline horizontal zoom (0.5–3)
@@ -744,6 +878,14 @@ let draftSnapshot = null;       // {prevActiveId} for AI-draft discard
 let readOnly = false;
 let printing = false;           // true during a print job → render callouts as static prose
 let forcingPassword = false;    // true while the forced "set your password" screen is up (blocks dismiss)
+let storageKey = LS_KEY;        // owner mode switches to an account-scoped v2 key
+let persistenceBlocked = false; // corrupt/unsupported data is never overwritten
+let recoveryRaw = "";
+const cloudSyncTimers = new Map();
+const roadmapCloudChains = new Map();
+const cloudRecoveryTimers = new Map();
+let lastModalFocus = null;
+let undoTimer = null;
 
 /* =========================================================================
    Normalisation — accepts local docs and AI output; repairs shape.
@@ -752,92 +894,225 @@ function normStatus(v){ return STATUS_SET.has(v) ? v : "planned"; }
 function normItem(raw){
   if (!raw || typeof raw !== "object") return null;
   const kind = raw.kind === "milestone" ? "milestone" : "bar";
-  const label = String(raw.label || "").trim();
+  const label = boundedString(raw.label, 1000).trim();
   const status = normStatus(raw.status);
-  const note = String(raw.note || "");
+  const note = boundedString(raw.note, 4000);
   const gate = !!raw.gate;   // mark a milestone as a decision gate / key date → dashed line on the timeline
   if (kind === "milestone"){
     const date = isIso(raw.date) ? raw.date : (isIso(raw.start) ? raw.start : "");
-    return { id: raw.id || uid("it"), kind, label, date, status, note, gate };
+    return Object.assign(safeShallowCopy(raw), { id:safeId(raw.id,"it"), kind, label, date, status, note, gate });
   }
-  let start = isIso(raw.start) ? raw.start : "";
-  let end   = isIso(raw.end)   ? raw.end   : "";
-  if (start && end && msOf(end) < msOf(start)){ const t = start; start = end; end = t; }
-  return { id: raw.id || uid("it"), kind, label, start, end, status, note, gate };
+  const start = isIso(raw.start) ? raw.start : "";
+  const end   = isIso(raw.end)   ? raw.end   : "";
+  return Object.assign(safeShallowCopy(raw), { id:safeId(raw.id,"it"), kind, label, start, end, status, note, gate });
 }
 function normLane(raw, i){
-  const lane = { id:(raw && raw.id) || uid("lane"), name:String((raw && raw.name) || "Untitled lane").trim(),
-    color:(raw && raw.color) || GROUP_COLORS[i % GROUP_COLORS.length],
+  raw = raw && typeof raw === "object" ? raw : {};
+  const fallbackColor = GROUP_COLORS[i % GROUP_COLORS.length];
+  const lane = Object.assign(safeShallowCopy(raw), { id:safeId(raw.id,"lane"), name:boundedString(raw.name || "Untitled lane", 500).trim(),
+    color:safeColor(raw.color, fallbackColor),
     // a "contingency" lane renders muted (dashed, greyed, with a sub-label) — e.g. a fallback branch held until a decision
-    contingency: !!(raw && raw.contingency), sub: String((raw && raw.sub) || ""), items:[] };
-  const items = raw && Array.isArray(raw.items) ? raw.items : [];
+    contingency: !!raw.contingency, sub: boundedString(raw.sub, 2000), items:[] });
+  const items = Array.isArray(raw.items) ? raw.items : [];
+  if (items.length>500) throw new Error("A roadmap lane exceeds the 500-item safety limit.");
   lane.items = items.map(normItem).filter(Boolean);
   return lane;
 }
 function normalizeRoadmap(raw){
-  raw = raw || {};
+  raw = raw && typeof raw === "object" ? raw : {};
   const now = new Date().toISOString();
-  const lanes = (Array.isArray(raw.lanes) ? raw.lanes : []).map(normLane);
+  const rawLanes=Array.isArray(raw.lanes)?raw.lanes:[];
+  if (rawLanes.length>100) throw new Error("A roadmap exceeds the 100-lane safety limit.");
+  if (Array.isArray(raw.callouts)&&raw.callouts.length>100) throw new Error("A roadmap exceeds the 100-card safety limit.");
+  const lanes = rawLanes.map(normLane);
+  const seenLaneIds=new Set(), seenItemIds=new Set();
+  lanes.forEach(lane=>{
+    if (seenLaneIds.has(lane.id)) lane.id=uid("lane"); seenLaneIds.add(lane.id);
+    lane.items.forEach(item=>{ if (seenItemIds.has(item.id)) item.id=uid("it"); seenItemIds.add(item.id); });
+  });
+  const seenCalloutIds=new Set();
   let range = null;
-  if (raw.range && isIso(raw.range.start) && isIso(raw.range.end)) range = { start:raw.range.start, end:raw.range.end };
-  return {
+  if (raw.range && isIso(raw.range.start) && isIso(raw.range.end) && msOf(raw.range.end)>=msOf(raw.range.start)) range = { start:raw.range.start, end:raw.range.end };
+  return Object.assign(safeShallowCopy(raw), {
     schema:"roadmap.v1",
-    id: raw.id || uid("rm"),
-    title: String(raw.title || "Untitled roadmap").trim() || "Untitled roadmap",
-    subtitle: String(raw.subtitle || ""),
+    id: safeId(raw.id,"rm"),
+    title: boundedString(raw.title || "Untitled roadmap", 500).trim() || "Untitled roadmap",
+    subtitle: boundedString(raw.subtitle, 1000),
     // a one-line framing statement shown under the title (in the app, export and print)
-    premise: String(raw.premise || ""),
-    notes: String(raw.notes || ""),
+    premise: boundedString(raw.premise, 2000),
+    notes: boundedString(raw.notes, 20000),
     public: !!raw.public,
     // archived roadmaps are kept (and still openable) but move out of the
     // active portfolio grid and picker into an Archived section
     archived: !!raw.archived,
     // authored analysis / callout cards shown below the timeline. `list:true` renders
     // the body as a numbered conditions list (one item per line) instead of prose.
-    callouts: (Array.isArray(raw.callouts) ? raw.callouts : []).map(c => ({
-      id: (c && c.id) || uid("co"), title: String((c && c.title) || ""), body: String((c && c.body) || ""), list: !!(c && c.list) })),
-    templateType: raw.templateType || "custom",
+    callouts: (Array.isArray(raw.callouts) ? raw.callouts : []).map(c => {
+      const normalized=Object.assign(safeShallowCopy(c), { id:safeId(c&&c.id,"co"), title:boundedString(c&&c.title,500), body:boundedString(c&&c.body,10000), list:!!(c&&c.list) });
+      if (seenCalloutIds.has(normalized.id)) normalized.id=uid("co"); seenCalloutIds.add(normalized.id); return normalized;
+    }),
+    templateType: ["software","product","gtm","data","hiring","custom"].includes(raw.templateType) ? raw.templateType : "custom",
     // The natural-language description + template hint used to build this roadmap
     // via ✨ Build from description, kept so it can be revisited and refined.
-    aiPrompt: String(raw.aiPrompt || ""),
+    aiPrompt: boundedString(raw.aiPrompt, 12000),
     aiHint: ["software","product","gtm","data","hiring"].includes(raw.aiHint) ? raw.aiHint : null,
-    createdAt: raw.createdAt || now,
-    updatedAt: raw.updatedAt || now,
+    createdAt: safeTimestamp(raw.createdAt,now),
+    updatedAt: safeTimestamp(raw.updatedAt,now),
     range,
     lanes,
-  };
+  });
 }
 
 /* =========================================================================
    Local persistence
    ========================================================================= */
-function loadStore(){
+function emptyStore(){ return { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{} }; }
+function accountStorageKey(userId){ return ACCOUNT_KEY_PREFIX + String(userId || "anonymous"); }
+function setSaveStatus(state, text){
+  const el = $("saveStatus"); if (!el) return;
+  el.dataset.state = state; el.textContent = text;
+}
+function downloadRecoveryCopy(){
+  if (!recoveryRaw) return;
+  download("roadmap-browser-recovery-"+todayIso()+".json", new Blob([recoveryRaw], { type:"application/json" }));
+}
+function showRecoveryMode(message){
+  persistenceBlocked = true;
+  setSaveStatus("error", "Recovery needed — storage unchanged");
+  topNote("err", message + " Your original browser data has not been changed. Use Full portfolio backup or download the raw recovery copy before continuing.", true);
+  cloudModal("Roadmap recovery", '<p>'+esc(message)+'</p><p>Your original saved text is still untouched in this browser.</p>',
+    '<button id="recoveryDownload" class="btn">Download recovery copy</button>');
+  const b = $("recoveryDownload"); if (b) b.onclick = downloadRecoveryCopy;
+}
+function loadStore(userId){
+  storageKey = accountStorageKey(userId);
+  persistenceBlocked = false; recoveryRaw = "";
+  let source = "";
   try {
-    const raw = JSON.parse(localStorage.getItem(LS_KEY) || "null");
-    if (raw && raw.roadmaps && typeof raw.roadmaps === "object"){
-      store = { version:1, activeId:raw.activeId || null, roadmaps:{} };
-      store.mode = (raw.mode === "overview" || raw.mode === "editor") ? raw.mode : null;
-      Object.values(raw.roadmaps).forEach(d => { const n = normalizeRoadmap(d); store.roadmaps[n.id] = n; });
-      if (!store.roadmaps[store.activeId]) store.activeId = Object.keys(store.roadmaps)[0] || null;
+    source = localStorage.getItem(storageKey) || "";
+    if (!source){
+      // Copy-on-write migration: read the legacy portfolio once, but never alter or delete it.
+      const legacyClaim=localStorage.getItem(LEGACY_CLAIM_KEY)||"";
+      if (!legacyClaim || legacyClaim===String(userId||"")){
+        source = localStorage.getItem(LS_KEY) || "";
+        if (source&&!legacyClaim){
+          localStorage.setItem(LEGACY_CLAIM_KEY,String(userId||""));
+          if (localStorage.getItem(LEGACY_CLAIM_KEY)!==String(userId||"")) throw new Error("The legacy portfolio could not be assigned safely to this account.");
+        }
+      }
     }
-  } catch(_){ /* start fresh */ }
+    if (source){
+      recoveryRaw = source;
+      const raw = JSON.parse(source);
+      if (!raw || !raw.roadmaps || typeof raw.roadmaps !== "object") throw new Error("The saved portfolio has an unsupported shape.");
+      if (Number(raw.version||1)>2) throw new Error("This portfolio was created by a newer Roadmap Builder version.");
+      if (Object.keys(raw.roadmaps).length>500 || (raw.trash&&Object.keys(raw.trash).length>500)) throw new Error("This portfolio exceeds the 500-roadmap safety limit and needs recovery review.");
+      store = Object.assign(emptyStore(), raw, { version:2, roadmaps:{}, trash:{}, sync:raw.sync && typeof raw.sync === "object" ? raw.sync : {} });
+      store.mode = (raw.mode === "overview" || raw.mode === "editor") ? raw.mode : null;
+      Object.entries(raw.roadmaps).forEach(([key,d]) => {
+        const n=normalizeRoadmap(Object.assign(safeShallowCopy(d),{id:safeId(d&&d.id||key,"rm")}));
+        if (store.roadmaps[n.id]){ n.id=uid("rm"); n.title=(n.title||"Untitled")+" (Recovered duplicate)"; }
+        store.roadmaps[n.id]=n;
+      });
+      if (raw.trash && typeof raw.trash === "object") Object.entries(raw.trash).forEach(([key,d]) => { const n=normalizeRoadmap(Object.assign(safeShallowCopy(d),{id:safeId(d&&d.id||key,"rm")})); if (!store.roadmaps[n.id]&&!store.trash[n.id]) store.trash[n.id]=n; });
+      if (!store.roadmaps[store.activeId]) store.activeId = Object.keys(store.roadmaps)[0] || null;
+    } else store = emptyStore();
+  } catch(e){
+    store = emptyStore();
+    showRecoveryMode("The browser's saved roadmap data could not be read: "+(e.message||e));
+  }
   if (!store.activeId || !store.roadmaps[store.activeId]){
     const d = normalizeRoadmap({ title:"My roadmap", templateType:"custom", lanes:[] });
     store.roadmaps[d.id] = d; store.activeId = d.id;
   }
   doc = store.roadmaps[store.activeId];
+  draftSnapshot=store.draftSnapshot&&typeof store.draftSnapshot==="object"?store.draftSnapshot:null;
 }
 function persist(){
-  if (readOnly) return;
-  try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch(_){}
+  if (readOnly || persistenceBlocked) return false;
+  try {
+    const pending=!!(session&&doc&&syncMeta(doc.id).pending);
+    const encoded = JSON.stringify(store);
+    localStorage.setItem(storageKey, encoded);
+    if (localStorage.getItem(storageKey) !== encoded) throw new Error("The saved data could not be verified.");
+    setSaveStatus(pending ? "pending" : "local", pending ? "Saved locally · cloud pending" : "Saved locally");
+    return true;
+  } catch(e){
+    setSaveStatus("error", "Local save failed");
+    topNote("err", "This change could not be saved in the browser. Export a full portfolio backup now. "+(e.message||e), true);
+    return false;
+  }
 }
 function save(){
   if (readOnly || !doc) return;
   doc.updatedAt = new Date().toISOString();
+  if (session){ syncMeta(doc.id).pending = true; setSaveStatus("pending", "Saving locally · cloud pending"); }
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(persist, 400);
+  saveTimer = setTimeout(() => { if (persist() && session) queueCloudSync(doc.id); }, 400);
 }
-function saveNow(){ clearTimeout(saveTimer); persist(); }
+function saveNow(){ clearTimeout(saveTimer); return persist(); }
+function syncMeta(id){
+  store.sync = store.sync && typeof store.sync === "object" ? store.sync : {};
+  return store.sync[id] || (store.sync[id] = { revision:null, lastCloudFingerprint:"", pending:false });
+}
+function stableJson(value){
+  if (Array.isArray(value)) return "["+value.map(stableJson).join(",")+"]";
+  if (value && typeof value==="object") return "{"+Object.keys(value).sort().map(k=>JSON.stringify(k)+":"+stableJson(value[k])).join(",")+"}";
+  return JSON.stringify(value);
+}
+function docFingerprint(value){
+  if (!value) return "null";
+  const copy=safeShallowCopy(value); delete copy.updatedAt; delete copy.createdAt;
+  return stableJson(copy);
+}
+
+function checkpointUndo(label){
+  if (readOnly || persistenceBlocked) return false;
+  const previousUndo=store.undo||null;
+  store.undo = {
+    label:boundedString(label || "Change", 160),
+    at:new Date().toISOString(),
+    snapshot:JSON.parse(JSON.stringify({ activeId:store.activeId, roadmaps:store.roadmaps, trash:store.trash || {}, sync:store.sync || {}, mode:store.mode }))
+  };
+  if (!persist()){ store.undo=previousUndo; return false; }
+  return true;
+}
+function showUndo(label){
+  const bar=$("undoBar"); if (!bar) return;
+  $("undoText").textContent = label;
+  bar.hidden=false; clearTimeout(undoTimer);
+}
+function applyUndo(skipCloud){
+  skipCloud=skipCloud===true;
+  const u=store.undo; if (!u || !u.snapshot) return;
+  const restoreId=u.cloudRestoreId||"", deleteId=u.cloudDeleteId||"";
+  const beforeStore=store, beforeDoc=doc;
+  const snap=u.snapshot;
+  store=Object.assign(emptyStore(), snap, { version:2, undo:null });
+  if (restoreId&&store.roadmaps[restoreId]) store.roadmaps[restoreId].public=false;
+  if (!store.activeId || !store.roadmaps[store.activeId]) store.activeId=Object.keys(store.roadmaps)[0]||null;
+  doc=store.activeId ? store.roadmaps[store.activeId] : null;
+  if (!doc){ const d=normalizeRoadmap({ title:"My roadmap", lanes:[] }); store.roadmaps[d.id]=d; store.activeId=d.id; doc=d; }
+  if (!skipCloud&&session&&restoreId) syncMeta(restoreId).needsRestore=true;
+  if (!skipCloud&&session&&deleteId) syncMeta(deleteId).needsDelete=true;
+  if (!skipCloud&&!persist()){
+    store=beforeStore; doc=beforeDoc;
+    topNote("err","Undo could not be saved. The current version and recovery snapshot are still intact; export a portfolio backup before retrying.",true);
+    return;
+  }
+  $("undoBar").hidden=true;
+  if (skipCloud){
+    mode=store.mode==="overview"?"overview":"editor"; document.body.classList.toggle("mode-overview",mode==="overview");
+    $("segOverview").setAttribute("aria-pressed",mode==="overview"?"true":"false"); $("segEditor").setAttribute("aria-pressed",mode==="editor"?"true":"false");
+    syncHeader(); if (mode==="overview") renderOverview(); else fullRender();
+    topNote("err","The change was canceled because it could not be saved safely. Your previous data remains intact.",true);
+    return;
+  }
+  syncHeader(); setMode(store.mode||"editor"); topNote("ok","Restored the previous version.");
+  if (!skipCloud&&session&&restoreId) cloudRestore(restoreId).catch(()=>{});
+  if (!skipCloud&&session&&deleteId) cloudSoftDelete(deleteId).catch(()=>{});
+  if (!skipCloud&&session){ Object.keys(store.roadmaps).forEach(id=>{ syncMeta(id).pending=true; }); queueCloudSync(store.activeId); }
+}
 
 /* =========================================================================
    Templates — dates as week offsets from today
@@ -889,12 +1164,16 @@ const TEMPLATES = {
 function applyTemplate(type){
   const fn = TEMPLATES[type];
   if (!fn) return;
-  const hasContent = doc.lanes.some(l => l.items.length) || doc.lanes.length > 1;
-  if (hasContent && !confirm("Replace the current roadmap with the “"+ ($("tmplPicker").selectedOptions[0].textContent) +"” template? This can't be undone.")) return;
+  const hasContent = doc.lanes.some(l => l.items.length || (l.name||"").trim() !== "Phase 1") || doc.lanes.length > 1
+    || !!(doc.title||"").trim() || !!(doc.subtitle||"").trim() || !!(doc.premise||"").trim() || !!(doc.notes||"").trim()
+    || (doc.callouts||[]).some(c => (c.title||"").trim() || (c.body||"").trim());
+  if (hasContent && !confirm("Replace the current roadmap with the “"+ ($("tmplPicker").selectedOptions[0].textContent) +"” template? A recovery snapshot will be kept for Undo.")) return;
+  if (!checkpointUndo("Template replaced — undo?")) return;
   const built = normalizeRoadmap(fn());
   built.id = doc.id; built.createdAt = doc.createdAt;   // keep same slot
   store.roadmaps[doc.id] = built; doc = built;
-  saveNow(); syncHeader(); fullRender();
+  if (session) syncMeta(doc.id).pending=true;
+  saveNow(); syncHeader(); fullRender(); showUndo("Template replaced. Undo?"); if (session) queueCloudSync(doc.id);
 }
 
 /* =========================================================================
@@ -924,7 +1203,7 @@ function itemStart(it){ return it.kind === "milestone" ? it.date : it.start; }
 function itemEnd(it){ return it.kind === "milestone" ? it.date : it.end; }
 function itemValid(it){
   if (it.kind === "milestone") return isIso(it.date);
-  return isIso(it.start) && isIso(it.end);
+  return isIso(it.start) && isIso(it.end) && msOf(it.end) >= msOf(it.start);
 }
 function packLane(lane, xOf, plotRight){
   // Pack items into as few rows as possible so neither their SHAPES nor their
@@ -985,8 +1264,12 @@ function computeDomain(lanes, src){
 // (progress %, window, next gate). Falls back to all lanes if every lane is one.
 function calcLanes(){ const ls = (doc && doc.lanes) || []; const c = ls.filter(l => !l.contingency); return c.length ? c : ls; }
 function svgEl(tag, attrs, inner){
+  if (!/^(?:svg|g|rect|text|line|circle|path|pattern|defs|image|title)$/.test(tag)) throw new Error("Unsupported SVG element");
   let s = "<"+tag;
-  for (const k in attrs) s += " "+k+'="'+attrs[k]+'"';
+  for (const k in attrs){
+    if (!/^[A-Za-z_:][-A-Za-z0-9_:.]*$/.test(k)) continue;
+    s += " "+k+'="'+esc(attrs[k])+'"';
+  }
   s += inner==null ? "/>" : ">"+inner+"</"+tag+">";
   return s;
 }
@@ -1132,9 +1415,25 @@ function renderStatChips(){
   el.innerHTML = chips.map(c => '<div class="stat-chip' + (c.warn ? " warn" : "") + '"><span class="sc-lbl">' + esc(c.lbl) + '</span><span class="sc-val">' + esc(c.val) + '</span></div>').join("");
   el.hidden = false;
 }
+function renderTimelineTable(){
+  const host=$("timelineTable"); if (!host || !doc) return;
+  const rows=[];
+  (doc.lanes||[]).forEach(lane => (lane.items||[]).forEach(it => {
+    const status=(STATUSES.find(s=>s.v===it.status)||STATUSES[0]).label;
+    const dates=it.kind==="milestone" ? (it.date||"Date not set") : ((it.start||"Start not set")+" – "+(it.end||"End not set"));
+    rows.push({ lane:lane.name||"Untitled lane", item:it.label||(it.kind==="milestone"?"Milestone":"Phase"),
+      type:it.kind==="milestone"?"Milestone":"Phase", dates, status, note:it.note||"" });
+  }));
+  if (!rows.length){ host.innerHTML='<div class="timeline-empty">No timeline items yet.</div>'; return; }
+  host.innerHTML='<table class="timeline-table"><caption class="sr-only">Roadmap lanes, items, dates, status, and notes</caption>'
+    +'<thead><tr><th scope="col">Lane</th><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Dates</th><th scope="col">Status</th><th scope="col">Notes</th></tr></thead><tbody>'
+    +rows.map(r=>'<tr><td data-label="Lane">'+esc(r.lane)+'</td><td data-label="Item">'+esc(r.item)+'</td><td data-label="Type">'+esc(r.type)+'</td><td data-label="Dates">'+esc(r.dates)+'</td><td data-label="Status">'+esc(r.status)+'</td><td data-label="Notes">'+esc(r.note||"—")+'</td></tr>').join("")
+    +'</tbody></table>';
+}
 function renderGantt(){
   renderSummary();
   renderStatChips();
+  renderTimelineTable();
   const host = $("gantt");
   const lanes = doc.lanes;
   const anyItems = lanes.some(l => l.items.some(itemValid));
@@ -1399,18 +1698,19 @@ function overviewCard(d){
     '<span class="ov-seg" style="flex:'+s.counts[st.v]+';background:'+STATUS_COLOR[st.v]+'"></span>').join("");
   const chips = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-chip"><span class="ov-dot" style="background:'+STATUS_COLOR[st.v]+'"></span>'+s.counts[st.v]+' '+esc(st.label)+'</span>').join("");
-  return '<div class="rm-card'+(d.archived?' archived':'')+'" role="button" tabindex="0" data-id="'+esc(d.id)+'" style="--rm-accent:'+accent+'" aria-label="Open '+esc(d.title||"Untitled")+'">'
+  return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" style="--rm-accent:'+esc(accent)+'">'
+    + '<button class="rm-open" type="button" data-open="'+esc(d.id)+'" aria-label="Open '+esc(d.title||"Untitled")+'"></button>'
     + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'
-    + '<div class="rm-acts"><button class="icon-btn" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'">'+(d.archived?'↩':'🗄')+'</button>'
-    + '<button class="icon-btn" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate">⧉</button>'
-    + '<button class="icon-btn" data-act="del" data-id="'+esc(d.id)+'" title="Delete">✕</button></div></div>'
+    + '<div class="rm-acts"><button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'" aria-label="'+(d.archived?'Unarchive ':'Archive ')+esc(d.title||"Untitled")+'">'+(d.archived?'↩':'🗄')+'</button>'
+    + '<button class="icon-btn" type="button" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate" aria-label="Duplicate '+esc(d.title||"Untitled")+'">⧉</button>'
+    + '<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">✕</button></div></div>'
     + (d.subtitle ? '<div class="rm-sub">'+esc(d.subtitle)+'</div>' : "")
     + '<div class="rm-mini">'+renderMiniGantt(d)+'</div>'
     + '<div class="ov-bar">'+(segs || '<span class="ov-seg" style="flex:1;background:var(--line-2)"></span>')+'</div>'
     + '<div class="rm-meta"><span class="pct">'+s.pct+'% complete</span><span>'+s.laneCount+' lane'+(s.laneCount===1?"":"s")+' · '+s.total+' item'+(s.total===1?"":"s")+'</span></div>'
     + (chips ? '<div class="ov-chips">'+chips+'</div>' : "")
     + '<div class="rm-foot"><span>'+esc(fmtRange(s.mn, s.mx))+'</span><span>'+esc(relativeTime(d.updatedAt))+'</span></div>'
-    + '</div>';
+    + '</article>';
 }
 function renderOverview(){
   const grid = $("overviewGrid");
@@ -1424,6 +1724,14 @@ function renderOverview(){
     html += '<div class="ov-divider">Archived <span class="ov-divider-n">' + archived.length + '</span></div>'
       + archived.map(overviewCard).join("");
   }
+  const trashed=Object.values(store.trash||{}).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  if (trashed.length && !readOnly){
+    html += '<div class="ov-divider">Trash <span class="ov-divider-n">'+trashed.length+'</span></div>'
+      + trashed.map(d=>'<article class="rm-card archived" data-id="'+esc(d.id)+'" style="--rm-accent:'+esc((d.lanes[0]&&d.lanes[0].color)||"var(--mut)")+'">'
+        +'<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+' <span class="arch-pill">Trash</span></div>'
+        +'<div class="rm-acts"><button class="btn ghost sm" type="button" data-act="restore" data-id="'+esc(d.id)+'">Restore</button></div></div>'
+        +'<div class="rm-sub">Kept here so it cannot be lost accidentally.</div></article>').join("");
+  }
   grid.innerHTML = html;
 }
 function onOverviewClick(e){
@@ -1432,11 +1740,12 @@ function onOverviewClick(e){
     if (act.dataset.act === "dup") duplicateRoadmapById(id, false);
     else if (act.dataset.act === "arch") toggleArchiveById(id);
     else if (act.dataset.act === "del") deleteRoadmapById(id);
+    else if (act.dataset.act === "restore") restoreRoadmapById(id);
     return; }
   if (act && readOnly){ e.stopPropagation(); return; }   // no editing for public viewers
   if (e.target.closest("#ovNew")){ if (readOnly) return; setMode("editor"); newRoadmap(); return; }
-  const card = e.target.closest(".rm-card");
-  if (card && card.dataset.id) openRoadmap(card.dataset.id);
+  const open = e.target.closest("[data-open]");
+  if (open && open.dataset.open) openRoadmap(open.dataset.open);
 }
 function setMode(m){
   mode = (m === "overview") ? "overview" : "editor";
@@ -1454,10 +1763,10 @@ function openRoadmap(id){ switchTo(id); setMode("editor"); }
 /* =========================================================================
    Editor
    ========================================================================= */
-function statusSelect(cls, value){
+function statusSelect(cls, value, itemLabel){
   let o = "";
   STATUSES.forEach(s => { o += '<option value="'+s.v+'"'+(s.v===value?" selected":"")+'>'+s.label+'</option>'; });
-  return '<select class="chip '+cls+'" data-role="status">'+o+'</select>';
+  return '<select class="chip '+cls+'" data-role="status" aria-label="Status for '+esc(itemLabel||"item")+'">'+o+'</select>';
 }
 function renderEditor(){
   const host = $("editor");
@@ -1468,36 +1777,37 @@ function renderEditor(){
     let itemsHtml = "";
     lane.items.forEach(it => {
       const st = STATUSES.find(s => s.v===it.status) || STATUSES[0];
-      const kindSel = '<select class="kind" data-role="kind"><option value="bar"'+(it.kind==="bar"?" selected":"")+'>Phase (bar)</option><option value="milestone"'+(it.kind==="milestone"?" selected":"")+'>Milestone</option></select>';
+      const itemLabel=it.label||(it.kind==="milestone"?"milestone":"phase");
+      const kindSel = '<select class="kind" data-role="kind" aria-label="Type for '+esc(itemLabel)+'"><option value="bar"'+(it.kind==="bar"?" selected":"")+'>Phase (bar)</option><option value="milestone"'+(it.kind==="milestone"?" selected":"")+'>Milestone</option></select>';
       const dates = it.kind === "milestone"
-        ? '<input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" />'
-        : '<input type="date" data-role="start" value="'+esc(it.start||"")+'" title="Start" /><span class="dash">→</span><input type="date" data-role="end" value="'+esc(it.end||"")+'" title="End" />';
-      itemsHtml += '<div class="item" data-item="'+it.id+'">'
-        + '<span class="drag" title="'+(it.kind==="milestone"?"Milestone":"Phase")+'">'+(it.kind==="milestone"?"◆":"☲")+'</span>'
+        ? '<input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" aria-label="Milestone date for '+esc(itemLabel)+'" />'
+        : '<input type="date" data-role="start" value="'+esc(it.start||"")+'" title="Start" aria-label="Start date for '+esc(itemLabel)+'" /><span class="dash" aria-hidden="true">→</span><input type="date" data-role="end" value="'+esc(it.end||"")+'" title="End" aria-label="End date for '+esc(itemLabel)+'" />';
+      itemsHtml += '<div class="item" data-item="'+esc(it.id)+'">'
+        + '<span class="drag" aria-hidden="true">'+(it.kind==="milestone"?"◆":"•")+'</span>'
         + kindSel
-        + '<input class="lbl" data-role="label" type="text" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
+        + '<input class="lbl" data-role="label" type="text" maxlength="1000" aria-label="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
         + dates
-        + statusSelect(st.cls, it.status)
-        + (it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')
-        + '<button class="icon-btn" data-role="up" title="Move up">↑</button>'
-        + '<button class="icon-btn" data-role="down" title="Move down">↓</button>'
-        + '<button class="icon-btn" data-role="del" title="Delete">✕</button>'
-        + '<input class="note-inp" data-role="note" type="text" placeholder="Add a note or comment (optional)" value="'+esc(it.note||"")+'" />'
+        + statusSelect(st.cls, it.status, itemLabel)
+        + (it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate" aria-label="Mark '+esc(itemLabel)+' as a gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')
+        + '<button class="icon-btn" type="button" data-role="up" title="Move up" aria-label="Move '+esc(itemLabel)+' up">↑</button>'
+        + '<button class="icon-btn" type="button" data-role="down" title="Move down" aria-label="Move '+esc(itemLabel)+' down">↓</button>'
+        + '<button class="icon-btn" type="button" data-role="del" title="Delete" aria-label="Delete '+esc(itemLabel)+'">✕</button>'
+        + '<input class="note-inp" data-role="note" type="text" maxlength="4000" aria-label="Note for '+esc(itemLabel)+'" placeholder="Add a note or comment (optional)" value="'+esc(it.note||"")+'" />'
         + '</div>';
     });
     laneEl.innerHTML =
       '<div class="lane-head">'
-      + '<span class="dot" style="background:'+lane.color+'"></span>'
-      + '<input class="lane-name" data-role="laneName" type="text" value="'+esc(lane.name)+'" placeholder="Lane name" />'
-      + '<button class="icon-btn tog'+(lane.contingency?' on':'')+'" data-role="laneCont" title="Contingency lane — renders muted, with a sub-label (e.g. a fallback branch)">⚑</button>'
-      + '<button class="icon-btn" data-role="laneUp" title="Move lane up">↑</button>'
-      + '<button class="icon-btn" data-role="laneDown" title="Move lane down">↓</button>'
-      + '<button class="icon-btn" data-role="laneColor" title="Change colour">🎨</button>'
-      + '<button class="icon-btn" data-role="laneDel" title="Delete lane">✕</button>'
+      + '<span class="dot" style="background:'+esc(lane.color)+'" aria-hidden="true"></span>'
+      + '<input class="lane-name" data-role="laneName" type="text" maxlength="500" aria-label="Lane name" value="'+esc(lane.name)+'" placeholder="Lane name" />'
+      + '<button class="icon-btn tog'+(lane.contingency?' on':'')+'" type="button" data-role="laneCont" aria-pressed="'+(lane.contingency?'true':'false')+'" title="Contingency lane — renders muted, with a sub-label (e.g. a fallback branch)" aria-label="Toggle contingency for '+esc(lane.name)+'">⚑</button>'
+      + '<button class="icon-btn" type="button" data-role="laneUp" title="Move lane up" aria-label="Move '+esc(lane.name)+' up">↑</button>'
+      + '<button class="icon-btn" type="button" data-role="laneDown" title="Move lane down" aria-label="Move '+esc(lane.name)+' down">↓</button>'
+      + '<button class="icon-btn" type="button" data-role="laneColor" title="Change colour" aria-label="Change color for '+esc(lane.name)+'">🎨</button>'
+      + '<button class="icon-btn" type="button" data-role="laneDel" title="Delete lane" aria-label="Delete '+esc(lane.name)+'">✕</button>'
       + '</div>'
-      + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" placeholder="Contingency note, e.g. “Only if the July 22 decision picks self-hosted”" value="'+esc(lane.sub||"")+'" /></div>' : '')
+      + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" maxlength="2000" aria-label="Contingency note for '+esc(lane.name)+'" placeholder="Contingency note, e.g. “Only if the July 22 decision picks self-hosted”" value="'+esc(lane.sub||"")+'" /></div>' : '')
       + '<div class="items">'+itemsHtml+'</div>'
-      + '<div class="add-row"><button class="btn add sm" data-role="addBar">＋ Phase</button><button class="btn add sm" data-role="addMile">＋ Milestone</button></div>';
+      + '<div class="add-row"><button class="btn add sm" type="button" data-role="addBar">＋ Phase</button><button class="btn add sm" type="button" data-role="addMile">＋ Milestone</button></div>';
     host.appendChild(laneEl);
   });
 }
@@ -1522,10 +1832,18 @@ function onEditorInput(e){
   const itemEl = e.target.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
   if (role === "label"){ it.label = e.target.value; save(); renderGantt(); }
-  else if (role === "start"){ it.start = e.target.value; save(); renderGantt(); }
-  else if (role === "end"){ it.end = e.target.value; save(); renderGantt(); }
+  else if (role === "start"){ it.start = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); }
+  else if (role === "end"){ it.end = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); }
   else if (role === "date"){ it.date = e.target.value; save(); renderGantt(); }
   else if (role === "note"){ it.note = e.target.value; save(); renderGantt(); }
+}
+function validateItemDates(it, itemEl){
+  if (!it || it.kind!=="bar") return true;
+  const valid=!(it.start && it.end && msOf(it.end)<msOf(it.start));
+  const msg=valid?"":"End date must be on or after the start date.";
+  itemEl.querySelectorAll('[data-role="start"],[data-role="end"]').forEach(el=>el.setCustomValidity(msg));
+  if (!valid) topNote("err",msg+" The dates were left unchanged so you can correct them.",true);
+  return valid;
 }
 function onEditorChange(e){
   const role = e.target.dataset.role; if (!role) return;
@@ -1555,7 +1873,7 @@ function onEditorClick(e){
   const laneEl = btn.closest("[data-lane]"); if (!laneEl) return;
   const lane = findLane(laneEl.dataset.lane); if (!lane) return;
   const li = doc.lanes.indexOf(lane);
-  if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items?")) return; doc.lanes.splice(li,1); save(); fullRender(); return; }
+  if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items? You can undo this change.")) return; if (!checkpointUndo("Lane deleted — undo?")) return; doc.lanes.splice(li,1); save(); fullRender(); showUndo("Lane deleted. Undo?"); return; }
   if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
   if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
   if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
@@ -1565,7 +1883,7 @@ function onEditorClick(e){
   const itemEl = btn.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
   const ii = lane.items.indexOf(it);
-  if (role === "del"){ lane.items.splice(ii,1); save(); fullRender(); }
+  if (role === "del"){ if (!checkpointUndo("Item deleted — undo?")) return; lane.items.splice(ii,1); save(); fullRender(); showUndo("Item deleted. Undo?"); }
   else if (role === "up" && ii>0){ lane.items.splice(ii,1); lane.items.splice(ii-1,0,it); save(); fullRender(); }
   else if (role === "down" && ii<lane.items.length-1){ lane.items.splice(ii,1); lane.items.splice(ii+1,0,it); save(); fullRender(); }
 }
@@ -1573,7 +1891,23 @@ function onEditorClick(e){
 /* =========================================================================
    Header sync + full render
    ========================================================================= */
-function fullRender(){ renderGantt(); if (!readOnly) renderEditor(); }
+function fullRender(){
+  const active=document.activeElement;
+  const focusState=active && active.closest ? {
+    lane:active.closest("[data-lane]")?.dataset.lane||"",
+    item:active.closest("[data-item]")?.dataset.item||"",
+    role:active.dataset?.role||active.dataset?.corole||"",
+    start:typeof active.selectionStart==="number"?active.selectionStart:null,
+    end:typeof active.selectionEnd==="number"?active.selectionEnd:null
+  }:null;
+  renderGantt(); if (!readOnly) renderEditor();
+  if (focusState && focusState.role){
+    const laneSel=focusState.lane?'[data-lane="'+CSS.escape(focusState.lane)+'"] ':'';
+    const itemSel=focusState.item?'[data-item="'+CSS.escape(focusState.item)+'"] ':'';
+    const next=document.querySelector(laneSel+itemSel+'[data-role="'+CSS.escape(focusState.role)+'"]');
+    if (next){ next.focus(); if (focusState.start!==null && next.setSelectionRange) try{ next.setSelectionRange(focusState.start,focusState.end); }catch(_){} }
+  }
+}
 // a callout marked `list` renders as a numbered conditions list, one item per line
 function calloutListHtml(body){
   const items = String(body || "").split(/\n/).map(s => s.trim()).filter(Boolean);
@@ -1591,10 +1925,10 @@ function renderCallouts(){
   if (editable){
     body.innerHTML = list.map(c =>
       '<div class="callout" data-co="' + esc(c.id) + '">'
-      + '<div class="co-head"><input class="co-title" data-corole="title" type="text" placeholder="Card title" value="' + esc(c.title || "") + '" />'
+      + '<div class="co-head"><input class="co-title" data-corole="title" type="text" maxlength="500" aria-label="Analysis card title" placeholder="Card title" value="' + esc(c.title || "") + '" />'
       + '<label class="co-listtog" title="Render as a numbered conditions list (one item per line)"><input type="checkbox" data-corole="list"' + (c.list ? " checked" : "") + ' />＃ List</label>'
-      + '<button class="icon-btn" data-corole="del" title="Remove card">✕</button></div>'
-      + '<textarea class="co-body" data-corole="body" placeholder="' + (c.list ? "One condition per line…" : "Context, drivers, risks, decisions…") + '">' + esc(c.body || "") + '</textarea>'
+      + '<button class="icon-btn" type="button" data-corole="del" title="Remove card" aria-label="Remove analysis card">✕</button></div>'
+      + '<textarea class="co-body" data-corole="body" maxlength="10000" aria-label="Analysis card content" placeholder="' + (c.list ? "One condition per line…" : "Context, drivers, risks, decisions…") + '">' + esc(c.body || "") + '</textarea>'
       + '</div>').join("")
       + '<button id="coAdd" class="btn add co-add" type="button">＋ Add card</button>';
   } else {
@@ -1617,7 +1951,7 @@ function onCalloutClick(e){
   const listTog = e.target.closest("[data-corole='list']");
   if (listTog){ const el = listTog.closest("[data-co]"); if (!el) return; const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (c){ c.list = listTog.checked; save(); renderCallouts(); } return; }
   const del = e.target.closest("[data-corole='del']");
-  if (del){ const el = del.closest("[data-co]"); if (!el) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); }
+  if (del){ const el = del.closest("[data-co]"); if (!el) return; if (!checkpointUndo("Analysis card deleted — undo?")) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); showUndo("Analysis card deleted. Undo?"); }
 }
 function syncHeader(){
   $("titleIn").value = doc.title;
@@ -1626,6 +1960,7 @@ function syncHeader(){
   $("subIn").hidden = readOnly && !(doc.subtitle || "").trim();
   { const p = $("premiseIn"); if (p){ p.value = doc.premise || ""; p.readOnly = readOnly; p.hidden = readOnly && !(doc.premise || "").trim(); } }
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
+  if (!readOnly){ const meta=syncMeta(doc.id); if (session&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (session&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
   reflectPublicBtn();
   renderCallouts();
   // The Portfolio header count is shown to everyone — including public
@@ -1650,9 +1985,10 @@ function syncHeader(){
 /* =========================================================================
    Roadmap CRUD (local)
    ========================================================================= */
-function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); { const n = $("summaryNarrative"); if (n){ n.hidden = true; n.innerHTML = ""; } } store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); }
+function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); { const n = $("summaryNarrative"); if (n){ n.hidden = true; n.innerHTML = ""; } } store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); if (session&&syncMeta(id).pending) queueCloudSync(id); }
 function newRoadmap(){
   const d = normalizeRoadmap({ title:"Untitled roadmap", templateType:"custom", lanes:[{ name:"Phase 1", items:[] }] });
+  if (session) syncMeta(d.id).pending=true;
   store.roadmaps[d.id] = d; switchTo(d.id); $("titleIn").focus(); $("titleIn").select();
 }
 function duplicateRoadmapById(id, open){
@@ -1661,6 +1997,7 @@ function duplicateRoadmapById(id, open){
   copy.id = uid("rm"); copy.title = (src.title||"Untitled") + " (copy)"; const now = new Date().toISOString(); copy.createdAt = now; copy.updatedAt = now;
   copy.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
   store.roadmaps[copy.id] = copy;
+  if (session) syncMeta(copy.id).pending=true;
   if (open){ switchTo(copy.id); setMode("editor"); }
   else { saveNow(); syncHeader(); if (mode === "overview") renderOverview(); topNote("ok", "Duplicated “"+(src.title||"Untitled")+"”."); }
 }
@@ -1668,21 +2005,40 @@ function duplicateRoadmap(){ duplicateRoadmapById(doc.id, true); }
 function deleteRoadmapById(id){
   if (Object.keys(store.roadmaps).length <= 1){ topNote("info", "You need at least one roadmap."); return; }
   const d = store.roadmaps[id]; if (!d) return;
-  if (!confirm("Delete roadmap “"+(d.title||"Untitled")+"”? This can't be undone.")) return;
+  if (!confirm("Move roadmap “"+(d.title||"Untitled")+"” to Trash? It can be restored later.")) return;
+  if (!checkpointUndo("Roadmap moved to Trash — undo?")) return;
+  if (store.undo) store.undo.cloudRestoreId=id;
+  syncMeta(id).needsDelete=true; syncMeta(id).needsRestore=false;
+  d.public=false;
+  store.trash=store.trash||{}; store.trash[id]=d;
   delete store.roadmaps[id];
   if (draftSnapshot && draftSnapshot.draftId === id){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
   if (store.activeId === id){ store.activeId = Object.keys(store.roadmaps)[0]; doc = store.roadmaps[store.activeId]; }
-  saveNow(); syncHeader();
+  if (!saveNow()){ applyUndo(true); return; } syncHeader();
   if (mode === "overview") renderOverview(); else fullRender();
+  showUndo("Roadmap moved to Trash. Undo?");
+  if (session) cloudSoftDelete(id).catch(()=>{});
 }
 function deleteRoadmap(){ deleteRoadmapById(doc.id); }
+function restoreRoadmapById(id){
+  const d=store.trash&&store.trash[id]; if (!d) return;
+  if (!checkpointUndo("Roadmap restored — undo?")) return;
+  if (store.undo) store.undo.cloudDeleteId=id;
+  syncMeta(id).needsRestore=true; syncMeta(id).needsDelete=false;
+  d.public=false;
+  store.roadmaps[id]=d; delete store.trash[id]; store.activeId=id; doc=d;
+  if (!saveNow()){ applyUndo(true); return; } syncHeader(); setMode("editor"); showUndo("Roadmap restored. Undo?");
+  if (session) cloudRestore(id).catch(()=>{});
+}
 function toggleArchiveById(id){
   const d = store.roadmaps[id]; if (!d) return;
   d.archived = !d.archived;
   d.updatedAt = new Date().toISOString();
+  if (session) syncMeta(id).pending=true;
   saveNow(); syncHeader();
   if (mode === "overview") renderOverview();
   topNote(d.archived ? "ok" : "info", (d.archived ? "Archived “" : "Restored “") + (d.title || "Untitled") + "”" + (d.archived ? " — find it under Archived in the Overview." : "."));
+  if (session) queueCloudSync(id);
 }
 function toggleArchive(){ toggleArchiveById(doc.id); }
 
@@ -1692,6 +2048,15 @@ function toggleArchive(){ toggleArchiveById(doc.id); }
 function slug(s){ return (String(s||"roadmap").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "roadmap"); }
 function download(name, blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 function exportJson(){ download(slug(doc.title)+".roadmap.json", new Blob([JSON.stringify(doc,null,2)], { type:"application/json" })); }
+function exportFullPortfolio(){
+  const payload={
+    schema:"roadmap.portfolio.v2", exportedAt:new Date().toISOString(), appVersion:APP_VERSION,
+    accountId:session&&session.user?session.user.id:null,
+    store:{ version:2, activeId:store.activeId, mode:store.mode, roadmaps:store.roadmaps, trash:store.trash||{}, sync:store.sync||{} }
+  };
+  download("roadmap-portfolio-backup-"+todayIso()+".json", new Blob([JSON.stringify(payload,null,2)], { type:"application/json" }));
+  topNote("ok","Full portfolio backup downloaded.");
+}
 // Stylesheet + script for the standalone HTML export (below). Kept as constants
 // so exportHtml() only has to weave in the data. __LABEL__ is substituted with the
 // left-gutter width; __TIPS__ with the JSON tooltip data.
@@ -2058,12 +2423,30 @@ async function exportHtml(){
   download(slug(doc.title) + "-roadmap.html", new Blob([html], { type:"text/html" }));
 }
 function importJsonFile(file){
+  if (!file||file.size>10*1024*1024){ topNote("err","That JSON file is larger than the 10 MB import limit.",true); return; }
   const rd = new FileReader();
   rd.onload = () => {
     try {
       const raw = JSON.parse(rd.result);
+      if (raw && raw.schema === "roadmap.portfolio.v2" && raw.store && raw.store.roadmaps){
+        if (Object.keys(raw.store.roadmaps).length>500 || (raw.store.trash&&Object.keys(raw.store.trash).length>500)) throw new Error("That portfolio exceeds the 500-roadmap import safety limit.");
+        let added=0, duplicates=0;
+        Object.values(raw.store.roadmaps).forEach(value=>{
+          const d=normalizeRoadmap(value);
+          if (store.roadmaps[d.id]){
+            if (docFingerprint(store.roadmaps[d.id])===docFingerprint(d)){ duplicates++; return; }
+            d.id=uid("rm"); d.title=(d.title||"Untitled")+" (Recovered import)";
+          }
+          store.roadmaps[d.id]=d; if (session) syncMeta(d.id).pending=true; added++;
+        });
+        Object.values(raw.store.trash||{}).forEach(value=>{ const d=normalizeRoadmap(value); if (!store.trash[d.id]&&!store.roadmaps[d.id]) store.trash[d.id]=d; });
+        if (!persist()) throw new Error("The imported portfolio could not be verified in browser storage.");
+        syncHeader(); renderOverview(); topNote("ok","Merged "+added+" roadmap"+(added===1?"":"s")+" from the portfolio backup"+(duplicates?"; skipped "+duplicates+" identical "+(duplicates===1?"copy":"copies"):"")+".");
+        return;
+      }
       if (!raw || raw.schema !== "roadmap.v1") { if (!confirm("This file isn't a roadmap.v1 export. Try to import anyway?")) return; }
       const d = normalizeRoadmap(raw); d.id = uid("rm"); d.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
+      if (session) syncMeta(d.id).pending=true;
       store.roadmaps[d.id] = d; switchTo(d.id); topNote("ok", "Imported “"+d.title+"”.");
     } catch(e){ topNote("err", "Couldn't read that file: " + (e.message||e)); }
   };
@@ -2120,6 +2503,7 @@ function jiraStatusTo(status){
   return "planned";
 }
 function importJiraCsv(file){
+  if (!file||file.size>10*1024*1024){ topNote("err","That Jira CSV is larger than the 10 MB import limit.",true); return; }
   const rd = new FileReader();
   rd.onload = () => {
     try {
@@ -2171,6 +2555,7 @@ function importJiraCsv(file){
       if (!withItems.length) throw new Error("No dated issues found — add Start/Due dates in Jira (or include them in the export) and try again.");
       const project = issues.find(it => it.project) || {};
       const d = normalizeRoadmap({ title: (project.project || file.name.replace(/\.csv$/i, "")) + " — Jira import", lanes: withItems });
+      if (session) syncMeta(d.id).pending=true;
       store.roadmaps[d.id] = d; switchTo(d.id);
       topNote("ok", "Imported " + bars + " phase" + (bars===1?"":"s") + " and " + miles + " milestone" + (miles===1?"":"s")
         + " into " + withItems.length + " lane" + (withItems.length===1?"":"s")
@@ -2244,9 +2629,11 @@ async function exportPng(){
 function dataUrlToBlob(durl){ const [meta,b64] = durl.split(","); const bin = atob(b64); const arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i); return new Blob([arr], { type:(meta.match(/:(.*?);/)||[])[1] || "image/png" }); }
 
 let noteTimer = null;
-function topNote(kind, msg){
+function topNote(kind, msg, persistent){
   const n = $("topNote"); n.className = "note "+kind+" app-only"; n.textContent = msg;
-  clearTimeout(noteTimer); noteTimer = setTimeout(() => n.classList.add("hide"), 5000);
+  n.setAttribute("role",kind==="err"?"alert":"status");
+  clearTimeout(noteTimer);
+  if (!(persistent || kind==="err")) noteTimer = setTimeout(() => n.classList.add("hide"), 7000);
 }
 
 /* =========================================================================
@@ -2254,9 +2641,34 @@ function topNote(kind, msg){
    ========================================================================= */
 async function getSb(){
   if (sb) return sb;
-  const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!window.supabase || typeof window.supabase.createClient!=="function") throw new Error("The local Supabase client could not be loaded.");
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   return sb;
+}
+
+function openModal(modal, preferredFocus){
+  lastModalFocus=document.activeElement;
+  modal.hidden=false;
+  const target=preferredFocus||modal.querySelector('input,textarea,select,button,[href],[tabindex]:not([tabindex="-1"])');
+  setTimeout(()=>{ if (target) target.focus(); },0);
+}
+function hideModal(modal){
+  modal.hidden=true;
+  const restoreFocus=lastModalFocus; lastModalFocus=null;
+  if (restoreFocus && restoreFocus.isConnected) restoreFocus.focus();
+}
+function handleModalKeydown(e){
+  const modal=e.target.closest&&e.target.closest('.modal:not([hidden])'); if (!modal) return;
+  if (e.key==="Escape"){
+    if (forcingPassword && modal===$("cloudModal")) return;
+    e.preventDefault(); modal===$("aiModal")?closeAi():closeCloud(); return;
+  }
+  if (e.key!=="Tab") return;
+  const focusable=[...modal.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el=>!el.hidden);
+  if (!focusable.length) return;
+  const first=focusable[0], last=focusable[focusable.length-1];
+  if (e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
 }
 
 /* ---------- AI: build-roadmap edge function ---------- */
@@ -2269,9 +2681,9 @@ function openAi(){
   const note = $("aiNote");
   if (saved){ note.className = "note info"; note.textContent = "This is the description used to build the current roadmap. Edit it and rebuild to make changes."; }
   else { note.className = "note info hide"; note.textContent = ""; }
-  $("aiModal").hidden = false; $("aiText").focus();
+  openModal($("aiModal"),$("aiText"));
 }
-function closeAi(){ $("aiModal").hidden = true; }
+function closeAi(){ hideModal($("aiModal")); }
 async function generateFromDescription(){
   const prompt = $("aiText").value.trim();
   if (!prompt){ $("aiText").focus(); return; }
@@ -2297,7 +2709,8 @@ async function generateFromDescription(){
     if (!draft.lanes.length) throw new Error("The model didn't return any lanes. Try adding more detail to your description.");
     draft.id = uid("rm"); if (draft.templateType==="custom" && hint) draft.templateType = hint;
     draft.aiPrompt = prompt; draft.aiHint = hint;   // keep the description so it can be revisited/refined
-    draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id };
+    if (session) syncMeta(draft.id).pending=true;
+    draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id }; store.draftSnapshot=draftSnapshot;
     store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
     saveNow(); syncHeader(); setMode("editor"); fullRender();
     $("draftBanner").classList.add("show");
@@ -2314,9 +2727,9 @@ async function generateFromDescription(){
     }
   } finally { btn.disabled = false; btn.textContent = orig; }
 }
-function keepDraft(){ draftSnapshot = null; $("draftBanner").classList.remove("show"); }
+function keepDraft(){ const id=draftSnapshot&&draftSnapshot.draftId; draftSnapshot = null; store.draftSnapshot=null; $("draftBanner").classList.remove("show"); saveNow(); if (session&&id) queueCloudSync(id); }
 function discardDraft(){
-  const snap = draftSnapshot; draftSnapshot = null;
+  const snap = draftSnapshot||store.draftSnapshot; draftSnapshot = null; store.draftSnapshot=null;
   $("draftBanner").classList.remove("show");
   if (!snap || !snap.draftId) return;
   // only ever delete the exact draft we created, and only if the roadmap to restore still exists
@@ -2324,12 +2737,17 @@ function discardDraft(){
     delete store.roadmaps[snap.draftId];
     store.activeId = snap.prevActiveId; doc = store.roadmaps[snap.prevActiveId];
     saveNow(); syncHeader(); fullRender();
+    if (session) cloudSoftDelete(snap.draftId).catch(()=>{});
   }
 }
 
 /* ---------- Cloud auth + sync ---------- */
-function cloudModal(title, bodyHtml, footHtml){ $("cloudTitle").textContent = title; $("cloudBody").innerHTML = bodyHtml; $("cloudFoot").innerHTML = footHtml; $("cloudModal").hidden = false; }
-function closeCloud(){ $("cloudModal").hidden = true; }
+function cloudModal(title, bodyHtml, footHtml){
+  $("cloudTitle").textContent = title; $("cloudBody").innerHTML = bodyHtml; $("cloudFoot").innerHTML = footHtml;
+  const preferred=$("cloudBody").querySelector('input,textarea,select,button,[href]')||$("cloudFoot").querySelector('button,[href]')||$("cloudClose");
+  openModal($("cloudModal"),preferred);
+}
+function closeCloud(){ hideModal($("cloudModal")); }
 function reflectCloudUi(){
   const on = !!session;
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
@@ -2339,17 +2757,20 @@ function reflectCloudUi(){
   ["cloudMenu","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   // The "All users' roadmaps" admin item only shows for the super-owner account.
   { const au = $("allUsersItem"); if (au) au.hidden = !(on && isOwnerAccount()); }
+  if (!readOnly&&doc){ const meta=syncMeta(doc.id); if (on&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (on&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
   reflectPublicBtn();
 }
 function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
 function reflectPublicBtn(){
   const b = $("publicItem");
   const pub = !!(doc && doc.public);
-  if (b) b.textContent = pub ? "🌐 Make private" : "🌐 Make public";
+  const meta=doc?syncMeta(doc.id):null, uncertain=!!(meta&&meta.visibilityUnconfirmed);
+  if (b) b.textContent = uncertain ? "⚠ Visibility change pending" : (pub ? "🌐 Make private" : "🌐 Make public");
   // Show the shareable public link on the page while a public roadmap is open (owner only).
   const bar = $("publicUrlBar");
   if (bar){
-    const show = pub && !!session && !readOnly && !!(doc && doc.id);
+    const confirmedPublic=uncertain ? meta.confirmedPublic===true : pub;
+    const show = confirmedPublic && !!session && !readOnly && !!(doc && doc.id);
     bar.hidden = !show;
     if (show){ const url = publicRoadmapUrl(doc.id); $("publicUrl").value = url; $("publicUrlOpen").href = url; }
   }
@@ -2357,9 +2778,9 @@ function reflectPublicBtn(){
 async function cloudSignInFlow(){
   if (session){ const client = await getSb(); await client.auth.signOut(); session = null; location.reload(); return; }
   cloudModal("Sign in to sync",
-    '<div class="row"><label class="fld">Email</label><input id="ciEmail" class="txt" type="email" autocomplete="username" /></div>'
-    + '<div class="row"><label class="fld">Password</label><input id="ciPass" class="txt" type="password" autocomplete="current-password" /></div>'
-    + '<div id="ciNote" class="note info hide"></div>',
+    '<div class="row"><label class="fld" for="ciEmail">Email</label><input id="ciEmail" class="txt" type="email" autocomplete="username" /></div>'
+    + '<div class="row"><label class="fld" for="ciPass">Password</label><input id="ciPass" class="txt" type="password" autocomplete="current-password" /></div>'
+    + '<div id="ciNote" class="note info hide" role="status" aria-live="polite"></div>',
     '<button id="ciCancel" class="btn ghost">Cancel</button><button id="ciGo" class="btn">Sign in</button>');
   $("ciCancel").onclick = closeCloud;
   $("ciGo").onclick = async () => {
@@ -2379,17 +2800,171 @@ async function cloudSignInFlow(){
     } catch(e){ nt.className="note err"; nt.textContent = "Sign-in failed: " + (e.message||e); }
   };
 }
-async function cloudSave(){
-  if (!session) return;
+function mutationId(){ return crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-4000-8000-"+Math.random().toString(16).slice(2).padEnd(12,"0").slice(0,12); }
+function roadmapFromRow(row){
+  row=row&&typeof row==="object"?row:{};
+  const source=Object.assign({},row.doc||{}, {
+    id:row.id||(row.doc&&row.doc.id), title:row.title??(row.doc&&row.doc.title), subtitle:row.subtitle??(row.doc&&row.doc.subtitle),
+    templateType:row.template_type??(row.doc&&row.doc.templateType), public:row.public??(row.doc&&row.doc.public),
+    createdAt:row.created_at||(row.doc&&row.doc.createdAt), updatedAt:row.updated_at||(row.doc&&row.doc.updatedAt)
+  });
+  return normalizeRoadmap(source);
+}
+function recordServerVersion(id,row){
+  const meta=syncMeta(id);
+  if (row && Number.isFinite(Number(row.revision))) meta.revision=Number(row.revision);
+  if (row && typeof row.public==="boolean") meta.confirmedPublic=row.public;
+  if (row && Object.prototype.hasOwnProperty.call(row,"deleted_at")) meta.deletedAt=row.deleted_at||null;
+  meta.lastCloudFingerprint=docFingerprint(row&&row.doc?roadmapFromRow(row):store.roadmaps[id]);
+  meta.pending=false; meta.lastError="";
+}
+function preserveCloudConflict(id,row){
+  const local=store.roadmaps[id];
+  if (local){
+    const copy=normalizeRoadmap(JSON.parse(JSON.stringify(local)));
+    copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered local changes)";
+    copy.createdAt=new Date().toISOString(); copy.updatedAt=copy.createdAt;
+    store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+  }
+  if (row){ const cloud=roadmapFromRow(row); store.roadmaps[id]=cloud; recordServerVersion(id,row); }
+  syncMeta(id).saveOutbox=null;
+  if (store.activeId===id) doc=store.roadmaps[id];
+  persist(); syncHeader(); fullRender();
+  setSaveStatus("conflict","Conflict preserved as a separate roadmap");
+  topNote("err","Another device changed this roadmap. Both versions were kept; your version is labeled “Recovered local changes.”",true);
+}
+function preserveDeleteConflict(id,row){
+  const activeLocal=store.roadmaps[id], server=roadmapFromRow(row);
+  if (activeLocal&&docFingerprint(activeLocal)!==docFingerprint(server)){
+    const activeCopy=normalizeRoadmap(JSON.parse(JSON.stringify(activeLocal))); activeCopy.id=uid("rm"); activeCopy.title=(activeCopy.title||"Untitled")+" (Recovered local changes)"; activeCopy.public=false; activeCopy.updatedAt=new Date().toISOString();
+    store.roadmaps[activeCopy.id]=activeCopy; syncMeta(activeCopy.id).pending=true;
+    if (store.activeId===id){ store.activeId=activeCopy.id; doc=activeCopy; }
+  }
+  const localTrash=store.trash&&store.trash[id];
+  if (localTrash){
+    const copy=normalizeRoadmap(JSON.parse(JSON.stringify(localTrash))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Local Trash copy)";
+    delete store.trash[id]; store.trash[copy.id]=copy;
+  }
+  store.roadmaps[id]=server; recordServerVersion(id,row);
+  const meta=syncMeta(id); meta.deleteOutbox=null; meta.needsDelete=false; meta.pending=false;
+  persist(); syncHeader(); if (mode==="overview") renderOverview();
+  topNote("err","This roadmap changed on another device before deletion. The newer cloud version is active, and your older version remains safely in Trash.",true);
+}
+function preserveRestoreConflict(id,row){
+  const local=store.roadmaps[id], server=roadmapFromRow(row);
+  let copy=null;
+  if (local&&(row.deleted_at||docFingerprint(local)!==docFingerprint(server))){
+    copy=normalizeRoadmap(JSON.parse(JSON.stringify(local))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered local restore)"; copy.updatedAt=new Date().toISOString();
+    store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+  }
+  if (row.deleted_at){ store.trash[id]=server; delete store.roadmaps[id]; if (store.activeId===id&&copy){ store.activeId=copy.id; doc=copy; } }
+  else { store.roadmaps[id]=server; if (store.activeId===id) doc=server; }
+  recordServerVersion(id,row); const meta=syncMeta(id); meta.restoreOutbox=null; meta.needsRestore=false; meta.pending=false;
+  persist(); syncHeader(); fullRender();
+  topNote("err","The cloud copy changed during restore. Both versions were preserved for review.",true);
+}
+function serializeRoadmapCloud(id,task){
+  const prior=roadmapCloudChains.get(id)||Promise.resolve();
+  const next=prior.catch(()=>{}).then(task);
+  roadmapCloudChains.set(id,next);
+  return next.finally(()=>{ if (roadmapCloudChains.get(id)===next) roadmapCloudChains.delete(id); });
+}
+function scheduleCloudRecovery(id,kind){
+  const key=kind+":"+id; if (cloudRecoveryTimers.has(key)) return;
+  const meta=syncMeta(id); meta.recoveryAttempts=meta.recoveryAttempts||{};
+  const attempt=(meta.recoveryAttempts[kind]||0)+1; meta.recoveryAttempts[kind]=attempt; persist();
+  if (attempt>3) return;
+  const delay=[0,5000,20000,60000][attempt]+Math.floor(Math.random()*1200);
+  const timer=setTimeout(()=>{
+    cloudRecoveryTimers.delete(key); if (!session) return;
+    const meta=syncMeta(id);
+    if (kind==="delete"&&meta.needsDelete) cloudSoftDelete(id).catch(()=>{});
+    else if (kind==="restore"&&meta.needsRestore) cloudRestore(id).catch(()=>{});
+    else if (kind==="save"&&(meta.pending||meta.saveOutbox)) cloudSave(id,{announce:false}).catch(()=>{});
+  },delay);
+  cloudRecoveryTimers.set(key,timer);
+}
+async function cloudSaveCore(id, options){
+  options=options||{};
+  if (!session) throw new Error("Sign in before saving to the cloud.");
+  const target=store.roadmaps[id||(doc&&doc.id)];
+  if (!target) throw new Error("That roadmap is no longer available locally.");
+  const meta=syncMeta(target.id);
+  if (!meta.saveOutbox){
+    const snapshot=JSON.parse(JSON.stringify(target));
+    meta.saveOutbox={ mutationId:mutationId(), expectedRevision:meta.revision, fingerprint:docFingerprint(snapshot), doc:snapshot };
+    if (!persist()){ meta.saveOutbox=null; throw new Error("Cloud sync was not started because its recovery record could not be saved locally."); }
+  }
+  const operation=meta.saveOutbox;
+  setSaveStatus("pending","Syncing to cloud…");
   try {
-    const client = await getSb();
-    const { error } = await client.from("roadmaps").upsert({
-      id:doc.id, user_id:session.user.id, title:doc.title, subtitle:doc.subtitle,
-      template_type:doc.templateType, public:!!doc.public, doc:doc, updated_at:new Date().toISOString()
-    }, { onConflict:"id" });
+    const client=await getSb();
+    const { data,error }=await client.rpc("roadmap_save_atomic", {
+      p_id:target.id, p_doc:operation.doc, p_title:operation.doc.title, p_subtitle:operation.doc.subtitle,
+      p_template_type:operation.doc.templateType, p_public:!!operation.doc.public,
+      p_expected_revision:operation.expectedRevision, p_mutation_id:operation.mutationId
+    });
     if (error) throw error;
-    topNote("ok","Saved to cloud.");
-  } catch(e){ topNote("err","Cloud save failed: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."); }
+    const result=data||{};
+    if (!result.ok){
+      if (result.conflict){ preserveCloudConflict(target.id,result.roadmap); throw new Error("Cloud conflict — both copies were preserved."); }
+      throw new Error(result.reason||"The cloud save was rejected.");
+    }
+    recordServerVersion(target.id,result.roadmap||{});
+    const liveMeta=syncMeta(target.id);
+    liveMeta.visibilityUnconfirmed=false;
+    if (liveMeta.recoveryAttempts) liveMeta.recoveryAttempts.save=0;
+    if (liveMeta.saveOutbox&&liveMeta.saveOutbox.mutationId===operation.mutationId) liveMeta.saveOutbox=null;
+    const current=store.roadmaps[target.id];
+    liveMeta.pending=!!current && docFingerprint(current)!==operation.fingerprint;
+    persist();
+    setSaveStatus(liveMeta.pending?"pending":"synced",liveMeta.pending?"Saved locally · cloud pending":"Cloud synced");
+    if (liveMeta.pending) queueCloudSync(target.id);
+    if (options.announce!==false) topNote("ok","Saved to cloud.");
+    return result.roadmap||{};
+  } catch(e){
+    const conflictPreserved=/both copies were preserved/i.test(e.message||"");
+    const liveMeta=syncMeta(target.id);
+    if (!conflictPreserved){ liveMeta.pending=true; liveMeta.lastError=String(e.message||e).slice(0,500); persist(); }
+    if (!conflictPreserved){
+      scheduleCloudRecovery(target.id,"save");
+      setSaveStatus("error","Saved locally · cloud unavailable");
+      topNote("err","Cloud save failed, but the browser copy is safe: "+(e.message||e),true);
+    }
+    throw e;
+  }
+}
+function cloudSave(id,options){
+  const roadmapId=id||(doc&&doc.id);
+  if (!roadmapId) return Promise.reject(new Error("No roadmap is open."));
+  return serializeRoadmapCloud(roadmapId,()=>cloudSaveCore(roadmapId,options));
+}
+async function cloudSaveFully(id,options){
+  for (let attempt=0;attempt<6;attempt++){
+    await cloudSave(id,options);
+    const meta=syncMeta(id);
+    if (!meta.pending&&!meta.saveOutbox) return true;
+  }
+  throw new Error("Cloud sync did not settle after several safe retries.");
+}
+function queueCloudSync(id){
+  if (!session || !id) return;
+  clearTimeout(cloudSyncTimers.get(id));
+  const timer=setTimeout(()=>{
+    cloudSyncTimers.delete(id);
+    const meta=syncMeta(id); if (!meta.pending&&!meta.saveOutbox) return;
+    cloudSave(id,{announce:false}).catch(()=>{});
+  },1200);
+  cloudSyncTimers.set(id,timer);
+}
+async function flushPendingCloudSaves(){
+  if (!session) return;
+  for (const id of Object.keys(store.roadmaps)){
+    const meta=syncMeta(id);
+    if (meta.needsRestore) try{ await cloudRestore(id); }catch(_){}
+    if (meta.pending&&!meta.needsRestore) try{ await cloudSave(id,{announce:false}); }catch(_){}
+  }
+  for (const id of Object.keys(store.trash||{})){ const meta=syncMeta(id); if (meta.needsDelete||meta.pending) try{ await cloudSoftDelete(id); }catch(_){} }
 }
 async function cloudOpen(){
   if (!session) return;
@@ -2397,30 +2972,76 @@ async function cloudOpen(){
   $("clClose").onclick = closeCloud;
   try {
     const client = await getSb();
-    const { data, error } = await client.from("roadmaps").select("id,title,subtitle,updated_at,doc").order("updated_at",{ ascending:false });
+    const { data, error } = await client.rpc("roadmap_owner_portfolio", { p_include_deleted:true });
     if (error) throw error;
+    const rows=Array.isArray(data)?data:[];
     $("clNote").className = "note info hide";
-    if (!data || !data.length){ $("clList").innerHTML = '<div class="tl-empty">No cloud roadmaps yet. Use <b>Save to cloud</b> first.</div>'; return; }
-    $("clList").innerHTML = data.map(r => '<div class="cloud-row"><div class="grow"><div class="nm">'+esc(r.title||"Untitled")+'</div><div class="mt">updated '+esc((r.updated_at||"").slice(0,10))+'</div></div><button class="btn sm" data-open="'+esc(r.id)+'">Open</button></div>').join("");
+    if (!rows.length){ $("clList").innerHTML = '<div class="tl-empty">No cloud roadmaps yet. Use <b>Save to cloud</b> first.</div>'; return; }
+    $("clList").innerHTML = rows.map(r => '<div class="cloud-row"><div class="grow"><div class="nm">'+esc(r.title||"Untitled")+(r.deleted_at?' <span class="arch-pill">Trash</span>':'')+'</div><div class="mt">updated '+esc((r.updated_at||"").slice(0,10))+'</div></div><button class="btn sm" type="button" '+(r.deleted_at?'data-cloud-restore':'data-open')+'="'+esc(r.id)+'">'+(r.deleted_at?'Restore':'Open')+'</button></div>').join("");
     $("clList").querySelectorAll("[data-open]").forEach(b => b.onclick = () => {
-      const rec = data.find(x => x.id===b.dataset.open); if (!rec) return;
-      const d = normalizeRoadmap(rec.doc || rec); store.roadmaps[d.id] = d; switchTo(d.id); closeCloud(); topNote("ok","Opened from cloud.");
+      const rec = rows.find(x => x.id===b.dataset.open); if (!rec) return;
+      const incoming=roadmapFromRow(rec), existing=store.roadmaps[rec.id];
+      if (existing && docFingerprint(existing)!==docFingerprint(incoming)){
+        const copy=normalizeRoadmap(JSON.parse(JSON.stringify(existing))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered before cloud open)";
+        store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+      }
+      store.roadmaps[rec.id]=incoming; recordServerVersion(rec.id,rec); switchTo(rec.id); closeCloud(); topNote("ok","Opened from cloud. Any different local version was preserved separately.");
+    });
+    $("clList").querySelectorAll("[data-cloud-restore]").forEach(b=>b.onclick=()=>{
+      const rec=rows.find(x=>x.id===b.dataset.cloudRestore); if (!rec) return;
+      const d=roadmapFromRow(rec); d.public=false; store.trash[d.id]=d; recordServerVersion(d.id,rec); closeCloud(); restoreRoadmapById(d.id);
     });
   } catch(e){ $("clNote").className="note err"; $("clNote").textContent = "Couldn't load: "+(e.message||e)+" — the roadmaps table may not be provisioned yet (see README)."; }
 }
+async function cloudSoftDeleteCore(id){
+  if (!session) return null;
+  try{
+    const client=await getSb(), meta=syncMeta(id);
+    if (!meta.deleteOutbox){ meta.deleteOutbox={mutationId:mutationId(),expectedRevision:meta.revision}; if (!persist()){ meta.deleteOutbox=null; throw new Error("Cloud deletion was not started because its recovery record could not be saved locally."); } }
+    const operation=meta.deleteOutbox;
+    const {data,error}=await client.rpc("roadmap_soft_delete", { p_id:id, p_expected_revision:operation.expectedRevision, p_mutation_id:operation.mutationId });
+    if (error) throw error;
+    if (data&&data.reason==="not_found"){ const liveMeta=syncMeta(id); liveMeta.deleteOutbox=null; liveMeta.needsDelete=false; liveMeta.pending=false; if (liveMeta.recoveryAttempts) liveMeta.recoveryAttempts.delete=0; persist(); return null; }
+    if (!data||!data.ok){ if (data&&data.conflict&&data.roadmap){ preserveDeleteConflict(id,data.roadmap); const conflictError=new Error("The cloud copy changed before it could be moved to Trash."); conflictError.cloudConflict=true; throw conflictError; } throw new Error((data&&data.reason)||"Cloud delete was rejected."); }
+    recordServerVersion(id,data.roadmap||{}); { const liveMeta=syncMeta(id); liveMeta.deleteOutbox=null; liveMeta.needsDelete=false; if (liveMeta.recoveryAttempts) liveMeta.recoveryAttempts.delete=0; } persist(); return data.roadmap;
+  }catch(e){ if (!e.cloudConflict){ syncMeta(id).pending=true; scheduleCloudRecovery(id,"delete"); persist(); topNote("err","The roadmap is safely in local Trash, but the cloud copy could not be updated: "+(e.message||e),true); } throw e; }
+}
+function cloudSoftDelete(id){ return serializeRoadmapCloud(id,()=>cloudSoftDeleteCore(id)); }
+async function cloudRestoreCore(id){
+  if (!session) return null;
+  try{
+    const client=await getSb(), meta=syncMeta(id);
+    if (!meta.restoreOutbox){ meta.restoreOutbox={mutationId:mutationId(),expectedRevision:meta.revision}; if (!persist()){ meta.restoreOutbox=null; throw new Error("Cloud restore was not started because its recovery record could not be saved locally."); } }
+    const operation=meta.restoreOutbox;
+    const {data,error}=await client.rpc("roadmap_restore", { p_id:id, p_expected_revision:operation.expectedRevision, p_mutation_id:operation.mutationId });
+    if (error) throw error;
+    if (data&&data.reason==="not_found"){ const liveMeta=syncMeta(id); liveMeta.restoreOutbox=null; liveMeta.needsRestore=false; liveMeta.pending=true; persist(); queueCloudSync(id); return null; }
+    if (!data||!data.ok){ if (data&&data.conflict&&data.roadmap){ preserveRestoreConflict(id,data.roadmap); const conflictError=new Error("The cloud copy changed during restore."); conflictError.cloudConflict=true; throw conflictError; } throw new Error((data&&data.reason)||"Cloud restore was rejected."); }
+    const row=data.roadmap||{}, server=roadmapFromRow(row), local=store.roadmaps[id];
+    if (local&&docFingerprint(local)!==docFingerprint(server)){
+      const copy=normalizeRoadmap(JSON.parse(JSON.stringify(local))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered after restore)"; copy.updatedAt=new Date().toISOString();
+      store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+      topNote("err","The cloud copy changed while this roadmap was in Trash. Both versions were preserved.",true);
+    }
+    store.roadmaps[id]=server; if (store.activeId===id) doc=server;
+    recordServerVersion(id,row); { const liveMeta=syncMeta(id); liveMeta.restoreOutbox=null; liveMeta.needsRestore=false; if (liveMeta.recoveryAttempts) liveMeta.recoveryAttempts.restore=0; } persist();
+    if (store.activeId===id){ syncHeader(); fullRender(); }
+    return row;
+  }catch(e){ if (!e.cloudConflict){ syncMeta(id).pending=true; scheduleCloudRecovery(id,"restore"); persist(); topNote("err","Restored locally, but the cloud restore is still pending: "+(e.message||e),true); } throw e; }
+}
+function cloudRestore(id){ return serializeRoadmapCloud(id,()=>cloudRestoreCore(id)); }
 /* ---------- owner / multi-user helpers ---------- */
 function sessionEmail(s){ return ((s || session) && (s || session).user && (s || session).user.email || "").toLowerCase(); }
 function isOwnerAccount(){ return !!session && sessionEmail() === OWNER_EMAIL.toLowerCase(); }
 
-// True when the signed-in account still owes a password change. Provisioning may set
-// the flag in user_metadata (self-clearing) or app_metadata (admin-only / tamper-proof);
-// an explicit user_metadata.must_change_password === false is the "done" acknowledgement,
-// so we never loop even when a tamper-proof app_metadata flag can't be cleared client-side.
+// True when the signed-in account still owes a password change. app_metadata is
+// authoritative because users cannot edit it. A database trigger clears that flag
+// only when Supabase actually changes the password hash.
 function needsPasswordChange(s){
   const u = s && s.user; if (!u) return false;
   const um = u.user_metadata || {}, am = u.app_metadata || {};
-  if (um.must_change_password === false) return false;
-  return um.must_change_password === true || am.must_change_password === true;
+  if (am.must_change_password === true) return true;
+  return um.must_change_password === true;
 }
 
 /* ---------- forced "create your password" screen (temp-password first login) ---------- */
@@ -2434,10 +3055,10 @@ function forcePasswordChangeFlow(){
     + '</ul>';
   cloudModal("Create your password",
     '<p class="pw-intro">You signed in with a temporary password. Choose a new password to continue — this replaces the temporary one.</p>'
-    + '<div class="row"><label class="fld">New password</label><input id="pw1" class="txt" type="password" autocomplete="new-password" /></div>'
-    + '<div class="row"><label class="fld">Confirm password</label><input id="pw2" class="txt" type="password" autocomplete="new-password" /></div>'
+    + '<div class="row"><label class="fld" for="pw1">New password</label><input id="pw1" class="txt" type="password" autocomplete="new-password" /></div>'
+    + '<div class="row"><label class="fld" for="pw2">Confirm password</label><input id="pw2" class="txt" type="password" autocomplete="new-password" /></div>'
     + rulesHtml
-    + '<div id="pwNote" class="note info hide"></div>',
+    + '<div id="pwNote" class="note info hide" role="status" aria-live="polite"></div>',
     '<button id="pwOut" class="btn ghost">Sign out</button><button id="pwGo" class="btn" disabled>Set password &amp; continue</button>');
   const pw1 = $("pw1"), pw2 = $("pw2"), go = $("pwGo");
   function refresh(){
@@ -2461,6 +3082,8 @@ function forcePasswordChangeFlow(){
       const client = await getSb();
       const { error } = await client.auth.updateUser({ password: pw1.value, data: { must_change_password: false } });
       if (error) throw error;
+      const { error:refreshError } = await client.auth.refreshSession();
+      if (refreshError) throw refreshError;
       forcingPassword = false;
       location.reload();   // boot → enterOwnerMode with the flag now acknowledged
     } catch(e){ nt.className = "note err"; nt.textContent = "Couldn’t set password: " + (e.message || e); go.disabled = false; }
@@ -2525,31 +3148,52 @@ async function initAdminRoadmap(id){
 
 async function togglePublic(){
   if (!session || readOnly || !doc) return;
-  doc.public = !doc.public;
-  save(); reflectPublicBtn();
-  try { await cloudSave(); }
-  catch(_){ /* cloudSave surfaces its own error */ }
-  if (doc.public){
-    const link = new URL("roadmap.html", location.href).href;
-    topNote("ok", "“"+(doc.title||"Untitled")+"” is now public — anyone can view it read-only at "+link);
-  } else {
-    topNote("info", "“"+(doc.title||"Untitled")+"” is private again.");
+  const target=doc, previous=!!target.public, desired=!previous;
+  const meta=syncMeta(target.id); if (meta.confirmedPublic==null) meta.confirmedPublic=previous;
+  target.public=desired; meta.visibilityUnconfirmed=true; meta.pending=true; persist(); reflectPublicBtn();
+  try{
+    await cloudSaveFully(target.id,{announce:false});
+    reflectPublicBtn();
+    if (desired) topNote("ok","“"+(target.title||"Untitled")+"” is now public at "+publicRoadmapUrl(target.id));
+    else topNote("ok","“"+(target.title||"Untitled")+"” is private. The server confirmed the change.");
+  }catch(e){
+    if (store.roadmaps[target.id]===target){ meta.visibilityUnconfirmed=true; meta.pending=true; persist(); reflectPublicBtn(); }
+    topNote("err","The visibility change is not confirmed. The previous server visibility may still apply; the app will retry safely.",true);
+    throw e;
   }
 }
 async function shareFlow(){
   if (!session) return;
-  cloudModal("Share this roadmap (read-only)", '<div id="shNote" class="note info"><span class="spin"></span> Preparing…</div><div id="shArea"></div>', '<button id="shClose" class="btn ghost">Close</button>');
+  cloudModal("Share this roadmap (read-only)", '<div id="shNote" class="note info"><span class="spin"></span> Preparing…</div><div id="shArea"></div><div id="shList" class="share-list"></div>', '<button id="shClose" class="btn ghost">Close</button>');
   $("shClose").onclick = closeCloud;
   try {
     const client = await getSb();
-    await cloudSave();   // ensure the current doc exists in the cloud
-    const { data, error } = await client.from("roadmap_shares").insert({ user_id:session.user.id, roadmap_id:doc.id, label:"" }).select("token").single();
+    await cloudSaveFully(doc.id,{announce:false});   // a share is never minted for a stale/failed save
+    const expires=new Date(Date.now()+30*864e5).toISOString();
+    const { data, error } = await client.rpc("roadmap_share_create", { p_roadmap_id:doc.id, p_label:"30-day link", p_expires_at:expires });
     if (error) throw error;
-    const link = new URL("roadmap.html", location.href).href + "?s=" + data.token;
+    const share=data&&data.share?data.share:data;
+    if (!share||!share.token) throw new Error("The server did not return a share token.");
+    const linkUrl=new URL("roadmap.html",location.href); linkUrl.search=""; linkUrl.hash="share="+encodeURIComponent(share.token); const link=linkUrl.href;
     $("shNote").className = "note info hide";
-    $("shArea").innerHTML = '<label class="fld">Anyone with this link can view (read-only)</label><div class="share-row"><input id="shUrl" class="txt" type="text" readonly value="'+esc(link)+'" /><button id="shCopy" class="btn sm">Copy</button></div>';
-    $("shCopy").onclick = () => { const el = $("shUrl"); el.select(); try { navigator.clipboard.writeText(el.value); } catch(_){ document.execCommand("copy"); } $("shCopy").textContent = "Copied ✓"; setTimeout(()=>$("shCopy").textContent="Copy",1200); };
-  } catch(e){ $("shNote").className="note err"; $("shNote").textContent = "Couldn't create a share link: "+(e.message||e)+" — the roadmap_shares table / shared_roadmap RPC may not be provisioned yet (see README)."; }
+    $("shArea").innerHTML = '<label class="fld" for="shUrl">Anyone with this link can view for 30 days</label><div class="share-row"><input id="shUrl" class="txt" type="text" readonly value="'+esc(link)+'" /><button id="shCopy" class="btn sm" type="button">Copy</button></div>';
+    $("shCopy").onclick = async () => { const el = $("shUrl"); el.select(); try { await navigator.clipboard.writeText(el.value); } catch(_){ document.execCommand("copy"); } $("shCopy").textContent = "Copied ✓"; setTimeout(()=>$("shCopy").textContent="Copy",1200); };
+    await renderShareList(client);
+  } catch(e){ $("shNote").className="note err"; $("shNote").setAttribute("role","alert"); $("shNote").textContent = "Couldn't create a share link: "+(e.message||e); }
+}
+async function renderShareList(client){
+  client=client||await getSb();
+  const {data,error}=await client.rpc("roadmap_share_list", { p_roadmap_id:doc.id });
+  if (error) throw error;
+  const rows=Array.isArray(data)?data:[];
+  const host=$("shList"); if (!host) return;
+  host.innerHTML=rows.length?'<div class="fld">Active and past links</div>'+rows.map(s=>'<div class="share-entry"><div class="grow"><div>'+esc(s.label||"Share link")+'</div><div class="meta">'+(s.revoked?'Revoked':s.expires_at?'Expires '+esc(String(s.expires_at).slice(0,10)):'No expiry')+'</div></div>'+(s.revoked?'':'<button class="btn danger sm" type="button" data-revoke="'+esc(s.token)+'">Revoke</button>')+'</div>').join(""):'<div class="timeline-empty">No saved share links.</div>';
+  host.querySelectorAll("[data-revoke]").forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    const {data:result,error:revokeError}=await client.rpc("roadmap_share_revoke",{p_token:b.dataset.revoke});
+    if (revokeError||!result||!result.ok){ b.disabled=false; topNote("err","Could not revoke that link: "+(revokeError?.message||result?.reason||"Unknown error"),true); return; }
+    await renderShareList(client); topNote("ok","Share link revoked.");
+  });
 }
 
 /* ---------- read-only shared view (?s=token) ---------- */
@@ -2558,10 +3202,10 @@ async function initShared(token){
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   try {
     const client = await getSb();
-    const { data, error } = await client.rpc("shared_roadmap", { p_token: token });
+    const { data, error } = await client.rpc("roadmap_shared_get", { p_token: token });
     if (error) throw error;
-    if (!data) throw new Error("This share link is unknown or has been revoked.");
-    doc = normalizeRoadmap(data.doc || data);
+    if (!data || data.ok===false) throw new Error((data&&data.reason)||"This share link is unknown, expired, or has been revoked.");
+    const row=data.roadmap||data; doc = roadmapFromRow(row);
     $("eyebrow").textContent = "Shared roadmap · read-only";
     syncHeader(); renderGantt();
   } catch(e){
@@ -2572,16 +3216,16 @@ async function initShared(token){
 /* ---------- deep link to one public roadmap (?r=<id>), read-only ---------- */
 async function initPublicRoadmap(id){
   readOnly = true; document.body.classList.add("publicview");
+  $("ownerSignIn").hidden=false;
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   $("eyebrow").textContent = "Public roadmap · read-only";
   store = { version:1, activeId:null, roadmaps:{} };
   try {
     const client = await getSb();
-    const { data, error } = await client.from("roadmaps")
-      .select("id,title,subtitle,updated_at,doc").eq("id", id).eq("public", true).maybeSingle();
+    const { data, error } = await client.rpc("roadmap_public_get", { p_id:id });
     if (error) throw error;
-    if (!data) throw new Error("This roadmap isn’t public, or the link is wrong.");
-    const d = normalizeRoadmap(data.doc || data);
+    if (!data || data.ok===false) throw new Error((data&&data.reason)||"This roadmap isn’t public, or the link is wrong.");
+    const row=data.roadmap||data, d = roadmapFromRow(row);
     store.roadmaps[d.id] = d; store.activeId = d.id; doc = d;
     reflectCloudUi(); syncHeader(); renderGantt();
   } catch(e){
@@ -2593,14 +3237,18 @@ async function initPublicRoadmap(id){
 
 /* ---------- public portfolio (not signed in): view the owner's public roadmaps ---------- */
 async function loadPublicRoadmaps(){
-  store = { version:1, activeId:null, roadmaps:{} };
+  store = emptyStore();
   try {
     const client = await getSb();
-    const { data, error } = await client.from("roadmaps")
-      .select("id,title,subtitle,updated_at,doc").eq("public", true).order("updated_at", { ascending:false });
+    const { data, error } = await client.rpc("roadmap_public_list");
     if (error) throw error;
-    (data || []).forEach(r => { const d = normalizeRoadmap(r.doc || r); store.roadmaps[d.id] = d; });
-  } catch(_){ /* offline / policy missing → empty portfolio, handled below */ }
+    (Array.isArray(data)?data:[]).forEach(r => { const d = roadmapFromRow(r); store.roadmaps[d.id] = d; });
+  } catch(e){
+    const d=normalizeRoadmap({ title:"Public roadmaps unavailable", subtitle:"Check your connection and try again.", lanes:[] });
+    store.roadmaps[d.id]=d; store.activeId=d.id; doc=d;
+    topNote("err","The public portfolio could not be loaded: "+(e.message||e),true);
+    return;
+  }
   store.activeId = Object.keys(store.roadmaps)[0] || null;
   if (!store.activeId){
     const d = normalizeRoadmap({ title:"No public roadmaps yet", templateType:"custom", lanes:[] });
@@ -2611,6 +3259,7 @@ async function loadPublicRoadmaps(){
 async function enterPublicMode(){
   readOnly = true;
   document.body.classList.add("publicview");
+  $("ownerSignIn").hidden=false;
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   $("eyebrow").textContent = "Public roadmaps · read-only";
   await loadPublicRoadmaps();
@@ -2620,8 +3269,12 @@ async function enterPublicMode(){
 }
 async function enterOwnerMode(){
   readOnly = false; document.body.classList.remove("publicview","readonly");
-  const hadLocal = hasStoredStore();
-  loadStore(); reflectCloudUi(); syncHeader();
+  $("ownerSignIn").hidden=true;
+  const userId=session&&session.user&&session.user.id;
+  const hadLocal = hasStoredStore(userId);
+  loadStore(userId); reflectCloudUi(); syncHeader();
+  if (draftSnapshot&&store.roadmaps[draftSnapshot.draftId]) $("draftBanner").classList.add("show");
+  if (store.undo&&store.undo.snapshot) showUndo((store.undo.label||"Previous version available")+" Undo?");
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
   setMode(mode);   // paint the local view immediately …
   await mergeCloudRoadmaps(hadLocal);   // … then fold in this account's cloud roadmaps
@@ -2629,8 +3282,13 @@ async function enterOwnerMode(){
 
 // Did this browser already have a saved portfolio? (loadStore() mints an empty
 // placeholder when it doesn't, which we drop once cloud roadmaps arrive.)
-function hasStoredStore(){
-  try { const raw = JSON.parse(localStorage.getItem(LS_KEY) || "null"); return !!(raw && raw.roadmaps && Object.keys(raw.roadmaps).length); }
+function hasStoredStore(userId){
+  try {
+    const accountRaw=localStorage.getItem(accountStorageKey(userId));
+    const claim=localStorage.getItem(LEGACY_CLAIM_KEY)||"";
+    const source=accountRaw||((!claim||claim===String(userId||""))?localStorage.getItem(LS_KEY):null);
+    const raw=JSON.parse(source||"null"); return !!(raw && raw.roadmaps && Object.keys(raw.roadmaps).length);
+  }
   catch(_){ return false; }
 }
 function isEmptyPlaceholder(d){
@@ -2646,37 +3304,70 @@ async function mergeCloudRoadmaps(hadLocal){
   let rows;
   try {
     const client = await getSb();
-    const { data, error } = await client.from("roadmaps")
-      .select("id,title,subtitle,updated_at,doc").order("updated_at", { ascending:false });
+    const { data, error } = await client.rpc("roadmap_owner_portfolio", { p_include_deleted:true });
     if (error) throw error;
-    rows = data || [];
-  } catch(_){ return; }   // offline / table missing → keep the local-only view, unchanged
-  if (!rows.length) return;
+    rows = Array.isArray(data)?data:[];
+  } catch(e){ setSaveStatus("error","Offline · local copy available"); topNote("err","Cloud roadmaps could not be checked. Your local portfolio remains available: "+(e.message||e),true); return; }
+  if (!rows.length){ await flushPendingCloudSaves(); return; }
   // A brand-new browser had no saved roadmaps, so loadStore() minted an empty
   // "My roadmap" placeholder — drop it so the cloud portfolio isn't cluttered.
   if (!hadLocal){
     const ids = Object.keys(store.roadmaps);
     if (ids.length === 1 && isEmptyPlaceholder(store.roadmaps[ids[0]])){ store.roadmaps = {}; store.activeId = null; }
   }
-  let added = 0;
+  let added = 0, conflicts=0;
   rows.forEach(r => {
-    const d = normalizeRoadmap(r.doc || r);
+    const d = roadmapFromRow(r);
+    const knownMeta=syncMeta(d.id);
+    if (r.deleted_at){
+      recordServerVersion(d.id,r);
+      if (store.roadmaps[d.id]&&knownMeta.needsRestore){ knownMeta.pending=true; return; }
+      const activeLocal=store.roadmaps[d.id];
+      if (activeLocal&&(knownMeta.pending||docFingerprint(activeLocal)!==docFingerprint(d))){
+        const copy=normalizeRoadmap(JSON.parse(JSON.stringify(activeLocal))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered before cloud deletion)"; copy.public=false; copy.updatedAt=new Date().toISOString();
+        store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+        if (store.activeId===d.id){ store.activeId=copy.id; doc=copy; }
+      }
+      const localTrash=store.trash&&store.trash[d.id];
+      if (localTrash&&docFingerprint(localTrash)!==docFingerprint(d)){
+        const copy=normalizeRoadmap(JSON.parse(JSON.stringify(localTrash))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered Trash copy)"; store.trash[copy.id]=copy;
+      }
+      store.trash[d.id]=d; delete store.roadmaps[d.id]; knownMeta.pending=false; knownMeta.needsDelete=false; return;
+    }
+    if (store.trash&&store.trash[d.id]){
+      if (knownMeta.needsDelete){ recordServerVersion(d.id,r); knownMeta.pending=true; return; }
+      const localTrash=store.trash[d.id];
+      if (docFingerprint(localTrash)!==docFingerprint(d)){
+        const copy=normalizeRoadmap(JSON.parse(JSON.stringify(localTrash))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered Trash copy)"; store.trash[copy.id]=copy;
+      }
+      delete store.trash[d.id]; store.roadmaps[d.id]=d; recordServerVersion(d.id,r); added++; return;
+    }
     const local = store.roadmaps[d.id];
-    if (!local){ store.roadmaps[d.id] = d; added++; return; }
-    // Keep whichever copy is newer so we never clobber unsaved local edits.
-    const cloudT = Date.parse(r.updated_at || d.updatedAt || 0) || 0;
-    const localT = Date.parse(local.updatedAt || 0) || 0;
-    if (cloudT > localT) store.roadmaps[d.id] = d;
+    const meta=syncMeta(d.id), cloudFp=docFingerprint(d);
+    if (!local){ store.roadmaps[d.id] = d; recordServerVersion(d.id,r); added++; return; }
+    const localFp=docFingerprint(local), base=meta.lastCloudFingerprint||"";
+    if (localFp===cloudFp){ recordServerVersion(d.id,r); return; }
+    if (base && localFp===base){ store.roadmaps[d.id]=d; recordServerVersion(d.id,r); return; }
+    if (base && cloudFp===base){ meta.pending=true; return; }
+    // First contact or both sides changed: retain both. The server row keeps its ID;
+    // local edits receive a new ID and are never silently discarded.
+    const copy=normalizeRoadmap(JSON.parse(JSON.stringify(local)));
+    copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered local changes)"; copy.updatedAt=new Date().toISOString();
+    store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+    store.roadmaps[d.id]=d; recordServerVersion(d.id,r); conflicts++;
   });
+  if (!Object.keys(store.roadmaps).length){ const placeholder=normalizeRoadmap({title:"Untitled roadmap",lanes:[{name:"Phase 1",items:[]}]}); store.roadmaps[placeholder.id]=placeholder; }
   if (!store.activeId || !store.roadmaps[store.activeId]){
     store.activeId = Object.keys(store.roadmaps)[0] || null;
-    if (store.activeId) doc = store.roadmaps[store.activeId];
   }
+  doc = store.roadmaps[store.activeId];
   saveNow();   // cache the merged portfolio so it's there next load too (even offline)
   reflectCloudUi(); syncHeader();
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
   setMode(mode);
+  await flushPendingCloudSaves();
   if (added > 0) topNote("info", added + (added === 1 ? " roadmap" : " roadmaps") + " loaded from your cloud.");
+  if (conflicts > 0) topNote("err",conflicts+" cloud conflict"+(conflicts===1?" was":"s were")+" preserved as separate recovered roadmap"+(conflicts===1?"":"s")+".",true);
 }
 
 /* =========================================================================
@@ -2703,9 +3394,10 @@ function closeMenus(){
   document.querySelectorAll(".menu-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
 }
 function runMenuAction(act){
-  const map = { png:exportPng, html:exportHtml, json:exportJson, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
+  const map = { png:exportPng, html:exportHtml, json:exportJson, portfolio:exportFullPortfolio, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
     dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, allusers:cloudOpenAll };
-  (map[act] || function(){})();
+  const result=(map[act] || function(){})();
+  if (result && typeof result.catch==="function") result.catch(()=>{});
 }
 function onMenuDocClick(e){
   const btn = e.target.closest(".menu-btn");
@@ -2728,9 +3420,6 @@ function wire(){
   $("backToPortfolio").addEventListener("click", () => setMode("overview"));
   const grid = $("overviewGrid");
   grid.addEventListener("click", onOverviewClick);
-  grid.addEventListener("keydown", e => {
-    if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("rm-card")){ e.preventDefault(); openRoadmap(e.target.dataset.id); }
-  });
   // picker + CRUD
   $("rmPicker").addEventListener("change", e => switchTo(e.target.value));
   $("rmNew").addEventListener("click", newRoadmap);
@@ -2748,11 +3437,18 @@ function wire(){
   $("jiraIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJiraCsv(f); e.target.value = ""; });
   // dropdown menus (Export, Cloud, roadmap ⋯)
   document.addEventListener("click", onMenuDocClick);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenus(); });
+  document.addEventListener("keydown", e => {
+    handleModalKeydown(e);
+    if (e.key === "Escape") closeMenus();
+    const item=e.target.closest&&e.target.closest(".menu-item"); if (!item || !["ArrowDown","ArrowUp","Home","End"].includes(e.key)) return;
+    e.preventDefault(); const items=[...item.parentElement.querySelectorAll(".menu-item:not([disabled])")]; let i=items.indexOf(item);
+    if (e.key==="Home") i=0; else if (e.key==="End") i=items.length-1; else i=(i+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;
+    items[i].focus();
+  });
   $("summaryAiBtn").addEventListener("click", generateNarrative);
-  $("summaryCopy").addEventListener("click", () => {
+  $("summaryCopy").addEventListener("click", async () => {
     if (!lastSummaryText) return;
-    try { navigator.clipboard.writeText(lastSummaryText); } catch(_){ }
+    try { await navigator.clipboard.writeText(lastSummaryText); } catch(_){ topNote("err","Clipboard access was blocked. Select and copy the summary manually.",true); return; }
     const b = $("summaryCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
   });
   // AI
@@ -2766,13 +3462,14 @@ function wire(){
   // cloud
   $("cloudBtn").addEventListener("click", cloudSignInFlow);
   $("ownerSignIn").addEventListener("click", cloudSignInFlow);
-  $("publicUrlCopy").addEventListener("click", () => {
+  $("publicUrlCopy").addEventListener("click", async () => {
     const el = $("publicUrl"); el.select();
-    try { navigator.clipboard.writeText(el.value); } catch(_){ try { document.execCommand("copy"); } catch(__){} }
+    try { await navigator.clipboard.writeText(el.value); } catch(_){ try { if (!document.execCommand("copy")) throw new Error(); } catch(__){ topNote("err","Clipboard access was blocked. Copy the selected link manually.",true); return; } }
     const b = $("publicUrlCopy"); const t = b.textContent; b.textContent = "Copied ✓"; setTimeout(() => b.textContent = t, 1200);
   });
   $("cloudClose").addEventListener("click", () => { if (!forcingPassword) closeCloud(); });
   $("cloudModal").addEventListener("click", e => { if (!forcingPassword && e.target === $("cloudModal")) closeCloud(); });
+  $("undoBtn").addEventListener("click",applyUndo);
   // theme
   $("themeBtn").addEventListener("click", toggleTheme);
   // zoom
@@ -2787,6 +3484,8 @@ function wire(){
   window.addEventListener("afterprint", () => { printing = false; renderCallouts(); });
   // resilience
   window.addEventListener("beforeunload", saveNow);
+  window.addEventListener("storage",e=>{ if (!readOnly && e.key===storageKey && e.newValue) topNote("info","Another tab saved this portfolio. Reload after exporting a backup to review its changes.",true); });
+  window.addEventListener("online",()=>{ if (session) flushPendingCloudSaves().catch(()=>{}); });
 }
 
 /* =========================================================================
@@ -2794,8 +3493,9 @@ function wire(){
    ========================================================================= */
 async function boot(){
   const params = new URLSearchParams(location.search);
-  const token = params.get("s");
-  if (token){ initShared(token); return; }
+  const hashParams=new URLSearchParams(location.hash.replace(/^#/,""));
+  const token = params.get("s") || hashParams.get("share");
+  if (token){ await initShared(token); return; }
   const rid = params.get("r");
   // Restore a persisted Supabase session (survives refresh until sign-out).
   let client = null;
@@ -2820,7 +3520,9 @@ async function boot(){
   initTheme();
   wire();
   const av = $("appVer"); if (av) av.textContent = APP_VERSION;
-  boot();
+  if (matchMedia("(max-width: 720px)").matches) $("timelineDetails").open=true;
+  boot().finally(()=>{ const main=$("mainContent"); if (main) main.setAttribute("aria-busy","false"); });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
 </script>
 </body>

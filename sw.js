@@ -1,6 +1,7 @@
-const CACHE_NAME = "tracker-shell-v2";
+const CACHE_NAME = "work-app-shell-v3";
 const APP_SHELL = [
   "./tracker.html",
+  "./roadmap.html",
   "./dashboard.html",
   "./manifest.webmanifest",
   "./assets/tracker-icon-192.png",
@@ -36,7 +37,11 @@ self.addEventListener("fetch", event => {
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
           return response;
         })
-        .catch(async () => (await caches.match(request)) || caches.match("./tracker.html"))
+        .catch(async () => {
+          const exact = await caches.match(request);
+          if (exact) return exact;
+          return caches.match(url.pathname.endsWith("roadmap.html") ? "./roadmap.html" : "./tracker.html");
+        })
     );
     return;
   }
