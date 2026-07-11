@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Radar Signal Processing Chain — Simulator</title>
-<meta name="description" content="An interactive, in-browser simulation of a pulsed radar's transmit and receive signal chain — waveform generation, digital/analog up- and down-conversion, ADC/DAC, and pulse-compression range recovery — with live spectra and a working matched filter." />
+<title>How a Radar Measures Distance — the Signal Chain, Explained Interactively</title>
+<meta name="description" content="Follow one pulse through a working radar signal chain: design the chirp, convert it up to RF, catch the whisper of an echo, and watch a live matched filter pull it out of the noise. A guided 9-stage interactive explainer with real DSP under every plot, plus a full explore dashboard." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%230B1220' stroke='%2335DEFF' stroke-width='2.5'/%3E%3Cpath d='M16 16 L25 6' stroke='%2335DEFF' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2335DEFF'/%3E%3C/svg%3E" />
 <style>
   :root {
@@ -111,6 +111,58 @@
   .scope-title { font-family:var(--mono); font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
   .scope-foot { display:flex; gap:8px 14px; flex-wrap:wrap; margin-top:8px; }
 
+  /* ---------- mode toggle ---------- */
+  .mode-toggle { display:inline-flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden; flex:0 0 auto; margin-top:4px; }
+  .mode-toggle button { font-family:var(--mono); font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--dim);
+    background:transparent; border:0; padding:9px 16px; cursor:pointer; }
+  .mode-toggle button + button { border-left:1px solid var(--line-2); }
+  .mode-toggle button.on { background:rgba(53,222,255,0.14); color:var(--cyan); }
+  .mode-toggle button:focus-visible { outline:2px solid var(--cyan); outline-offset:-2px; }
+
+  /* ---------- story mode ---------- */
+  .story .rail { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  .rail .rail-grp { font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em; color:var(--mut); text-transform:uppercase; padding:0 3px; }
+  .rail .chip { font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; color:var(--dim); background:transparent;
+    border:1px solid var(--line-2); border-radius:999px; padding:6px 11px; cursor:pointer; white-space:nowrap; }
+  .rail .chip:hover { border-color:var(--cyan); color:var(--text); }
+  .rail .chip.done { color:var(--mut); background:rgba(53,222,255,0.05); }
+  .rail .chip.on { color:var(--cyan); border-color:var(--cyan); background:rgba(53,222,255,0.12); }
+  .rail .chip.grp-ch.on { color:var(--purple); border-color:var(--purple); background:rgba(156,140,255,0.12); }
+  .rail .chip.grp-rx.on { color:var(--amber); border-color:var(--amber); background:rgba(255,177,60,0.12); }
+  .rail .chip:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+  .story-grid { display:grid; grid-template-columns:minmax(300px,5fr) minmax(340px,7fr); gap:14px 26px; align-items:start; }
+  .story-text { display:flex; flex-direction:column; }
+  @media (max-width:900px) {
+    .story-grid { grid-template-columns:1fr; }
+    /* plots first, controls right beneath them, narration after — cause and effect share
+       one screenful while dragging, without a sticky overlay that could hide focus */
+    .story-plots { order:-1; }
+    .stage-eyebrow { order:1; } h2.stage-title { order:2; }
+    .stage-controls { order:3; } .stage-key { order:4; }
+    .stage-pills { order:5; } .stage-body { order:6; } .story-nav { order:7; }
+    #story-c1 { height:190px; } #story-c2 { height:100px; }
+  }
+  h2.stage-title:focus-visible { outline:2px solid var(--cyan); outline-offset:4px; border-radius:4px; }
+  h2.stage-title:focus:not(:focus-visible) { outline:none; }
+  .stage-eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--mut); margin-bottom:6px; }
+  .stage-eyebrow .g-tx { color:var(--cyan); } .stage-eyebrow .g-ch { color:var(--purple); } .stage-eyebrow .g-rx { color:var(--amber); }
+  h2.stage-title { margin:0 0 10px; font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.01em; }
+  .stage-body { color:var(--dim); font-size:14px; line-height:1.62; }
+  .stage-body p { margin:0 0 10px; }
+  .stage-body b { color:var(--text); font-weight:600; }
+  .stage-body .cy { color:var(--cyan); } .stage-body .am { color:var(--amber); } .stage-body .pu { color:var(--purple); }
+  .stage-key { display:inline-block; font-family:var(--mono); font-size:12.5px; color:var(--cyan); border:1px solid rgba(53,222,255,0.4);
+    background:rgba(53,222,255,0.07); border-radius:8px; padding:8px 12px; margin:2px 0 12px; }
+  .stage-controls { display:flex; flex-direction:column; gap:10px; margin:2px 0 12px; max-width:360px; }
+  .stage-controls .try-hint { font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--green); }
+  .stage-pills { display:flex; gap:8px 12px; flex-wrap:wrap; margin-bottom:16px; }
+  .story-nav { display:flex; align-items:center; gap:12px; }
+  .stage-pos { font-family:var(--mono); font-size:11px; color:var(--mut); }
+  .story-plots { display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .plot-block canvas { display:block; width:100%; border-radius:8px; background:var(--ground-2); border:1px solid var(--line); }
+  #story-c1 { height:250px; } #story-c2 { height:150px; }
+  .plot-caption { font-size:11.5px; color:var(--mut); margin-top:5px; line-height:1.45; }
+
   /* ---------- legend / notes ---------- */
   .legend-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   @media (max-width:980px) { .legend-grid { grid-template-columns:repeat(2,1fr); } }
@@ -135,14 +187,51 @@
 
   <header class="top">
     <div class="brand">
-      <h1>Radar Signal Processing Chain — Simulator</h1>
-      <div class="sub">A working, in-browser model of a pulsed radar's <b>transmit</b> and <b>receive</b> signal
-        chain: baseband waveform generation → digital/analog up-conversion → RF → the antenna, and back down
-        through RF → analog/digital down-conversion → pulse compression → range recovery. Move the sliders and
-        watch the spectra, waveform, and range estimate respond in real time.</div>
+      <h1>How a Radar Measures Distance</h1>
+      <div class="sub">Follow <b>one pulse</b> through a real (toy-scale) radar signal chain — from designing the
+        waveform, up to radio frequency and out the antenna, through the echo's return, and back down to a single
+        number: the target's range. The math underneath is live — every plot is computed from the sliders you move.
+        <span id="sub-switch-hint">Prefer everything at once? Switch to <b>Explore</b>.</span></div>
+    </div>
+    <div class="mode-toggle" role="group" aria-label="View mode">
+      <button type="button" id="mode-story" class="on" aria-pressed="true">Guided story</button>
+      <button type="button" id="mode-explore" aria-pressed="false">Explore</button>
     </div>
   </header>
 
+  <section class="panel story" id="story-root">
+    <div class="rail" id="story-rail"></div>
+    <div class="stage-pills" id="story-settings" hidden></div>
+    <div class="story-grid">
+      <div class="story-text">
+        <div class="stage-eyebrow" id="stage-eyebrow"></div>
+        <h2 class="stage-title" id="stage-title" tabindex="-1"></h2>
+        <div class="stage-body" id="stage-body"></div>
+        <div class="stage-key" id="stage-key"></div>
+        <div class="stage-controls" id="stage-controls"></div>
+        <div class="stage-pills" id="stage-pills"></div>
+        <div class="story-nav">
+          <button class="btn ghost" id="story-prev" type="button">← Back</button>
+          <span class="stage-pos" id="stage-pos"></span>
+          <button class="btn" id="story-next" type="button">Next →</button>
+        </div>
+      </div>
+      <div class="story-plots">
+        <div class="plot-block">
+          <div class="scope-title" id="plot1-title"></div>
+          <canvas id="story-c1" width="640" height="250" role="img" aria-label="Primary stage visualization"></canvas>
+          <div class="plot-caption" id="plot1-cap"></div>
+        </div>
+        <div class="plot-block" id="plot2-block">
+          <div class="scope-title" id="plot2-title"></div>
+          <canvas id="story-c2" width="640" height="150" role="img" aria-label="Secondary stage visualization"></canvas>
+          <div class="plot-caption" id="plot2-cap"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="explore-root" hidden>
   <section class="panel" id="controls-panel">
     <h2 class="h">Controls</h2>
     <div class="controls-grid">
@@ -270,6 +359,7 @@
       </div>
     </div>
   </section>
+  </div><!-- /explore-root -->
 
   <footer class="foot">Illustrative / educational simulation — not a specification for any real radar system. Part of <a href="./">azjester/work</a>.</footer>
 </div>
@@ -461,7 +551,7 @@
     const floor = corr.reduce((a, b) => a + b, 0) / corr.length;
     const snrOutDb = 20 * Math.log10((peakVal || 1e-9) / (floor || 1e-9));
 
-    return { I, Q, Iup, Qup, txIF, chan, Ibb, Qbb, corr, peakIdx, peakVal, estRangeKm, snrOutDb, fIFn, Bn };
+    return { I, Q, Iup, Qup, txIF, chan, Ibb, Qbb, corr, peakIdx, peakVal, estRangeKm, snrOutDb, fIFn, Bn, d, Nch, NupPulse };
   }
 
   // ============================== chain diagram ==============================
@@ -626,6 +716,20 @@
       ctx.beginPath(); ctx.moveTo(cx, 4); ctx.lineTo(cx, h - 14.5); ctx.stroke();
       ctx.setLineDash([]);
     }
+    if (opts.ghost) {
+      // Schematic alias bump: mirrored copy folding back from Nyquist (drawn, not computed).
+      const g = gaussianBump(64, clamp(opts.ghost.frac, 0, 1), 0.12);
+      ctx.strokeStyle = 'rgba(255,93,110,0.9)'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      for (let i = 0; i < g.length; i++) {
+        const x = (i / (g.length - 1)) * w;
+        const y = (h - 14.5) - g[i] * plotH * 0.55;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = '9px ' + BODY_FONT; ctx.textAlign = 'center'; ctx.fillStyle = '#FF5D6E';
+      ctx.fillText(opts.ghost.label || 'alias (schematic)', clamp(opts.ghost.frac, 0.12, 0.88) * w, 22);
+    }
     ctx.fillStyle = '#54637C'; ctx.font = '9px ' + BODY_FONT;
     ctx.textAlign = 'left'; ctx.fillText(opts.leftLabel || '', 2, h - 3);
     ctx.textAlign = 'right'; ctx.fillText(opts.rightLabel || '', w - 2, h - 3);
@@ -642,8 +746,8 @@
   }
 
   // ============================== scopes ==============================
-  function drawTxScope(model) {
-    const canvas = document.getElementById('scope-tx');
+  function drawIQTime(canvasId, I, Q) {
+    const canvas = document.getElementById(canvasId);
     const { ctx, w, h } = prepCanvas(canvas);
     ctx.clearRect(0, 0, w, h);
     drawAxis(ctx, w, h);
@@ -658,14 +762,16 @@
       }
       ctx.stroke();
     }
-    drawTrace(model.I, '#35DEFF');
-    drawTrace(model.Q, '#9C8CFF');
+    drawTrace(I, '#35DEFF');
+    drawTrace(Q, '#9C8CFF');
     ctx.font = '10px ' + BODY_FONT; ctx.textAlign = 'left';
     ctx.fillStyle = '#35DEFF'; ctx.fillText('I', 4, 12);
     ctx.fillStyle = '#9C8CFF'; ctx.fillText('Q', 18, 12);
+    ctx.fillStyle = '#54637C'; ctx.font = '9px ' + BODY_FONT;
+    ctx.textAlign = 'right'; ctx.fillText('time →', w - 2, h - 3);
   }
-  function drawRangeScope(model, p) {
-    const canvas = document.getElementById('scope-range');
+  function drawRangeScope(canvasId, model, p) {
+    const canvas = document.getElementById(canvasId);
     const { ctx, w, h } = prepCanvas(canvas);
     ctx.clearRect(0, 0, w, h);
     drawAxis(ctx, w, h);
@@ -706,6 +812,184 @@
     ctx.textAlign = 'left'; ctx.fillText('0 km', 2, h - 3);
     ctx.textAlign = 'right'; ctx.fillText(p.runamb.toFixed(0) + ' km', w - 2, h - 3);
     ctx.textAlign = 'center'; ctx.fillStyle = '#34E0A1'; ctx.fillText('true', clamp(trueFrac, 0.05, 0.95) * w, h - 3);
+  }
+
+  // ---- generic story plot helpers ----
+  function drawRealWave(canvasId, arr, opts = {}) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, w, h } = prepCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+    drawAxis(ctx, w, h);
+    const step = opts.decimate || 1;
+    const n = Math.floor(arr.length / step);
+    let maxAbs = 1e-9;
+    for (let i = 0; i < arr.length; i += step) maxAbs = Math.max(maxAbs, Math.abs(arr[i]));
+    const midY = (h - 14) / 2, plotH = midY - 6;
+    if (opts.highlight) {
+      const [a, b] = opts.highlight;
+      ctx.fillStyle = 'rgba(53,222,255,0.08)';
+      ctx.fillRect(a * w, 4, (b - a) * w, h - 20);
+      ctx.strokeStyle = 'rgba(53,222,255,0.45)'; ctx.setLineDash([3, 3]);
+      ctx.strokeRect(a * w + 0.5, 4.5, (b - a) * w - 1, h - 21); ctx.setLineDash([]);
+      if (opts.highlightLabel) {
+        ctx.font = '9px ' + BODY_FONT; ctx.fillStyle = '#35DEFF'; ctx.textAlign = 'center';
+        ctx.fillText(opts.highlightLabel, clamp((a + b) / 2, 0.1, 0.9) * w, 14);
+      }
+    }
+    ctx.strokeStyle = opts.color || '#35DEFF'; ctx.lineWidth = 1.2; ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * w;
+      const y = midY - (arr[i * step] / maxAbs) * plotH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#54637C'; ctx.font = '9px ' + BODY_FONT;
+    ctx.textAlign = 'left'; ctx.fillText(opts.leftLabel || '', 2, h - 3);
+    ctx.textAlign = 'right'; ctx.fillText(opts.rightLabel || 'time →', w - 2, h - 3);
+  }
+
+  function drawStaircase(canvasId, arr, hold) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, w, h } = prepCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+    drawAxis(ctx, w, h);
+    let maxAbs = 1e-9;
+    for (const v of arr) maxAbs = Math.max(maxAbs, Math.abs(v));
+    const midY = (h - 14) / 2, plotH = midY - 8;
+    const X = i => (i / (arr.length - 1)) * w;
+    const Y = v => midY - (v / maxAbs) * plotH;
+    // the smooth analog waveform the reconstruction filter recovers
+    ctx.strokeStyle = 'rgba(52,224,161,0.8)'; ctx.lineWidth = 1.6; ctx.beginPath();
+    for (let i = 0; i < arr.length; i++) { if (i === 0) ctx.moveTo(X(i), Y(arr[i])); else ctx.lineTo(X(i), Y(arr[i])); }
+    ctx.stroke();
+    // the DAC's sample-and-hold staircase
+    ctx.strokeStyle = '#35DEFF'; ctx.lineWidth = 1.3; ctx.beginPath();
+    for (let i = 0; i < arr.length; i += hold) {
+      const y = Y(arr[i]);
+      if (i === 0) ctx.moveTo(X(i), y); else ctx.lineTo(X(i), y);
+      ctx.lineTo(X(Math.min(i + hold, arr.length - 1)), y);
+    }
+    ctx.stroke();
+    ctx.font = '9px ' + BODY_FONT; ctx.textAlign = 'left';
+    ctx.fillStyle = '#35DEFF'; ctx.fillText('DAC staircase', 4, 12);
+    ctx.fillStyle = '#34E0A1'; ctx.fillText('after reconstruction filter', 92, 12);
+    ctx.fillStyle = '#54637C'; ctx.textAlign = 'right'; ctx.fillText('time →', w - 2, h - 3);
+  }
+
+  function drawPulseTrain(canvasId, p) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, w, h } = prepCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+    drawAxis(ctx, w, h);
+    const pw = Math.max(10, w * 0.05);
+    const y0 = 22, y1 = h - 22;
+    // listening window between the two pulses
+    ctx.fillStyle = 'rgba(52,224,161,0.06)';
+    ctx.fillRect(pw, y0, w - 2 * pw, y1 - y0);
+    ctx.font = '9px ' + BODY_FONT; ctx.textAlign = 'center';
+    ctx.fillStyle = '#34E0A1'; ctx.fillText('listening window', w / 2, y0 + 14);
+    // the two pulses
+    ctx.fillStyle = 'rgba(53,222,255,0.25)'; ctx.strokeStyle = '#35DEFF'; ctx.lineWidth = 1.2;
+    ctx.fillRect(0.5, y0, pw, y1 - y0); ctx.strokeRect(0.5, y0, pw, y1 - y0);
+    ctx.fillRect(w - pw - 0.5, y0, pw, y1 - y0); ctx.strokeRect(w - pw - 0.5, y0, pw, y1 - y0);
+    ctx.fillStyle = '#35DEFF'; ctx.textAlign = 'left'; ctx.fillText('pulse n', 3, y0 - 5);
+    ctx.textAlign = 'right'; ctx.fillText('pulse n+1', w - 3, y0 - 5);
+    // echo arrival
+    const frac = clamp(p.range / p.runamb, 0, 1);
+    const ex = pw + frac * (w - 2 * pw);
+    ctx.strokeStyle = 'rgba(255,177,60,0.9)'; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(ex, y0); ctx.lineTo(ex, y1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#FFB13C'; ctx.textAlign = 'center';
+    ctx.fillText('echo returns', clamp(frac, 0.12, 0.88) * (w - 2 * pw) + pw, y1 - 6);
+    // axis
+    ctx.fillStyle = '#54637C';
+    ctx.textAlign = 'left'; ctx.fillText('0 km', 2, h - 3);
+    ctx.textAlign = 'right'; ctx.fillText(p.runamb.toFixed(0) + ' km — then the next pulse leaves', w - 2, h - 3);
+  }
+
+  function drawSpectrumCompare(canvasId, cleanMags, noisyMags) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, w, h } = prepCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+    drawAxis(ctx, w, h);
+    const plotH = h - 22;
+    const base = h - 14.5;
+    const nMax = Math.max(1e-9, ...noisyMags);
+    ctx.beginPath(); ctx.moveTo(0, base);
+    for (let i = 0; i < noisyMags.length; i++) {
+      ctx.lineTo((i / (noisyMags.length - 1)) * w, base - (noisyMags[i] / nMax) * plotH);
+    }
+    ctx.lineTo(w, base); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,177,60,0.20)'; ctx.fill();
+    ctx.strokeStyle = '#FFB13C'; ctx.lineWidth = 1.1; ctx.beginPath();
+    for (let i = 0; i < noisyMags.length; i++) {
+      const x = (i / (noisyMags.length - 1)) * w, y = base - (noisyMags[i] / nMax) * plotH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    const cMax = Math.max(1e-9, ...cleanMags);
+    ctx.strokeStyle = '#35DEFF'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 0; i < cleanMags.length; i++) {
+      const x = (i / (cleanMags.length - 1)) * w, y = base - (cleanMags[i] / cMax) * plotH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.font = '9px ' + BODY_FONT; ctx.textAlign = 'left';
+    ctx.fillStyle = '#35DEFF'; ctx.fillText('what was transmitted (shape)', 4, 12);
+    ctx.fillStyle = '#FFB13C'; ctx.fillText('what came back', 4, 24);
+    ctx.fillStyle = '#54637C';
+    ctx.fillText('−fs/2', 2, h - 3); ctx.textAlign = 'right'; ctx.fillText('+fs/2', w - 2, h - 3);
+  }
+
+  function drawCorrelationScrub(canvasId, m, pos) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, w, h } = prepCanvas(canvas);
+    ctx.clearRect(0, 0, w, h);
+    const rx = m.Ibb, Lc = rx.length, Lt = m.I.length;
+    const topH = Math.floor(h * 0.5), botY = topH + 8, botH = h - botY - 16;
+    // top: noisy received baseband (real part), amber
+    let maxAbs = 1e-9;
+    for (let i = 0; i < Lc; i++) maxAbs = Math.max(maxAbs, Math.abs(rx[i]));
+    const midY = topH / 2 + 4;
+    ctx.strokeStyle = 'rgba(255,177,60,0.7)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let i = 0; i < Lc; i++) {
+      const x = (i / (Lc - 1)) * w, y = midY - (rx[i] / maxAbs) * (topH / 2 - 8);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // sliding replica of the known chirp, cyan
+    const x0 = (pos / (Lc - 1)) * w;
+    const tw = (Lt / (Lc - 1)) * w;
+    ctx.fillStyle = 'rgba(53,222,255,0.08)'; ctx.fillRect(x0, 14, tw, topH - 12);
+    ctx.strokeStyle = '#35DEFF'; ctx.lineWidth = 1.3; ctx.beginPath();
+    for (let k = 0; k < Lt; k++) {
+      const x = x0 + (k / (Lt - 1)) * tw, y = midY - m.I[k] * (topH / 2 - 8) * 0.9;
+      if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // divider
+    ctx.strokeStyle = '#1B2842'; ctx.beginPath(); ctx.moveTo(0, topH + 3.5); ctx.lineTo(w, topH + 3.5); ctx.stroke();
+    // bottom: correlation traced out up to the current position, aligned under the replica start
+    const cmax = Math.max(1e-9, ...m.corr);
+    ctx.strokeStyle = '#34E0A1'; ctx.lineWidth = 1.3; ctx.beginPath();
+    for (let i = 0; i <= pos && i < m.corr.length; i++) {
+      const x = (i / (Lc - 1)) * w, y = botY + botH - (m.corr[i] / cmax) * botH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // current-position cursor + value dot
+    const ci = Math.min(pos, m.corr.length - 1);
+    const cx = (ci / (Lc - 1)) * w;
+    ctx.strokeStyle = 'rgba(52,224,161,0.45)'; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, botY); ctx.lineTo(cx, botY + botH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#34E0A1';
+    ctx.beginPath(); ctx.arc(cx, botY + botH - (m.corr[ci] / cmax) * botH, 2.5, 0, 2 * Math.PI); ctx.fill();
+    // labels
+    ctx.font = '9px ' + BODY_FONT; ctx.textAlign = 'left';
+    ctx.fillStyle = '#FFB13C'; ctx.fillText('received signal (echo hidden in noise)', 4, 11);
+    ctx.fillStyle = '#35DEFF'; ctx.fillText('+ sliding copy of the chirp', 216, 11);
+    ctx.fillStyle = '#34E0A1'; ctx.fillText('match strength (correlation)', 4, botY + 11);
+    ctx.fillStyle = '#54637C'; ctx.textAlign = 'right'; ctx.fillText('time →', w - 2, h - 4);
   }
 
   // ============================== render ==============================
@@ -761,8 +1045,8 @@
     difTag.textContent = derived.adcNyquistOk ? 'f_IF' : 'ALIASING RISK';
     difTag.classList.toggle('warn', !derived.adcNyquistOk);
 
-    drawTxScope(model);
-    drawRangeScope(model, p);
+    drawIQTime('scope-tx', model.I, model.Q);
+    drawRangeScope('scope-range', model, p);
 
     const prfLabel = derived.prfHz >= 1000 ? (derived.prfHz / 1000).toFixed(2) + ' kHz' : derived.prfHz.toFixed(0) + ' Hz';
     readoutsEl.innerHTML =
@@ -830,10 +1114,12 @@
   }
 
   let lastModel = null, lastDerived = null;
+  let mode = null;   // set by the initial setMode() call
   function recomputeAndRender() {
     lastDerived = computeDerived(params);
     lastModel = simulate(params);
-    render(lastModel, lastDerived, params);
+    if (mode === 'explore') render(lastModel, lastDerived, params);
+    else renderStory(false);
   }
 
   // The full pipeline (FFTs + matched filter) is too heavy to rerun on every input event
@@ -847,12 +1133,13 @@
 
   Object.values(ctl).forEach(input => input.addEventListener('input', () => { syncFromControls(); scheduleRecompute(); }));
 
-  document.getElementById('btn-reset').addEventListener('click', () => {
+  function resetDefaults() {
     ctl.frf.value = DEFAULTS.fRF; ctl.fif.value = DEFAULTS.fIF; ctl.b.value = DEFAULTS.b;
     ctl.fs.value = DEFAULTS.fs; ctl.runamb.value = DEFAULTS.runamb; ctl.range.max = String(DEFAULTS.runamb);
     ctl.range.value = DEFAULTS.range; ctl.snr.value = DEFAULTS.snr;
     syncFromControls(); recomputeAndRender();
-  });
+  }
+  document.getElementById('btn-reset').addEventListener('click', resetDefaults);
 
   // ============================== animation loop ==============================
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -894,14 +1181,456 @@
   window.addEventListener('resize', () => {
     if (!lastModel || resizePending) return;
     resizePending = true;
-    requestAnimationFrame(() => { resizePending = false; render(lastModel, lastDerived, params); });
+    requestAnimationFrame(() => {
+      resizePending = false;
+      if (mode === 'explore') render(lastModel, lastDerived, params); else renderStory(false);
+    });
   });
+
+  // ============================== story mode ==============================
+  const CONTROL_LABELS = {
+    'c-frf': 'RF carrier f<sub>RF</sub>', 'c-fif': 'IF center f<sub>IF</sub>', 'c-b': 'Bandwidth B',
+    'c-fs': 'Sampling f<sub>s</sub>', 'c-runamb': 'Unambiguous range R<sub>u</sub>',
+    'c-range': 'Target range', 'c-snr': 'Receive SNR',
+  };
+  const fmtVal = {
+    'c-frf': p => p.fRF.toFixed(2) + ' GHz', 'c-fif': p => p.fIF.toFixed(0) + ' MHz',
+    'c-b': p => p.b.toFixed(0) + ' MHz', 'c-fs': p => p.fs.toFixed(0) + ' MSPS',
+    'c-runamb': p => p.runamb.toFixed(0) + ' km', 'c-range': p => p.range.toFixed(0) + ' km',
+    'c-snr': p => p.snr.toFixed(0) + ' dB',
+  };
+  const prfLabel = d => d.prfHz >= 1000 ? (d.prfHz / 1000).toFixed(2) + ' kHz' : d.prfHz.toFixed(0) + ' Hz';
+
+  const GROUPS = { tx: ['TRANSMIT', 'g-tx'], ch: ['THE CHANNEL', 'g-ch'], rx: ['RECEIVE', 'g-rx'] };
+
+  const STAGES = [
+    {
+      id: 'pulse', grp: 'tx', chip: '1 · The pulse',
+      title: 'Design the pulse',
+      body: '<p>A radar measures distance with a stopwatch: launch a burst of radio energy, catch the echo, halve the round-trip time. Two things decide whether that works. <b>Energy</b> — a longer pulse carries more of it, so you can detect farther. And <b>bandwidth (B)</b> — the spread of frequencies inside the pulse, which sets how finely you can resolve <i>where</i> the echo sits in time.</p>' +
+        '<p>A short blip is precise but weak; a long tone is strong but blurry. The radar’s trick is the <b>chirp</b>: a long pulse whose frequency sweeps smoothly across B. Long <i>and</i> wideband — both at once. Hold that thought; the payoff lands at stage 8.</p>' +
+        '<p>The generator stores the wave as two number streams, <b class="cy">I</b> and <b class="pu">Q</b> — two components 90° out of phase with each other. Together they record the wave’s strength <i>and</i> its phase at every instant, which is what lets later stages move it around in frequency without losing anything.</p>',
+      tryHint: 'Try it — before you widen B: will the spectrum bump get wider or narrower?',
+      controls: ['c-b'],
+      key: (m, d, p) => 'ΔR = c / (2B) = <b>' + d.rangeResM.toFixed(1) + ' m</b> at your B = ' + p.b.toFixed(0) + ' MHz',
+      pills: (m, d, p) => pill('Range resolution ΔR', d.rangeResM.toFixed(1) + ' m', '', 'Wider bandwidth, finer range slices — you will see this cash out at stage 9'),
+      plots: [
+        { title: 'The chirp pulse — live DSP', caption: 'The oscillation is slowest mid-pulse and fastest at the edges — the frequency is sweeping straight through the band, from −B/2 to +B/2. Cyan and purple are the I and Q number streams the radar actually stores.',
+          draw: m => drawIQTime('story-c1', m.I, m.Q) },
+        { title: 'Its spectrum, at baseband — live DSP', caption: 'All the pulse’s energy in one band, B wide, centered on 0 Hz (“baseband”).',
+          draw: m => drawSpectrumBump('story-c2', fftshift(magSpectrum(m.I, m.Q)), { leftLabel: '−fs/2', rightLabel: '+fs/2', centerFrac: 0.5, centerLabel: '0' }) },
+      ],
+    },
+    {
+      id: 'duc', grp: 'tx', chip: '2 · Up-convert (digital)',
+      title: 'Shift it onto a carrier — digitally',
+      body: '<p>The chirp was born centered at 0 Hz. The <b>digital up-converter</b> moves it: multiply <b class="cy">I</b> and <b class="pu">Q</b> by the cosine and sine of a digital oscillator, subtract, and out comes a single <b>real</b> sample stream oscillating at an intermediate frequency f<sub>IF</sub> — with the chirp riding on it.</p>' +
+        '<p>One rule governs everything digital here — <b>Nyquist</b>: a stream of samples can only represent frequencies below <i>half its sample rate</i>. So before mixing, the DUC <b>interpolates</b> (raises the rate ×K) to make headroom for f<sub>IF</sub>.</p>' +
+        '<p>Why stop at an intermediate frequency instead of jumping straight to the radar’s GHz carrier? Converters can’t run that fast, and filters are far easier to build at one fixed, moderate frequency. Nearly every radio ever made does this.</p>',
+      tryHint: 'Try it — slide f_IF and watch the bump move along the frequency axis.',
+      controls: ['c-fif'],
+      key: () => 's(n) = I·cos(2πf<sub>IF</sub>t) − Q·sin(2πf<sub>IF</sub>t)',
+      pills: (m, d) => pill('Interpolation K', '×' + d.K, '', 'Smallest factor giving the digital IF enough sample-rate headroom for your f_IF and B'),
+      plots: [
+        { title: 'Digital IF waveform — live DSP', caption: 'The same pulse as stage 1, now one real stream oscillating at f_IF. An antenna still can’t use this — it’s numbers. Next: make it physical.',
+          draw: m => drawRealWave('story-c1', m.txIF, { color: '#35DEFF' }) },
+        { title: 'Digital IF spectrum — live DSP', caption: 'The bump has moved from 0 Hz up to f_IF — safely below the Nyquist limit.',
+          draw: m => { const mag = magSpectrum(m.txIF, null); drawSpectrumBump('story-c2', mag.slice(0, mag.length / 2), { leftLabel: '0', rightLabel: 'Nyquist (fs/2)', centerFrac: m.fIFn / 0.5, centerLabel: 'f_IF', stroke: '#9C8CFF', fill: 'rgba(156,140,255,0.20)' }); } },
+      ],
+    },
+    {
+      id: 'phys', grp: 'tx', chip: '3 · Make it physical',
+      title: 'From numbers to volts to radio waves',
+      body: '<p>The <b>DAC</b> turns each sample into a voltage and holds it until the next — a staircase. An analog <b>reconstruction filter</b> rounds the steps into the smooth wave between them. The faster the sampling, the finer the steps and the easier that filter’s job.</p>' +
+        '<p>Then a <b>mixer</b> multiplies the analog IF signal by a pure <b>local-oscillator</b> tone. Multiplying two waves creates sum and difference frequencies; a bandpass filter keeps the sum — parking the chirp at the RF carrier, up where antennas are efficient and beams can be focused tight. A <b>power amplifier</b> then takes it from milliwatts to transmit power.</p>',
+      tryHint: 'Try it — lower fs and watch the staircase coarsen; slide f_RF to move the carrier.',
+      controls: ['c-fs', 'c-frf'],
+      key: (m, d, p) => 'f<sub>RF</sub> = f<sub>LO</sub> + f<sub>IF</sub> → ' + p.fRF.toFixed(2) + ' = ' + d.fLOGhz.toFixed(2) + ' + ' + (p.fIF / 1000).toFixed(2) + ' GHz',
+      pills: (m, d) => pill('Local oscillator f_LO', d.fLOGhz.toFixed(2) + ' GHz', '', 'The same oscillator will run the receiver — stage 6'),
+      plots: [
+        { title: 'DAC staircase → smooth analog — schematic', caption: 'Step size exaggerated so you can see it. Green is what leaves the reconstruction filter.',
+          draw: (m, d, p) => drawStaircase('story-c1', m.Iup.slice(640, 840), clamp(Math.round(900 / p.fs), 1, 5)) },
+        { title: 'RF spectrum — schematic, drawn to scale', caption: 'The chirp’s band, centered on your RF carrier (fixed 100 MHz span, so the drawn width really is B).',
+          draw: (m, d, p) => drawSpectrumBump('story-c2', gaussianBump(96, 0.5, p.b / 100), { leftLabel: (p.fRF - 0.05).toFixed(2) + ' GHz', rightLabel: (p.fRF + 0.05).toFixed(2) + ' GHz', centerFrac: 0.5, centerLabel: p.fRF.toFixed(2) + ' GHz', stroke: '#FF5D6E', fill: 'rgba(255,93,110,0.16)' }) },
+      ],
+    },
+    {
+      id: 'txout', grp: 'tx', chip: '4 · Transmit',
+      title: 'Out the antenna — then listen',
+      body: '<p>One antenna does both jobs. During the pulse, the <b>T/R switch</b> connects the transmitter and shields the receiver — the outgoing pulse is enormously stronger than the echoes the same hardware must hear moments later.</p>' +
+        '<p>Then everything flips to listen. Pulses repeat at the <b>PRF</b>; the quiet gap between them is the listening window. An echo must arrive before the next pulse leaves, or the radar can’t tell which pulse it answers. That deadline is the <b>unambiguous range</b> R<sub>u</sub>.</p>',
+      tryHint: 'Try it — shrink R_u (raising the PRF) and watch the listening window tighten around the echo.',
+      controls: ['c-runamb', 'c-range'],
+      key: (m, d, p) => 'R<sub>u</sub> = c / (2·PRF) = <b>' + p.runamb.toFixed(0) + ' km</b> at PRF ' + prfLabel(d),
+      pills: (m, d) => pill('PRF', prfLabel(d), '', 'Pulse repetition frequency — how often a new pulse goes out'),
+      plots: [
+        { title: 'Pulse timing & the listening window — schematic', caption: 'Between pulse n and pulse n+1 the radar only listens. The echo has to land inside that window.',
+          draw: (m, d, p) => drawPulseTrain('story-c1', p) },
+      ],
+    },
+    {
+      id: 'echo', grp: 'ch', chip: '5 · The echo',
+      title: 'About 6.7 microseconds per kilometre',
+      body: '<p>The pulse flies at the speed of light, glances off the target, and a whisper of it comes back. Every kilometre of range costs about 6.7 µs of round trip — <b>that delay is the measurement</b>.</p>' +
+        '<p>And it truly is a whisper: echo power falls with the <i>fourth power</i> of range, so the return can easily be ~90 dB below what was sent — <b>a billionth</b> of the transmitted power, often far less. Added to the receiver’s own <b>thermal noise</b> (the price of listening at all), the chirp becomes invisible to the eye. Look at the trace: the shaded band is where the echo actually is. Stages 6–8 will recover it anyway.</p>',
+      tryHint: 'Try it — where will the shaded band move if you double the range? Then sink the echo with the SNR slider.',
+      controls: ['c-range', 'c-snr'],
+      key: (m, d, p) => 't = 2R/c → <b>' + (p.range * 6.67).toFixed(0) + ' µs</b> at R = ' + p.range.toFixed(0) + ' km',
+      pills: (m, d, p) => pill('True range', p.range.toFixed(0) + ' km') + pill('Input SNR', p.snr.toFixed(0) + ' dB'),
+      plots: [
+        { title: 'What the antenna hands the receiver — live DSP', caption: 'Received voltage vs time. The echo is inside the shaded band — at low SNR you simply cannot see it.',
+          draw: m => drawRealWave('story-c1', m.chan, { decimate: 4, color: '#FFB13C', highlight: [m.d / m.Nch, (m.d + m.NupPulse) / m.Nch], highlightLabel: 'the echo is in here' }) },
+      ],
+    },
+    {
+      id: 'rxdig', grp: 'rx', chip: '6 · Down-convert & digitize',
+      title: 'Mirror the transmitter, backwards',
+      body: '<p>The receive chain is the transmit chain run in reverse. A bandpass filter keeps only the radar’s band; the <b>same local oscillator</b> mixes the signal back down to the intermediate frequency; and the <b>ADC</b> measures the voltage f<sub>s</sub> million times per second — turning the wave, echo, noise and all, back into numbers.</p>' +
+        '<p>Nyquist gets the final say: the ADC only faithfully captures frequencies below f<sub>s</sub>/2. Push f<sub>IF</sub> up or f<sub>s</sub> down too far and the spectrum <b>folds back on itself</b> — <b>aliasing</b>, a false ghost copy of the signal. Break it on purpose: set f<sub>s</sub> to 200 and f<sub>IF</sub> to 120, then fix it.</p>',
+      tryHint: 'Try it — lower fs until the red alias ghost appears, then raise fs to fix it.',
+      controls: ['c-fs', 'c-fif'],
+      key: (m, d, p) => 'f<sub>IF</sub> = |f<sub>RF</sub> − f<sub>LO</sub>| · needs f<sub>s</sub> > 2(f<sub>IF</sub>+B/2) = ' + d.adcMinFs.toFixed(0) + ' MSPS',
+      pills: (m, d) => pill('ADC Nyquist', d.adcNyquistOk ? 'OK' : 'aliasing', d.adcNyquistOk ? 'ok' : 'bad',
+        'Direct IF sampling needs fs above 2·(f_IF + B/2). Real designs may use bandpass sampling instead.'),
+      plots: [
+        { title: 'Received IF spectrum — live DSP (alias ghost: schematic)', caption: 'A real FFT of the received samples: the bump is the echo’s band, the fuzz is the noise floor. When your settings alias, the red ghost shows where the folded copy would land, scaled against the drawn bump.',
+          draw: (m, d, p) => {
+            const mag = magSpectrum(m.chan, null);
+            const bumpFrac = m.fIFn / 0.5;
+            const opts = { leftLabel: '0', rightLabel: 'Nyquist (fs/2)', centerFrac: bumpFrac, centerLabel: 'f_IF', stroke: '#9C8CFF', fill: 'rgba(156,140,255,0.20)' };
+            if (!d.adcNyquistOk) {
+              // Fold position scaled against the drawn bump so ghost and signal stay
+              // visibly distinct: alias sits at (fs − f_IF), i.e. the bump × (fs−fIF)/fIF.
+              opts.centerLabel = 'f_IF — above fs/2!';
+              opts.ghost = { frac: clamp(bumpFrac * (p.fs - p.fIF) / p.fIF, 0.05, 0.95), label: 'alias ghost (schematic)' };
+            }
+            drawSpectrumBump('story-c1', mag.slice(0, mag.length / 2), opts);
+          } },
+      ],
+    },
+    {
+      id: 'ddc', grp: 'rx', chip: '7 · Back to baseband',
+      title: 'Undo the up-conversion',
+      body: '<p>The <b>digital down-converter</b> is the DUC’s exact mirror: multiply by cosine and −sine to split the real samples back into <b class="cy">I</b> and <b class="pu">Q</b>, low-pass filter, and <b>decimate</b> — keep every M-th sample — until the chirp is back at baseband, at its original rate.</p>' +
+        '<p>Compare what came back with what was sent: the same shape, now standing on a floor of noise. And in the time domain the echo is still invisible. Everything the radar needs is in these samples — it just takes one more idea to see it.</p>',
+      tryHint: 'Try it — drop the SNR and watch the noise floor swallow the shape.',
+      controls: ['c-snr'],
+      key: (m, d) => 'complex I/Q out · sample rate ÷ M (M = ' + d.M + ')',
+      pills: (m, d) => pill('Decimation M', '×' + d.M, '', 'Mirrors the DUC’s interpolation factor K'),
+      plots: [
+        { title: 'Spectrum: sent vs received — live DSP', caption: 'Cyan line: the clean transmitted shape. Amber: what actually came back, noise floor included.',
+          draw: m => drawSpectrumCompare('story-c1', fftshift(magSpectrum(m.I, m.Q)), fftshift(magSpectrum(m.Ibb, m.Qbb))) },
+        { title: 'Received baseband, time domain — live DSP', caption: 'Can you spot the chirp in there? Neither can anyone. The next stage finds it anyway.',
+          draw: m => drawRealWave('story-c2', m.Ibb, { color: '#FFB13C' }) },
+      ],
+    },
+    {
+      id: 'mf', grp: 'rx', chip: '8 · Pulse compression',
+      title: 'The payoff: correlation finds the chirp',
+      body: '<p>The receiver knows <i>exactly</i> what it transmitted. So it slides a copy of the chirp along the received samples and, at every position, asks: <b>how well does this line up?</b> That running comparison is <b>correlation</b> — watch it happen on the right.</p>' +
+        '<p>Noise never lines up for long — its contributions average toward zero. But at the one position where the copy meets the buried echo, all ~256 chirp samples reinforce at once: signal adds up ×N while noise only grows ×√N. The long, quiet chirp collapses into one sharp, loud spike. This is <b>pulse compression</b> — the energy of a long pulse, the precision of a short one, exactly the promise made at stage 1.</p>' +
+        '<p>Note what it does <i>not</i> do: the matched filter lifts the echo far above the noise, it doesn’t erase the noise — the floor and the small ripples beside the spike (the chirp’s own sidelobes) remain.</p>',
+      tryHint: 'Try it — scrub the chirp copy along the signal, or replay the sweep. Then drop the SNR and see the spike survive.',
+      controls: ['c-snr'],
+      customControls: buildCorrScrubControls,
+      key: m => 'compression gain ≈ time × bandwidth · measured peak/floor: <b>' + m.snrOutDb.toFixed(1) + ' dB</b>',
+      pills: m => pill('MF peak / floor', m.snrOutDb.toFixed(1) + ' dB', '', 'Matched-filter output peak over its mean level'),
+      plots: [
+        { title: 'Sliding the known chirp along the received signal — live DSP', caption: 'Top: received baseband (amber) with the sliding chirp copy (cyan). Bottom: match strength at each position — the spike stands exactly where the echo hides.',
+          draw: m => drawCorrelationScrub('story-c1', m, corrPos) },
+      ],
+    },
+    {
+      id: 'range', grp: 'rx', chip: '9 · Read the range',
+      title: 'One number out: range',
+      body: '<p>The spike’s position is the round-trip delay; multiply by c and halve it: <b>R = c·t/2</b>. On the A-scope, green marks where the target truly is and cyan where the radar says it is — they agree to within one range bin of this display.</p>' +
+        '<p>What bandwidth buys is the <b>width of the spike itself</b> — the resolution cell fixed all the way back at stage 1: <b>ΔR = c/2B</b>. Widen B and the spike visibly sharpens, letting a real radar split two close targets apart. That’s the whole design loop of a pulse-compression radar — bandwidth chosen at the waveform, cashed in at the range gate.</p>' +
+        '<p>Measuring <i>speed</i> (Doppler) is a second story told across many pulses; this page measures range with one. ' +
+        '<button type="button" class="btn" id="story-to-explore">Open the full console →</button></p>',
+      tryHint: 'Try it — before you widen B: will the spike get wider or narrower?',
+      controls: ['c-range', 'c-b'],
+      key: (m, d, p) => 'R = c·t/2 → estimated <b>' + m.estRangeKm.toFixed(1) + ' km</b> (true ' + p.range.toFixed(0) + ' km) · ΔR = ' + d.rangeResM.toFixed(1) + ' m',
+      pills: (m, d, p) => pill('True range', p.range.toFixed(0) + ' km') +
+        pill('Estimated range', m.estRangeKm.toFixed(1) + ' km', '', 'Where the matched-filter peak landed') +
+        pill('ΔR', d.rangeResM.toFixed(1) + ' m', '', 'Range resolution: c / (2B)'),
+      plots: [
+        { title: 'A-scope: matched-filter output vs range — live DSP', caption: 'dB scale — every 10 dB down is 10× less power. The small ripples beside the spike are the chirp’s sidelobes, not extra targets.',
+          draw: (m, d, p) => drawRangeScope('story-c1', m, p) },
+      ],
+    },
+  ];
+
+  // ---- correlation scrubber (stage 8) ----
+  let corrPos = 0, corrRaf = null;
+  function stopCorrAnim() { if (corrRaf) { cancelAnimationFrame(corrRaf); corrRaf = null; } }
+  function startCorrAnim() {
+    stopCorrAnim();
+    const max = lastModel.corr.length - 1;
+    if (reducedMotion) { corrPos = max; drawStagePlots(); syncCorrScrub(); return; }
+    corrPos = 0;
+    const stepSize = Math.max(2, Math.round(max / 150));
+    const tick = () => {
+      corrPos = Math.min(max, corrPos + stepSize);
+      drawStagePlots(); syncCorrScrub();
+      if (corrPos < max && mode === 'story' && STAGES[stageIdx].id === 'mf') corrRaf = requestAnimationFrame(tick);
+      else corrRaf = null;
+    };
+    corrRaf = requestAnimationFrame(tick);
+  }
+  function syncCorrScrub() {
+    const s = document.getElementById('corr-scrub');
+    if (!s || !lastModel) return;
+    const max = lastModel.corr.length - 1;
+    s.max = String(max);
+    s.value = String(corrPos);
+    s.setAttribute('aria-valuetext', Math.round(corrPos / max * 100) + '% along the signal');
+    const v = document.getElementById('corr-scrub-val');
+    if (v) v.textContent = Math.round(corrPos / max * 100) + '%';
+  }
+  function buildCorrScrubControls(cont) {
+    const wrap = el('div', 'ctl');
+    wrap.innerHTML = '<label for="corr-scrub">Slide the chirp copy <span class="val" id="corr-scrub-val"></span></label>' +
+      '<input type="range" id="corr-scrub" min="0" max="768" step="1" value="0" />';
+    cont.appendChild(wrap);
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'btn ghost'; btn.textContent = '▶ Replay the sweep';
+    if (reducedMotion) btn.hidden = true;   // the sweep never animates under reduced motion
+    cont.appendChild(btn);
+    wrap.querySelector('input').addEventListener('input', function () {
+      stopCorrAnim();
+      corrPos = parseInt(this.value, 10) || 0;
+      drawStagePlots(); syncCorrScrub();
+    });
+    btn.addEventListener('click', startCorrAnim);
+  }
+
+  // ---- story rendering ----
+  let stageIdx = 0, builtStageIdx = -1;
+  const railEl = document.getElementById('story-rail');
+
+  (function buildRail() {
+    let lastGrp = null;
+    STAGES.forEach((st, i) => {
+      if (st.grp !== lastGrp) {
+        const g = el('span', 'rail-grp', GROUPS[st.grp][0]);
+        railEl.appendChild(g);
+        lastGrp = st.grp;
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip grp-' + st.grp;
+      b.textContent = st.chip;
+      b.addEventListener('click', () => goStage(i));
+      railEl.appendChild(b);
+    });
+  })();
+
+  function updateRail() {
+    railEl.querySelectorAll('.chip').forEach((c, i) => {
+      c.classList.toggle('on', i === stageIdx);
+      c.classList.toggle('done', i < stageIdx);
+      if (i === stageIdx) c.setAttribute('aria-current', 'step'); else c.removeAttribute('aria-current');
+    });
+  }
+
+  function buildStageControls(st) {
+    const cont = document.getElementById('stage-controls');
+    cont.innerHTML = '';
+    if (st.tryHint) cont.appendChild(el('div', 'try-hint', st.tryHint));
+    (st.controls || []).forEach(id => {
+      const master = document.getElementById(id);
+      const sid = 'story-' + id;
+      const wrap = el('div', 'ctl');
+      wrap.innerHTML = '<label for="' + sid + '">' + CONTROL_LABELS[id] + ' <span class="val" data-for="' + id + '"></span></label>' +
+        '<input type="range" id="' + sid + '" data-master="' + id + '" min="' + master.min + '" max="' + master.max + '" step="' + master.step + '" value="' + master.value + '" />';
+      cont.appendChild(wrap);
+      wrap.querySelector('input').addEventListener('input', function () {
+        master.value = this.value;
+        master.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
+    if (st.customControls) st.customControls(cont);
+  }
+
+  function updateStageControlReadouts() {
+    document.querySelectorAll('#stage-controls input[data-master]').forEach(inp => {
+      const master = document.getElementById(inp.dataset.master);
+      inp.min = master.min; inp.max = master.max; inp.step = master.step;
+      if (inp.value !== master.value) inp.value = master.value;
+      inp.setAttribute('aria-valuetext', master.getAttribute('aria-valuetext') || '');
+    });
+    document.querySelectorAll('#stage-controls .val[data-for]').forEach(sp => {
+      sp.textContent = fmtVal[sp.dataset.for](params);
+    });
+  }
+
+  let lastSettingsHtml = '';
+  function updateSettingsRow() {
+    const diffs = [];
+    if (params.b !== DEFAULTS.b) diffs.push('B ' + params.b.toFixed(0) + ' MHz');
+    if (params.fIF !== DEFAULTS.fIF) diffs.push('f_IF ' + params.fIF.toFixed(0) + ' MHz');
+    if (params.fs !== DEFAULTS.fs) diffs.push('f_s ' + params.fs.toFixed(0) + ' MSPS');
+    if (params.fRF !== DEFAULTS.fRF) diffs.push('f_RF ' + params.fRF.toFixed(2) + ' GHz');
+    if (params.runamb !== DEFAULTS.runamb) diffs.push('R_u ' + params.runamb.toFixed(0) + ' km');
+    if (params.range !== DEFAULTS.range) diffs.push('range ' + params.range.toFixed(0) + ' km');
+    if (params.snr !== DEFAULTS.snr) diffs.push('SNR ' + params.snr.toFixed(0) + ' dB');
+    const row = document.getElementById('story-settings');
+    if (!diffs.length) {
+      if (lastSettingsHtml !== '') { row.hidden = true; row.innerHTML = ''; lastSettingsHtml = ''; }
+      return;
+    }
+    const html = '<span class="pill">your settings carry across stages <b>' + diffs.join(' · ') + '</b></span>' +
+      '<button type="button" class="btn ghost" id="story-reset" style="padding:4px 10px;font-size:10px;">↺ reset</button>';
+    if (html === lastSettingsHtml) return;   // don't rebuild (and wipe focus) when nothing changed
+    lastSettingsHtml = html;
+    row.hidden = false;
+    row.innerHTML = html;
+    document.getElementById('story-reset').addEventListener('click', () => {
+      resetDefaults();
+      const title = document.getElementById('stage-title');
+      if (title) title.focus();   // the button removes itself; don't strand keyboard focus
+    });
+  }
+
+  function drawStagePlots() {
+    if (!lastModel) return;
+    const st = STAGES[stageIdx];
+    const p2block = document.getElementById('plot2-block');
+    st.plots[0].draw(lastModel, lastDerived, params);
+    if (st.plots[1]) {
+      p2block.hidden = false;
+      st.plots[1].draw(lastModel, lastDerived, params);
+    } else {
+      p2block.hidden = true;
+    }
+  }
+
+  function renderStory(structural) {
+    const st = STAGES[stageIdx];
+    if (structural || stageIdx !== builtStageIdx) {
+      updateRail();
+      const [grpName, grpCls] = GROUPS[st.grp];
+      document.getElementById('stage-eyebrow').innerHTML =
+        'STAGE ' + (stageIdx + 1) + ' OF ' + STAGES.length + ' · <span class="' + grpCls + '">' + grpName + '</span>';
+      document.getElementById('stage-title').textContent = st.title;
+      document.getElementById('stage-body').innerHTML = st.body;
+      buildStageControls(st);
+      document.getElementById('stage-pos').textContent = (stageIdx + 1) + ' / ' + STAGES.length;
+      document.getElementById('story-prev').disabled = stageIdx === 0;
+      const nextBtn = document.getElementById('story-next');
+      nextBtn.disabled = stageIdx === STAGES.length - 1;
+      document.getElementById('plot1-title').textContent = st.plots[0].title;
+      document.getElementById('plot1-cap').textContent = st.plots[0].caption;
+      document.getElementById('story-c1').setAttribute('aria-label', st.plots[0].title);
+      if (st.plots[1]) {
+        document.getElementById('plot2-title').textContent = st.plots[1].title;
+        document.getElementById('plot2-cap').textContent = st.plots[1].caption;
+        document.getElementById('story-c2').setAttribute('aria-label', st.plots[1].title);
+      }
+      builtStageIdx = stageIdx;
+      if (st.id === 'mf') { syncCorrScrub(); startCorrAnim(); } else stopCorrAnim();
+    }
+    document.getElementById('stage-key').innerHTML = st.key(lastModel, lastDerived, params);
+    document.getElementById('stage-pills').innerHTML = st.pills ? st.pills(lastModel, lastDerived, params) : '';
+    updateStageControlReadouts();
+    updateSettingsRow();
+    if (st.id === 'mf') syncCorrScrub();
+    drawStagePlots();
+  }
+
+  function goStage(i) {
+    const next = clamp(i, 0, STAGES.length - 1);
+    if (next === stageIdx && builtStageIdx === stageIdx) return;
+    stageIdx = next;
+    renderStory(true);
+    updateUrl();
+    // Move focus to the new stage's heading: announces the change to assistive tech and
+    // keeps keyboard users anchored when the button they pressed disables itself at the ends.
+    const title = document.getElementById('stage-title');
+    if (title) title.focus();
+  }
+  document.getElementById('story-prev').addEventListener('click', () => goStage(stageIdx - 1));
+  document.getElementById('story-next').addEventListener('click', () => goStage(stageIdx + 1));
+  document.getElementById('stage-body').addEventListener('click', e => {
+    if (e.target && e.target.id === 'story-to-explore') setMode('explore');
+  });
+  document.addEventListener('keydown', e => {
+    if (mode !== 'story') return;
+    if (e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return;  // don't hijack browser Back/Forward
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (e.key === 'ArrowRight') { goStage(stageIdx + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { goStage(stageIdx - 1); e.preventDefault(); }
+  });
+
+  // ---- mode switching ----
+  const storyRoot = document.getElementById('story-root');
+  const exploreRoot = document.getElementById('explore-root');
+  const btnModeStory = document.getElementById('mode-story');
+  const btnModeExplore = document.getElementById('mode-explore');
+
+  function updateUrl() {
+    try {
+      const u = new URL(window.location.href);
+      if (mode === 'explore') { u.searchParams.set('mode', 'explore'); u.searchParams.delete('step'); }
+      else { u.searchParams.delete('mode'); u.searchParams.set('step', String(stageIdx + 1)); }
+      history.replaceState(null, '', u);
+    } catch (err) { /* sandboxed iframes may block history access */ }
+  }
+
+  function setMode(m) {
+    if (m === mode) return;   // clicking the already-active toggle must not reset stage state
+    mode = m;
+    storyRoot.hidden = m !== 'story';
+    exploreRoot.hidden = m !== 'explore';
+    btnModeStory.classList.toggle('on', m === 'story');
+    btnModeExplore.classList.toggle('on', m === 'explore');
+    btnModeStory.setAttribute('aria-pressed', String(m === 'story'));
+    btnModeExplore.setAttribute('aria-pressed', String(m === 'explore'));
+    document.getElementById('sub-switch-hint').hidden = m === 'explore';
+    if (m === 'explore') {
+      stopCorrAnim();
+      render(lastModel, lastDerived, params);
+      if (playing) runPulse(true);
+    } else {
+      stopPulseTimer();
+      builtStageIdx = -1;   // hidden canvases have zero size; force a full rebuild + redraw
+      renderStory(true);
+    }
+    // If the trigger (e.g. the stage-9 CTA) was hidden with its container, recover focus.
+    const active = document.activeElement;
+    if (!active || active === document.body ||
+        (storyRoot.hidden && storyRoot.contains(active)) ||
+        (exploreRoot.hidden && exploreRoot.contains(active))) {
+      (m === 'story' ? btnModeStory : btnModeExplore).focus();
+    }
+    try { localStorage.setItem('radar_sim_view', m); } catch (err) { /* private mode */ }
+    updateUrl();
+  }
+  btnModeStory.addEventListener('click', () => setMode('story'));
+  btnModeExplore.addEventListener('click', () => setMode('explore'));
 
   // ---- init ----
   syncFromControls();
-  recomputeAndRender();
+  lastDerived = computeDerived(params);
+  lastModel = simulate(params);
   stepDiagram();
-  if (playing) runPulse(true); else btnPlay.textContent = 'Play';
+
+  let initialMode = 'story';
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('mode') === 'explore') initialMode = 'explore';
+    else if (q.get('step')) {
+      const s = parseInt(q.get('step'), 10);
+      if (s >= 1 && s <= STAGES.length) stageIdx = s - 1;
+    } else {
+      const saved = localStorage.getItem('radar_sim_view');
+      if (saved === 'explore') initialMode = 'explore';
+    }
+  } catch (err) { /* URL/storage unavailable */ }
+
+  btnPlay.textContent = playing ? 'Pause' : 'Play';
+  setMode(initialMode);
 })();
 </script>
 </body>
