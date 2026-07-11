@@ -1,6 +1,27 @@
 # work
 My Work Repository
 
+## CORE Roadmaps — interactive
+
+`core-roadmaps.html` is a **single self-contained page** that turns the *CORE Roadmaps*
+leadership briefing (Astrion · CORE Platform, v0.4 Draft) into an interactive, white-background
+roadmap. Open it in any browser — no account, server, or setup, and **zero external dependencies**
+(no CDNs, web fonts, or network calls):
+
+### → https://azjester.github.io/work/core-roadmaps.html
+
+- **Three roadmaps, one view** — Project Horizon MVP (*In progress*), Hardware to Dev (*Next*) and
+  Engine to Market (*Proposed*), shown as a sequential progression and as drill-down detail.
+- **Phase timelines** — each roadmap's six phases as numbered cards with full descriptions; Engine
+  to Market phases expand to show their **market-readiness conditions**, and a dedicated
+  **Punchlist** view (G-TEAD / DoD) groups every condition with checkable items.
+- **Living progress** — mark each phase *Not started · In progress · Done* and tick punchlist items;
+  per-roadmap progress rings and a global count update live. Everything is saved to **this browser
+  only** (`localStorage` key `core_roadmaps_v1`); a one-click **Reset tracking** clears it.
+- **Built to brief** — segmented tab nav, deep links (`#rm01` … `#punchlist`), arrow-key navigation,
+  keyboard focus and reduced-motion support, and a print stylesheet so **Print → Save as PDF** lays
+  out all three roadmaps and the punchlist on clean white pages.
+
 ## Weekly Status Tracker
 
 A standalone, self-contained page for tracking your **weekly task status** and producing a
