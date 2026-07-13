@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Astrion GeoPresence interactive footprint viewer and governed location workspace prototype.">
+<meta name="theme-color" content="#222230">
+<title>Astrion GeoPresence</title>
+<style>
+  :root {
+    --force:#442c81; --sky:#29aae1; --refraction:#1ed872; --daylight:#4dd3f7;
+    --zenith:#9382f9; --midnight:#222230; --platinum:#ddd; --silver:#bdbdbd;
+    --alabaster:#f1e9db; --supernova:#ffaf2e; --twilight:#fc5442; --water:#307eef;
+    --ink:#171725; --muted:#686879; --paper:#f7f8fb; --panel:#fff; --line:#dedee8;
+    --shadow:0 22px 60px -34px rgba(34,34,48,.42);
+    --radius:18px; --sans:Verdana,"Segoe UI",sans-serif; --mono:"Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;color:var(--ink);background:var(--paper);font-family:var(--sans);font-size:14px;line-height:1.5}
+  button,input,select{font:inherit} button{cursor:pointer} a{color:var(--force)}
+  .skip{position:fixed;left:16px;top:-60px;z-index:100;background:#fff;padding:10px 14px;border-radius:8px;color:var(--force)} .skip:focus{top:12px}
+  .topbar{position:sticky;top:0;z-index:30;color:#fff;background:linear-gradient(105deg,var(--midnight),#302554 58%,var(--force));border-bottom:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px -24px #000}
+  .topbar-inner{max-width:1500px;margin:auto;min-height:76px;padding:12px clamp(16px,3vw,36px);display:flex;align-items:center;gap:18px}
+  .brand{display:flex;align-items:center;gap:13px;min-width:260px}.brand-mark{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,var(--refraction),var(--sky) 50%,var(--zenith));position:relative;box-shadow:0 0 0 1px rgba(255,255,255,.24),0 10px 30px -12px var(--sky)}
+  .brand-mark:before,.brand-mark:after{content:"";position:absolute;background:var(--midnight);border-radius:99px;transform:rotate(-35deg)}.brand-mark:before{width:9px;height:31px;left:12px;top:4px}.brand-mark:after{width:9px;height:23px;left:23px;top:10px}
+  .brand strong{display:block;font-size:18px;letter-spacing:.02em}.brand small{display:block;color:#c9c6dc;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .search{flex:1;max-width:570px;position:relative}.search input{width:100%;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:11px 14px 11px 39px;outline:none}.search input::placeholder{color:#ccc7dd}.search input:focus{border-color:var(--daylight);box-shadow:0 0 0 3px rgba(77,211,247,.2)}.search:before{content:"⌕";position:absolute;left:14px;top:7px;font-size:21px;color:var(--daylight)}
+  .top-actions{margin-left:auto;display:flex;gap:9px;align-items:center}.top-actions label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#c9c6dc}.top-actions select{display:block;color:#fff;background:#302554;border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 28px 7px 9px;font-size:12px}.top-actions select option{color:#111;background:#fff}
+  .shell{max-width:1500px;margin:auto;padding:0 clamp(16px,3vw,36px) 40px}.navrow{display:flex;align-items:end;gap:8px;padding-top:18px;border-bottom:1px solid var(--line)}
+  .tab{border:0;background:transparent;color:var(--muted);padding:11px 16px;border-bottom:3px solid transparent;font-weight:700}.tab[aria-selected="true"]{color:var(--force);border-color:var(--sky)}.tab:focus-visible,.btn:focus-visible,.chip:focus-visible,.state:focus-visible{outline:3px solid rgba(41,170,225,.45);outline-offset:3px}
+  .view-tools{margin-left:auto;display:flex;gap:8px;align-items:center;padding-bottom:8px}.select,.input{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:9px 10px}.btn{border:1px solid transparent;border-radius:10px;padding:9px 13px;font-weight:700;background:var(--force);color:#fff;box-shadow:0 8px 20px -15px var(--force)}.btn:hover{filter:brightness(1.08)}.btn.secondary{background:#fff;color:var(--force);border-color:#cfc9e3;box-shadow:none}.btn.sky{background:var(--sky);color:#10212b}.btn.danger{background:#fff;color:#b62e20;border-color:#f0b6af;box-shadow:none}.btn.small{padding:6px 9px;font-size:12px}.btn:disabled{opacity:.45;cursor:not-allowed}
+  .hero{display:flex;justify-content:space-between;gap:24px;align-items:end;padding:26px 0 16px}.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--force);font-weight:700}.hero h1{font-size:clamp(28px,4vw,44px);line-height:1.1;margin:6px 0 8px;letter-spacing:-.035em}.hero p{margin:0;color:var(--muted);max-width:78ch}.data-note{flex:0 0 auto;border:1px solid #c8e9f7;background:#eefaff;border-radius:11px;padding:9px 12px;color:#315366;font-size:12px}.data-note b{color:#12384b}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 16px;box-shadow:var(--shadow)}.kpi .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.kpi .value{font-size:27px;font-weight:800;margin:4px 0 1px}.kpi .meta{font-size:12px;color:var(--muted)}.kpi .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--refraction)}
+  .viewer-grid{display:grid;grid-template-columns:240px minmax(520px,1fr) 310px;gap:14px;align-items:start}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 16px;border-bottom:1px solid var(--line)}.card-head h2,.card-head h3{margin:0;font-size:14px}.card-body{padding:16px}
+  .filters{position:sticky;top:94px}.filter-group{padding:14px 16px;border-bottom:1px solid var(--line)}.filter-group:last-child{border-bottom:0}.filter-title{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:9px}.check{display:flex;align-items:center;gap:9px;margin:8px 0;color:#383847}.check input{width:16px;height:16px;accent-color:var(--force)}.swatch{width:10px;height:10px;border-radius:50%;background:var(--swatch)}.filter-group .input{width:100%}
+  .map-card{overflow:hidden}.map-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.crumbs{font-size:12px;color:var(--muted)}.crumbs button{border:0;background:none;padding:0;color:var(--force);font-weight:700}.map-wrap{position:relative;min-height:535px;background:radial-gradient(circle at 45% 45%,rgba(41,170,225,.12),transparent 38%),linear-gradient(155deg,#f9fbff,#eef1f8);overflow:hidden}.map-wrap:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(68,44,129,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(68,44,129,.04) 1px,transparent 1px);background-size:28px 28px}.map-svg{position:relative;width:100%;height:535px;display:block}.state rect{stroke:#fff;stroke-width:2;transition:transform .15s,filter .15s}.state:hover rect,.state:focus rect{filter:brightness(.95);stroke:var(--force);stroke-width:3}.state text{pointer-events:none;font-family:var(--sans);font-weight:700;fill:#29273b}.state .count{font-family:var(--mono);font-size:9px;fill:#6d6880}.state.zero{opacity:.57}.map-legend{position:absolute;left:16px;bottom:15px;display:flex;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11px;color:var(--muted)}.key{display:flex;align-items:center;gap:5px}.key i{width:10px;height:10px;border-radius:3px;background:var(--key)}
+  .pin{cursor:pointer}.pin circle{stroke:#fff;stroke-width:3;filter:drop-shadow(0 4px 5px rgba(34,34,48,.25))}.pin text{font-family:var(--sans);font-size:11px;font-weight:700;fill:#272535}.pin:hover circle,.pin:focus circle{stroke:var(--midnight);stroke-width:4}.region-shape{fill:rgba(41,170,225,.13);stroke:var(--force);stroke-width:3}.region-grid{stroke:rgba(68,44,129,.12);stroke-width:1}.empty-map{font-size:16px;fill:var(--muted)}
+  .summary{padding:10px 16px;border-top:1px solid var(--line);background:#fbfbfd;color:var(--muted);font-size:12px}.summary b{color:var(--ink)}
+  .detail{position:sticky;top:94px}.detail-hero{padding:18px;background:linear-gradient(135deg,var(--force),#302554);color:#fff;border-radius:17px 17px 0 0}.detail-hero .type{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#aeeaff}.detail-hero h2{font-size:20px;line-height:1.2;margin:6px 0}.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:99px;background:rgba(255,255,255,.14);font-size:11px}.detail-list{padding:5px 16px 15px;margin:0}.detail-list div{display:grid;grid-template-columns:95px 1fr;gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}.detail-list dt{color:var(--muted);font-size:12px}.detail-list dd{margin:0;font-weight:700;font-size:12px}.privacy-callout{margin:0 16px 16px;border-left:4px solid var(--refraction);background:#effcf5;padding:10px 11px;border-radius:8px;font-size:11px;color:#315842}
+  .table-card{margin-top:14px;overflow:hidden}.table-tools{display:flex;gap:8px;align-items:center}.table-scroll{overflow:auto;max-height:390px}table{width:100%;border-collapse:collapse}th{text-align:left;position:sticky;top:0;background:#f5f5f9;color:#555469;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--line);z-index:2}td{padding:11px 12px;border-bottom:1px solid #ececf2;font-size:12px}tbody tr{cursor:pointer}tbody tr:hover,tbody tr.selected{background:#f1faff}.site-name{font-weight:700;color:var(--force)}.status{display:inline-flex;gap:5px;align-items:center}.status:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--refraction)}.status.planned:before{background:var(--supernova)}.status.inactive:before{background:var(--silver)}
+  .admin-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:14px}.admin-stack{display:flex;flex-direction:column;gap:14px}.governance{border:1px solid #d8d1ed;background:#f6f3fc;border-radius:14px;padding:14px 16px;color:#4e4566}.governance strong{color:var(--force)}.queue{display:grid;gap:10px}.queue-item{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:8px}.queue-item h3{margin:0;font-size:14px}.queue-item p{margin:3px 0 0;color:var(--muted);font-size:12px}.queue-actions{display:flex;gap:6px;align-items:center}.workflow{display:flex;gap:4px;align-items:center;margin-top:9px}.workflow span{height:5px;flex:1;border-radius:99px;background:#e5e4ec}.workflow span.on{background:var(--sky)}.workflow-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--muted);margin-top:4px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:11px;color:var(--muted);font-weight:700}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}.field input:focus,.field select:focus{outline:3px solid rgba(41,170,225,.2);border-color:var(--sky)}.form-note{font-size:11px;color:var(--muted);margin:10px 0}.region-grid-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.region-card{border:1px solid var(--line);border-radius:12px;padding:12px}.region-card .shape{height:57px;border-radius:9px;margin-bottom:9px;background:linear-gradient(135deg,rgba(41,170,225,.18),rgba(147,130,249,.21));border:2px dashed var(--force)}.region-card h3{margin:0;font-size:13px}.region-card p{margin:4px 0;color:var(--muted);font-size:11px}.audit{list-style:none;padding:0;margin:0}.audit li{position:relative;padding:0 0 18px 25px;color:var(--muted);font-size:12px}.audit li:before{content:"";position:absolute;left:3px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--sky);box-shadow:0 0 0 4px #e8f7fd}.audit li:after{content:"";position:absolute;left:7px;top:18px;bottom:3px;width:1px;background:var(--line)}.audit li:last-child:after{display:none}.audit b{display:block;color:var(--ink)}
+  .empty{padding:26px;text-align:center;color:var(--muted)}[hidden]{display:none!important}.toast{position:fixed;right:22px;bottom:22px;z-index:60;background:var(--midnight);color:#fff;border-radius:11px;padding:12px 16px;box-shadow:0 18px 50px -20px #000}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  footer{padding:28px 0 0;color:var(--muted);font-size:11px;text-align:center}
+  @media(max-width:1120px){.viewer-grid{grid-template-columns:220px 1fr}.detail{grid-column:1/-1;position:static}.detail .card{display:grid;grid-template-columns:260px 1fr}.detail-hero{border-radius:17px 0 0 17px}.kpis{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:800px){.topbar-inner{flex-wrap:wrap}.brand{min-width:auto}.search{order:3;flex-basis:100%;max-width:none}.top-actions{margin-left:auto}.viewer-grid,.admin-grid{grid-template-columns:1fr}.filters{position:static}.map-wrap,.map-svg{min-height:430px;height:430px}.region-grid-cards{grid-template-columns:1fr}.hero{align-items:start;flex-direction:column}.data-note{align-self:stretch}.navrow{overflow:auto}.view-tools{margin-left:0}.detail .card{display:block}.detail-hero{border-radius:17px 17px 0 0}}
+  @media(max-width:520px){.shell{padding-left:12px;padding-right:12px}.topbar-inner{padding:10px 12px}.top-actions label{display:none}.kpis{grid-template-columns:1fr 1fr}.kpi{padding:12px}.kpi .value{font-size:22px}.view-tools{display:none}.map-card .card-head{align-items:flex-start}.map-toolbar{width:100%}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.queue-item{grid-template-columns:1fr}.queue-actions{justify-content:flex-start}.map-legend{right:10px}.table-tools .input{display:none}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+  @media print{.topbar,.navrow,.filters,.detail,.table-tools,.btn,footer{display:none!important}.shell{max-width:none;padding:0}.viewer-grid{display:block}.map-card,.table-card,.kpi{box-shadow:none}.map-wrap{min-height:480px}.table-scroll{max-height:none;overflow:visible}.hero{padding-top:0}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to application</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand" aria-label="Astrion GeoPresence"><span class="brand-mark" aria-hidden="true"></span><span><strong>Astrion GeoPresence</strong><small>Location intelligence</small></span></div>
+    <label class="search"><span class="sr-only">Search locations, states, and regions</span><input id="globalSearch" type="search" placeholder="Search site, city, state, or region…" autocomplete="off"></label>
+    <div class="top-actions"><label for="roleSelect">Preview role<select id="roleSelect"><option value="viewer">Viewer</option><option value="executive">Executive</option><option value="restricted">Restricted viewer</option><option value="editor">Editor</option><option value="steward">Data steward</option><option value="admin">Admin</option></select></label></div>
+  </div>
+</header>
+<main id="main" class="shell">
+  <div class="navrow" role="tablist" aria-label="GeoPresence workspace">
+    <button class="tab" id="viewerTab" role="tab" aria-selected="true" aria-controls="viewerPanel">Footprint viewer</button>
+    <button class="tab" id="adminTab" role="tab" aria-selected="false" aria-controls="adminPanel">Data workspace <span id="queueCount"></span></button>
+    <div class="view-tools"><label class="sr-only" for="viewSelect">Saved view</label><select class="select" id="viewSelect"><option value="executive">Executive footprint</option><option value="workforce">Workforce planning</option><option value="contracts">Active contract sites</option></select><button class="btn secondary" id="saveView" type="button">Save view</button><button class="btn" id="exportBtn" type="button">Export CSV</button></div>
+  </div>
+
+  <section id="viewerPanel" role="tabpanel" aria-labelledby="viewerTab">
+    <div class="hero"><div><div class="eyebrow">Enterprise footprint · Internal</div><h1>See the mission footprint.<br>Understand the context.</h1><p>Explore synthetic demonstration locations, reusable operating regions, and privacy-safe workforce concentration. Select a state or site to drill into the synchronized map and table.</p></div><div class="data-note"><b>Synthetic demonstration data</b><br>No actual contract or employee location data is shown.</div></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="viewer-grid">
+      <aside class="card filters" aria-label="Map filters">
+        <div class="card-head"><h2>Filters</h2><button class="btn secondary small" id="clearFilters" type="button">Reset</button></div>
+        <div class="filter-group"><div class="filter-title">Location type</div><label class="check"><input type="checkbox" name="type" value="headquarters" checked><i class="swatch" style="--swatch:var(--force)"></i>Headquarters</label><label class="check"><input type="checkbox" name="type" value="regional_hq" checked><i class="swatch" style="--swatch:var(--zenith)"></i>Regional HQ</label><label class="check"><input type="checkbox" name="type" value="major_hub" checked><i class="swatch" style="--swatch:var(--sky)"></i>Major hub</label><label class="check"><input type="checkbox" name="type" value="contract_site" checked><i class="swatch" style="--swatch:var(--refraction)"></i>Contract site</label><label class="check"><input type="checkbox" name="type" value="future_site" checked><i class="swatch" style="--swatch:var(--supernova)"></i>Future site</label></div>
+        <div class="filter-group"><div class="filter-title">Operational status</div><label class="check"><input type="checkbox" name="status" value="active" checked>Active</label><label class="check"><input type="checkbox" name="status" value="planned" checked>Planned</label><label class="check"><input type="checkbox" name="status" value="inactive">Inactive / archived</label></div>
+        <div class="filter-group"><div class="filter-title">Layers</div><label class="check"><input id="workforceLayer" type="checkbox" checked>Workforce buckets</label><label class="check"><input id="regionLayer" type="checkbox" checked>Reusable regions</label></div>
+        <div class="filter-group"><div class="filter-title">Visibility</div><label class="check"><input id="visibleOnly" type="checkbox" checked>Only records permitted for role</label></div>
+      </aside>
+
+      <section class="card map-card" aria-labelledby="mapTitle">
+        <div class="card-head"><div><h2 id="mapTitle">United States footprint</h2><div class="crumbs" id="crumbs">United States</div></div><div class="map-toolbar"><button class="btn secondary small" id="zoomOut" type="button" disabled>← National view</button></div></div>
+        <div class="map-wrap"><svg id="mapSvg" class="map-svg" viewBox="0 0 960 535" role="img" aria-labelledby="mapTitle mapDesc"><desc id="mapDesc">Interactive tile map of the United States. Select a state to drill down.</desc><g id="mapLayer"></g></svg><div class="map-legend" id="mapLegend"></div></div>
+        <div class="summary" id="mapSummary" aria-live="polite"></div>
+      </section>
+
+      <aside class="detail" aria-label="Selection details"><div class="card" id="detailCard"></div></aside>
+    </div>
+
+    <section class="card table-card" aria-labelledby="tableTitle">
+      <div class="card-head"><div><h2 id="tableTitle">Visible locations</h2><div class="crumbs" id="tableSub"></div></div><div class="table-tools"><input class="input" id="tableSearch" type="search" placeholder="Filter table…" aria-label="Filter visible locations"><button class="btn secondary small" id="copySummary" type="button">Copy summary</button></div></div>
+      <div class="table-scroll"><table><thead><tr><th scope="col">Location</th><th scope="col">Type</th><th scope="col">State</th><th scope="col">Status</th><th scope="col">Workforce</th><th scope="col">Visibility</th><th scope="col">Updated</th></tr></thead><tbody id="siteRows"></tbody></table></div>
+    </section>
+  </section>
+
+  <section id="adminPanel" role="tabpanel" aria-labelledby="adminTab" hidden>
+    <div class="hero"><div><div class="eyebrow">Internal data workspace</div><h1>Govern once. Reuse everywhere.</h1><p>Create draft locations and reusable regions, validate metadata, and publish internally approved records to saved views. Operational status and publishing workflow are intentionally separate.</p></div><div class="data-note"><b>Internal governance only</b><br>No external or government approval is required.</div></div>
+    <div class="governance"><strong>Role-aware prototype:</strong> editors can create and submit drafts. Data stewards can approve and publish them. This workflow protects data quality and privacy; it is not an external authorization process.</div>
+    <div class="admin-grid" style="margin-top:14px">
+      <div class="admin-stack">
+        <section class="card"><div class="card-head"><h2>Location change queue</h2><span class="badge" style="background:#f2effa;color:var(--force)" id="queueBadge"></span></div><div class="card-body queue" id="queue"></div></section>
+        <section class="card"><div class="card-head"><h2>Reusable region library</h2><button class="btn secondary small" type="button" id="regionAction">Import GeoJSON</button></div><div class="card-body region-grid-cards"><article class="region-card"><div class="shape"></div><h3>Southwest support area</h3><p>Custom area · v3 · Published</p></article><article class="region-card"><div class="shape" style="border-color:var(--zenith)"></div><h3>Mid-Atlantic corridor</h3><p>Operating region · v2 · Published</p></article><article class="region-card"><div class="shape" style="border-color:var(--supernova)"></div><h3>Growth scenario west</h3><p>Scenario area · Draft</p></article></div></section>
+      </div>
+      <div class="admin-stack">
+        <section class="card"><div class="card-head"><h2>Add a location draft</h2></div><form class="card-body" id="locationForm"><div class="form-grid"><div class="field full"><label for="locName">Location name</label><input id="locName" name="name" required placeholder="Example: Southwest Demo Site"></div><div class="field"><label for="locType">Type</label><select id="locType" name="type"><option value="contract_site">Contract site</option><option value="major_hub">Major hub</option><option value="regional_hq">Regional HQ</option><option value="future_site">Future site</option></select></div><div class="field"><label for="locState">State</label><select id="locState" name="state"></select></div><div class="field"><label for="locOps">Operational status</label><select id="locOps" name="status"><option value="active">Active</option><option value="planned">Planned</option><option value="inactive">Inactive</option></select></div><div class="field"><label for="locVisibility">Visibility</label><select id="locVisibility" name="visibility"><option value="business_internal">Business internal</option><option value="public_internal">Public internal</option><option value="restricted">Restricted</option><option value="executive_only">Executive only</option><option value="aggregated_only">Aggregated only</option></select></div><div class="field full"><label for="locSource">Source / owner</label><input id="locSource" name="source" required placeholder="Business Operations · Demo owner"></div></div><p class="form-note">New records start in <b>draft</b> workflow state and are never visible in the standard viewer until internally published.</p><button class="btn sky" type="submit">Create draft</button></form></section>
+        <section class="card"><div class="card-head"><h2>Recent audit activity</h2></div><div class="card-body"><ol class="audit" id="audit"></ol></div></section>
+      </div>
+    </div>
+  </section>
+  <footer>Astrion GeoPresence prototype · Synthetic demonstration records · Privacy-safe by design</footer>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+(() => {
+  "use strict";
+  const STORAGE_KEY = "astrion_geopresence_demo_v1";
+  const typeMeta = {
+    headquarters:{label:"Headquarters",color:"#442c81"}, regional_hq:{label:"Regional HQ",color:"#9382f9"},
+    major_hub:{label:"Major hub",color:"#29aae1"}, contract_site:{label:"Contract site",color:"#1ed872"}, future_site:{label:"Future site",color:"#ffaf2e"}
+  };
+  const visibilityLabel = {public_internal:"Public internal",business_internal:"Business internal",restricted:"Restricted",executive_only:"Executive only",aggregated_only:"Aggregated only",hidden_archived:"Hidden / archived"};
+  const stateLayout = [
+    ["AK",0,6],["WA",0,0],["OR",0,1],["CA",0,2],["ID",1,1],["NV",1,2],["AZ",1,3],["MT",2,0],["WY",2,1],["UT",2,2],["NM",2,3],["CO",3,2],
+    ["ND",3,0],["SD",3,1],["NE",4,1],["KS",4,2],["OK",4,3],["TX",3,4],["MN",5,0],["IA",5,1],["MO",5,2],["AR",5,3],["LA",5,4],
+    ["WI",6,0],["IL",6,1],["KY",6,2],["TN",6,3],["MS",6,4],["MI",7,0],["IN",7,1],["OH",7,2],["WV",7,3],["AL",7,4],["GA",8,4],["FL",9,5],
+    ["PA",8,1],["VA",8,2],["NC",8,3],["SC",9,4],["NY",9,0],["VT",10,0],["NH",11,0],["ME",12,0],["MA",10,1],["RI",11,1],["CT",10,2],["NJ",9,2],["DE",9,3],["MD",8,3.55],["DC",8.45,3.1],["HI",1,6]
+  ].map(([code,col,row]) => ({code,col,row}));
+  const stateNames = {AK:"Alaska",AL:"Alabama",AR:"Arkansas",AZ:"Arizona",CA:"California",CO:"Colorado",CT:"Connecticut",DC:"District of Columbia",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",IA:"Iowa",ID:"Idaho",IL:"Illinois",IN:"Indiana",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",MA:"Massachusetts",MD:"Maryland",ME:"Maine",MI:"Michigan",MN:"Minnesota",MO:"Missouri",MS:"Mississippi",MT:"Montana",NC:"North Carolina",ND:"North Dakota",NE:"Nebraska",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NV:"Nevada",NY:"New York",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VA:"Virginia",VT:"Vermont",WA:"Washington",WI:"Wisconsin",WV:"West Virginia",WY:"Wyoming"};
+  const sites = [
+    {id:"demo-hq",name:"Enterprise Demo Headquarters",type:"headquarters",state:"AL",city:"Huntsville",status:"active",workflow:"published",visibility:"public_internal",bucket:"100+",x:.58,y:.48,updated:"Jul 12"},
+    {id:"sw-hub",name:"Southwest Mission Hub",type:"major_hub",state:"NM",city:"Albuquerque",status:"active",workflow:"published",visibility:"business_internal",bucket:"26–100",x:.51,y:.44,updated:"Jul 11"},
+    {id:"co-rhq",name:"Mountain Regional HQ",type:"regional_hq",state:"CO",city:"Colorado Springs",status:"active",workflow:"published",visibility:"business_internal",bucket:"26–100",x:.56,y:.56,updated:"Jul 10"},
+    {id:"va-hub",name:"Mid-Atlantic Demo Hub",type:"major_hub",state:"VA",city:"Reston",status:"active",workflow:"published",visibility:"business_internal",bucket:"100+",x:.72,y:.36,updated:"Jul 09"},
+    {id:"oh-hub",name:"Great Lakes Demo Hub",type:"major_hub",state:"OH",city:"Dayton",status:"active",workflow:"published",visibility:"business_internal",bucket:"26–100",x:.45,y:.48,updated:"Jul 08"},
+    {id:"ma-site",name:"Northeast Contract Alpha",type:"contract_site",state:"MA",city:"Bedford",status:"active",workflow:"published",visibility:"business_internal",bucket:"6–25",x:.67,y:.42,updated:"Jul 08"},
+    {id:"fl-site",name:"Coastal Contract Bravo",type:"contract_site",state:"FL",city:"Tampa",status:"active",workflow:"published",visibility:"business_internal",bucket:"6–25",x:.43,y:.52,updated:"Jul 07"},
+    {id:"ca-site",name:"Pacific Contract Gamma",type:"contract_site",state:"CA",city:"El Segundo",status:"active",workflow:"published",visibility:"restricted",bucket:"26–100",x:.28,y:.64,updated:"Jul 07"},
+    {id:"tx-site",name:"Lone Star Contract Delta",type:"contract_site",state:"TX",city:"San Antonio",status:"active",workflow:"published",visibility:"business_internal",bucket:"26–100",x:.48,y:.57,updated:"Jul 06"},
+    {id:"az-future",name:"Desert Growth Scenario",type:"future_site",state:"AZ",city:"Phoenix",status:"planned",workflow:"published",visibility:"executive_only",bucket:"1–5",x:.54,y:.48,updated:"Jul 05"},
+    {id:"wa-site",name:"Northwest Contract Echo",type:"contract_site",state:"WA",city:"Tacoma",status:"active",workflow:"published",visibility:"business_internal",bucket:"6–25",x:.35,y:.42,updated:"Jul 04"},
+    {id:"md-site",name:"Capital Region Contract Foxtrot",type:"contract_site",state:"MD",city:"Columbia",status:"active",workflow:"published",visibility:"restricted",bucket:"6–25",x:.62,y:.51,updated:"Jul 03"},
+    {id:"ga-site",name:"Southeast Contract Golf",type:"contract_site",state:"GA",city:"Warner Robins",status:"inactive",workflow:"published",visibility:"hidden_archived",bucket:"—",x:.52,y:.58,updated:"Jun 29"},
+    {id:"nv-future",name:"Western Innovation Scenario",type:"future_site",state:"NV",city:"Reno",status:"planned",workflow:"published",visibility:"executive_only",bucket:"1–5",x:.42,y:.36,updated:"Jun 28"}
+  ];
+  const workforce = {AL:"100+",NM:"26–100",CO:"26–100",VA:"100+",OH:"26–100",MA:"6–25",FL:"6–25",CA:"100+",TX:"26–100",AZ:"6–25",WA:"6–25",MD:"26–100",GA:"6–25",NV:"1–5"};
+  const baseDrafts = [
+    {id:"d1",name:"Southwest Contract Hotel",state:"NM",type:"contract_site",status:"active",visibility:"business_internal",workflow:"submitted",source:"Business Operations · Demo owner"},
+    {id:"d2",name:"Midwest Support Scenario",state:"MO",type:"future_site",status:"planned",visibility:"executive_only",workflow:"draft",source:"Strategy · Demo owner"},
+    {id:"d3",name:"Northeast Service Area v2",state:"MA",type:"regional_hq",status:"active",visibility:"business_internal",workflow:"approved",source:"Data Stewardship · Demo owner"}
+  ];
+  let saved = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } })();
+  let drafts = Array.isArray(saved.drafts) ? saved.drafts : baseDrafts;
+  let audits = Array.isArray(saved.audits) ? saved.audits : [
+    {title:"Region version published",detail:"Southwest support area · v3 · Data steward",time:"Today, 09:42"},
+    {title:"Location submitted",detail:"Southwest Contract Hotel · Editor",time:"Yesterday, 16:18"},
+    {title:"Visibility reviewed",detail:"Pacific Contract Gamma · Restricted",time:"Jul 11, 14:03"}
+  ];
+  let currentState = null, selectedId = "sw-hub", activeTab = "viewer";
+  const $ = id => document.getElementById(id);
+  const esc = value => String(value ?? "").replace(/[&<>\"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const role = () => $("roleSelect").value;
+  const roleAllows = visibility => ({viewer:["public_internal","business_internal","aggregated_only"],executive:["public_internal","business_internal","aggregated_only","executive_only"],restricted:["public_internal","business_internal","aggregated_only","restricted"],editor:["public_internal","business_internal","aggregated_only"],steward:Object.keys(visibilityLabel),admin:Object.keys(visibilityLabel)}[role()] || []).includes(visibility);
+  const selectedValues = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(input => input.value);
+  const typeLabel = type => typeMeta[type]?.label || type;
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({drafts,audits}));
+  function visibleSites(){
+    const types=selectedValues("type"), statuses=selectedValues("status"), query=($("globalSearch").value+" "+$("tableSearch").value).trim().toLowerCase();
+    return sites.filter(site => (!currentState || site.state===currentState) && types.includes(site.type) && statuses.includes(site.status) && (!$("visibleOnly").checked || roleAllows(site.visibility)) && site.workflow==="published" && (!query || `${site.name} ${site.city} ${stateNames[site.state]} ${typeLabel(site.type)}`.toLowerCase().includes(query)));
+  }
+  function toast(message){const el=$("toast");el.textContent=message;el.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.hidden=true,2600)}
+  function renderKpis(list){
+    const states=new Set(list.map(site=>site.state)).size, hubs=list.filter(site=>["headquarters","regional_hq","major_hub"].includes(site.type)).length, contracts=list.filter(site=>site.type==="contract_site").length;
+    $("kpis").innerHTML=[
+      [list.length,"Visible locations",`${states} state${states===1?"":"s"} represented`],[hubs,"HQ & major hubs","Approved, active layers"],[contracts,"Contract sites","Synthetic demonstration records"],[Object.keys(workforce).length,"Workforce areas","Bucketed and privacy-safe"]
+    ].map(([value,label,meta])=>`<article class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="meta"><i class="dot"></i>${meta}</div></article>`).join("");
+  }
+  function renderNational(){
+    const allowed=visibleSites(), counts=allowed.reduce((map,site)=>(map[site.state]=(map[site.state]||0)+1,map),{}), layer=$("mapLayer");
+    layer.innerHTML=stateLayout.map(({code,col,row})=>{
+      const count=counts[code]||0,bucket=workforce[code],x=20+col*70,y=32+row*63,fill=count>=2?"#83d4f2":count?"#bce9f8":bucket&&$("workforceLayer").checked?"#ded8f6":"#e8e9ef";
+      return `<g class="state ${count?"":"zero"}" role="button" tabindex="0" data-state="${code}" aria-label="${stateNames[code]}, ${count} visible location${count===1?"":"s"}${bucket?`, workforce bucket ${bucket}`:""}"><rect x="${x}" y="${y}" width="61" height="49" rx="9" fill="${fill}"></rect><text x="${x+10}" y="${y+21}" font-size="13">${code}</text><text class="count" x="${x+10}" y="${y+37}">${count?count+" site"+(count===1?"":"s"):(bucket&&$("workforceLayer").checked?bucket:"—")}</text></g>`;
+    }).join("");
+    layer.querySelectorAll(".state").forEach(node=>{const open=()=>{currentState=node.dataset.state;selectedId=visibleSites()[0]?.id||null;render()};node.addEventListener("click",open);node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open()}})});
+    $("mapTitle").textContent="United States footprint";$("mapDesc").textContent="Interactive tile map of the United States. Select a state to drill down.";$("crumbs").textContent="United States";$("zoomOut").disabled=true;
+  }
+  function renderState(){
+    const list=visibleSites(),layer=$("mapLayer"),name=stateNames[currentState];
+    let content=`<defs><linearGradient id="stateFill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8fbff"/><stop offset="1" stop-color="#dfe4f4"/></linearGradient></defs><path class="region-shape" fill="url(#stateFill)" d="M115 75 L795 55 L840 152 L815 430 L650 470 L255 455 L92 365 L120 225 Z"></path>`;
+    for(let x=155;x<810;x+=90) content+=`<line class="region-grid" x1="${x}" y1="90" x2="${x}" y2="440"></line>`;
+    for(let y=125;y<430;y+=70) content+=`<line class="region-grid" x1="120" y1="${y}" x2="815" y2="${y}"></line>`;
+    if($("regionLayer").checked) content+=`<path d="M230 145 Q390 92 515 165 T730 178 L690 315 Q535 278 410 355 T220 325 Z" fill="rgba(147,130,249,.12)" stroke="#9382f9" stroke-width="2" stroke-dasharray="8 6"></path><text x="249" y="180" fill="#5e4ba0" font-size="11" font-weight="700">Reusable operating area</text>`;
+    if(!list.length) content+=`<text class="empty-map" x="480" y="270" text-anchor="middle">No permitted locations match the current filters.</text>`;
+    content+=list.map(site=>{const meta=typeMeta[site.type],x=170+site.x*590,y=110+site.y*300;return `<g class="pin" role="button" tabindex="0" data-id="${site.id}" aria-label="Select ${esc(site.name)}"><circle cx="${x}" cy="${y}" r="${site.type==="headquarters"?13:10}" fill="${meta.color}"></circle><text x="${x+16}" y="${y+4}">${esc(site.name.replace(/ Demo| Contract| Scenario/g,"").split(" ").slice(0,3).join(" "))}</text></g>`}).join("");
+    layer.innerHTML=content;layer.querySelectorAll(".pin").forEach(node=>{const select=()=>{selectedId=node.dataset.id;renderDetail();renderTable()};node.addEventListener("click",select);node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();select()}})});
+    $("mapTitle").textContent=`${name} drilldown`;$("mapDesc").textContent=`State detail map for ${name}. Select a visible location for details.`;$("crumbs").innerHTML=`<button type="button" id="crumbHome">United States</button> &nbsp;/&nbsp; ${name}`;$("crumbHome").onclick=()=>{currentState=null;render()};$("zoomOut").disabled=false;
+  }
+  function renderDetail(){
+    const list=visibleSites();let site=list.find(item=>item.id===selectedId)||list[0];if(site) selectedId=site.id;
+    if(!site){$("detailCard").innerHTML=`<div class="empty"><b>No selection</b><br>Choose a state or adjust the filters.</div>`;return}
+    const permitted=roleAllows(site.visibility),meta=typeMeta[site.type];
+    $("detailCard").innerHTML=`<div class="detail-hero"><div class="type">${esc(meta.label)}</div><h2>${esc(site.name)}</h2><span class="badge">● ${esc(site.status)} · ${esc(site.workflow)}</span></div><dl class="detail-list"><div><dt>Location</dt><dd>${esc(site.city)}, ${site.state}</dd></div><div><dt>Workforce</dt><dd>${esc(site.bucket)} employees</dd></div><div><dt>Visibility</dt><dd>${esc(visibilityLabel[site.visibility])}</dd></div><div><dt>Coordinates</dt><dd>${site.visibility==="restricted"&&!permitted?"Generalized for this role":"Synthetic demo point"}</dd></div><div><dt>Last updated</dt><dd>${esc(site.updated)}, 2026</dd></div></dl><p class="privacy-callout">Workforce values are approved buckets. No individual employee locations or exact headcounts are stored in this prototype.</p>`;
+  }
+  function renderTable(){
+    const list=visibleSites();$("siteRows").innerHTML=list.map(site=>`<tr data-id="${site.id}" class="${site.id===selectedId?"selected":""}" tabindex="0"><td class="site-name">${esc(site.name)}</td><td>${esc(typeLabel(site.type))}</td><td>${site.state}</td><td><span class="status ${site.status}">${esc(site.status)}</span></td><td>${esc(site.bucket)}</td><td>${esc(visibilityLabel[site.visibility])}</td><td>${esc(site.updated)}</td></tr>`).join("")||`<tr><td colspan="7" class="empty">No permitted records match the current filters.</td></tr>`;
+    $("siteRows").querySelectorAll("tr[data-id]").forEach(row=>{const select=()=>{selectedId=row.dataset.id;if(!currentState)currentState=sites.find(site=>site.id===selectedId).state;render()};row.addEventListener("click",select);row.addEventListener("keydown",event=>{if(event.key==="Enter"){select()}})});
+    $("tableSub").textContent=`${list.length} record${list.length===1?"":"s"} · ${role().replace("_"," ")} view`;
+  }
+  function renderLegend(){$("mapLegend").innerHTML=`<span class="key"><i style="--key:#83d4f2"></i>Multiple sites</span><span class="key"><i style="--key:#bce9f8"></i>One site</span><span class="key"><i style="--key:#ded8f6"></i>Workforce bucket</span>`}
+  function renderSummary(){const list=visibleSites(),hubs=list.filter(site=>["headquarters","regional_hq","major_hub"].includes(site.type)).length,contracts=list.filter(site=>site.type==="contract_site").length,scope=currentState?stateNames[currentState]:"the United States";$("mapSummary").innerHTML=`<b>${list.length} permitted location${list.length===1?"":"s"}</b> in ${scope}: ${hubs} HQ/hub designation${hubs===1?"":"s"}, ${contracts} active contract site${contracts===1?"":"s"}. Workforce values are bucketed.`}
+  function render(){const list=visibleSites();renderKpis(list);currentState?renderState():renderNational();renderDetail();renderTable();renderLegend();renderSummary()}
+  function renderQueue(){
+    $("queueCount").textContent=drafts.length?`(${drafts.length})`:"";$("queueBadge").textContent=`${drafts.length} open`;$("queue").innerHTML=drafts.map(item=>{const step={draft:1,submitted:2,approved:3,published:4}[item.workflow]||1;return `<article class="queue-item"><div><h3>${esc(item.name)}</h3><p>${esc(typeLabel(item.type))} · ${item.state} · ${esc(item.status)} · ${esc(visibilityLabel[item.visibility])}</p><div class="workflow" aria-label="Workflow ${item.workflow}">${[1,2,3,4].map(n=>`<span class="${n<=step?"on":""}"></span>`).join("")}</div><div class="workflow-label">Draft &nbsp;·&nbsp; Submitted &nbsp;·&nbsp; Approved &nbsp;·&nbsp; Published</div></div><div class="queue-actions">${item.workflow==="draft"?`<button class="btn secondary small" data-action="submit" data-id="${item.id}">Submit</button>`:""}${item.workflow==="submitted"?`<button class="btn small" data-action="approve" data-id="${item.id}" ${!["steward","admin"].includes(role())?"disabled title=\"Data steward role required\"":""}>Approve</button>`:""}${item.workflow==="approved"?`<button class="btn sky small" data-action="publish" data-id="${item.id}" ${!["steward","admin"].includes(role())?"disabled title=\"Data steward role required\"":""}>Publish</button>`:""}<button class="btn danger small" data-action="remove" data-id="${item.id}">Archive</button></div></article>`}).join("")||`<div class="empty">The internal review queue is clear.</div>`;
+    $("queue").querySelectorAll("button[data-action]").forEach(button=>button.onclick=()=>advanceDraft(button.dataset.id,button.dataset.action));
+  }
+  function advanceDraft(id,action){const item=drafts.find(draft=>draft.id===id);if(!item)return;if(action==="remove"){drafts=drafts.filter(draft=>draft.id!==id);audits.unshift({title:"Draft archived",detail:item.name,time:"Just now"})}else{item.workflow={submit:"submitted",approve:"approved",publish:"published"}[action];audits.unshift({title:`Location ${item.workflow}`,detail:`${item.name} · ${role()}`,time:"Just now"});if(item.workflow==="published")setTimeout(()=>{drafts=drafts.filter(draft=>draft.id!==id);save();renderQueue()},300)}save();renderQueue();renderAudit();toast(`Internal workflow updated: ${item.name}`)}
+  function renderAudit(){$("audit").innerHTML=audits.slice(0,6).map(item=>`<li><b>${esc(item.title)}</b>${esc(item.detail)}<br><small>${esc(item.time)}</small></li>`).join("")}
+  function switchTab(next){activeTab=next;const viewer=next==="viewer";$("viewerPanel").hidden=!viewer;$("adminPanel").hidden=viewer;$("viewerTab").setAttribute("aria-selected",viewer);$("adminTab").setAttribute("aria-selected",!viewer);if(!viewer){renderQueue();renderAudit()}}
+  function applySavedView(value){document.querySelectorAll('input[name="type"]').forEach(input=>input.checked=true);document.querySelectorAll('input[name="status"]').forEach(input=>input.checked=input.value!=="inactive");$("workforceLayer").checked=value!=="contracts";if(value==="workforce")document.querySelectorAll('input[name="type"]').forEach(input=>input.checked=["headquarters","regional_hq","major_hub"].includes(input.value));if(value==="contracts")document.querySelectorAll('input[name="type"]').forEach(input=>input.checked=input.value==="contract_site");currentState=null;render()}
+  function exportCsv(){const rows=[["Location","Type","State","City","Operational status","Workflow","Workforce bucket","Visibility"],...visibleSites().map(site=>[site.name,typeLabel(site.type),site.state,site.city,site.status,site.workflow,site.bucket,visibilityLabel[site.visibility]])];const csv=rows.map(row=>row.map(value=>`"${String(value).replace(/"/g,'""')}"`).join(",")).join("\r\n"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv"})),link=document.createElement("a");link.href=url;link.download="astrion-geopresence-visible-demo.csv";link.click();URL.revokeObjectURL(url);toast("Visible synthetic records exported")}
+  document.querySelectorAll('input[type="checkbox"]').forEach(input=>input.addEventListener("change",render));
+  $("viewerTab").onclick=()=>switchTab("viewer");$("adminTab").onclick=()=>switchTab("admin");$("zoomOut").onclick=()=>{currentState=null;render()};
+  $("roleSelect").onchange=()=>{render();renderQueue();toast(`Previewing ${role().replace("_"," ")} permissions`)};
+  $("globalSearch").oninput=()=>{currentState=null;render()};$("tableSearch").oninput=render;$("clearFilters").onclick=()=>{document.querySelectorAll('input[name="type"],input[name="status"]').forEach(input=>input.checked=input.value!=="inactive");$("workforceLayer").checked=$("regionLayer").checked=$("visibleOnly").checked=true;$("globalSearch").value=$("tableSearch").value="";currentState=null;render()};
+  $("viewSelect").onchange=event=>applySavedView(event.target.value);$("saveView").onclick=()=>toast("View settings saved locally for this prototype");$("exportBtn").onclick=exportCsv;
+  $("copySummary").onclick=async()=>{const text=$("mapSummary").textContent;try{await navigator.clipboard.writeText(text);toast("Map summary copied")}catch{toast("Copy is unavailable in this browser")}};
+  $("regionAction").onclick=()=>toast("Import preview would validate GeoJSON geometry and metadata");
+  $("locationForm").onsubmit=event=>{event.preventDefault();const data=Object.fromEntries(new FormData(event.currentTarget));const item={id:`d-${Date.now()}`,...data,workflow:"draft"};drafts.unshift(item);audits.unshift({title:"Location draft created",detail:`${item.name} · ${role()}`,time:"Just now"});save();event.currentTarget.reset();renderQueue();renderAudit();toast("Draft created for internal review")};
+  $("locState").innerHTML=Object.entries(stateNames).sort((a,b)=>a[1].localeCompare(b[1])).map(([code,name])=>`<option value="${code}">${esc(name)}</option>`).join("");
+  render();renderQueue();renderAudit();
+})();
+</script>
+</body>
+</html>

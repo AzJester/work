@@ -1,6 +1,19 @@
 # work
 My Work Repository
 
+## Astrion GeoPresence
+
+A self-contained, interactive prototype for a governed Astrion location-intelligence experience:
+
+### → https://azjester.github.io/work/geopresence/
+
+- U.S.-to-state drilldown with synthetic HQ, hub, contract-site, and future-site records
+- role-aware visibility, privacy-safe workforce buckets, searchable synchronized table, and CSV export
+- internal editor/data-steward workflow, reusable region library, and audit trail
+- keyboard-operable map controls, text summary, reduced-motion support, and responsive/print layouts
+
+The prototype uses synthetic demonstration data only. Its publishing queue is an internal Astrion data-quality workflow and does not require government approval.
+
 ## Weekly Status Tracker
 
 A standalone, self-contained page for tracking your **weekly task status** and producing a
