@@ -4,6 +4,31 @@ All notable changes to Astrion Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [2.2.0] - 2026-07-13
+
+### Added
+
+- embedded 31,847 U.S. city and community records derived from the official 2025 U.S. Census National Places Gazetteer
+- state-filtered city/community entry with validation against the embedded catalog
+- an optional catalog of 887 selectable military-installation anchors covering all 51 state/DC codes: 805 FY2024 DoD MIRTA points and 82 Coast Guard records from 2025 Census military landmarks
+- installation filtering by state, including Redstone Arsenal under Alabama and Fort Campbell under both Tennessee and Kentucky
+- city- and installation-positioned markers with an optional collision-aware place-label layer
+- same-anchor grouping that keeps different location types visually distinct and gives repeated records of the same type a numeric count badge
+- a Huntsville, Alabama sample with both a Regional HQ and a Contract Site
+
+### Changed
+
+- moved location symbols into a dedicated layer above every state outline so border-adjacent markers stay visible
+- protected every state initial from overlap by borders, callout lines, location markers, anchor labels, and counts
+- moved Florida and Louisiana initials to protected interior positions and placed state counts at interior-safe geometry candidates instead of a fixed centroid offset
+- added contrasting halos to titles, subtitles, legend labels, and Northeast callout connectors so transparent exports remain readable when pasted onto light or dark graphics
+- made downloaded SVGs presentation-only by stripping browser-only state-selection roles and focus attributes from the exported copy
+- kept city/community as the default anchor while making military installations selectable rather than plotting all 887 automatically
+- updated the location list to show the selected city/community or installation, state, and site type
+- retained older state-only saved records as explicit `Statewide` locations instead of assigning a fabricated city
+- kept all city and installation reference data fully embedded so the app still has no runtime map service, geocoder, government connection or approval, account, API key, or network dependency
+- documented that the public installation sources do not include classified or otherwise unreleased sites, leased sites, or every small Guard and Reserve site
+
 ## [2.1.0] - 2026-07-13
 
 ### Changed
