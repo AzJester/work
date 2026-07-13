@@ -2,7 +2,7 @@
 
 A self-contained browser application for creating a branded geographic U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
 
-Version: **2.0.0**
+Version: **2.1.0**
 
 Created by **Dr. Shane Turner**
 
@@ -10,15 +10,18 @@ Open `index.html` directly or serve the repository and visit `/geopresence/`.
 
 ## What it does
 
-- edits the map title, subtitle, footer, theme, accent color, and canvas ratio
+- edits the map title, subtitle, theme, accent color, and canvas ratio
 - displays recognizable geographic state boundaries with Alaska and Hawaii insets
 - adds and removes labeled locations by state and type
+- distinguishes headquarters, regional HQs, hubs, contract sites, and future sites with unique marker shapes as well as color
+- keeps state abbreviations visually neutral so the location symbols carry the emphasis
 - optionally shows state labels, location counts, a legend, and a background grid
 - supports transparent backgrounds
 - exports high-resolution PNG files at 1×, 2×, or 3× quality
 - exports scalable SVG files for later editing
 - copies a PNG to the clipboard when the browser supports image clipboard access
 - saves the current map locally in the browser
+- keeps application attribution, version information, and demonstration notices out of copied and downloaded graphics
 
 ## What it does not need
 
