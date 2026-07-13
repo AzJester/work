@@ -1,8 +1,11 @@
 # Astrion GeoPresence implementation plan
 
-Status: prototype implemented for GitHub Pages  
-Updated: July 13, 2026  
-Product owner: Astrion internal  
+Status: prototype implemented for GitHub Pages
+
+Updated: July 13, 2026
+
+Product owner: Astrion internal
+
 Approval scope: Astrion internal data stewardship only; no government approval is required
 
 ## 1. Product outcome
