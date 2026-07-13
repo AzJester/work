@@ -3,17 +3,20 @@ My Work Repository
 
 ## Astrion Map Builder
 
-A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.1.0, created by Dr. Shane Turner:
+A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.0, created by Dr. Shane Turner:
 
 ### → https://azjester.github.io/work/geopresence/
 
 - edit the title, theme, accent color, state labels, site counts, legend, and background
 - work with recognizable state boundaries, including Alaska and Hawaii insets
-- add and remove headquarters, regional HQ, hub, contract-site, and future-site markers
+- use a city or community as the default location anchor, or choose from 887 embedded U.S. military-installation anchors covering all 51 state/DC codes
+- place headquarters, regional HQ, hub, contract-site, and future-site markers at the selected city, community, or installation
+- show multiple site types at the same anchor side by side, with count badges for repeated sites of one type
+- keep every state initial clearly readable in a protected label layer, away from borders, callout lines, markers, and other labels
 - export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
-- use transparent backgrounds or copy the finished PNG directly to the clipboard
+- use contrast-safe transparent backgrounds or copy the finished PNG directly to the clipboard
 
-It runs entirely in the browser with no mapping service, charting library, account, API key, or backend.
+It runs entirely in the browser with no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. The installation catalog is selectable reference data; the app does not plot all 887 installations by default.
 
 ## Weekly Status Tracker
 
