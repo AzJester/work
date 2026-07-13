@@ -3,11 +3,12 @@ My Work Repository
 
 ## Astrion Map Builder
 
-A self-contained application for building a branded U.S. location map and exporting it as a PNG or SVG:
+A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.0.0, created by Dr. Shane Turner:
 
 ### → https://azjester.github.io/work/geopresence/
 
 - edit the title, theme, accent color, state labels, site counts, legend, and background
+- work with recognizable state boundaries, including Alaska and Hawaii insets
 - add and remove headquarters, regional HQ, hub, contract-site, and future-site markers
 - export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
 - use transparent backgrounds or copy the finished PNG directly to the clipboard

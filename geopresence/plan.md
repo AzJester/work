@@ -4,6 +4,10 @@ Status: implemented
 
 Updated: July 13, 2026
 
+Current version: 2.0.0
+
+Created by: Dr. Shane Turner
+
 ## Objective
 
 Build a simple standalone application that creates a polished U.S. location map and exports the finished graphic as PNG or SVG.
@@ -14,7 +18,8 @@ The application is a graphic-production tool. It is not an enterprise mapping pl
 
 ### Map composition
 
-- display every U.S. state and the District of Columbia in a consistent tile-map layout
+- display real geographic boundaries for every U.S. state and the District of Columbia
+- use a recognizable Albers USA projection with Alaska and Hawaii insets
 - allow a user to add, label, classify, and remove locations
 - visually distinguish headquarters, regional headquarters, hubs, contract sites, and future sites
 - show optional state labels, site counts, legend, and background grid
@@ -39,6 +44,8 @@ The application is a graphic-production tool. It is not an enterprise mapping pl
 - local browser persistence only
 - keyboard-operable state selection and labeled form controls
 - responsive layout for desktop and mobile use
+- visible application version and creator attribution
+- maintained release history in `changelog.md`
 
 ## User flow
 
@@ -62,6 +69,9 @@ The exported graphic must include only the composed map—not the surrounding ed
 - page runs without external scripts or services
 - changing any setting immediately updates the map preview
 - clicking a state preselects it in the add-location form
+- map contains 51 unique geographic paths for the 50 states and District of Columbia
+- state shapes preserve geographic proportions through uniform scaling at every canvas ratio
+- small Northeast states and the District of Columbia remain labeled and selectable
 - adding or removing a location updates state markers, counts, legend, and location list
 - PNG export creates a valid non-empty PNG
 - SVG export creates a valid standalone SVG
@@ -78,4 +88,4 @@ Only add these if they become useful:
 - user-selectable fonts
 - custom state colors
 - JSON import/export of a saved map configuration
-- alternate regional or international tile layouts
+- alternate regional or international geographic maps

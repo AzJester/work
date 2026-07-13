@@ -1,12 +1,17 @@
 # Astrion Map Builder
 
-A self-contained browser application for creating a branded U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
+A self-contained browser application for creating a branded geographic U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
+
+Version: **2.0.0**
+
+Created by **Dr. Shane Turner**
 
 Open `index.html` directly or serve the repository and visit `/geopresence/`.
 
 ## What it does
 
 - edits the map title, subtitle, footer, theme, accent color, and canvas ratio
+- displays recognizable geographic state boundaries with Alaska and Hawaii insets
 - adds and removes labeled locations by state and type
 - optionally shows state labels, location counts, a legend, and a background grid
 - supports transparent backgrounds
@@ -24,3 +29,11 @@ Open `index.html` directly or serve the repository and visit `/geopresence/`.
 - no network connection after the page is loaded
 
 The included locations are synthetic examples and can be cleared or replaced.
+
+Markers are positioned at representative state-level anchors because locations currently select a state rather than an exact street address or coordinate.
+
+## Map geometry
+
+The embedded geometry is derived from `us-atlas@3.0.1/states-albers-10m.json`, which uses U.S. Census Bureau cartographic boundary data projected with Albers USA. It is intended for presentation graphics, not legal boundary analysis or survey work. The geometry is bundled into the page, so the deployed app makes no runtime map or data requests.
+
+See [changelog.md](changelog.md) for release history.
