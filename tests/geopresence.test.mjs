@@ -34,9 +34,10 @@ test("map builder provides PNG, SVG, and clipboard output", () => {
 });
 
 test("map builder supports graphic composition controls", () => {
-  for (const id of ["mapTitle", "mapSubtitle", "mapFooter", "aspect", "scale", "theme", "accent", "showLabels", "showCounts", "showLegend", "showGrid", "transparent"]) {
+  for (const id of ["mapTitle", "mapSubtitle", "aspect", "scale", "theme", "accent", "showLabels", "showCounts", "showLegend", "showGrid", "transparent"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
+  assert.doesNotMatch(html, /id="mapFooter"/);
   assert.match(html, /16:9/);
   assert.match(html, /4:3/);
   assert.match(html, /Square/);
@@ -68,12 +69,29 @@ test("map and location editing expose accessible controls", () => {
 });
 
 test("only synthetic sample data is bundled", () => {
-  assert.match(html, /Synthetic demonstration data/);
   assert.match(html, /const samples=/);
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(html, /const APP_VERSION="2\.0\.0"/);
+  assert.match(html, /const APP_VERSION="2\.1\.0"/);
   assert.match(html, /Created by Dr\. Shane Turner/);
-  assert.match(changelog, /## \[2\.0\.0\] - 2026-07-13/);
+  assert.match(changelog, /## \[2\.1\.0\] - 2026-07-13/);
+});
+
+test("copied and downloaded map graphics omit application footer text", () => {
+  const mapMarkup = html.match(/function mapMarkup\(\)\{[\s\S]*?\n  function render\(\)/)?.[0] || "";
+  assert.ok(mapMarkup);
+  assert.doesNotMatch(mapMarkup, /Created by Dr\. Shane Turner/);
+  assert.doesNotMatch(mapMarkup, /Synthetic demonstration data/);
+  assert.doesNotMatch(mapMarkup, /mapFooter/);
+});
+
+test("location categories use distinct shapes without highlighting states", () => {
+  for (const shape of ["star", "diamond", "circle", "square", "triangle"]) {
+    assert.match(html, new RegExp(`shape:"${shape}"`));
+  }
+  assert.match(html, /function markerSymbol\(/);
+  assert.match(html, /fill=p\.land/);
+  assert.doesNotMatch(html, /landActive/);
+  assert.match(html, /showCounts:false/);
 });

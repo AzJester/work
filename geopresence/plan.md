@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: July 13, 2026
 
-Current version: 2.0.0
+Current version: 2.1.0
 
 Created by: Dr. Shane Turner
 
@@ -22,8 +22,9 @@ The application is a graphic-production tool. It is not an enterprise mapping pl
 - use a recognizable Albers USA projection with Alaska and Hawaii insets
 - allow a user to add, label, classify, and remove locations
 - visually distinguish headquarters, regional headquarters, hubs, contract sites, and future sites
+- encode each location type with both a unique symbol and color while keeping state labels neutral
 - show optional state labels, site counts, legend, and background grid
-- support editable title, subtitle, footer note, theme, and accent color
+- support editable title, subtitle, theme, and accent color
 
 ### Graphic formats
 
@@ -34,6 +35,7 @@ The application is a graphic-production tool. It is not an enterprise mapping pl
 - PNG export at standard, high, and ultra resolution
 - SVG export for lossless scaling and editing
 - clipboard copy where the browser permits image clipboard writes
+- omit application attribution, version information, and demonstration notices from every exported or copied graphic
 
 ### Application constraints
 
