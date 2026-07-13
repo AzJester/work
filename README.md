@@ -1,6 +1,19 @@
 # work
 My Work Repository
 
+## Astrion Map Builder
+
+A self-contained application for building a branded U.S. location map and exporting it as a PNG or SVG:
+
+### → https://azjester.github.io/work/geopresence/
+
+- edit the title, theme, accent color, state labels, site counts, legend, and background
+- add and remove headquarters, regional HQ, hub, contract-site, and future-site markers
+- export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
+- use transparent backgrounds or copy the finished PNG directly to the clipboard
+
+It runs entirely in the browser with no mapping service, charting library, account, API key, or backend.
+
 ## Weekly Status Tracker
 
 A standalone, self-contained page for tracking your **weekly task status** and producing a
