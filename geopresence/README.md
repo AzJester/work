@@ -1,17 +1,26 @@
-# Astrion GeoPresence prototype
+# Astrion Map Builder
 
-This directory contains a self-contained GitHub Pages prototype based on the Astrion GeoPresence application plan.
+A self-contained browser application for creating a branded U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
 
 Open `index.html` directly or serve the repository and visit `/geopresence/`.
 
-The prototype includes:
+## What it does
 
-- U.S.-to-state drilldown with keyboard-operable states and pins
-- synchronized accessible table and generated text summary
-- privacy-safe workforce buckets and role-aware visibility
-- saved view presets, filtering, search, CSV export, and print styling
-- separate operational status and internal publishing workflow
-- editor/data-steward queue, reusable region library, and audit history
-- synthetic demonstration data only
+- edits the map title, subtitle, footer, theme, accent color, and canvas ratio
+- adds and removes labeled locations by state and type
+- optionally shows state labels, location counts, a legend, and a background grid
+- supports transparent backgrounds
+- exports high-resolution PNG files at 1×, 2×, or 3× quality
+- exports scalable SVG files for later editing
+- copies a PNG to the clipboard when the browser supports image clipboard access
+- saves the current map locally in the browser
 
-The queue represents Astrion's internal data-quality and privacy workflow. It does not represent or require government approval.
+## What it does not need
+
+- no map service
+- no external JavaScript library
+- no account or API key
+- no backend or database
+- no network connection after the page is loaded
+
+The included locations are synthetic examples and can be cleared or replaced.

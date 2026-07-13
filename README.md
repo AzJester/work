@@ -1,18 +1,18 @@
 # work
 My Work Repository
 
-## Astrion GeoPresence
+## Astrion Map Builder
 
-A self-contained, interactive prototype for a governed Astrion location-intelligence experience:
+A self-contained application for building a branded U.S. location map and exporting it as a PNG or SVG:
 
 ### → https://azjester.github.io/work/geopresence/
 
-- U.S.-to-state drilldown with synthetic HQ, hub, contract-site, and future-site records
-- role-aware visibility, privacy-safe workforce buckets, searchable synchronized table, and CSV export
-- internal editor/data-steward workflow, reusable region library, and audit trail
-- keyboard-operable map controls, text summary, reduced-motion support, and responsive/print layouts
+- edit the title, theme, accent color, state labels, site counts, legend, and background
+- add and remove headquarters, regional HQ, hub, contract-site, and future-site markers
+- export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
+- use transparent backgrounds or copy the finished PNG directly to the clipboard
 
-The prototype uses synthetic demonstration data only. Its publishing queue is an internal Astrion data-quality workflow and does not require government approval.
+It runs entirely in the browser with no mapping service, charting library, account, API key, or backend.
 
 ## Weekly Status Tracker
 
