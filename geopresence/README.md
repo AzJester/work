@@ -2,9 +2,11 @@
 
 A self-contained browser application for creating a branded geographic U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
 
-Version: **2.2.0**
+Version: **2.2.1**
 
 Created by **Dr. Shane Turner**
+
+Public application: **https://azjester.github.io/work/geopresence/**
 
 Open `index.html` directly or serve the repository and visit `/geopresence/`.
 
@@ -14,13 +16,14 @@ Open `index.html` directly or serve the repository and visit `/geopresence/`.
 - displays recognizable geographic state boundaries with Alaska and Hawaii insets
 - filters embedded U.S. city/community and military-installation catalogs by state
 - keeps city/community as the default anchor type, with military installation available as an explicit alternative
-- adds and removes labeled locations by city/community or installation and type
+- adds, edits, and removes labeled locations by city/community or installation and type
 - places each marker at the selected anchor's presentation-scale coordinate
-- distinguishes headquarters, regional HQs, hubs, contract sites, and future sites with unique marker shapes as well as color
+- distinguishes headquarters, regional headquarters, sites, contract sites, and future sites with unique marker shapes as well as color
 - shows different site types side by side when they share an anchor and adds a count badge when one anchor has multiple records of the same type
-- keeps state abbreviations visually neutral and protected from state borders, callout lines, markers, and other labels
+- keeps regular state abbreviations at fixed, validated positions and uses protected callouts for the smallest states and District of Columbia
 - optionally shows state labels, city labels, state-level location counts, a legend, and a background grid
-- supports transparent backgrounds with contrast-safe title, subtitle, legend, place-label, and callout-line rendering on light or dark destination graphics
+- uses crisp, solid neutral typography and compact place-label plates for transparent backgrounds, without glows or text outlines
+- keeps the location form controls inside their panel at desktop and mobile widths and places **Clear locations** with the location list it affects
 - exports high-resolution PNG files at 1×, 2×, or 3× quality
 - exports scalable SVG files for later editing
 - copies a PNG to the clipboard when the browser supports image clipboard access
@@ -36,7 +39,7 @@ Open `index.html` directly or serve the repository and visit `/geopresence/`.
 - no network connection after the page is loaded
 - no government account, connection, or approval
 
-The Huntsville, Alabama defaults reflect the user-provided Regional HQ and contract presence. The other included Astrion locations are demonstration examples and can be cleared or replaced. Huntsville intentionally shows both categories at one anchor. The embedded city and installation catalogs are public reference data, not claims about Astrion sites.
+The Huntsville, Alabama Regional Headquarters and contract presence reflect user-provided information. The other included Astrion locations are demonstration examples and can be cleared, edited, or replaced. Huntsville intentionally shows both categories at one anchor. The embedded city and installation catalogs are public reference data, not claims about Astrion sites.
 
 ## Location anchors
 
@@ -51,10 +54,12 @@ Redstone Arsenal is indexed under Alabama. Fort Campbell is indexed for both Ten
 
 These public sources do not and cannot promise every military facility. MIRTA excludes some classified or otherwise unreleased sites, leased sites, sites without releasable geospatial data, and many small Guard or Reserve sites. Census states that the 2025 military-landmark file carries older, 2012-sourced inventory and boundary work, so its Coast Guard records are useful public anchors rather than a current legal facility inventory. Installation points are not gates, buildings, surveyed parcels, or legal boundaries.
 
-Older saved records that do not contain a city remain available as `Statewide` locations at the state's representative anchor. The app does not invent a city for those records.
+The exact nine-location starter set saved by version 2.1 is automatically replaced with the current city-based samples. Other older records without a city remain at the state's representative anchor, but the map does not show a fabricated place label or the word "Statewide."
 
 ## Map geometry
 
-The embedded state geometry is derived from `us-atlas@3.0.1/states-albers-10m.json`, which uses U.S. Census Bureau cartographic boundary data projected with Albers USA. City/community and installation coordinates were projected into the same coordinate system during development. State initials use protected anchors and backing so state borders, Northeast callout lines, location symbols, and other labels do not cross the text. All geometry and reference catalogs are bundled into the page, so the deployed app makes no runtime map or data requests. The map is intended for presentation graphics, not legal boundary analysis or survey work.
+The embedded state geometry is derived from `us-atlas@3.0.1/states-albers-10m.json`, which uses U.S. Census Bureau cartographic boundary data projected with Albers USA. City/community and installation coordinates were projected into the same coordinate system during development. Regular state initials use fixed canonical anchors with protected backing; the smallest Northeast states and District of Columbia use callouts so state borders, connectors, location symbols, and other labels do not cross the text. All geometry and reference catalogs are bundled into the page, so the deployed app makes no runtime map or data requests. The map is intended for presentation graphics, not legal boundary analysis or survey work.
+
+Transparent PNG and SVG output has no canvas background. The app uses neutral solid text, single-stroke callout connectors, and compact background plates for place labels, but no single foreground color can guarantee contrast over every possible image. Preview a transparent export on its intended destination background before final use.
 
 See [changelog.md](changelog.md) for release history.
