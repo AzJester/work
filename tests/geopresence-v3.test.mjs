@@ -468,7 +468,7 @@ test("v3 application, README, plan, and changelog publish one consistent version
   const changelog = readText("changelog.md");
   const version = app.match(/\bAPP_VERSION\s*=\s*["'](\d+\.\d+\.\d+)["']/)?.[1];
   assert.ok(version, "APP_VERSION was not found");
-  assert.equal(version, "3.2.1", "this release must publish the complete v3.2.1 contract");
+  assert.equal(version, "3.2.2", "this release must publish the complete v3.2.2 contract");
   assert.ok(Number(version.split(".")[0]) >= 3, "the complete hardening release should be versioned as v3 or later");
   assert.equal(readme.match(/Version:\s*\*\*(\d+\.\d+\.\d+)\*\*/i)?.[1], version);
   assert.equal(plan.match(/Current version:\s*(\d+\.\d+\.\d+)/i)?.[1], version);

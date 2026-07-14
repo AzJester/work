@@ -4,6 +4,15 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.2.2] - 2026-07-14
+
+### Changed
+
+- changed **Upload locations** from an underlined text action to the same compact bordered button style as **Clear locations**
+- reduced all three header export actions to compact, single-line buttons instead of wide controls with wrapped labels
+- kept the export actions content-sized at tablet widths and allowed a contained wrap only when a narrow mobile screen requires it
+- kept **Upload locations** and **Clear locations** together in one aligned button row on narrow screens
+
 ## [3.2.1] - 2026-07-14
 
 ### Fixed
