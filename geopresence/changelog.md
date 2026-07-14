@@ -4,6 +4,14 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.2.1] - 2026-07-14
+
+### Fixed
+
+- kept required asterisks on the same line as their field labels in the **Add a location** form
+- aligned the State box with the City/community or Military installation box and normalized their control heights
+- preserved the aligned form layout at desktop and mobile widths without changing field behavior or accessibility
+
 ## [3.2.0] - 2026-07-14
 
 ### Added

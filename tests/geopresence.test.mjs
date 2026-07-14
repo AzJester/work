@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.0"/);
-  assert.match(html, /Version 3\.2\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.2\.1"/);
+  assert.match(html, /Version 3\.2\.1/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -545,6 +545,17 @@ test("current layout keeps controls within responsive columns", () => {
   assert.match(styles, /@media\(max-width:860px\)[\s\S]*?\.workspace\{grid-template-columns:minmax\(0,1fr\)\}/);
   assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.row,\.add-grid,\.import-codes\{grid-template-columns:1fr\}/);
   assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.pin-row\{grid-template-columns:auto minmax\(0,1fr\)\}/);
+});
+
+test("required markers stay inline and location controls share a uniform height", () => {
+  assert.match(styles, /\.form-field\{display:flex;flex-direction:column;gap:5px\}/);
+  assert.match(styles, /\.add-grid label\{display:inline-flex;flex-direction:row;align-items:baseline/);
+  assert.doesNotMatch(styles, /\.add-grid label,\.form-field\{[^}]*flex-direction:column/);
+  assert.match(styles, /\.add-grid input,\.add-grid select\{[^}]*min-height:42px/);
+  assert.match(styles, /\.required\{display:inline;flex:0 0 auto/);
+  for (const id of ["pinName", "pinCity", "pinInstallation"]) {
+    assert.match(html, new RegExp(`<label for="${id}">[^<]+<span class="required" aria-hidden="true">\\*<\\/span><\\/label>`));
+  }
 });
 
 test("clear locations remains in the Locations panel", () => {
