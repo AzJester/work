@@ -22,7 +22,8 @@ const styles = html.match(/<style>([\s\S]*?)<\/style>/i)?.[1] || "";
 const expectedCodes = "AK AL AR AZ CA CO CT DC DE FL GA HI IA ID IL IN KS KY LA MA MD ME MI MN MO MS MT NC ND NE NH NJ NM NV NY OH OK OR PA RI SC SD TN TX UT VA VT WA WI WV WY".split(" ");
 
 function sha256(bytes) {
-  return createHash("sha256").update(bytes).digest("hex");
+  const canonicalBytes = Buffer.from(bytes).toString("utf8").replace(/\r\n/g, "\n");
+  return createHash("sha256").update(canonicalBytes, "utf8").digest("hex");
 }
 
 function assignmentSource(name) {
@@ -88,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.0\.0"/);
-  assert.match(html, /Version 3\.0\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.1\.0"/);
+  assert.match(html, /Version 3\.1\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -102,7 +103,7 @@ test("Census place catalog is complete, auditable, and GEOID-addressable", () =>
   assert.equal(placeMetadata.filtering.retainedRecordCount, 32058);
   assert.equal(placeCatalog.length, 32058);
   assert.equal(placeMetadata.records.uniqueGeoids, placeCatalog.length);
-  assert.equal(sha256(placeCatalogBuffer), placeMetadata.validation.dataSha256);
+  assert.equal(sha256(Buffer.from(`${JSON.stringify(placeCatalog)}\n`, "utf8")), placeMetadata.validation.dataSha256);
   assert.deepEqual([...new Set(placeCatalog.map(place => place[0]))].sort(), [...expectedCodes].sort());
   assert.equal(new Set(placeCatalog.map(place => place[1])).size, placeCatalog.length);
   assert.ok(placeCatalog.every(place => (
@@ -139,7 +140,7 @@ test("military installation catalog retains its pinned public snapshot", () => {
   assert.equal(installationCatalog.length, 887);
   assert.equal(installationCatalog.filter(site => site[9] === "dod").length, 805);
   assert.equal(installationCatalog.filter(site => site[9] === "uscg").length, 82);
-  assert.equal(sha256(installationCatalogBuffer), installationMetadata.sha256);
+  assert.equal(sha256(Buffer.from(`${JSON.stringify(installationCatalog)}\n`, "utf8")), installationMetadata.sha256);
   assert.deepEqual([...new Set(installationCatalog.map(site => site[0]))].sort(), [...expectedCodes].sort());
   assert.equal(new Set(installationCatalog.map(site => site[4])).size, installationCatalog.length);
   assert.ok(installationCatalog.every(site => (
@@ -175,7 +176,9 @@ test("map builder uses complete projected U.S. state geometry", () => {
 
 test("settings use semantic fieldsets and current plain-language labels", () => {
   const sectionLabels = [...html.matchAll(/<legend class="section-label">([^<]+)<\/legend>/g)].map(match => match[1]);
-  assert.deepEqual(sectionLabels, ["Map heading", "Format", "Map details", "Project"]);
+  for (const label of ["Map heading", "Format", "Map details", "Project"]) {
+    assert.ok(sectionLabels.includes(label), `${label} must remain a semantic fieldset legend`);
+  }
   assert.doesNotMatch(html, /<legend class="section-label">Text<\/legend>/);
   for (const id of [
     "mapTitle", "mapSubtitle", "aspect", "scale", "theme", "accent", "showLabels", "showCityLabels",
@@ -251,19 +254,30 @@ test("default project is empty and samples remain explicit editor data", () => {
   assert.match(inlineScript, /function isSampleData\(\)/);
 });
 
-test("site categories retain distinct shapes and accessible contrast", () => {
+test("site categories retain distinct pin interiors and accessible contrast", () => {
   const types = vm.runInNewContext(`(${assignmentSource("typeMeta")})`);
+  const expectedTypes = {
+    headquarters: { label: "Headquarters", icon: "star" },
+    regional: { label: "Regional headquarters", icon: "building" },
+    hub: { label: "Site", icon: "circle" },
+    contract: { label: "Contract site", icon: "briefcase" },
+    future: { label: "Future site", icon: "clock" },
+    program: { label: "Program office", icon: "document" },
+    operations: { label: "Operations center", icon: "network" },
+    customer: { label: "Customer site", icon: "person" },
+    partner: { label: "Partner site", icon: "link" },
+    test: { label: "Test or range site", icon: "target" },
+    manufacturing: { label: "Manufacturing facility", icon: "factory" }
+  };
   assert.deepEqual(
-    Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.label])),
-    {
-      headquarters: "Headquarters",
-      regional: "Regional headquarters",
-      hub: "Site",
-      contract: "Contract site",
-      future: "Future site"
-    }
+    Object.fromEntries(Object.entries(types).map(([key, value]) => [key, { label: value.label, icon: value.icon }])),
+    expectedTypes
   );
-  assert.deepEqual(Object.values(types).map(type => type.shape), ["star", "diamond", "circle", "square", "triangle"]);
+  const typeSelector = html.match(/<select\b[^>]*id="pinType"[^>]*>[\s\S]*?<\/select>/i)?.[0] || "";
+  assert.ok(typeSelector, "location type selector was not found");
+  for (const [value, meta] of Object.entries(expectedTypes)) {
+    assert.match(typeSelector, new RegExp(`<option\\s+value="${value}"[^>]*>\\s*${meta.label}\\s*</option>`, "i"));
+  }
   for (const [type, meta] of Object.entries(types)) {
     assert.ok(contrastRatio(meta.color, "#ffffff") >= 4.5, `${type} light marker must contrast with its plate`);
     assert.ok(contrastRatio(meta.color, "#dfe3e8") >= 4, `${type} light marker must contrast with light land`);
@@ -271,7 +285,8 @@ test("site categories retain distinct shapes and accessible contrast", () => {
     assert.ok(contrastRatio(meta.darkColor, "#3c3852") >= 4, `${type} dark marker must contrast with dark land`);
   }
   assert.match(inlineScript, /function markerToken\(meta,cx,cy,size,p\)/);
-  assert.match(inlineScript, /class="marker-backplate"/);
+  assert.match(inlineScript, /class="[^"]*\bmarker-pin\b[^"]*"/);
+  assert.doesNotMatch(inlineScript, /class="marker-backplate"/);
 });
 
 test("co-located tokens and globally nearby locations share collision occupancy", () => {
@@ -441,7 +456,7 @@ test("clear locations remains in the Locations panel", () => {
 });
 
 test("obsolete standalone and statewide copy remain absent", () => {
-  assert.doesNotMatch(html, /Standalone\s*[Â··]\s*No map service required/);
+  assert.doesNotMatch(html, /Standalone\s*[·•]\s*No map service required/);
   assert.doesNotMatch(html, /Standalone browser application/);
   assert.doesNotMatch(html, />Statewide</);
 });

@@ -1,16 +1,19 @@
 # work
 My Work Repository
 
-## Astrion Map Builder
+## Map Builder
 
-A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.0.0**, created by **Dr. Shane Turner**:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.1.0**, created by **Dr. Shane Turner**:
 
-### [Open Astrion Map Builder](https://azjester.github.io/work/geopresence/)
+### [Open Map Builder](https://azjester.github.io/work/geopresence/)
 
 - search 32,058 official 2025 Census places by stable GEOID/LSAD identity without collapsing duplicate names
 - search 887 selectable public-reference military-installation anchors covering all 51 state/DC codes
-- place Headquarters, Regional headquarters, Site, Contract site, and Future site markers using deterministic global collision handling
-- protect state initials, small-state callouts, counts, connectors, nearby marker groups, and place labels from overlap
+- use compact progressive-disclosure Map settings: Quick setup opens immediately, while Map details, Advanced, and Project stay collapsed with concise live summaries
+- use familiar generic teardrop pins with distinct interiors for eleven built-in types: Headquarters, Regional headquarters, Site, Contract site, Future site, Program office, Operations center, Customer site, Partner site, Test or range site, and Manufacturing facility
+- combine repeated locations of one type behind a count badge and fan different pin types apart with leader lines
+- adapt pin outlines for light, dark, and transparent exports; the legend uses identical pins, shows only types used on the map, and wraps automatically
+- protect state initials, small-state callouts, counts, connectors, nearby pin groups, and place labels from overlap
 - edit locations, confirm destructive changes, Undo recent actions, and recover the latest destructive snapshot
 - save validated browser state and import or export portable JSON project files
 - preview transparent output on checkerboard, light, dark, or custom destinations and select automatic, dark, or light text
@@ -18,6 +21,8 @@ A browser application for building a branded geographic U.S. location map and ex
 - inspect responsive maps with Fit, zoom, and full-screen controls using accessible forms and searchable comboboxes
 
 Versioned same-origin catalogs reduce initial page parsing and are cached with the app shell for offline reopening after a successful hosted load. GitHub Pages deployment is gated by Node and Playwright tests and followed by a production smoke test.
+
+The teardrop is generic application-rendered cartographic geometry, not Google Maps artwork or branding. The eleven built-in types use star, building, circle, briefcase, clock, document, network/gear, person, link, target, and factory interiors respectively. The metadata-driven pin renderer can support additional categories later.
 
 The app requires no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. City and installation catalogs are public reference data, not legal boundaries, exact building locations, or a complete military inventory. Optional samples are identified in the editor; the Huntsville Regional Headquarters and contract entries reflect user-provided information, while the other locations are demonstration examples.
 

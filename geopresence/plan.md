@@ -1,10 +1,10 @@
-# Astrion Map Builder plan
+# Map Builder plan
 
 Status: implemented
 
-Updated: July 13, 2026
+Updated: July 14, 2026
 
-Current version: 3.0.0
+Current version: 3.1.0
 
 Created by: Dr. Shane Turner
 
@@ -30,6 +30,14 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 
 ## Requirements
 
+### Map settings organization
+
+- keep the Map settings panel compact through native progressive disclosure
+- open **Quick setup** by default for the common heading, canvas, and map-theme controls
+- collapse **Map details**, **Advanced**, and **Project** by default
+- show a concise dynamic summary for every settings group so users can understand the current choices without opening it
+- keep group open/closed state editor-only so it never changes PNG, SVG, or clipboard output
+
 ### Map composition
 
 - display recognizable geographic boundaries for every U.S. state and the District of Columbia
@@ -37,11 +45,15 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - allow a state to be selected through the form and use a searchable city/community as the default location anchor
 - allow an explicit switch to a searchable military-installation combobox
 - place markers at the chosen place or installation presentation coordinate
-- distinguish Headquarters, Regional headquarters, Site, Contract site, and Future site with unique shapes and theme-aware colors
-- keep state labels neutral and every marker and legend symbol visible on a crisp dual-tone backplate
-- group repeated records of one type at an anchor behind a numeric count while keeping different types separate
+- use a familiar generic teardrop pin silhouette as the default marker without copying or presenting Google-branded artwork
+- provide eleven built-in categories with distinct interiors: Headquarters star, Regional headquarters building, Site circle, Contract site briefcase, Future site clock, Program office document, Operations center network/gear, Customer site person, Partner site link, Test or range site target, and Manufacturing facility factory
+- keep the pin system metadata-driven so additional categories can be added later without replacing the layout engine
+- combine repeated records of one type at an anchor behind a numeric count badge
+- fan different category pins around the same anchor and connect displaced pins to that anchor with leader lines
+- adapt pin outlines and keylines to light, dark, clean, and transparent output
+- render legend entries with the same complete pin renderer used on the map, include only types used by current locations, and wrap entries automatically
 - run one deterministic global collision layout across all anchors, including distinct nearby cities and installations
-- reserve state-label, marker, count, callout, connector, and previously placed label geometry during layout
+- reserve state-label and state-count protected zones, pin footprints, callouts, connectors, and previously placed label geometry during layout
 - use fallback label positions and surface a visible warning when density prevents an ideal result
 - keep regular state initials at fixed, verified positions and protect small-state and District of Columbia callouts
 - support optional state labels, place labels, locations-per-state counts, legend, and background grid
@@ -95,6 +107,7 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - reduced-motion support
 - desktop, tablet, and mobile layouts without horizontal overflow
 - Fit, zoom-in, zoom-out, and full-screen preview controls for small viewports
+- accessible native disclosure controls with meaningful headings and current-value summaries
 
 ### Application constraints
 
@@ -110,12 +123,13 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 
 1. Open the public application or serve the repository over HTTP.
 2. Set the map heading, canvas, map theme, heading accent, and map details.
-3. If exporting transparency, select a destination preview and text tone.
-4. Choose a state and search for a Census place or public-reference installation.
-5. Add, edit, or remove locations and use confirmation or Undo when replacing data.
-6. Use Fit, zoom, or full-screen preview to inspect the composition.
-7. Download or open a JSON project when backup or transfer is needed.
-8. Download PNG, download SVG, or copy PNG.
+3. Open Map details, Advanced, or Project only when those less-frequent controls are needed.
+4. If exporting transparency, select a destination preview and text tone.
+5. Choose a state and search for a Census place or public-reference installation.
+6. Add, edit, or remove locations and use confirmation or Undo when replacing data.
+7. Use Fit, zoom, or full-screen preview to inspect the composition.
+8. Download or open a JSON project when backup or transfer is needed.
+9. Download PNG, download SVG, or copy PNG.
 
 ## Output behavior
 
@@ -136,6 +150,12 @@ SVG output remains scalable and editable. When **Clean SVG metadata** is enabled
 - the 887 installation anchors preserve their 805 DoD and 82 Coast Guard source split
 - city and installation markers use finite coordinates in the state-geometry projection
 - distinct nearby anchors participate in global marker and label occupancy rather than overlapping silently
+- same-type records share one count-badged pin, while different types fan into distinct pins with anchor leader lines
+- all map and legend pins use the same generic teardrop shell, category interior, and adaptive outline treatment
+- state-label protected zones remain free of pin bodies, count badges, and leader lines
+- all eleven built-in categories retain their requested names and interior symbols, and the renderer remains extensible
+- the legend includes only used categories, wraps automatically, and matches the corresponding map pins exactly
+- Quick setup starts open; Map details, Advanced, and Project start collapsed with accurate dynamic summaries
 - state initials, small-state callouts, counts, markers, leaders, and labels remain mutually legible
 - long title, subtitle, and location text is bounded, fitted, or accompanied by a visible explanation
 - adding, editing, removing, undoing, clearing, resetting, and replacing locations updates the preview and saved model correctly

@@ -28,7 +28,7 @@ test("offline GeoPresence navigation never falls back to the tracker shell", asy
     await page.goto(uncachedRoute.href, { waitUntil: "domcontentloaded" });
     await expect(page.locator("#mapSvg")).toBeVisible();
     await expect.poll(() => page.locator("#mapSvg .state-shape").count()).toBeGreaterThanOrEqual(51);
-    await expect(page).toHaveTitle(/Astrion (?:GeoPresence )?Map Builder/i);
+    await expect(page).toHaveTitle(/^Map Builder$/i);
     await expect(page.locator("body")).not.toContainText("Weekly Task Tracker");
 
     const noTrailingSlash = new URL(`geopresence?offline-route=${Date.now()}`, repositoryRoot);

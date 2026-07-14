@@ -33,6 +33,16 @@ export function zoomControls(page) {
   );
 }
 
+export async function revealControl(page, selectorOrLocator) {
+  const control = typeof selectorOrLocator === "string" ? page.locator(selectorOrLocator) : selectorOrLocator;
+  const section = control.locator("xpath=ancestor::details[1]");
+  if ((await section.count()) && !(await section.evaluate(element => element.open))) {
+    await section.locator(":scope > summary").click();
+  }
+  await expect(control).toBeVisible();
+  return control;
+}
+
 export async function gotoFresh(page) {
   await page.goto(APP_PATH, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => localStorage.clear());
@@ -66,7 +76,8 @@ export async function clickWithConfirmation(page, trigger) {
 }
 
 export async function downloadBytes(page, trigger) {
-  const [download] = await Promise.all([page.waitForEvent("download"), trigger.click()]);
+  const visibleTrigger = await revealControl(page, trigger);
+  const [download] = await Promise.all([page.waitForEvent("download"), visibleTrigger.click()]);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
