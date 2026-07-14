@@ -44,8 +44,28 @@ function functionSource(source, ...names) {
   return "";
 }
 
+function lastFunctionSource(source, name) {
+  const pattern = new RegExp(`(?:async\\s+)?function\\s+${name}\\s*\\(`, "g");
+  let match;
+  let lastIndex = -1;
+  while ((match = pattern.exec(source))) lastIndex = match.index;
+  return lastIndex < 0 ? "" : functionSource(source.slice(lastIndex), name);
+}
+
 function tagWithId(id) {
   return html.match(new RegExp(`<[^>]+\\bid=["']${id}["'][^>]*>`, "i"))?.[0] || "";
+}
+
+function detailsBlock(id) {
+  const openingTag = tagWithId(id);
+  if (!/^<details\b/i.test(openingTag)) return "";
+  const start = html.indexOf(openingTag);
+  const end = html.indexOf("</details>", start + openingTag.length);
+  return end < 0 ? "" : html.slice(start, end + "</details>".length);
+}
+
+function cssRule(selectorPattern) {
+  return styles.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, "i"))?.[1] || "";
 }
 
 function around(needle, radius = 1800) {
@@ -319,12 +339,136 @@ test("ambiguous controls and source descriptions use precise wording", () => {
   assert.doesNotMatch(html, /complete (?:military |installation )?inventory/i);
 });
 
+test("v3.1 map settings use compact, accessible native disclosures", () => {
+  const contracts = [
+    ["quickSettings", "Quick setup", true],
+    ["mapDetailsSettings", "Map details", false],
+    ["advancedSettings", "Advanced", false],
+    ["projectSettings", "Project", false]
+  ];
+
+  for (const [id, label, startsOpen] of contracts) {
+    const openingTag = tagWithId(id);
+    assert.match(openingTag, /^<details\b/i, `${id} must use the native details element`);
+    assert.match(openingTag, /class=["'][^"']*\bsettings-disclosure\b/i);
+    assert.equal(/\sopen(?:\s|=|>)/i.test(openingTag), startsOpen,
+      `${label} must ${startsOpen ? "start open" : "start collapsed"}`);
+
+    const block = detailsBlock(id);
+    assert.ok(block, `${id} details block was not found`);
+    const summary = block.match(/<summary\b[^>]*>[\s\S]*?<\/summary>/i)?.[0] || "";
+    assert.ok(summary, `${label} needs a keyboard-accessible native summary`);
+    assert.match(summary.replace(/<[^>]+>/g, " "), new RegExp(label, "i"));
+    assert.match(summary, /class=["'][^"']*\bsettings-summary-status\b/i,
+      `${label} must expose its concise current-value summary while collapsed`);
+    assert.match(block, /<fieldset\b/i, `${label} must retain grouped form semantics`);
+    assert.match(block, /<legend\b[^>]*>[\s\S]*?<\/legend>/i, `${label} needs a fieldset legend`);
+  }
+
+  const quick = detailsBlock("quickSettings");
+  assert.match(quick, /<legend[^>]*>\s*Map heading\s*<\/legend>/i);
+  assert.match(quick, /<legend[^>]*>\s*Format\s*<\/legend>/i);
+  for (const legend of ["Map heading", "Format", "Map details", "Project"]) {
+    assert.match(html, new RegExp(`<legend[^>]*>\\s*${legend}\\s*</legend>`, "i"),
+      `${legend} must remain a semantic legend after the sidebar reorganization`);
+  }
+
+  const controlsRule = cssRule("\\.controls");
+  const controlsGapText = controlsRule.match(/\bgap\s*:\s*([\d.]+)px/i)?.[1];
+  if (controlsGapText) {
+    assert.ok(Number(controlsGapText) <= 10, "the settings stack should use a compact gap of no more than 10px");
+  }
+  assert.match(styles, /\.controls\s*>\s*\.panel-body\s*\{[^}]*padding\s*:\s*0/i,
+    "the disclosure stack should use the panel width without a second padded container");
+  const disclosureRule = cssRule("\\.settings-disclosure");
+  assert.ok(disclosureRule, "compact disclosure styling was not found");
+  const summaryRule = styles.match(/\.settings-disclosure[^{}]*summary[^{}]*\{([^}]*)\}/i)?.[1] || "";
+  assert.match(summaryRule, /cursor\s*:\s*pointer/i);
+  const blockPadding = Number(summaryRule.match(/padding(?:-block)?\s*:\s*([\d.]+)px/i)?.[1] || Number.NaN);
+  assert.ok(Number.isFinite(blockPadding) && blockPadding <= 12,
+    "disclosure summaries should remain compact enough for the sidebar");
+  assert.match(styles, /\.settings-summary-status\s*\{/i);
+});
+
+test("v3.1 renders category interiors inside one outlined teardrop pin shell", () => {
+  const token = functionSource(app, "markerToken");
+  const symbol = functionSource(app, "markerSymbol");
+  const style = functionSource(app, "markerStyle");
+  assert.ok(token && symbol && style, "pin renderer functions were not found");
+
+  assert.match(token, /<g\b[^>]*class=["'][^"']*\bmap-pin\b/i);
+  const pinBody = token.match(/<path\b[^>]*class=["']map-pin-body marker-pin["'][^>]*>/i)?.[0] || "";
+  assert.ok(pinBody, "the default marker must be a teardrop path with map-pin-body and marker-pin classes");
+  assert.match(pinBody, /\bd=["'][^"']+/i);
+  assert.match(pinBody, /stroke=["']\$\{style\.ring\}["']/i,
+    "the teardrop outline must use the destination-aware contrasting ring color");
+  const outlineWidth = Number(pinBody.match(/stroke-width=["']([\d.]+)/i)?.[1] || 0);
+  assert.ok(outlineWidth >= 2, "the contrasting teardrop outline must remain visibly crisp");
+  assert.match(pinBody, /vector-effect=["']non-scaling-stroke["']/i);
+  assert.match(token, /markerSymbol\(/, "the shell must delegate its interior to the category renderer");
+  assert.match(symbol, /meta\.icon/);
+  assert.match(token, /class=["'][^"']*\bmap-pin-icon\b/i);
+  for (const icon of ["star", "building", "circle", "briefcase", "clock", "document", "network", "person", "link", "target", "factory"]) {
+    assert.match(symbol, new RegExp(`["']${icon}["']`), `${icon} needs a rendered pin interior`);
+  }
+  assert.match(style, /ring\s*:/);
+  assert.doesNotMatch(app, /class=["'][^"']*\bmarker-backplate\b/i,
+    "the old circular marker backplate must not remain as the default map symbol");
+  assert.doesNotMatch(app, /meta\.shape/,
+    "the pin interior registry should use its explicit icon metadata rather than the former outer-shape key");
+});
+
+test("v3.1 groups repeated types, fans mixed types, and reuses complete pins in a wrapping legend", () => {
+  const mapMarkup = lastFunctionSource(app, "mapMarkup");
+  assert.ok(mapMarkup, "current mapMarkup function was not found");
+  assert.match(mapMarkup, /const\s+pinsByType\s*=\s*new Map\(\)/);
+  assert.match(mapMarkup, /markerOffsets\(group\.typeGroups\.length\)/);
+  assert.match(mapMarkup, /class=["']marker-fan-stem["']/,
+    "mixed categories need visible stems back to their shared geographic anchor");
+  assert.match(mapMarkup, /class=["']marker-count["']/);
+  assert.match(mapMarkup, /count\s*>\s*1\s*\?/,
+    "one category repeated at an anchor should use one numeric badge rather than duplicate pins");
+  assert.match(mapMarkup, />\$\{count\}<\/text>/,
+    "the same-type badge must contain the actual numeric count");
+
+  assert.ok((mapMarkup.match(/markerToken\(/g) || []).length >= 2,
+    "map locations and legend entries must call the same complete pin renderer");
+  assert.match(mapMarkup, /Object\.entries\(typeMeta\)\.filter\(\(\[type\]\)\s*=>\s*model\.pins\.some\(pin\s*=>\s*pin\.type\s*===\s*type\)\)/,
+    "the legend must show only categories used by the current project");
+  assert.match(mapMarkup,
+    /(?:legend(?:Rows|Columns|Cols)|Math\.floor\([^)]*\/[^)]*\)[\s\S]{0,220}legend|index\s*%\s*(?:legend(?:Columns|Cols)|\d+))/i,
+    "the expanded category legend needs row/column wrapping instead of one overflowing line");
+});
+
+test("v3.1 collision footprints protect state labels from pin bodies and count badges", () => {
+  const footprints = functionSource(app, "markerFootprints");
+  const mapMarkup = lastFunctionSource(app, "mapMarkup");
+  assert.ok(footprints, "markerFootprints function was not found");
+  const namesPinGeometry = /(?:(?:pin|marker)(?:Width|Height|Radius|Bounds|Body|Tail)|(?:body|tail)(?:Radius|Offset|Bounds)|teardrop|PIN_[A-Z_]+)/i.test(footprints);
+  const offsetsForPinTail = /y\s*:\s*dy\s*[-+]\s*[\d.]+[\s\S]{0,80}r\s*:\s*(?:1[7-9]|[2-9]\d)/i.test(footprints);
+  assert.ok(namesPinGeometry || offsetsForPinTail,
+    "collision geometry must cover the teardrop body and tail instead of the retired centered circle");
+  assert.match(footprints, /markerBadgeOffset/,
+    "numeric badge geometry must participate in the shared occupancy footprint");
+  assert.doesNotMatch(footprints, /\{\s*x\s*:\s*dx\s*,\s*y\s*:\s*dy\s*,\s*r\s*:\s*16\s*\}/,
+    "the former fixed circular footprint does not cover the teardrop tail");
+
+  assert.match(mapMarkup, /group\.footprints\s*=\s*markerFootprints\(/);
+  assert.match(mapMarkup, /stateLabelBoxes\.some\(/,
+    "state abbreviation and state-count rectangles must remain protected placement zones");
+  assert.match(mapMarkup, /occupiedMarkerFootprints/,
+    "pin-aware footprints must still feed deterministic global occupancy");
+  assert.match(mapMarkup, /markerCollisionBoxes/,
+    "labels and nearby independent anchors must reserve the final pin footprint");
+});
+
 test("v3 application, README, plan, and changelog publish one consistent version", () => {
   const readme = readText("README.md");
   const plan = readText("plan.md");
   const changelog = readText("changelog.md");
   const version = app.match(/\bAPP_VERSION\s*=\s*["'](\d+\.\d+\.\d+)["']/)?.[1];
   assert.ok(version, "APP_VERSION was not found");
+  assert.equal(version, "3.1.0", "this release must publish the complete v3.1.0 contract");
   assert.ok(Number(version.split(".")[0]) >= 3, "the complete hardening release should be versioned as v3 or later");
   assert.equal(readme.match(/Version:\s*\*\*(\d+\.\d+\.\d+)\*\*/i)?.[1], version);
   assert.equal(plan.match(/Current version:\s*(\d+\.\d+\.\d+)/i)?.[1], version);
@@ -332,6 +476,8 @@ test("v3 application, README, plan, and changelog publish one consistent version
   assert.ok((html.match(new RegExp(`(?:v|Version\\s+)${version.replaceAll(".", "\\.")}`, "g")) || []).length >= 3,
     "header, version card, and footer must show the same version");
   assert.match(html, /Created by Dr\. Shane Turner/);
+  assert.doesNotMatch(html, /(?:\u00c2\u00b7|\u00e2\u20ac\u00ba)/,
+    "v3.1 UI copy must not contain mojibake in separators or disclosure arrows");
 
   for (const document of [readme, plan, changelog]) {
     assert.match(document, /JSON (?:project )?(?:import|export)|import\/export/i);

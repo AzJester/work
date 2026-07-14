@@ -1,8 +1,8 @@
-# Astrion Map Builder
+# Map Builder
 
-Astrion Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
+Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.0.0**
+Version: **3.1.0**
 
 Created by **Dr. Shane Turner**
 
@@ -12,15 +12,19 @@ The hosted application is the simplest way to use it. For local development, ser
 
 ## What it does
 
-- edits the map title, subtitle, map theme, heading accent, canvas ratio, and display details
+- presents a compact progressive-disclosure Map settings panel with Quick setup open by default and Map details, Advanced, and Project collapsed
+- keeps concise summaries on every settings group and updates them as the map choices change
 - displays recognizable geographic boundaries for every U.S. state and the District of Columbia, with Alaska and Hawaii insets
 - searches 32,058 official 2025 Census places and 887 public-reference military-installation anchors
 - uses stable Census GEOID and LSAD fields so places with the same base name remain separate and receive identifying choice labels
 - adds, edits, and removes locations anchored to a selected city, community, or military installation
-- distinguishes Headquarters, Regional headquarters, Site, Contract site, and Future site with unique shapes and theme-aware colors
-- separates marker groups across nearby but distinct anchors with one deterministic global collision layout
-- groups repeated records of the same type at one anchor behind a numeric badge while keeping different types visible
-- protects state abbreviations, small-state callouts, counts, markers, connectors, and place labels from one another
+- uses a familiar generic teardrop pin as the default location-marker silhouette, with an original application-rendered design rather than Google-branded artwork
+- distinguishes eleven built-in categories inside each pin: Headquarters star, Regional headquarters building, Site circle, Contract site briefcase, Future site clock, Program office document, Operations center network/gear, Customer site person, Partner site link, Test or range site target, and Manufacturing facility factory
+- combines repeated records of the same type at one anchor behind a numeric count badge
+- fans different pin types around a shared or dense anchor and connects displaced pins with leader lines
+- separates pin groups across nearby but distinct anchors with one deterministic global collision layout
+- adapts pin outlines for light, dark, and transparent destinations; the legend renders identical complete pins, includes only categories used on the map, and wraps automatically
+- protects state abbreviations and counts as reserved zones so pins, callouts, connectors, and place labels do not cover them
 - warns when dense layout requires a fallback label, hides a label, fits long heading text, or cannot fully separate a marker group
 - offers fit, zoom-in, zoom-out, and full-screen preview controls for desktop and mobile use
 - supports light, dark, checkerboard, and custom destination previews for transparent graphics, plus automatic, dark, or light transparent-export text
@@ -30,6 +34,39 @@ The hosted application is the simplest way to use it. For local development, ser
 - confirms destructive replacements, keeps an Undo history, and saves a recovery snapshot for the last destructive change
 
 The editor opens as an empty project. Sample Astrion locations are opt-in and are identified as demonstration data in the editor only; notices, creator text, and version text do not appear in copied or downloaded map graphics. The Huntsville Regional Headquarters and contract entries reflect user-provided information. The other optional locations are demonstration examples, not claims about current Astrion sites.
+
+## Compact Map settings
+
+The Map settings panel uses native progressive disclosure so the editor remains short and easy to scan:
+
+- **Quick setup** is open when the application starts and contains the most common heading, canvas, and map-theme choices.
+- **Map details** is collapsed and summarizes the enabled labels, counts, legend, grid, and related presentation options.
+- **Advanced** is collapsed and summarizes transparent-output and other less-frequent controls.
+- **Project** is collapsed and keeps JSON project import/export available without occupying the everyday editing view.
+
+Each group has a concise dynamic summary of its current choices. Opening or closing a group does not change the map or alter exported graphics.
+
+## Location pins
+
+Every location uses the same generic teardrop-shaped pin shell. The teardrop is a common cartographic convention implemented as application-owned SVG geometry; it is not Google Maps artwork and does not imply affiliation with Google.
+
+The interior symbol communicates the current location category:
+
+- **Headquarters:** star
+- **Regional headquarters:** building
+- **Site:** circle
+- **Contract site:** briefcase
+- **Future site:** clock
+- **Program office:** document
+- **Operations center:** network/gear
+- **Customer site:** person
+- **Partner site:** link
+- **Test or range site:** target
+- **Manufacturing facility:** factory
+
+When an anchor contains multiple records of one category, one pin carries a numeric count badge. When an anchor contains different categories, their pins fan apart and use leader lines to preserve the common geographic anchor. The same fanning and global collision pass also respects nearby independent anchors and the protected rectangles around state abbreviations and state counts.
+
+Pin outlines adapt to the light, dark, clean, and transparent destination treatment. Legend entries call the same pin renderer as map locations, so silhouette, interior symbol, category color, outline, and visual weight remain identical. The legend includes only types currently used on the map and wraps automatically when several are present. All eleven built-in categories are available in the location editor, and the metadata-driven pin renderer can accept additional categories in a future release without redesigning the placement system.
 
 ## Project safety and portability
 

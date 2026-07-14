@@ -1,8 +1,35 @@
 # Changelog
 
-All notable changes to Astrion Map Builder are documented here.
+All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
+
+## [3.1.0] - 2026-07-14
+
+### Added
+
+- added a compact progressive-disclosure **Map settings** panel with **Quick setup** open by default and **Map details**, **Advanced**, and **Project** collapsed by default
+- added concise dynamic summaries to every settings group so current choices remain visible without opening each section
+- added a familiar generic teardrop pin shell rendered as original application SVG geometry rather than Google-branded artwork
+- added category interiors for eleven built-in location types: Headquarters star, Regional headquarters building, Site circle, Contract site briefcase, Future site clock, Program office document, Operations center network/gear, Customer site person, Partner site link, Test or range site target, and Manufacturing facility factory
+- added adaptive pin outlines and keylines for light, dark, clean, and transparent destinations
+
+### Changed
+
+- changed every map location to use the same complete teardrop pin system across all eleven built-in categories
+- changed repeated records of one type at an anchor to share a numeric count badge on one pin
+- changed mixed-category anchors to fan their distinct pins apart and connect displaced pins to the geographic anchor with leader lines
+- changed legend entries to call the same pin renderer as map locations, keep shell, interior symbol, category treatment, outline, and visual weight identical, show only used types, and wrap automatically
+- changed collision placement to treat state abbreviations and state counts as protected zones for pin bodies, count badges, and leader lines
+- kept the pin category registry metadata-driven so additional types can be added later without replacing the placement engine
+- renamed the application chrome, browser title, footer, documentation, and project-file wording from **Astrion Map Builder** to the reusable **Map Builder** name
+- updated the visible application and documentation version to 3.1.0 while preserving attribution to Dr. Shane Turner
+
+### Preserved
+
+- preserved the 32,058-record Census GEOID/LSAD catalog, duplicate-name handling, 887 public-reference installation anchors, and their documented provenance
+- preserved JSON projects, browser recovery, Undo, transparent destination preview, guarded PNG and clean SVG output, responsive preview controls, and deployment quality gates
+- preserved the public GitHub Pages URL and the absence of any external map service, runtime government connection, or government approval requirement
 
 ## [3.0.0] - 2026-07-13
 
@@ -151,6 +178,6 @@ Created by Dr. Shane Turner.
 
 ### Added
 
-- initial standalone Astrion Map Builder
+- initial standalone Map Builder
 - editable titles, themes, canvas ratios, and state-level synthetic locations
 - PNG, SVG, and clipboard output

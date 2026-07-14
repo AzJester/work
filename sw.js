@@ -1,4 +1,4 @@
-const CACHE_NAME = "work-app-shell-v4";
+const CACHE_NAME = "work-app-shell-v5";
 const APP_SHELL = [
   "./tracker.html",
   "./roadmap.html",

@@ -9,6 +9,7 @@ import {
   locationRows,
   projectExportButton,
   projectImportInput,
+  revealControl,
   undoButton,
 } from "./helpers.mjs";
 
@@ -52,7 +53,7 @@ test("remove and reset actions can be undone", async ({ page }) => {
   await expect(locationRows(page)).toHaveCount(originalCount);
   await expect(page.locator("#pinList").getByText(removedName, { exact: true })).toBeVisible();
 
-  await page.locator("#mapTitle").fill("Before reset");
+  await (await revealControl(page, "#mapTitle")).fill("Before reset");
   await addCity(page, { name: "Reset sentinel", state: "VA", city: "Alexandria" });
   const beforeResetCount = await locationRows(page).count();
   await clickWithConfirmation(page, page.locator("#resetMap"));
@@ -65,9 +66,9 @@ test("remove and reset actions can be undone", async ({ page }) => {
 
 test("a project file round-trips all editable map data", async ({ page }) => {
   await ensureSampleLocations(page);
-  await page.locator("#mapTitle").fill("Browser test project");
-  await page.locator("#mapSubtitle").fill("Portable configuration");
-  await page.locator("#theme").selectOption("dark");
+  await (await revealControl(page, "#mapTitle")).fill("Browser test project");
+  await (await revealControl(page, "#mapSubtitle")).fill("Portable configuration");
+  await (await revealControl(page, "#theme")).selectOption("dark");
   const originalCount = await locationRows(page).count();
 
   const { bytes, filename } = await downloadBytes(page, projectExportButton(page));
@@ -76,7 +77,7 @@ test("a project file round-trips all editable map data", async ({ page }) => {
   expect(project).toEqual(expect.any(Object));
 
   await clearLocations(page);
-  await page.locator("#mapTitle").fill("Changed after export");
+  await (await revealControl(page, "#mapTitle")).fill("Changed after export");
   await projectImportInput(page).setInputFiles({
     name: filename,
     mimeType: "application/json",
