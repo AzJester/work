@@ -2,7 +2,7 @@
 
 A self-contained browser application for creating a branded geographic U.S. location map and exporting it for use in presentations, documents, posters, or other graphics.
 
-Version: **2.2.2**
+Version: **2.2.3**
 
 Created by **Dr. Shane Turner**
 

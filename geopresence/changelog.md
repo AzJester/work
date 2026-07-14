@@ -4,6 +4,12 @@ All notable changes to Astrion Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [2.2.3] - 2026-07-13
+
+### Changed
+
+- renamed the map-settings **Text** section to **Map heading** so the group is clear without changing its Title or Subtitle controls
+
 ## [2.2.2] - 2026-07-13
 
 ### Fixed

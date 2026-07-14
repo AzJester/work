@@ -56,6 +56,11 @@ test("map builder supports graphic composition controls", () => {
   assert.match(html, /Square/);
 });
 
+test("map heading controls use a clear section label", () => {
+  assert.match(html, /<div class="section-label">Map heading<\/div>/);
+  assert.doesNotMatch(html, /<div class="section-label">Text<\/div>/);
+});
+
 test("map builder uses complete projected U.S. state geometry instead of tiles", () => {
   const geometryMatch = html.match(/const stateGeometry=(\[[^\n]+\]);/);
   assert.ok(geometryMatch, "embedded state geometry was not found");
@@ -92,9 +97,9 @@ test("the user-provided Huntsville entries and demonstration samples are bundled
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(html, /const APP_VERSION="2\.2\.2"/);
+  assert.match(html, /const APP_VERSION="2\.2\.3"/);
   assert.match(html, /Created by Dr\. Shane Turner/);
-  assert.match(changelog, /## \[2\.2\.2\] - 2026-07-13/);
+  assert.match(changelog, /## \[2\.2\.3\] - 2026-07-13/);
 });
 
 test("embedded Census place catalog covers every state and DC", () => {
