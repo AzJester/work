@@ -39,18 +39,18 @@
 <body>
 <a class="skip" href="#main">Skip to map builder</a>
 <header class="topbar"><div class="topbar-inner">
-  <div class="brand" aria-label="Astrion Map Builder"><span class="brand-mark" aria-hidden="true"></span><span><strong>Astrion Map Builder</strong><small>Graphic export tool · v2.2.2</small></span></div>
+  <div class="brand" aria-label="Astrion Map Builder"><span class="brand-mark" aria-hidden="true"></span><span><strong>Astrion Map Builder</strong><small>Graphic export tool · v2.2.3</small></span></div>
   <div class="top-copy">Create a clean U.S. presence map, then export it for any graphic.</div>
   <div class="top-actions"><button class="btn ghost" id="exportSvg" type="button">Download SVG</button><button class="btn ghost" id="copyPng" type="button">Copy PNG</button><button class="btn sky" id="exportPng" type="button">Download PNG</button></div>
 </div></header>
 
 <main id="main" class="shell">
-  <div class="intro"><div><h1>Build the map. Export the graphic.</h1><p>Add locations by city, community, or military installation; edit the design; and export a high-resolution PNG or scalable SVG. Everything runs in this browser.</p></div><div class="note"><b>Version 2.2.2</b><br>Created by Dr. Shane Turner</div></div>
+  <div class="intro"><div><h1>Build the map. Export the graphic.</h1><p>Add locations by city, community, or military installation; edit the design; and export a high-resolution PNG or scalable SVG. Everything runs in this browser.</p></div><div class="note"><b>Version 2.2.3</b><br>Created by Dr. Shane Turner</div></div>
   <div class="workspace">
     <aside class="panel controls" aria-label="Map controls">
       <div class="panel-head"><h2>Map settings</h2><button class="btn secondary small" id="resetMap" type="button">Reset</button></div>
       <div class="panel-body">
-        <section class="control-section"><div class="section-label">Text</div><div class="field"><label for="mapTitle">Title</label><input id="mapTitle" value="Astrion GeoPresence"></div><div class="field"><label for="mapSubtitle">Subtitle</label><input id="mapSubtitle" value="U.S. mission footprint"></div></section>
+        <section class="control-section"><div class="section-label">Map heading</div><div class="field"><label for="mapTitle">Title</label><input id="mapTitle" value="Astrion GeoPresence"></div><div class="field"><label for="mapSubtitle">Subtitle</label><input id="mapSubtitle" value="U.S. mission footprint"></div></section>
         <section class="control-section"><div class="section-label">Format</div><div class="row"><div class="field"><label for="aspect">Canvas</label><select id="aspect"><option value="wide">16:9 · 1600 × 900</option><option value="slide">4:3 · 1600 × 1200</option><option value="square">Square · 1200 × 1200</option></select></div><div class="field"><label for="scale">PNG quality</label><select id="scale"><option value="1">Standard · 1×</option><option value="2" selected>High · 2×</option><option value="3">Ultra · 3×</option></select></div></div><div class="row"><div class="field"><label for="theme">Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="clean">Clean white</option></select></div><div class="field"><label for="accent">Accent</label><select id="accent"><option value="#442c81">Astrion Force</option><option value="#29aae1">Astrion Sky</option><option value="#307eef">Astrion Water</option><option value="#222230">Midnight</option></select></div></div></section>
         <section class="control-section"><div class="section-label">Map details</div><div class="checks"><label class="check"><input id="showLabels" type="checkbox" checked>State labels</label><label class="check"><input id="showCityLabels" type="checkbox" checked>Place labels</label><label class="check"><input id="showCounts" type="checkbox">Site counts</label><label class="check"><input id="showLegend" type="checkbox" checked>Legend</label><label class="check"><input id="showGrid" type="checkbox">Grid</label><label class="check"><input id="transparent" type="checkbox">Transparent</label></div></section>
       </div>
@@ -67,7 +67,7 @@
     <section class="panel" aria-labelledby="locationsTitle"><div class="panel-head"><div><h2 id="locationsTitle">Locations</h2><span id="locationCount"></span></div><button class="btn secondary small" id="clearPins" type="button">Clear locations</button></div><div class="panel-body pin-list" id="pinList"></div></section>
     <section class="panel" aria-labelledby="addTitle"><div class="panel-head"><h2 id="addTitle">Add a location</h2></div><form class="panel-body" id="pinForm"><div class="add-grid"><label class="wide">Location label<input id="pinName" name="name" required placeholder="Example: Redstone Arsenal Contract"></label><label class="wide">Location source<select id="pinAnchorKind" name="anchorKind"><option value="city" selected>City / community</option><option value="installation">Military installation</option></select></label><label>State<select id="pinState" name="state"></select></label><label id="cityField">City / community<input id="pinCity" name="city" list="cityOptions" required autocomplete="off" placeholder="Start typing a place"><span class="field-help">Choose a listed Census place.</span><datalist id="cityOptions"></datalist></label><label id="installationField" hidden>Military installation<select id="pinInstallation" name="installation" disabled></select><span class="field-help">Public DoD and Coast Guard inventory for the selected state.</span></label><label class="wide">Astrion site type<select id="pinType" name="type"><option value="headquarters">Headquarters</option><option value="regional">Regional headquarters</option><option value="hub" selected>Site</option><option value="contract">Contract site</option><option value="future">Future site</option></select></label></div><div class="form-actions"><button class="btn sky" id="savePin" type="submit">Add to map</button><button class="btn secondary" id="cancelEdit" type="button" hidden>Cancel edit</button><button class="btn secondary" id="loadSamples" type="button">Load sample locations</button></div></form></section>
   </div>
-  <footer>Astrion Map Builder v2.2.2 · Created by Dr. Shane Turner</footer>
+  <footer>Astrion Map Builder v2.2.3 · Created by Dr. Shane Turner</footer>
 </main>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -87,7 +87,7 @@ THIS SOFTWARE.
 <script>
 (() => {
   "use strict";
-  const APP_VERSION="2.2.2";
+  const APP_VERSION="2.2.3";
   const STORAGE_KEY="astrion_map_builder_v1";
   const stateNames={AK:"Alaska",AL:"Alabama",AR:"Arkansas",AZ:"Arizona",CA:"California",CO:"Colorado",CT:"Connecticut",DC:"District of Columbia",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",IA:"Iowa",ID:"Idaho",IL:"Illinois",IN:"Indiana",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",MA:"Massachusetts",MD:"Maryland",ME:"Maine",MI:"Michigan",MN:"Minnesota",MO:"Missouri",MS:"Mississippi",MT:"Montana",NC:"North Carolina",ND:"North Dakota",NE:"Nebraska",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NV:"Nevada",NY:"New York",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VA:"Virginia",VT:"Vermont",WA:"Washington",WI:"Wisconsin",WV:"West Virginia",WY:"Wyoming"};
   // Geographic paths are derived from us-atlas@3.0.1 states-albers-10m.json

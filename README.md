@@ -3,7 +3,7 @@ My Work Repository
 
 ## Astrion Map Builder
 
-A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.2, created by Dr. Shane Turner:
+A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.3, created by Dr. Shane Turner:
 
 ### → https://azjester.github.io/work/geopresence/
 
