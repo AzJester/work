@@ -4,6 +4,15 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.2.3] - 2026-07-14
+
+### Fixed
+
+- kept state initials and per-state location counts light and readable on dark state surfaces, including transparent exports placed on light backgrounds
+- kept city, community, and installation labels light and readable on their dark label plates
+- separated map-surface label colors from the destination-aware heading and legend colors so each text role contrasts with the surface directly behind it
+- added automated contrast coverage for all three map themes across opaque, checkerboard, light, dark, custom, and manually selected transparent-text modes
+
 ## [3.2.2] - 2026-07-14
 
 ### Changed

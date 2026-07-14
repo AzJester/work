@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.2"/);
-  assert.match(html, /Version 3\.2\.2/);
+  assert.match(inlineScript, /const APP_VERSION="3\.2\.3"/);
+  assert.match(html, /Version 3\.2\.3/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -326,7 +326,8 @@ test("transparent exports offer destination-aware readable text without glow", (
   assert.match(inlineScript, /destinationIsDark=model\.transparent/);
   assert.match(inlineScript, /function applyPreviewBackdrop\(\)/);
   const mapMarkup = sectionFromLast("function mapMarkup(){", "function comboConfig(kind)");
-  assert.match(mapMarkup, /fill="\$\{tone\.text\}"/);
+  assert.equal((mapMarkup.match(/fill="\$\{tone\.text\}"/g) || []).length, 2, "only the destination-backed title and legend use the destination text tone");
+  assert.equal((mapMarkup.match(/fill="\$\{p\.text\}"/g) || []).length, 3, "state initials, state counts, and place labels use their map-surface text tone");
   assert.match(mapMarkup, /fill="\$\{tone\.muted\}"/);
   assert.doesNotMatch(mapMarkup, /feGaussianBlur|paint-order|drop-shadow/i);
 });
