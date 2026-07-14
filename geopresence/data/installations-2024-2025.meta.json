@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "rowSchema": [
+    "primaryState",
+    "name",
+    "x",
+    "y",
+    "id",
+    "component",
+    "status",
+    "states",
+    "jointBase",
+    "source"
+  ],
+  "sources": {
+    "dod": "FY2024 Department of Defense Military Installations, Ranges, and Training Areas (MIRTA)",
+    "uscg": "2025 Census TIGER/Line U.S. Military Installation landmarks (Coast Guard records with 2012 inventory lineage)"
+  },
+  "counts": {
+    "total": 887,
+    "dod": 805,
+    "uscg": 82
+  },
+  "sha256": "5d26cfbdf3695d2abf9efe3908dc4777736e9fdf29d307c2e00ccded03b4fdfd"
+}

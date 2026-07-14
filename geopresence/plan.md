@@ -4,110 +4,159 @@ Status: implemented
 
 Updated: July 13, 2026
 
-Current version: 2.2.3
+Current version: 3.0.0
 
 Created by: Dr. Shane Turner
 
+Public application: https://azjester.github.io/work/geopresence/
+
 ## Objective
 
-Build a simple standalone application that creates a polished U.S. location map and exports the finished graphic as PNG or SVG.
+Build a simple browser application that creates a polished geographic U.S. location map and exports the finished graphic as PNG or SVG.
 
-The application is a graphic-production tool. It is not an enterprise mapping platform, operational data system, or workflow application.
+The application is a graphic-production tool. It is not an operational mapping platform, authoritative facility inventory, navigation system, legal boundary product, or enterprise workflow application.
+
+## Implemented architecture
+
+- a compact HTML/CSS/JavaScript application shell at `geopresence/index.html`
+- geographic state paths embedded in the application shell
+- versioned same-origin reference data in `geopresence/data/`
+- schema-validated local browser persistence with a separate destructive-action recovery snapshot
+- portable JSON project import/export without a backend or account
+- service-worker caching for the application shell and versioned catalogs after the first successful hosted load
+- GitHub Pages hosting at the public application URL
+
+Splitting the catalogs from the HTML reduces initial parsing cost while preserving a local, same-origin runtime. It does not introduce an external map service or government runtime connection.
 
 ## Requirements
 
 ### Map composition
 
-- display real geographic boundaries for every U.S. state and the District of Columbia
-- use a recognizable Albers USA projection with Alaska and Hawaii insets
-- allow a user to select a state and use a filtered city or community as the default location anchor
-- allow a user to switch explicitly to an embedded military installation as an alternate anchor
-- place markers at the selected city/community or installation presentation-scale coordinate
-- visually distinguish headquarters, regional headquarters, sites, contract sites, and future sites
-- encode each location type with a unique symbol and theme-aware color while keeping state labels neutral
-- place every location and legend symbol on a crisp solid dual-tone backplate that remains visible in light, dark, clean, and transparent output without glow effects
-- group locations by anchor and type so different categories remain distinct and repeated categories receive a count badge
-- show one collision-aware label per anchor instead of one label per location record
-- keep regular state initials at fixed canonical positions with protected backing so state borders, callout connectors, markers, city/installation labels, and counts never obscure them
-- keep small-state and District of Columbia initials readable with protected callouts whose connector lines terminate away from the text
-- show optional state labels, city labels, site counts, legend, and background grid
-- support editable title, subtitle, theme, and accent color
+- display recognizable geographic boundaries for every U.S. state and the District of Columbia
+- use an Albers USA projection with Alaska and Hawaii insets
+- allow a state to be selected through the form and use a searchable city/community as the default location anchor
+- allow an explicit switch to a searchable military-installation combobox
+- place markers at the chosen place or installation presentation coordinate
+- distinguish Headquarters, Regional headquarters, Site, Contract site, and Future site with unique shapes and theme-aware colors
+- keep state labels neutral and every marker and legend symbol visible on a crisp dual-tone backplate
+- group repeated records of one type at an anchor behind a numeric count while keeping different types separate
+- run one deterministic global collision layout across all anchors, including distinct nearby cities and installations
+- reserve state-label, marker, count, callout, connector, and previously placed label geometry during layout
+- use fallback label positions and surface a visible warning when density prevents an ideal result
+- keep regular state initials at fixed, verified positions and protect small-state and District of Columbia callouts
+- support optional state labels, place labels, locations-per-state counts, legend, and background grid
+- automatically fit long map headings to the selected canvas and report when fitting occurs
+
+### Reference data
+
+- load 32,058 official 2025 Census place records covering the 50 states and District of Columbia
+- retain each Census GEOID, exact NAME, and LSAD code as stable identity and descriptive data
+- preserve same-base-name records and show an entity-type and GEOID disambiguator in search results
+- load 887 selectable public-reference military-installation anchors across all 51 state/DC codes
+- retain the installation breakdown of 805 FY2024 DoD MIRTA points and 82 Coast Guard records from 2025 Census military landmarks
+- expose Redstone Arsenal from Alabama and Fort Campbell from both Tennessee and Kentucky
+- describe all anchors as approximate presentation points rather than gates, buildings, surveyed parcels, boundaries, or a complete military inventory
+- keep sample Astrion locations opt-in, retain the user-provided Huntsville Regional Headquarters and contract entries, and identify the remaining examples as demonstration data in the editor only
+
+### Editing, history, and projects
+
+- add, edit, cancel, and remove locations without changing a saved record until an edit is submitted
+- begin a new browser with an empty map rather than preloading demonstration locations
+- confirm Clear, Reset, Remove, sample replacement, and imported-project replacement
+- keep an in-session Undo history and a browser recovery snapshot for the latest destructive change
+- validate saved browser state against a versioned model schema
+- treat missing, blocked, full, or corrupt browser storage as a visible nonfatal condition
+- export the current map settings and locations as a versioned JSON project
+- validate JSON project structure before import and preserve an undo snapshot before replacement
 
 ### Graphic formats
 
-- 16:9 canvas for screens and presentations
-- 4:3 canvas for legacy presentation or document layouts
-- square canvas for social or general graphic placement
-- transparent-background option
+- 16:9, 4:3, and square canvases
+- transparent-background output
+- destination preview choices for checkerboard, light, dark, and custom backgrounds
+- automatic, dark, and light transparent-export text tones
 - PNG export at standard, high, and ultra resolution
-- SVG export for lossless scaling and editing
-- clipboard copy where the browser permits image clipboard writes
-- omit application attribution, version information, and demonstration notices from every exported or copied graphic
+- scalable SVG export
+- clipboard PNG copy where the browser permits image clipboard writes
+- an enabled-by-default clean SVG metadata option that removes hidden titles, descriptions, accessibility labels, editor data attributes, and location metadata from the exported copy
+- omission of application attribution, version information, and demonstration notices from every exported or copied graphic
+- an export-busy state that prevents concurrent output operations
+- validation of image loading, the 2D canvas context, and non-null PNG blobs
+- reliable temporary object-URL cleanup and a maximum-pixel safety check with actionable errors
+
+### Accessibility and responsive behavior
+
+- semantic fieldsets, legends, lists, explicit labels, and linked inline validation errors
+- searchable city and installation comboboxes with ARIA state and keyboard navigation
+- a State dropdown as the keyboard state-selection path, avoiding 51 state buttons inside an SVG image role
+- visible focus indicators and state boundaries with stronger contrast
+- polite status, warning, error, and Undo announcements
+- focus restoration after a location is removed
+- reduced-motion support
+- desktop, tablet, and mobile layouts without horizontal overflow
+- Fit, zoom-in, zoom-out, and full-screen preview controls for small viewports
 
 ### Application constraints
 
-- one self-contained HTML file
-- no mapping SDK or charting library
-- no API key, account, backend, or database
-- no external network requests
-- no runtime government service, government account, or government approval
-- bundle 887 selectable military-installation anchors across all 51 state/DC codes: 805 FY2024 DoD MIRTA points in the 50 states/DC and 82 Coast Guard records from 2025 Census military landmarks
-- describe the installation catalog as public-source planning data, not a complete inventory of classified, unreleased, leased, or every small military site
-- local browser persistence only
-- keyboard-operable state selection and labeled form controls
-- responsive layout for desktop and mobile use, with every input and choice control constrained to its panel
-- place destructive or clearing actions with the content they affect; **Clear locations** belongs in the Locations header
-- visible application version and creator attribution
+- no mapping SDK, charting library, geocoder, account, API key, backend, or database
+- no external map service or third-party runtime data request
+- no runtime government service, government account, government connection, or government approval
+- same-origin versioned catalogs rather than an oversized inline place dataset
+- local browser storage only; cross-device transfer uses a user-controlled JSON project file
+- visible version number and attribution to Dr. Shane Turner in the editor and documentation only
 - maintained release history in `changelog.md`
 
 ## User flow
 
-1. Open the application.
-2. Set the title, subtitle, theme, aspect ratio, and display options.
-3. Click a state or choose it from the form.
-4. Keep the default city/community anchor or switch to a listed military installation, then select the location type.
-5. Add, edit, or remove location markers; cancel an edit when no change is wanted.
-6. Select PNG quality and background behavior.
-7. Download PNG, download SVG, or copy PNG.
+1. Open the public application or serve the repository over HTTP.
+2. Set the map heading, canvas, map theme, heading accent, and map details.
+3. If exporting transparency, select a destination preview and text tone.
+4. Choose a state and search for a Census place or public-reference installation.
+5. Add, edit, or remove locations and use confirmation or Undo when replacing data.
+6. Use Fit, zoom, or full-screen preview to inspect the composition.
+7. Download or open a JSON project when backup or transfer is needed.
+8. Download PNG, download SVG, or copy PNG.
 
 ## Output behavior
 
-The exported graphic must include only the composed map—not the surrounding editor interface. SVG output remains editable. PNG output is rasterized at the selected scale:
+The exported graphic includes only the composed map, not the editor interface. PNG output is rasterized at the selected scale:
 
 - 1×: native canvas dimensions
 - 2×: twice the native width and height
-- 3×: three times the native width and height
+- 3×: three times the native width and height, subject to the reliable maximum-pixel check
+
+SVG output remains scalable and editable. When **Clean SVG metadata** is enabled, the exported copy excludes hidden location and editor metadata. Destination-preview colors remain in the editor and are never added as a transparent export background.
 
 ## Acceptance criteria
 
-- page runs without external scripts or services
-- changing any setting immediately updates the map preview
-- clicking a state preselects it in the add-location form
-- choosing a state filters the city/community suggestions to that state
-- a submitted city/community must match an embedded place in the selected state
-- the installation selector contains 887 anchors and covers all 51 state/DC codes
-- its source breakdown remains exactly 805 FY2024 DoD MIRTA points plus 82 Coast Guard records from 2025 Census military landmarks
-- selecting Alabama offers Redstone Arsenal; Fort Campbell is available from both Tennessee and Kentucky
-- city markers use finite coordinates projected into the same Albers USA space as the state geometry
-- installation markers use finite embedded coordinates and require no runtime geocoder or government service
-- different location types at one city or installation render as separate nearby symbols around the same geographic anchor
-- repeated records of one type at one city or installation render as one symbol with a numeric count badge
-- city/community remains the default anchor, and installations are selectable rather than all being plotted automatically
-- the user-provided Huntsville, Alabama entries demonstrate both Regional headquarters and Contract site symbols at the same city; all other default Astrion sites are identified as demonstration data
-- visible categories read Headquarters, Regional headquarters, Site, Contract site, and Future site; no visible category is called a major hub
-- both the legacy nine-sample and ten-sample starter sets migrate to the current city-based samples, while other records without city data remain at their state anchor without a fabricated city or visible `Statewide` label
-- map contains 51 unique geographic paths for the 50 states and District of Columbia
-- state shapes preserve geographic proportions through uniform scaling at every canvas ratio
-- every state initial is clearly legible and belongs unambiguously to its state or protected callout, with no border, connector, marker, label, or count crossing it
-- small Northeast states and the District of Columbia remain labeled and selectable with callout lines kept clear of their initials
-- adding, editing, or removing a location updates anchor markers, counts, legend, and the anchor-aware location list
-- editing a location preserves its ID and list position, supports city/community and military-installation anchors, and can be canceled without changing the saved record
-- PNG export creates a valid non-empty PNG
-- SVG export creates a valid standalone SVG
-- transparent export omits the canvas background and uses crisp neutral typography, single-stroke callout connectors, and compact place-label plates without glows or outlines; users preview the output on its intended destination background because universal contrast cannot be guaranteed
-- regular state initials remain at fixed, verified interior positions, including Florida and Louisiana, and state counts stay inside the same protected abbreviation plate rather than floating near a border
-- application works at desktop and mobile widths without horizontal overflow
-- automated tests and browser console checks pass
+- all 51 state/DC paths render with recognizable geographic proportions
+- the app loads its versioned same-origin catalogs and reports a clear error if a required catalog cannot load
+- all 32,058 Census rows retain unique seven-character GEOIDs and LSAD values
+- duplicate Census base names remain independently searchable and selectable
+- the 887 installation anchors preserve their 805 DoD and 82 Coast Guard source split
+- city and installation markers use finite coordinates in the state-geometry projection
+- distinct nearby anchors participate in global marker and label occupancy rather than overlapping silently
+- state initials, small-state callouts, counts, markers, leaders, and labels remain mutually legible
+- long title, subtitle, and location text is bounded, fitted, or accompanied by a visible explanation
+- adding, editing, removing, undoing, clearing, resetting, and replacing locations updates the preview and saved model correctly
+- invalid saved state and invalid project JSON cannot replace a valid project
+- JSON project export/import round-trips current settings and location identity
+- PNG, SVG, and clipboard paths surface busy and failure states and produce non-empty output
+- clean SVG output removes hidden editor and location metadata when requested
+- transparent preview and text-tone choices remain readable and do not add a matte to the exported graphic
+- keyboard and assistive-technology users can operate all editor controls without traversing 51 map-state tab stops
+- desktop and mobile views avoid horizontal overflow and support zoom and full-screen inspection
+- offline reopening works after the service worker has cached a successful hosted load
+- source tests, generated-data validation, Playwright browser tests, and the deployed production smoke test pass
+
+## Verification and release process
+
+- Node source and geometry tests validate the application, data contracts, collision logic, accessibility structure, and documentation
+- the place-catalog generator pins the Census source checksums and validates record counts, GEOID uniqueness, LSAD handling, projection output, and duplicate-name cases
+- Playwright covers responsive behavior, accessibility, project history, exports, dense metropolitan layouts, offline routing, and the production deployment
+- GitHub Actions runs source tests and Chromium Playwright tests before GitHub Pages deployment
+- deployment is blocked if the quality checks fail
+- a production smoke test runs against the deployed GeoPresence URL after publishing
 
 ## Future options
 
@@ -117,5 +166,4 @@ Only add these if they become useful:
 - user-imported logo
 - user-selectable fonts
 - custom state colors
-- JSON import/export of a saved map configuration
 - alternate regional or international geographic maps
