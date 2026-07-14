@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: July 13, 2026
 
-Current version: 2.2.1
+Current version: 2.2.2
 
 Created by: Dr. Shane Turner
 
@@ -24,7 +24,8 @@ The application is a graphic-production tool. It is not an enterprise mapping pl
 - allow a user to switch explicitly to an embedded military installation as an alternate anchor
 - place markers at the selected city/community or installation presentation-scale coordinate
 - visually distinguish headquarters, regional headquarters, sites, contract sites, and future sites
-- encode each location type with both a unique symbol and color while keeping state labels neutral
+- encode each location type with a unique symbol and theme-aware color while keeping state labels neutral
+- place every location and legend symbol on a crisp solid dual-tone backplate that remains visible in light, dark, clean, and transparent output without glow effects
 - group locations by anchor and type so different categories remain distinct and repeated categories receive a count badge
 - show one collision-aware label per anchor instead of one label per location record
 - keep regular state initials at fixed canonical positions with protected backing so state borders, callout connectors, markers, city/installation labels, and counts never obscure them

@@ -9,6 +9,18 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(resolve(root, "geopresence/index.html"), "utf8");
 const changelog = readFileSync(resolve(root, "geopresence/changelog.md"), "utf8");
 
+function relativeLuminance(hex) {
+  const channels = hex.match(/[a-f\d]{2}/gi).map(value => Number.parseInt(value, 16) / 255);
+  const linear = channels.map(value => (value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function contrastRatio(first, second) {
+  const a = relativeLuminance(first);
+  const b = relativeLuminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
 test("map builder inline application parses as JavaScript", () => {
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
   assert.equal(scripts.length, 1);
@@ -80,9 +92,9 @@ test("the user-provided Huntsville entries and demonstration samples are bundled
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(html, /const APP_VERSION="2\.2\.1"/);
+  assert.match(html, /const APP_VERSION="2\.2\.2"/);
   assert.match(html, /Created by Dr\. Shane Turner/);
-  assert.match(changelog, /## \[2\.2\.1\] - 2026-07-13/);
+  assert.match(changelog, /## \[2\.2\.2\] - 2026-07-13/);
 });
 
 test("embedded Census place catalog covers every state and DC", () => {
@@ -382,6 +394,98 @@ test("site categories use the requested plain-language labels", () => {
   assert.match(html, /name:"Southwest Site"/);
   assert.match(html, /name:"Mid-Atlantic Site"/);
   assert.match(html, /name:"Great Lakes Site"/);
+});
+
+test("site markers remain high contrast on light and dark maps", () => {
+  const typeMatch = html.match(/const typeMeta=(\{[^\n]+\});/);
+  assert.ok(typeMatch, "site type metadata was not found");
+  const types = vm.runInNewContext(`(${typeMatch[1]})`);
+
+  for (const [type, meta] of Object.entries(types)) {
+    assert.ok(meta.color, `${type} needs a light-theme marker color`);
+    assert.ok(meta.darkColor, `${type} needs a dark-theme marker color`);
+    assert.ok(contrastRatio(meta.color, "#ffffff") >= 4.5, `${type} light marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.color, "#dfe3e8") >= 4, `${type} light marker must contrast with light land`);
+    assert.ok(contrastRatio(meta.darkColor, "#171722") >= 4.5, `${type} dark marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.darkColor, "#3c3852") >= 4, `${type} dark marker must contrast with dark land`);
+  }
+
+  assert.match(html, /function markerStyle\(meta,p\)/);
+  assert.match(html, /color:isDark\?meta\.darkColor\|\|"#e9d5ff":meta\.color\|\|model\.accent/);
+  assert.match(html, /plate:isDark\?"#171722":p\.panel/);
+  assert.match(html, /ring:isDark\?"#f5f3ff":"#20202e"/);
+});
+
+test("map and legend share the same solid marker token without glow", () => {
+  const mapMarkup = html.match(/function mapMarkup\(\)\{[\s\S]*?\n  function refreshCityOptions\(/)?.[0] || "";
+  assert.ok(mapMarkup, "map rendering code was not found");
+  assert.match(html, /function markerToken\(meta,cx,cy,size,p\)/);
+  assert.match(html, /class="marker-backplate"[^>]+fill="\$\{style\.plate\}" stroke="\$\{style\.ring\}" stroke-width="2"/);
+  assert.match(mapMarkup, /\$\{markerToken\(meta,mx,my,10\.5,p\)\}/);
+  assert.match(mapMarkup, /\$\{markerToken\(meta,x,legendY,11\.5,p\)\}/);
+  assert.match(mapMarkup, /stroke="\$\{style\.color\}" stroke-width="1\.8"/);
+  assert.match(mapMarkup, /fill="\$\{style\.color\}">\$\{count\}<\/text>/);
+  assert.doesNotMatch(mapMarkup, /<filter|feGaussianBlur|drop-shadow|paint-order/i);
+  assert.doesNotMatch(mapMarkup, /<circle cx="\$\{mx\}" cy="\$\{my\}" r="13"/);
+});
+
+test("co-located marker layouts keep every token and place label separate", () => {
+  const layoutMatch = html.match(/function markerOffsets\(count\)\{const layouts=(\{[^\n]+\});return/);
+  assert.ok(layoutMatch, "marker offset layouts were not found");
+  const layouts = vm.runInNewContext(`(${layoutMatch[1]})`);
+  const badgeOffset = (x, y) => {
+    const distance = Math.hypot(x, y);
+    return distance ? [x / distance * 14, y / distance * 14] : [10, -10];
+  };
+
+  for (let count = 1; count <= 5; count += 1) {
+    const offsets = layouts[count];
+    assert.equal(offsets.length, count);
+    for (let first = 0; first < offsets.length; first += 1) {
+      for (let second = first + 1; second < offsets.length; second += 1) {
+        const distance = Math.hypot(
+          offsets[first][0] - offsets[second][0],
+          offsets[first][1] - offsets[second][1]
+        );
+        assert.ok(distance >= 16 * 2 + 2, `${count}-marker layout tokens must not overlap`);
+      }
+    }
+
+    const footprints = offsets.flatMap(([x, y], markerIndex) => {
+      const [badgeX, badgeY] = badgeOffset(x, y);
+      for (let otherIndex = 0; otherIndex < offsets.length; otherIndex += 1) {
+        if (otherIndex === markerIndex) continue;
+        const distance = Math.hypot(
+          x + badgeX - offsets[otherIndex][0],
+          y + badgeY - offsets[otherIndex][1]
+        );
+        assert.ok(distance >= 9 + 16 + 2, `${count}-marker badge must not overlap another token`);
+      }
+      return [{ x, y, r: 16 }, { x: x + badgeX, y: y + badgeY, r: 9 }];
+    });
+    const horizontalExtent = Math.max(...footprints.map(item => Math.abs(item.x) + item.r));
+    const verticalExtent = Math.max(...footprints.map(item => Math.abs(item.y) + item.r));
+    const topLabelBottom = -verticalExtent - 8 + 2;
+    const bottomLabelTop = verticalExtent + 14 + 6 - 14;
+    const rightLabelLeft = horizontalExtent + 8;
+    const leftLabelRight = -horizontalExtent - 8;
+    assert.ok(topLabelBottom <= -verticalExtent - 6);
+    assert.ok(bottomLabelTop >= verticalExtent + 6);
+    assert.ok(rightLabelLeft >= horizontalExtent + 8);
+    assert.ok(leftLabelRight <= -horizontalExtent - 8);
+  }
+
+  assert.match(html, /function markerBadgeOffset\(dx,dy\)/);
+  assert.match(html, /function markerFootprints\(offsets,typeGroups\)/);
+  assert.match(html, /function placeLabelCandidates\(cx,cy,footprints,width,height\)/);
+  assert.match(html, /for\(let dx=-120;dx<=120;dx\+=4\)/);
+  assert.match(html, /\[badgeDx,badgeDy\]=markerBadgeOffset\(dx,dy\)/);
+  assert.match(html, /candidates=placeLabelCandidates\(group\.x,group\.y,group\.footprints,width,height\)/);
+});
+
+test("redundant standalone application copy is removed", () => {
+  assert.doesNotMatch(html, /Standalone · No map service required/);
+  assert.doesNotMatch(html, /Standalone browser application/);
 });
 
 test("place labels use compact background plates instead of text outlines", () => {
