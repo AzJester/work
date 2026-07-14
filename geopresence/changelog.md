@@ -4,6 +4,49 @@ All notable changes to Astrion Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.0.0] - 2026-07-13
+
+### Added
+
+- added a versioned 32,058-record 2025 Census place catalog that retains the official GEOID, NAME, and LSAD fields for every record in the 50 states and District of Columbia
+- added duplicate-place disambiguation so same-base-name records remain independently selectable with entity-type and GEOID labels
+- replaced long native selectors with searchable, keyboard-operable city and installation comboboxes
+- added deterministic global marker and label occupancy across co-located and distinct nearby anchors, with fallback and hidden-label warnings for dense layouts
+- added confirmation for destructive clear, reset, remove, sample-replacement, and project-import operations
+- added in-session Undo history and a persisted recovery snapshot for the latest destructive change
+- added versioned JSON project import/export with schema validation before an imported project can replace the current map
+- added checkerboard, light, dark, and custom transparent destination previews with automatic, dark, and light export-text tones
+- added an enabled-by-default **Clean SVG metadata** option that removes hidden titles, descriptions, accessibility labels, editor data attributes, and location metadata from exported SVG copies
+- added Fit, zoom-in, zoom-out, and full-screen preview controls for responsive map inspection
+- added semantic fieldsets, list structure, ARIA combobox state, linked inline form errors, focus restoration, and a keyboard state-selection path without 51 state tab stops
+
+### Changed
+
+- changed a new browser session to open an empty project; demonstration locations are now opt-in and identified in the editor only
+- split the place, place-metadata, and installation catalogs into versioned same-origin JSON files to reduce the initial HTML parse cost
+- added service-worker caching for the GeoPresence shell and catalogs after a successful hosted load so the application can be reopened offline
+- changed browser persistence to a versioned, sanitized model that handles blocked, full, missing, or corrupt storage as a visible nonfatal condition
+- debounced live heading and custom-preview-color updates instead of rebuilding the map for every keystroke
+- bounded user-entered text and automatically fitted long title and subtitle text to the export canvas
+- clarified **Map theme**, **Heading accent**, **Locations per state**, **Replace with sample locations**, and public-reference anchor wording
+- updated all application, documentation, and release references to version 3.0.0 while preserving attribution to Dr. Shane Turner
+
+### Fixed
+
+- prevented separate nearby cities and installations from independently occupying the same marker space
+- preserved same-named Census entities that were previously collapsed by state-and-name identity
+- removed interactive state-button roles from the SVG image and retained the State dropdown as the accessible keyboard path
+- strengthened focus visibility and state-boundary contrast without adding glow effects
+- constrained responsive panels, combobox results, and previews to avoid mobile horizontal overflow
+- hardened PNG creation with an export-busy state, pixel safety limit, canvas-context and blob validation, temporary object-URL cleanup, and actionable error messages
+- ensured transparent destination preview mattes remain editor-only and never appear in transparent PNG or SVG output
+
+### Verification
+
+- added generated-catalog validation for source checksums, record counts, GEOID uniqueness, LSAD coverage, projection output, and duplicate-name cases
+- added Playwright coverage for responsive and accessible behavior, project history, exports, dense metropolitan layouts, offline routing, and production smoke testing
+- gated GitHub Pages deployment on passing Node source tests and Chromium Playwright tests, followed by a smoke test against the deployed public URL
+
 ## [2.2.3] - 2026-07-13
 
 ### Changed

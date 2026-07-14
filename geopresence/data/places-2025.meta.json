@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "catalog": "2025 U.S. Census National Places Gazetteer (50 states and District of Columbia)",
+  "source": {
+    "publisher": "U.S. Census Bureau",
+    "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_place_national.zip",
+    "landingPage": "https://www.census.gov/geographies/reference-files/2025/geo/gazetter-file.html",
+    "recordLayout": "https://www.census.gov/programs-surveys/geography/technical-documentation/records-layout/gaz-record-layouts/gaz25-record-layouts.html",
+    "lastModified": "2025-09-10T17:30:11.000Z",
+    "archiveSha256": "49644173a453469d9bd77fb7a493b027f87567e209edaf2078aac7543ac2ee29",
+    "textSha256": "15f4977a010cc42308f4d5ddc5e19f26ef63fc035f20745333a14b78aa08d3fa"
+  },
+  "filtering": {
+    "excludedUSPS": [
+      "PR"
+    ],
+    "rationale": "GeoPresence v3 covers the 50 states and District of Columbia; Puerto Rico is outside the embedded Albers USA state geometry.",
+    "sourceRecordCount": 32350,
+    "excludedPuertoRicoRecords": 292,
+    "retainedRecordCount": 32058
+  },
+  "projection": {
+    "name": "d3.geoAlbersUsa-compatible Albers USA",
+    "scale": 1300,
+    "translate": [
+      487.5,
+      305
+    ],
+    "coordinatePrecisionDecimals": 1,
+    "canvas": [
+      975,
+      610
+    ],
+    "note": "Coordinates use the same projection parameters as us-atlas states-albers-10m geometry used by GeoPresence."
+  },
+  "rowSchema": [
+    "USPS",
+    "GEOID",
+    "NAME",
+    "LSAD",
+    "x",
+    "y",
+    "duplicateLabel"
+  ],
+  "fieldNotes": {
+    "USPS": "Official two-letter state abbreviation.",
+    "GEOID": "Official seven-character state FIPS + place FIPS identifier; retained as a string so leading zeroes are preserved.",
+    "NAME": "Official Census place name, including its legal/statistical descriptor.",
+    "LSAD": "Official Census Legal/Statistical Area Description code; resolve through lsadTypes.",
+    "x": "Projected GeoPresence map x-coordinate.",
+    "y": "Projected GeoPresence map y-coordinate.",
+    "duplicateLabel": "Editor-facing disambiguation label for same-base-name records within one state; empty when the base name is unique in that state."
+  },
+  "lsadTypes": {
+    "21": "borough",
+    "25": "city",
+    "37": "municipality",
+    "43": "town",
+    "47": "village",
+    "53": "city and borough",
+    "57": "census-designated place (CDP)",
+    "00": "balance or place without an LSAD suffix",
+    "CG": "consolidated government",
+    "CN": "corporation",
+    "MG": "metropolitan government",
+    "UC": "urban county",
+    "UG": "unified government"
+  },
+  "records": {
+    "count": 32058,
+    "jurisdictions": 51,
+    "uniqueGeoids": 32058,
+    "duplicateBaseNameGroupsWithinState": 201,
+    "recordsInDuplicateBaseNameGroups": 412
+  },
+  "duplicateHandling": {
+    "definition": "Two or more records in one USPS jurisdiction after removing the LSAD suffix from the official NAME and comparing the result case-insensitively.",
+    "labelFormat": "{base name} — {entity type} · GEOID {GEOID}",
+    "note": "GEOID keeps labels unique even when two places share both a base name and entity type, as the two Florida Midway CDPs do."
+  },
+  "validation": {
+    "dataSha256": "8cc23a6eeac42afd91048fcb3e5ba65fcb854db380041143412063bf0c12b49c",
+    "expectedRecordCount": 32058,
+    "floridaMidway": [
+      {
+        "geoid": "1245425",
+        "name": "Midway city",
+        "lsad": "25",
+        "x": 722.6,
+        "y": 478.8,
+        "duplicateLabel": "Midway — city · GEOID 1245425"
+      },
+      {
+        "geoid": "1245465",
+        "name": "Midway CDP",
+        "lsad": "57",
+        "x": 673.4,
+        "y": 486.3,
+        "duplicateLabel": "Midway — census-designated place (CDP) · GEOID 1245465"
+      },
+      {
+        "geoid": "1245475",
+        "name": "Midway CDP",
+        "lsad": "57",
+        "x": 791,
+        "y": 508.4,
+        "duplicateLabel": "Midway — census-designated place (CDP) · GEOID 1245475"
+      }
+    ]
+  }
+}

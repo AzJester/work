@@ -3,24 +3,23 @@ My Work Repository
 
 ## Astrion Map Builder
 
-A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.3, created by Dr. Shane Turner:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.0.0**, created by **Dr. Shane Turner**:
 
-### → https://azjester.github.io/work/geopresence/
+### [Open Astrion Map Builder](https://azjester.github.io/work/geopresence/)
 
-- edit the title, theme, accent color, state labels, site counts, legend, and background
-- work with recognizable state boundaries, including Alaska and Hawaii insets
-- use a city or community as the default location anchor, or choose from 887 embedded U.S. military-installation anchors covering all 51 state/DC codes
-- place headquarters, regional-headquarters, site, contract-site, and future-site markers at the selected city, community, or installation
-- keep every marker visible with theme-aware colors, unique shapes, and crisp solid backplates in light, dark, clean, and transparent graphics
-- edit any saved location in place, including its label, anchor, state, and site type, or cancel without changing it
-- show multiple site types at the same anchor side by side, with count badges for repeated sites of one type
-- keep regular state initials at fixed, validated positions and use protected callouts for the smallest states and District of Columbia
-- export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
-- use crisp neutral labels in transparent exports, preview the result on its destination background, or copy the finished PNG directly to the clipboard
+- search 32,058 official 2025 Census places by stable GEOID/LSAD identity without collapsing duplicate names
+- search 887 selectable public-reference military-installation anchors covering all 51 state/DC codes
+- place Headquarters, Regional headquarters, Site, Contract site, and Future site markers using deterministic global collision handling
+- protect state initials, small-state callouts, counts, connectors, nearby marker groups, and place labels from overlap
+- edit locations, confirm destructive changes, Undo recent actions, and recover the latest destructive snapshot
+- save validated browser state and import or export portable JSON project files
+- preview transparent output on checkerboard, light, dark, or custom destinations and select automatic, dark, or light text
+- export guarded high-resolution PNG, metadata-clean SVG, or clipboard PNG
+- inspect responsive maps with Fit, zoom, and full-screen controls using accessible forms and searchable comboboxes
 
-It runs entirely in the browser with no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. The installation catalog is selectable reference data; the app does not plot all 887 installations by default.
+Versioned same-origin catalogs reduce initial page parsing and are cached with the app shell for offline reopening after a successful hosted load. GitHub Pages deployment is gated by Node and Playwright tests and followed by a production smoke test.
 
-The Huntsville Regional Headquarters and contract-site entries reflect user-provided information. Other included Astrion sites are demonstration data that can be cleared, edited, or replaced.
+The app requires no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. City and installation catalogs are public reference data, not legal boundaries, exact building locations, or a complete military inventory. Optional samples are identified in the editor; the Huntsville Regional Headquarters and contract entries reflect user-provided information, while the other locations are demonstration examples.
 
 ## Weekly Status Tracker
 
