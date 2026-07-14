@@ -4,6 +4,29 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.2.0] - 2026-07-14
+
+### Added
+
+- added an **Upload locations** dialog for UTF-8 `.csv` files up to 2 MB and 1,000 nonblank location rows
+- added an expandable file-requirements guide and a downloadable CSV template with city and installation examples
+- added CSV support for all eleven type slugs: `headquarters`, `regional`, `hub`, `contract`, `future`, `program`, `operations`, `customer`, `partner`, `test`, and `manufacturing`
+- added **Add to current locations** and confirmed **Replace current locations** import modes
+
+### Safety and validation
+
+- require `name`, `state`, `type`, and `source` headers, plus `city` or `city_geoid` for city rows and `installation` or `installation_id` for installation rows
+- validate the complete file before changing the map so a header or row error prevents the entire upload
+- reject invalid UTF-8 bytes and malformed quoted fields instead of silently changing uploaded values
+- keep only the latest selected file when file reads overlap, preventing an older selection from replacing the current preview
+- skip locations already present on the map when appending and report how many valid locations will be added
+- preserve a recovery snapshot for both import modes so a completed upload can be reversed with **Undo**
+
+### Preserved
+
+- kept JSON project import/export separate from CSV location upload: JSON transfers the complete project, while CSV changes only locations
+- retained the public URL, all export formats, eleven pin categories, local-only persistence, and attribution to Dr. Shane Turner
+
 ## [3.1.0] - 2026-07-14
 
 ### Added

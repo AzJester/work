@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: July 14, 2026
 
-Current version: 3.1.0
+Current version: 3.2.0
 
 Created by: Dr. Shane Turner
 
@@ -23,6 +23,7 @@ The application is a graphic-production tool. It is not an operational mapping p
 - versioned same-origin reference data in `geopresence/data/`
 - schema-validated local browser persistence with a separate destructive-action recovery snapshot
 - portable JSON project import/export without a backend or account
+- atomic UTF-8 CSV location upload with template download, append/replace choices, duplicate skipping, and Undo
 - service-worker caching for the application shell and versioned catalogs after the first successful hosted load
 - GitHub Pages hosting at the public application URL
 
@@ -80,6 +81,15 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - treat missing, blocked, full, or corrupt browser storage as a visible nonfatal condition
 - export the current map settings and locations as a versioned JSON project
 - validate JSON project structure before import and preserve an undo snapshot before replacement
+- provide a separate **Upload locations** dialog for UTF-8 `.csv` files up to 2 MB and 1,000 nonblank location rows
+- expose a downloadable CSV template with the supported headers and both city and installation examples
+- require `name`, `state`, `type`, and `source` headers; require `city` or `city_geoid` for city rows and `installation` or `installation_id` for installation rows
+- accept all eleven location-type slugs: `headquarters`, `regional`, `hub`, `contract`, `future`, `program`, `operations`, `customer`, `partner`, `test`, and `manufacturing`
+- validate every CSV header and row before changing the model so any error leaves the current map untouched
+- let a valid upload append to the current locations or replace them after confirmation
+- skip existing-location duplicates when appending and report the resulting import count
+- capture a recovery snapshot before either CSV import mode so the completed upload can be reversed with Undo
+- keep CSV location upload separate from JSON project import/export; CSV changes locations only, while JSON transfers the complete project
 
 ### Graphic formats
 
@@ -126,9 +136,9 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 3. Open Map details, Advanced, or Project only when those less-frequent controls are needed.
 4. If exporting transparency, select a destination preview and text tone.
 5. Choose a state and search for a Census place or public-reference installation.
-6. Add, edit, or remove locations and use confirmation or Undo when replacing data.
+6. Add, edit, or remove locations, or open **Upload locations** to validate a UTF-8 CSV and append or replace as many as 1,000 locations.
 7. Use Fit, zoom, or full-screen preview to inspect the composition.
-8. Download or open a JSON project when backup or transfer is needed.
+8. Download or open a JSON project when complete-project backup or transfer is needed; JSON project import remains separate from CSV location upload.
 9. Download PNG, download SVG, or copy PNG.
 
 ## Output behavior
@@ -161,6 +171,11 @@ SVG output remains scalable and editable. When **Clean SVG metadata** is enabled
 - adding, editing, removing, undoing, clearing, resetting, and replacing locations updates the preview and saved model correctly
 - invalid saved state and invalid project JSON cannot replace a valid project
 - JSON project export/import round-trips current settings and location identity
+- the CSV template downloads with all supported headers and usable city and installation examples
+- CSV files over 2 MB or 1,000 nonblank rows are rejected without changing the map
+- CSV import requires `name`, `state`, `type`, and `source`, resolves the required city or installation identifier, and accepts all eleven type slugs
+- any invalid CSV row prevents the entire upload; a valid upload can append with duplicate skipping or replace after confirmation
+- both CSV import modes create an Undo snapshot, while JSON project import remains a separate complete-project workflow
 - PNG, SVG, and clipboard paths surface busy and failure states and produce non-empty output
 - clean SVG output removes hidden editor and location metadata when requested
 - transparent preview and text-tone choices remain readable and do not add a matte to the exported graphic
