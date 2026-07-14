@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.2.2**
+Version: **3.2.3**
 
 Created by **Dr. Shane Turner**
 
