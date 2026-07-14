@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.1"/);
-  assert.match(html, /Version 3\.2\.1/);
+  assert.match(inlineScript, /const APP_VERSION="3\.2\.2"/);
+  assert.match(html, /Version 3\.2\.2/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -345,7 +345,7 @@ test("project files are portable, schema-checked, and sanitized", () => {
 });
 
 test("CSV location upload publishes one accessible, documented file contract", () => {
-  const locationsStart = html.indexOf('<section class="panel" aria-labelledby="locationsTitle"');
+  const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
   const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
   assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations and Add a location panels were not found");
   assert.match(html.slice(locationsStart, addStart), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
@@ -375,6 +375,17 @@ test("CSV location upload publishes one accessible, documented file contract", (
   assert.equal(template.split(/\r?\n/, 1)[0], expectedHeaders.join(","));
   assert.match(template, /Huntsville Regional Headquarters,AL,regional,city,Huntsville,0137000,,/);
   assert.match(template, /Redstone Arsenal Contract,AL,contract,installation,,,Redstone Arsenal,dod-fid-986/);
+});
+
+test("header exports and location upload use compact nonwrapping actions", () => {
+  assert.match(html, /<button class="btn ghost small" id="exportSvg"[^>]*>Download SVG<\/button>/);
+  assert.match(html, /<button class="btn ghost small" id="copyPng"[^>]*>Copy PNG<\/button>/);
+  assert.match(html, /<button class="btn sky small" id="exportPng"[^>]*>Download PNG<\/button>/);
+  assert.match(html, /<button class="btn secondary small" id="locationImportOpen"[^>]*>Upload locations<\/button>/);
+  assert.match(html, /<button class="btn secondary small" id="clearPins"[^>]*>Clear locations<\/button>/);
+  assert.match(html, /\.top-actions \.btn\{flex:0 0 auto;white-space:nowrap\}/);
+  assert.match(html, /\.project-actions \.btn\{white-space:nowrap\}/);
+  assert.doesNotMatch(html, /\.text-action\{/);
 });
 
 test("CSV parsing handles BOM, CRLF, commas, and escaped quotes without split-on-comma shortcuts", () => {
@@ -561,7 +572,7 @@ test("required markers stay inline and location controls share a uniform height"
 test("clear locations remains in the Locations panel", () => {
   const previewStart = html.indexOf('<section class="panel preview-panel"');
   const previewEnd = html.indexOf("</section>", previewStart);
-  const locationsStart = html.indexOf('<section class="panel" aria-labelledby="locationsTitle"');
+  const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
   const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
   assert.ok(previewStart >= 0 && previewEnd > previewStart, "preview panel was not found");
   assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations panel was not found");

@@ -36,6 +36,63 @@ for (const width of [320, 400, 802, 900]) {
   });
 }
 
+for (const width of [320, 400, 843, 900, 1280]) {
+  test(`compact actions remain readable and contained at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1100 });
+    await gotoFresh(page);
+
+    const exportActions = await page.locator(".top-actions .btn").evaluateAll(buttons => buttons.map(button => {
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height, whiteSpace: style.whiteSpace };
+    }));
+    expect(exportActions).toHaveLength(3);
+    for (const action of exportActions) {
+      expect(action.left).toBeGreaterThanOrEqual(-1);
+      expect(action.right).toBeLessThanOrEqual(width + 1);
+      expect(action.width).toBeLessThan(150);
+      expect(action.height).toBeLessThanOrEqual(36);
+      expect(action.whiteSpace).toBe("nowrap");
+    }
+    const exportRows = new Set(exportActions.map(action => Math.round(action.top)));
+    expect(exportRows.size, "exports use one row from 400px upward and at most two rows at 320px").toBeLessThanOrEqual(width >= 400 ? 1 : 2);
+
+    await page.locator("#locationImportOpen").scrollIntoViewIfNeeded();
+    const locationActions = await page.locator("#locationImportOpen, #clearPins").evaluateAll(buttons => buttons.map(button => {
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      return {
+        classes: button.className,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height,
+        padding: style.padding,
+        border: style.border,
+        background: style.backgroundColor,
+        fontSize: style.fontSize,
+        whiteSpace: style.whiteSpace,
+      };
+    }));
+    expect(locationActions).toHaveLength(2);
+    expect(locationActions[0].classes).toBe("btn secondary small");
+    expect(locationActions[1].classes).toBe("btn secondary small");
+    for (const action of locationActions) {
+      expect(action.left).toBeGreaterThanOrEqual(-1);
+      expect(action.right).toBeLessThanOrEqual(width + 1);
+      expect(action.whiteSpace).toBe("nowrap");
+    }
+    expect(Math.abs(locationActions[0].top - locationActions[1].top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(locationActions[0].height - locationActions[1].height)).toBeLessThanOrEqual(1);
+    for (const property of ["padding", "border", "background", "fontSize"]) {
+      expect(locationActions[0][property]).toBe(locationActions[1][property]);
+    }
+    expect(locationActions[0].right <= locationActions[1].left || locationActions[1].right <= locationActions[0].left).toBeTruthy();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+  });
+}
+
 for (const width of [320, 900]) {
   test(`required labels and location controls stay uniformly aligned at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1100 });
