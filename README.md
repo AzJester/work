@@ -3,20 +3,23 @@ My Work Repository
 
 ## Astrion Map Builder
 
-A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.0, created by Dr. Shane Turner:
+A self-contained application for building a branded geographic U.S. location map and exporting it as a PNG or SVG. Version 2.2.1, created by Dr. Shane Turner:
 
 ### → https://azjester.github.io/work/geopresence/
 
 - edit the title, theme, accent color, state labels, site counts, legend, and background
 - work with recognizable state boundaries, including Alaska and Hawaii insets
 - use a city or community as the default location anchor, or choose from 887 embedded U.S. military-installation anchors covering all 51 state/DC codes
-- place headquarters, regional HQ, hub, contract-site, and future-site markers at the selected city, community, or installation
+- place headquarters, regional-headquarters, site, contract-site, and future-site markers at the selected city, community, or installation
+- edit any saved location in place, including its label, anchor, state, and site type, or cancel without changing it
 - show multiple site types at the same anchor side by side, with count badges for repeated sites of one type
-- keep every state initial clearly readable in a protected label layer, away from borders, callout lines, markers, and other labels
+- keep regular state initials at fixed, validated positions and use protected callouts for the smallest states and District of Columbia
 - export 16:9, 4:3, or square graphics as high-resolution PNG or scalable SVG
-- use contrast-safe transparent backgrounds or copy the finished PNG directly to the clipboard
+- use crisp neutral labels in transparent exports, preview the result on its destination background, or copy the finished PNG directly to the clipboard
 
 It runs entirely in the browser with no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. The installation catalog is selectable reference data; the app does not plot all 887 installations by default.
+
+The Huntsville Regional Headquarters and contract-site entries reflect user-provided information. Other included Astrion sites are demonstration data that can be cleared, edited, or replaced.
 
 ## Weekly Status Tracker
 

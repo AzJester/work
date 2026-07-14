@@ -73,14 +73,16 @@ test("map and location editing expose accessible controls", () => {
   assert.match(html, /prefers-reduced-motion/);
 });
 
-test("only synthetic location samples are bundled", () => {
+test("the user-provided Huntsville entries and demonstration samples are bundled", () => {
   assert.match(html, /const samples=/);
+  assert.match(html, /name:"Huntsville Regional Headquarters"/);
+  assert.match(html, /name:"Huntsville Contract Operations"/);
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(html, /const APP_VERSION="2\.2\.0"/);
+  assert.match(html, /const APP_VERSION="2\.2\.1"/);
   assert.match(html, /Created by Dr\. Shane Turner/);
-  assert.match(changelog, /## \[2\.2\.0\] - 2026-07-13/);
+  assert.match(changelog, /## \[2\.2\.1\] - 2026-07-13/);
 });
 
 test("embedded Census place catalog covers every state and DC", () => {
@@ -174,7 +176,7 @@ test("locations are validated, projected, grouped by anchor and type, and layere
   assert.match(html, /const pinsByType=new Map\(\)/);
   assert.match(html, /class="marker-count"/);
   assert.match(html, /class="place-label city-label"/);
-  assert.match(html, /\$\{states\}<g class="location-layer">\$\{placeMarkers\}/);
+  assert.match(html, /\$\{states\}<g class="marker-leader-layer">\$\{markerLeaders\}<\/g><g class="location-layer">\$\{placeMarkers\}/);
   assert.match(html, /city- or installation-positioned location markers/);
 });
 
@@ -185,32 +187,227 @@ test("state initials stay protected from borders, markers, and location labels",
   assert.match(mapMarkup, /const labelBoxes=stateLabelBoxes\.map\(/);
   assert.match(mapMarkup, /!labelBoxes\.some\(/);
   assert.match(mapMarkup, /class="state-label"[\s\S]*?<rect[^>]+opacity="\.98"/);
-  assert.match(mapMarkup, /\$\{states\}<g class="location-layer">[\s\S]*?<g class="state-label-layer">\$\{stateLabels\}/);
+  assert.match(mapMarkup, /\$\{states\}<g class="marker-leader-layer">\$\{markerLeaders\}<\/g><g class="location-layer">[\s\S]*?<g class="state-label-layer">\$\{stateLabels\}/);
+  assert.match(mapMarkup, /const markerLeaders=groups\.filter\(/);
 });
 
-test("transparent themes preserve readable title, legend, and callout lines", () => {
+test("state initials use fixed canonical positions independent of locations", () => {
+  const canonicalMatch = html.match(/const canonicalLabelPositions=(\{[^\n]+\});/);
+  assert.ok(canonicalMatch, "canonical state label positions were not found");
+  const canonical = vm.runInNewContext(`(${canonicalMatch[1]})`);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(canonical)),
+    {
+      FL: [780.27, 515.87],
+      KY: [703.99, 314.18],
+      LA: [565.02, 489.08],
+      MI: [675.32, 170.37],
+      NY: [842.51, 168.82],
+      WV: [758.17, 295.16]
+    }
+  );
+
+  const stateLabelPoints = html.match(/const stateLabelPoints=[^\n]+/)?.[0] || "";
+  assert.match(stateLabelPoints, /labelPositions\[code\]\|\|canonicalLabelPositions\[code\]\|\|\[x,y\]/);
+  assert.doesNotMatch(stateLabelPoints, /\b(?:groups|nearby|pins|anchorGroups)\b/);
+});
+
+test("transparent themes use solid readable text and single callout leaders", () => {
   const mapMarkup = html.match(/function mapMarkup\(\)\{[\s\S]*?\n  function refreshCityOptions\(/)?.[0] || "";
   assert.ok(mapMarkup, "map rendering code was not found");
-  assert.match(mapMarkup, /transparentTitleHalo=model\.transparent/);
-  assert.match(mapMarkup, /transparentSubtitleHalo=model\.transparent/);
-  assert.match(mapMarkup, /legendTextHalo=model\.transparent/);
-  assert.match(mapMarkup, /paint-order=\"stroke\"/);
-  assert.match(mapMarkup, /model\.transparent\?`<path[^`]+stroke-width=\"4\.5\"/);
+  assert.match(mapMarkup, /const canvasText=model\.transparent\?"#757575":p\.text,canvasMuted=model\.transparent\?"#757575":p\.muted/);
+  assert.match(mapMarkup, /fill="\$\{canvasText\}"[^>]*>\$\{esc\(model\.mapTitle\)\}/);
+  assert.match(mapMarkup, /fill="\$\{canvasMuted\}"[^>]*>\$\{esc\(model\.mapSubtitle\)\}/);
+  assert.match(mapMarkup, /stroke="\$\{model\.transparent\?"#757575":p\.muted\}" stroke-width="1\.6"/);
+  assert.match(mapMarkup, /font-size="14" fill="\$\{canvasText\}"/);
+
+  const leaderStart = mapMarkup.indexOf("const leaderPath=");
+  const leaderEnd = mapMarkup.indexOf("const aria=", leaderStart);
+  assert.ok(leaderStart >= 0 && leaderEnd > leaderStart, "callout leader definition was not found");
+  const leaderDefinition = mapMarkup.slice(leaderStart, leaderEnd);
+  assert.equal((leaderDefinition.match(/<path\b/g) || []).length, 1, "callouts should render one leader path");
+
+  assert.doesNotMatch(html, /transparentTitleHalo|transparentSubtitleHalo|legendTextHalo/);
+  assert.doesNotMatch(html, /paint-order/);
+  assert.doesNotMatch(html, /stroke-width="4\.5"/);
+  assert.doesNotMatch(html, /drop-shadow/);
 });
 
-test("Florida and Louisiana labels and state counts use protected interior positions", () => {
-  assert.match(html, /const interiorLabelPositions=\{FL:\[786,521\],LA:\[570,481\]\}/);
-  assert.match(html, /const stateCountPoints=new Map/);
-  assert.match(html, /candidates=.*\.filter\(point=>Math\.hypot/);
-  assert.match(html, /class=\"state-count\" data-state/);
+test("small-state callout leaders stop at label edges without crossing initials", () => {
+  const geometryMatch = html.match(/const stateGeometry=(\[[^\n]+\]);/);
+  const calloutMatch = html.match(/const labelPositions=(\{[^\n]+\});/);
+  const canonicalMatch = html.match(/const canonicalLabelPositions=(\{[^\n]+\});/);
+  assert.ok(geometryMatch && calloutMatch && canonicalMatch, "state label geometry was not found");
+  const geometry = JSON.parse(geometryMatch[1]);
+  const callouts = vm.runInNewContext(`(${calloutMatch[1]})`);
+  const canonical = vm.runInNewContext(`(${canonicalMatch[1]})`);
+  const positions = Object.fromEntries(geometry.map(state => [state.code, callouts[state.code] || canonical[state.code] || [state.x, state.y]]));
+  const rectangles = Object.fromEntries(Object.entries(positions).map(([code, [x, y]]) => [code, { x1: x - 16, y1: y - 12, x2: x + 16, y2: y + 12 }]));
+  const segments = Object.entries(callouts).map(([code, [lx, ly]]) => {
+    const state = geometry.find(item => item.code === code);
+    const dx = lx - state.x;
+    const dy = ly - state.y;
+    const edgeScale = 1 / Math.max(Math.abs(dx) / 16, Math.abs(dy) / 12);
+    return { code, start: [state.x, state.y], end: [lx - dx * edgeScale, ly - dy * edgeScale] };
+  });
+
+  for (const segment of segments) {
+    const target = rectangles[segment.code];
+    const [x, y] = segment.end;
+    const onTargetEdge = ((Math.abs(x - target.x1) < 0.02 || Math.abs(x - target.x2) < 0.02) && y >= target.y1 && y <= target.y2)
+      || ((Math.abs(y - target.y1) < 0.02 || Math.abs(y - target.y2) < 0.02) && x >= target.x1 && x <= target.x2);
+    assert.ok(onTargetEdge, `${segment.code} leader does not stop at its callout edge`);
+
+    for (let step = 1; step < 200; step += 1) {
+      const t = step / 200;
+      const px = segment.start[0] + (segment.end[0] - segment.start[0]) * t;
+      const py = segment.start[1] + (segment.end[1] - segment.start[1]) * t;
+      for (const [code, rect] of Object.entries(rectangles)) {
+        assert.ok(!(px > rect.x1 && px < rect.x2 && py > rect.y1 && py < rect.y2), `${segment.code} leader crosses ${code} initials`);
+      }
+    }
+  }
+
+  const orientation = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  for (let i = 0; i < segments.length; i += 1) {
+    for (let j = i + 1; j < segments.length; j += 1) {
+      const a = segments[i];
+      const b = segments[j];
+      const crosses = orientation(a.start, a.end, b.start) * orientation(a.start, a.end, b.end) < 0
+        && orientation(b.start, b.end, a.start) * orientation(b.start, b.end, a.end) < 0;
+      assert.equal(crosses, false, `${a.code} and ${b.code} leaders cross`);
+    }
+  }
+});
+
+test("state counts remain inside the protected state-label plate", () => {
+  assert.match(html, /inlineCount=model\.showCounts&&counts\[code\]/);
+  assert.match(html, /class=\"state-count-inline\"/);
   assert.match(html, /data-inline-count/);
+  assert.match(html, /stateLabelBoxes=model\.showLabels\|\|model\.showCounts/);
+  assert.doesNotMatch(html, /const stateCountPoints=new Map/);
+  assert.doesNotMatch(html, /class=\"state-count\" data-state/);
   assert.doesNotMatch(html, /cx=\"\$\{x\+22\}\"/);
 });
 
-test("legacy saved pins remain explicit statewide locations", () => {
+test("legacy defaults migrate to city samples without visible statewide text", () => {
+  const signatureMatch = html.match(/const legacySampleSignatureSets=(\[new Set\([^\n]+\)\]),isLegacySampleSet=/);
+  assert.ok(signatureMatch, "legacy sample signatures were not found");
+  const signatureSets = vm.runInNewContext(signatureMatch[1]);
+  assert.equal(signatureSets.length, 2);
+  assert.deepEqual(
+    [...signatureSets[0]].sort(),
+    [
+      "Enterprise HQ|AL|headquarters",
+      "Southwest Hub|NM|hub",
+      "Mountain Regional HQ|CO|regional",
+      "Mid-Atlantic Hub|VA|hub",
+      "Great Lakes Hub|OH|hub",
+      "Northeast Site|MA|contract",
+      "Coastal Site|FL|contract",
+      "Texas Site|TX|contract",
+      "Growth Scenario|AZ|future"
+    ].sort()
+  );
+  assert.deepEqual(
+    [...signatureSets[1]].sort(),
+    [
+      "Huntsville Regional HQ|AL|regional",
+      "Huntsville Contract Operations|AL|contract",
+      "Southwest Hub|NM|hub",
+      "Mountain Regional HQ|CO|regional",
+      "Mid-Atlantic Hub|VA|hub",
+      "Great Lakes Hub|OH|hub",
+      "Northeast Site|MA|contract",
+      "Coastal Site|FL|contract",
+      "Texas Site|TX|contract",
+      "Growth Scenario|AZ|future"
+    ].sort()
+  );
+  assert.match(html, /isLegacySampleSet=pins=>Array\.isArray\(pins\)&&legacySampleSignatureSets\.some\(signatures=>pins\.length===signatures\.size&&pins\.every/);
+  assert.match(html, /migratedPins=isLegacySampleSet\(savedPins\)\?samples\.map\(pin=>\(\{\.\.\.pin\}\)\):savedPins/);
+
+  const subtitleMatch = html.match(/const legacySubtitles=new Set\((\[[^\n]+\])\);/);
+  assert.ok(subtitleMatch, "legacy subtitle list was not found");
+  const subtitles = vm.runInNewContext(subtitleMatch[1]);
+  assert.deepEqual(
+    [...subtitles],
+    [
+      "Mission footprint · Demonstration locations",
+      "Mission footprint · City-level demonstration locations",
+      "Mission footprint · City and installation demonstration locations"
+    ]
+  );
+  assert.match(html, /mapSubtitle:"U\.S\. mission footprint"/);
+  assert.match(html, /if\(legacySubtitles\.has\(model\.mapSubtitle\)\)model\.mapSubtitle=defaults\.mapSubtitle/);
+
   assert.match(html, /anchorKind:"statewide"/);
   assert.match(html, /anchorId:pin\.anchorId\|\|`state:\$\{pin\.state\}`/);
-  assert.match(html, /anchorLabel:"Statewide"/);
+  assert.match(html, /anchorLabel:stateNames\[pin\.state\]\|\|pin\.state/);
+  assert.match(html, /group\.anchorKind!=="statewide"/);
+  assert.doesNotMatch(html, /Statewide/);
+});
+
+test("existing locations can be edited in place or canceled", () => {
+  assert.match(html, /let editingPinId=null/);
+  assert.match(html, /data-edit="\$\{esc\(pin\.id\)\}" aria-label="Edit \$\{esc\(pin\.name\)\}"/);
+  assert.match(html, /function startPinEdit\(id\)/);
+  assert.match(html, /function cancelPinEdit\(focus=false\)/);
+  assert.match(html, /\$\("addTitle"\)\.textContent="Edit location"/);
+  assert.match(html, /\$\("savePin"\)\.textContent="Save changes"/);
+  assert.match(html, /id="cancelEdit" type="button" hidden>Cancel edit/);
+  assert.match(html, /const index=model\.pins\.findIndex\(pin=>pin\.id===id\);if\(wasEditing&&index>=0\)model\.pins\[index\]=nextPin/);
+  assert.match(html, /wasEditing\?"Location updated":"Location added"/);
+  assert.match(html, /\$\("clearPins"\)\.onclick=\(\)=>\{cancelPinEdit\(\);model\.pins=\[\]/);
+  assert.match(html, /\$\("loadSamples"\)\.onclick=\(\)=>\{cancelPinEdit\(\)/);
+  assert.match(html, /\$\("resetMap"\)\.onclick=\(\)=>\{cancelPinEdit\(\)/);
+});
+
+test("site categories use the requested plain-language labels", () => {
+  const typeMatch = html.match(/const typeMeta=(\{[^\n]+\});/);
+  assert.ok(typeMatch, "site type metadata was not found");
+  const types = vm.runInNewContext(`(${typeMatch[1]})`);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.label])),
+    {
+      headquarters: "Headquarters",
+      regional: "Regional headquarters",
+      hub: "Site",
+      contract: "Contract site",
+      future: "Future site"
+    }
+  );
+  assert.match(html, /<option value="regional">Regional headquarters<\/option><option value="hub" selected>Site<\/option>/);
+  assert.doesNotMatch(html, />Major hub</);
+  assert.match(html, /name:"Southwest Site"/);
+  assert.match(html, /name:"Mid-Atlantic Site"/);
+  assert.match(html, /name:"Great Lakes Site"/);
+});
+
+test("place labels use compact background plates instead of text outlines", () => {
+  const mapMarkup = html.match(/function mapMarkup\(\)\{[\s\S]*?\n  function refreshCityOptions\(/)?.[0] || "";
+  assert.ok(mapMarkup, "map rendering code was not found");
+  assert.match(mapMarkup, /<g class="place-label-group"[^>]*><rect[^>]+fill="\$\{p\.panel\}" opacity="\.96"\/><text class="place-label city-label"/);
+  assert.doesNotMatch(mapMarkup, /class="place-label[^>]+\bstroke=/);
+});
+
+test("location form controls stay within responsive grid columns", () => {
+  const styles = html.match(/<style>([\s\S]*?)<\/style>/i)?.[1] || "";
+  assert.match(styles, /\.add-grid\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)[^}]*min-width:0/);
+  assert.match(styles, /\.add-grid label\{[^}]*min-width:0/);
+  assert.match(styles, /\.add-grid input,\.add-grid select\{width:100%;min-width:0;max-width:100%/);
+  assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.row,\.add-grid\{grid-template-columns:1fr\}/);
+});
+
+test("clear locations action is in the Locations panel, not the preview header", () => {
+  const previewStart = html.indexOf('<section class="panel preview-panel"');
+  const previewEnd = html.indexOf("</section>", previewStart);
+  const locationsStart = html.indexOf('<section class="panel" aria-labelledby="locationsTitle"');
+  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
+  assert.ok(previewStart >= 0 && previewEnd > previewStart, "preview panel was not found");
+  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations panel was not found");
+  assert.doesNotMatch(html.slice(previewStart, previewEnd), /id="clearPins"/);
+  assert.match(html.slice(locationsStart, addStart), /<button[^>]+id="clearPins"[^>]*>Clear locations<\/button>/);
 });
 
 test("copied and downloaded map graphics omit application footer text", () => {

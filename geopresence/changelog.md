@@ -4,6 +4,30 @@ All notable changes to Astrion Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [2.2.1] - 2026-07-13
+
+### Added
+
+- added an **Edit** action for every saved location, reusing the location form to change its label, state, city or installation, and site type while preserving its position in the list
+- added an explicit **Cancel edit** action that exits edit mode without changing the saved location
+
+### Fixed
+
+- moved **Clear locations** from the map-preview header into the Locations header beside the content it clears
+- constrained text fields and choice controls to their form columns so long installation names no longer overflow the Add a location panel
+- locked regular state abbreviations to fixed, validated interior positions while retaining protected callouts for the smallest states and District of Columbia
+- removed visible `Statewide` place labels and migrated the exact legacy nine-sample starter set to the current city-based samples
+- removed text glow, outline, and doubled callout strokes that made dark and transparent modes look cluttered
+
+### Changed
+
+- simplified the visible location categories to **Headquarters**, **Regional headquarters**, **Site**, **Contract site**, and **Future site**; the internal `hub` key remains compatible with older saved maps
+- migrated both the version 2.1 nine-location starter set and the version 2.2 ten-location starter set to the current city-based samples and plain-language category names
+- simplified transparent exports with crisp solid neutral typography, single-stroke connectors, and compact background plates for city and installation labels
+- shortened the default subtitle and strengthened the visual hierarchy for faster reading across themes and canvas ratios
+- documented that transparent PNG and SVG output should be previewed on its intended destination background because no single text color can guarantee contrast over every possible image
+- clarified that the Huntsville Regional Headquarters and contract-site entries are user-provided, while all other default Astrion sites are demonstration data
+
 ## [2.2.0] - 2026-07-13
 
 ### Added
