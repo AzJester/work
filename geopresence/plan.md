@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: July 14, 2026
 
-Current version: 3.2.0
+Current version: 3.2.1
 
 Created by: Dr. Shane Turner
 

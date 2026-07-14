@@ -36,6 +36,62 @@ for (const width of [320, 400, 802, 900]) {
   });
 }
 
+for (const width of [320, 900]) {
+  test(`required labels and location controls stay uniformly aligned at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1100 });
+    await gotoFresh(page);
+
+    const assertRequiredMarkers = async ids => {
+      const requiredGeometry = await page.evaluate(fieldIds => fieldIds.map(id => {
+        const label = document.querySelector(`label[for="${id}"]`);
+        const marker = label.querySelector(".required");
+        const labelRect = label.getBoundingClientRect();
+        const markerRect = marker.getBoundingClientRect();
+        const style = getComputedStyle(label);
+        return {
+          id,
+          display: style.display,
+          direction: style.flexDirection,
+          labelCenter: labelRect.top + labelRect.height / 2,
+          markerCenter: markerRect.top + markerRect.height / 2,
+          markerWidth: markerRect.width,
+        };
+      }), ids);
+      for (const item of requiredGeometry) {
+        expect(["flex", "inline-flex"], `${item.id} label uses one flex row`).toContain(item.display);
+        expect(item.direction, `${item.id} label is not a column`).toBe("row");
+        expect(Math.abs(item.labelCenter - item.markerCenter), `${item.id} asterisk stays on its label line`).toBeLessThanOrEqual(2);
+        expect(item.markerWidth, `${item.id} asterisk does not stretch across the field`).toBeLessThan(20);
+      }
+    };
+    await assertRequiredMarkers(["pinName", "pinCity"]);
+
+    if (width > 500) {
+      const assertPairedControls = async (firstId, secondId) => {
+        const [first, second] = await Promise.all([
+          page.locator(`#${firstId}`).boundingBox(),
+          page.locator(`#${secondId}`).boundingBox(),
+        ]);
+        expect(Math.abs(first.y - second.y), `${firstId} and ${secondId} share a top edge`).toBeLessThanOrEqual(1);
+        expect(Math.abs(first.height - second.height), `${firstId} and ${secondId} share a height`).toBeLessThanOrEqual(1);
+      };
+      await assertPairedControls("pinState", "pinCity");
+      await page.locator("#pinAnchorKind").selectOption("installation");
+      await assertRequiredMarkers(["pinInstallation"]);
+      await assertPairedControls("pinState", "pinInstallation");
+    } else {
+      const formBounds = await page.locator("#pinForm").boundingBox();
+      for (const id of ["pinName", "pinAnchorKind", "pinState", "pinCity", "pinType"]) {
+        const box = await page.locator(`#${id}`).boundingBox();
+        expect(box.x, `${id} stays inside the form`).toBeGreaterThanOrEqual(formBounds.x - 1);
+        expect(box.x + box.width, `${id} stays inside the form`).toBeLessThanOrEqual(formBounds.x + formBounds.width + 1);
+      }
+      await page.locator("#pinAnchorKind").selectOption("installation");
+      await assertRequiredMarkers(["pinInstallation"]);
+    }
+  });
+}
+
 test("keyboard users do not have to tab through every state", async ({ page }) => {
   await gotoFresh(page);
 
