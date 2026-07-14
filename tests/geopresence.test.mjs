@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.1\.0"/);
-  assert.match(html, /Version 3\.1\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.2\.0"/);
+  assert.match(html, /Version 3\.2\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -344,6 +344,109 @@ test("project files are portable, schema-checked, and sanitized", () => {
   assert.match(inlineScript, /requestConfirmation\("Open this project and replace the current settings and locations\?"/);
 });
 
+test("CSV location upload publishes one accessible, documented file contract", () => {
+  const locationsStart = html.indexOf('<section class="panel" aria-labelledby="locationsTitle"');
+  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
+  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations and Add a location panels were not found");
+  assert.match(html.slice(locationsStart, addStart), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
+
+  const dialogStart = html.indexOf('<dialog class="import-dialog" id="locationImportDialog"');
+  const dialogEnd = html.indexOf("</dialog>", dialogStart);
+  assert.ok(dialogStart >= 0 && dialogEnd > dialogStart, "location upload dialog was not found");
+  const dialog = html.slice(dialogStart, dialogEnd + "</dialog>".length);
+  assert.match(dialog, /aria-labelledby="locationImportTitle"/);
+  assert.match(dialog, /aria-describedby="locationImportDescription"/);
+  assert.match(dialog, /UTF-8 CSV \(\.csv\)/i);
+  assert.match(dialog, /id="locationImportFile" type="file" accept="\.csv,text\/csv"/);
+  assert.match(dialog, /<label for="locationImportFile">Choose a CSV file<\/label>/);
+  assert.match(dialog, /name="locationImportMode" value="append" checked/);
+  assert.match(dialog, /name="locationImportMode" value="replace"/);
+  assert.match(dialog, /id="locationImportPreview" role="status" aria-live="polite"/);
+  assert.match(dialog, /id="locationImportErrors" role="alert"/);
+  assert.match(dialog, /id="locationImportApply"[^>]+disabled>Import locations<\/button>/);
+  assert.match(dialog, /id="locationImportTemplate"[^>]*>Download CSV template<\/button>/);
+
+  const expectedHeaders = [
+    "name", "state", "type", "source", "city", "city_geoid", "installation", "installation_id"
+  ];
+  const headers = Array.from(vm.runInNewContext(assignmentSource("LOCATION_IMPORT_HEADERS")));
+  assert.deepEqual(headers, expectedHeaders);
+  const template = vm.runInNewContext(assignmentSource("LOCATION_CSV_TEMPLATE"));
+  assert.equal(template.split(/\r?\n/, 1)[0], expectedHeaders.join(","));
+  assert.match(template, /Huntsville Regional Headquarters,AL,regional,city,Huntsville,0137000,,/);
+  assert.match(template, /Redstone Arsenal Contract,AL,contract,installation,,,Redstone Arsenal,dod-fid-986/);
+});
+
+test("CSV parsing handles BOM, CRLF, commas, and escaped quotes without split-on-comma shortcuts", () => {
+  const parserSource = sectionFromLast("function parseCsvRows(text){", "function placeMatchesImportName");
+  const parseCsvRows = vm.runInNewContext(`(()=>{${parserSource};return parseCsvRows})()`);
+  const rows = JSON.parse(JSON.stringify(parseCsvRows(
+    '\uFEFFname,state,type,source,city,city_geoid,installation,installation_id\r\n' +
+    '"Office, ""North""",VA,headquarters,city,Arlington,5103000,,\r\n'
+  )));
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].line, 1);
+  assert.deepEqual(rows[0].cells, [
+    "name", "state", "type", "source", "city", "city_geoid", "installation", "installation_id"
+  ]);
+  assert.equal(rows[1].line, 2);
+  assert.equal(rows[1].cells[0], 'Office, "North"');
+  assert.equal(rows[1].cells[5], "5103000");
+  assert.throws(() => parseCsvRows('name,state\r\n"Unclosed,VA'), /quoted value is not closed/i);
+  for (const trailingText of ["x", " ", "\t", "0"]) {
+    assert.throws(
+      () => parseCsvRows(`"closed"${trailingText},next`),
+      /(?:after|follows) a closing quote/i,
+      `text ${JSON.stringify(trailingText)} after a closing quote must be rejected`,
+    );
+  }
+  assert.doesNotThrow(() => parseCsvRows('"closed",next'));
+  assert.doesNotThrow(() => parseCsvRows('"closed"\r\nnext'));
+  assert.doesNotThrow(() => parseCsvRows('"closed"'));
+});
+
+test("CSV validation is atomic, rejects duplicate headers, and resolves catalog-backed anchors", () => {
+  const rowParser = sectionFromLast("function parseLocationImportRow(record,line){", "function validateLocationCsv(text){");
+  assert.match(rowParser, /cityById\.get\(cityGeoid\)/);
+  assert.match(rowParser, /citiesByState\[state\]/);
+  assert.match(rowParser, /installationById\.get\(installationId\)/);
+  assert.match(rowParser, /installationsByState\[state\]/);
+  assert.match(rowParser, /if\(!stateNames\[state\]\)throw new Error/);
+  assert.match(rowParser, /const type=resolveImportType\(record\.type\);if\(!type\)throw new Error/);
+  assert.match(rowParser, /const source=resolveImportSource\(record\.source\);if\(!source\)throw new Error/);
+
+  const validation = sectionFromLast("function validateLocationCsv(text){", "function setLocationImportErrors");
+  assert.match(validation, /if\(seenHeaders\.has\(header\)\)errors\.push\(`Header "\$\{header\}" appears more than once\.`\)/);
+  for (const header of ["name", "state", "type", "source"]) {
+    assert.match(validation, new RegExp(`\\["name","state","type","source"\\].*Required header`, "s"), `${header} is part of the required-header contract`);
+  }
+  assert.match(validation, /catch\(error\)\{errors\.push\(`Row \$\{row\.line\}: \$\{error\.message\}`\)\}/);
+
+  const staging = sectionFromLast("async function stageLocationImport(file){", "function downloadLocationTemplate");
+  const errorReturn = staging.indexOf("if(result.errors.length)");
+  const pendingAssignment = staging.indexOf("pendingLocationImport={pins:result.pins");
+  assert.ok(errorReturn >= 0 && pendingAssignment > errorReturn, "invalid rows must stop staging before a pending import is created");
+  assert.match(staging, /Nothing has been imported/);
+  assert.doesNotMatch(staging, /model\.pins\s*=/, "file selection and validation must not mutate map locations");
+});
+
+test("CSV append uses the staged action while replace confirms, and each batch is recoverable", () => {
+  const applyImport = sectionFromLast("async function applyLocationImport(){", "function cancelPinEdit");
+  assert.equal((applyImport.match(/requestConfirmation\(/g) || []).length, 1,
+    "only replace should open the second confirmation dialog");
+  assert.match(applyImport, /if\(mode==="replace"\)[\s\S]*await requestConfirmation/);
+  assert.match(applyImport, /mode==="append"\?staged\.pins\.filter/);
+  const confirmation = applyImport.indexOf("await requestConfirmation");
+  const recovery = applyImport.indexOf("captureRecoverySnapshot");
+  const mutation = applyImport.indexOf("model.pins=");
+  assert.ok(confirmation >= 0 && recovery > confirmation && mutation > recovery,
+    "replace confirmation must precede its recovery snapshot and mutation");
+  assert.match(applyImport, /captureRecoverySnapshot\(mode==="replace"\?"Location file replacement":"Location file addition"\)/);
+  assert.match(applyImport, /model\.pins=mode==="replace"\?pins:\[\.\.\.model\.pins,\.\.\.pins\]/);
+  assert.match(inlineScript, /\$\("locationImportApply"\)\.onclick=applyLocationImport/);
+  assert.match(inlineScript, /toast\(`\$\{pins\.length\} location[\s\S]{0,120}\{undo:true\}\)/);
+});
+
 test("browser storage failures are nonfatal and visible", () => {
   assert.match(inlineScript, /function safeGetStorage\(key\)\{try\{/);
   assert.match(inlineScript, /function safeSetStorage\(key,value\)\{try\{/);
@@ -440,7 +543,7 @@ test("current layout keeps controls within responsive columns", () => {
   assert.match(styles, /\.add-grid input,\.add-grid select\{width:100%;min-width:0;max-width:100%/);
   assert.match(styles, /\.preview-stage\{[^}]*overflow:auto/);
   assert.match(styles, /@media\(max-width:860px\)[\s\S]*?\.workspace\{grid-template-columns:minmax\(0,1fr\)\}/);
-  assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.row,\.add-grid\{grid-template-columns:1fr\}/);
+  assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.row,\.add-grid,\.import-codes\{grid-template-columns:1fr\}/);
   assert.match(styles, /@media\(max-width:500px\)[\s\S]*?\.pin-row\{grid-template-columns:auto minmax\(0,1fr\)\}/);
 });
 

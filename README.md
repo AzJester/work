@@ -3,7 +3,7 @@ My Work Repository
 
 ## Map Builder
 
-A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.1.0**, created by **Dr. Shane Turner**:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.2.0**, created by **Dr. Shane Turner**:
 
 ### [Open Map Builder](https://azjester.github.io/work/geopresence/)
 
@@ -15,6 +15,7 @@ A browser application for building a branded geographic U.S. location map and ex
 - adapt pin outlines for light, dark, and transparent exports; the legend uses identical pins, shows only types used on the map, and wraps automatically
 - protect state initials, small-state callouts, counts, connectors, nearby pin groups, and place labels from overlap
 - edit locations, confirm destructive changes, Undo recent actions, and recover the latest destructive snapshot
+- upload as many as 1,000 locations from a UTF-8 CSV file, download a ready-to-fill template, validate the complete file before changing the map, and choose whether to append or replace locations
 - save validated browser state and import or export portable JSON project files
 - preview transparent output on checkerboard, light, dark, or custom destinations and select automatic, dark, or light text
 - export guarded high-resolution PNG, metadata-clean SVG, or clipboard PNG

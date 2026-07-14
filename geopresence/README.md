@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.1.0**
+Version: **3.2.0**
 
 Created by **Dr. Shane Turner**
 
@@ -31,6 +31,7 @@ The hosted application is the simplest way to use it. For local development, ser
 - exports PNG at 1×, 2×, or 3× quality, exports SVG, and copies PNG where the browser supports image clipboard access
 - optionally creates a clean SVG with hidden titles, descriptions, editor metadata, and data attributes removed
 - saves a validated project in browser storage and supports portable JSON project import/export
+- imports up to 1,000 locations at once from a validated UTF-8 CSV file without mixing location uploads with JSON project transfer
 - confirms destructive replacements, keeps an Undo history, and saves a recovery snapshot for the last destructive change
 
 The editor opens as an empty project. Sample Astrion locations are opt-in and are identified as demonstration data in the editor only; notices, creator text, and version text do not appear in copied or downloaded map graphics. The Huntsville Regional Headquarters and contract entries reflect user-provided information. The other optional locations are demonstration examples, not claims about current Astrion sites.
@@ -73,6 +74,49 @@ Pin outlines adapt to the light, dark, clean, and transparent destination treatm
 Saved browser data is validated against the current model schema before use. Invalid or unavailable browser storage produces a visible, nonfatal warning instead of stopping the editor. Clear, Reset, Remove, sample replacement, and project import use confirmation and recovery behavior.
 
 Use **Download project** to create a JSON backup and **Open project** to move that file to another browser or device. Imported JSON is schema-validated before it can replace the current map. This is manual project portability, not cloud synchronization.
+
+## Bulk location upload
+
+Use **Upload locations** to add locations from a comma-separated values file. The accepted file type is **UTF-8 CSV (`.csv`)**, with a maximum size of **2 MB** and no more than **1,000 nonblank location rows**. The upload dialog includes a **Download CSV template** button that provides the required headers and sample city and installation rows.
+
+Every CSV must contain these required headers:
+
+| Header | Required value |
+| --- | --- |
+| `name` | The label shown for the location; maximum 100 characters. |
+| `state` | A two-letter U.S. state or District of Columbia code, such as `AL` or `DC`. |
+| `type` | One of the supported lowercase location-type slugs listed below. |
+| `source` | Either `city` or `installation`. |
+
+City rows must also provide either `city` or `city_geoid`. Installation rows must provide either `installation` or `installation_id`. Stable IDs are recommended because a name can be duplicated or ambiguous within a state. If a row supplies both a name and an ID, they must identify the same catalog entry. Additional columns are ignored.
+
+The accepted type slugs are:
+
+| Type slug | Location type |
+| --- | --- |
+| `headquarters` | Headquarters |
+| `regional` | Regional headquarters |
+| `hub` | Site |
+| `contract` | Contract site |
+| `future` | Future site |
+| `program` | Program office |
+| `operations` | Operations center |
+| `customer` | Customer site |
+| `partner` | Partner site |
+| `test` | Test or range site |
+| `manufacturing` | Manufacturing facility |
+
+Example:
+
+```csv
+name,state,type,source,city,city_geoid,installation,installation_id
+Huntsville Regional Headquarters,AL,regional,city,Huntsville,0137000,,
+Redstone Arsenal Contract,AL,contract,installation,,,Redstone Arsenal,dod-fid-986
+```
+
+The entire file is parsed and validated before the map changes. If any required header or row is invalid, **nothing is imported** and the dialog reports the problems. After a valid file is staged, choose **Add to current locations** or **Replace current locations**. Append mode skips locations that are already on the map; replace mode asks for confirmation. A completed import can be reversed with **Undo**.
+
+CSV location upload changes only the map's location list. It does not import map headings, themes, export settings, or other project choices. Use the separate **Open project** control for a Map Builder JSON project backup, and use **Download project** to create that JSON file.
 
 ## Location anchors
 
