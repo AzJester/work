@@ -4,6 +4,21 @@ All notable changes to Astrion Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [2.2.2] - 2026-07-13
+
+### Fixed
+
+- replaced low-contrast dark-purple map symbols with theme-aware marker colors that remain clearly visible on the dark map
+- added crisp solid backplates and contrasting keylines to every map and legend marker without using blur, glow, or shadow effects
+- made marker count badges use the same resolved theme color as their location symbol
+- moved repeated-location badges outward and included every badge in shared-anchor spacing, label placement, and state-initial collision checks
+
+### Changed
+
+- unified map and legend rendering so headquarters, regional headquarters, site, contract-site, and future-site symbols use the same complete visual treatment in the preview, SVG, PNG, and clipboard output
+- slightly enlarged location symbols and expanded same-anchor spacing, label clearance, and state-initial collision clearance so every symbol remains distinct
+- removed the redundant **Standalone · No map service required** heading and standalone wording from the application footer
+
 ## [2.2.1] - 2026-07-13
 
 ### Added
