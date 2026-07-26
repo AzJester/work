@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Black Hat Agent">
+  <path fill="#171327" d="M0 0h64v64H0z"/>
+  <path fill="#29aae1" d="M32 7 55 19l-5 35H14L9 19z"/>
+  <text x="32" y="40" fill="#fff" font-family="Arial, sans-serif" font-size="19" font-weight="800" text-anchor="middle">BH</text>
+</svg>
