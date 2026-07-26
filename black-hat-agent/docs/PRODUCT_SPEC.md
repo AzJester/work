@@ -20,6 +20,8 @@ deliverables without a backend or AI service.
   remains accountable for verification.
 - **Portable work:** workspace backups and report exports do not require an account
   or hosted storage.
+- **Guided use:** a built-in user guide explains the recommended workflow and links
+  directly to each workspace area.
 
 ## Primary user journey
 
