@@ -10,6 +10,10 @@ import {
   validateWorkspace,
   workspaceInputHash
 } from "./engine.js";
+import {
+  downloadImportTemplate,
+  openLocalImportWizard
+} from "./import-wizard.js";
 
 const STORAGE_KEY = "black_hat_agent_public_v2";
 const LEGACY_KEYS = ["astrion_blackhat_public_v2", "astrion_blackhat_public_v1"];
@@ -29,7 +33,7 @@ const uid = () =>
 
 const seed = {
   schemaVersion: SCHEMA_VERSION,
-  appVersion: "2.0.0",
+  appVersion: "2.1.0",
   createdAt: "2026-07-26T12:00:00.000Z",
   updatedAt: "2026-07-26T12:00:00.000Z",
   active: "p1",
@@ -467,6 +471,7 @@ function nav() {
     ["criteria", "CT", "Evaluation Criteria"],
     ["evidence", "ER", "Evidence Room"],
     ["competitors", "CO", "Competitors"],
+    ["imports", "IM", "Data Import"],
     ["playbooks", "PB", "Playbook Library"],
     ["session", "BH", "Black Hat Session"],
     ["history", "RH", "Run History"],
@@ -501,7 +506,8 @@ function header() {
       <span class="pill">LOCAL · NO SIGN-IN</span>
       <button class="btn small" data-action="snapshot">Create snapshot</button>
       <button class="btn small" data-action="export">Export workspace</button>
-      <button class="btn small" data-action="import">Import</button>
+      <button class="btn small" data-action="tabular-import">Import Excel / CSV</button>
+      <button class="btn small" data-action="import">Restore JSON</button>
       <input id="importFile" type="file" accept=".json" hidden>
     </div>
   </header>`;
@@ -750,6 +756,48 @@ function competitorsView() {
   </section>`;
 }
 
+function importsView() {
+  return `${sectionHero(
+    "DATA IMPORT",
+    "Bring spreadsheet data into the analysis",
+    "Select an Excel or CSV file, choose a worksheet and destination, map its columns, and validate every row before anything changes.",
+    `<button class="btn primary" data-action="tabular-import">Start local import</button>`
+  )}
+  <div class="two-col">
+    <section class="panel">
+      <h2>Supported destinations</h2>
+      <div class="import-target-list">
+        <span>Pursuits</span><span>Evaluation criteria</span><span>Evidence</span>
+        <span>Competitors</span><span>Competitor scores</span><span>Actions</span>
+      </div>
+      <p>Imports can add new records, update matching records, or replace one record type inside the active pursuit. Replace operations require explicit confirmation.</p>
+      <div class="row">
+        <button class="btn primary" data-action="tabular-import">Choose Excel or CSV</button>
+        <button class="btn" data-action="import-template">Download workbook template</button>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Private by design</h2>
+      <ul class="import-checklist">
+        <li>The selected file is parsed on this device and is never uploaded.</li>
+        <li>Macros, formulas, and external workbook links are never executed.</li>
+        <li>Only mapped cell values are retained; the original workbook is discarded.</li>
+        <li>A recovery snapshot is created immediately before a successful import.</li>
+      </ul>
+      <p class="note warn">Imported values are stored in this browser and included in workspace backups. Do not use this public edition for controlled or classified information.</p>
+    </section>
+  </div>
+  <section class="panel">
+    <h2>Four-step workflow</h2>
+    <ol class="import-flow">
+      <li><strong>Choose</strong><span>Select .xlsx, .xls, or .csv.</span></li>
+      <li><strong>Configure</strong><span>Pick the worksheet, header row, destination, and import mode.</span></li>
+      <li><strong>Map</strong><span>Confirm how spreadsheet columns match Black Hat Agent fields.</span></li>
+      <li><strong>Review</strong><span>Resolve errors, preview the result, and apply once.</span></li>
+    </ol>
+  </section>`;
+}
+
 function playbooksView() {
   return `${sectionHero(
     "PLAYBOOK LIBRARY",
@@ -916,6 +964,7 @@ function render() {
     criteria: criteriaView,
     evidence: evidenceView,
     competitors: competitorsView,
+    imports: importsView,
     playbooks: playbooksView,
     session: sessionView,
     history: historyView,
@@ -1287,6 +1336,34 @@ function duplicatePursuit(id) {
   toast("Pursuit and working records duplicated");
 }
 
+function applySpreadsheetImport(nextWorkspace, details) {
+  const previous = structuredClone(data);
+  const backup = makeSnapshot(`Before importing ${details.label || details.target}`);
+  const normalized = normalizeWorkspace(nextWorkspace, seed);
+  const validation = validateWorkspace(normalized);
+  if (!validation.valid) {
+    throw new Error(validation.errors.slice(0, 8).join("\n"));
+  }
+  normalized.snapshots = [...(data.snapshots || []), backup].slice(-8);
+  data = normalized;
+  if (!save()) {
+    data = previous;
+    throw new Error(
+      "Browser storage is full. Export a backup, remove large attachments, and try again."
+    );
+  }
+  view =
+    details.target === "pursuits"
+      ? "portfolio"
+      : details.target === "competitorScores"
+        ? "competitors"
+        : details.target;
+  if (!["portfolio", "criteria", "evidence", "competitors", "actions"].includes(view)) {
+    view = "command";
+  }
+  render();
+}
+
 async function handleRecordSubmit(form) {
   const kind = form.dataset.kind;
   const recordId = form.dataset.recordId;
@@ -1473,6 +1550,21 @@ document.addEventListener("click", event => {
     );
   }
   if (button.dataset.action === "import") document.querySelector("#importFile").click();
+  if (button.dataset.action === "tabular-import") {
+    openLocalImportWizard({
+      trigger: button,
+      getWorkspace: () => data,
+      activePursuit: pursuit(),
+      idFactory: uid,
+      validator: validateWorkspace,
+      onApply: applySpreadsheetImport,
+      onSuccess: details =>
+        toast(
+          `Import complete: ${details.summary.created} created, ${details.summary.updated} updated, ${details.summary.skipped} skipped`
+        )
+    });
+  }
+  if (button.dataset.action === "import-template") downloadImportTemplate();
   if (button.dataset.close) document.querySelector("#modal").close();
   if (button.dataset.usePlaybook) {
     pursuit().playbook = data.playbooks.find(item => item.id === button.dataset.usePlaybook).name;

@@ -10,6 +10,9 @@ const rootDir = resolve(testDir, "..");
 const appDir = resolve(rootDir, "black-hat-agent");
 const appPath = resolve(appDir, "app.js");
 const enginePath = resolve(appDir, "engine.js");
+const importEnginePath = resolve(appDir, "import-engine.js");
+const importWizardPath = resolve(appDir, "import-wizard.js");
+const spreadsheetWorkerPath = resolve(appDir, "spreadsheet-worker.js");
 const app = readFileSync(appPath, "utf8");
 const engineSource = readFileSync(enginePath, "utf8");
 const index = readFileSync(resolve(appDir, "index.html"), "utf8");
@@ -132,11 +135,15 @@ test("the public entry point uses only the Black Hat Agent product name", () => 
   assert.match(app, /<strong>BLACK HAT AGENT<\/strong>/);
   assert.doesNotMatch(index + app, />\s*ASTRION\s*</i);
   assert.match(index, /<script\b[^>]*src="app\.js"[^>]*type="module"/);
+  assert.match(index, /<script\b[^>]*src="vendor\/xlsx\.full\.min\.js"/);
   assert.doesNotMatch(index, /https?:\/\/|api[_-]?key|signin|sign-in/i);
 });
 
 test("the engine and browser module parse without a build step", () => {
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", enginePath]));
+  assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", importEnginePath]));
+  assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", importWizardPath]));
+  assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", spreadsheetWorkerPath]));
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", appPath]));
 });
 
@@ -273,6 +280,8 @@ test("the application exposes complete editing, recovery, and export workflows",
   assert.match(app, /\.print\s*\(/);
   assert.match(app, /MAX_ATTACHMENT_BYTES/);
   assert.match(app, /data-clone-playbook/);
+  assert.match(app, /openLocalImportWizard/);
+  assert.match(app, /data-action="tabular-import"/);
 });
 
 test("the interface provides accessibility and responsive layout contracts", () => {
