@@ -176,7 +176,7 @@ export function normalizeWorkspace(candidate, fallback) {
         );
   }
   workspace.schemaVersion = SCHEMA_VERSION;
-  workspace.appVersion = "2.0.0";
+  workspace.appVersion = "2.1.0";
   workspace.createdAt = source.createdAt || base.createdAt || new Date().toISOString();
   workspace.updatedAt = source.updatedAt || base.updatedAt || workspace.createdAt;
   workspace.active =

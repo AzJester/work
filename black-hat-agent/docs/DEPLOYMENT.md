@@ -11,6 +11,16 @@ workflow change and is available beneath:
 Deploying these files does not create an AI service. Analysis remains deterministic
 and is performed entirely in the visitor's browser.
 
+## Vendored spreadsheet parser
+
+Excel import uses the repository-bundled SheetJS CE 0.20.3 browser distribution
+under the Apache-2.0 license. The application must load this checked-in asset from
+`black-hat-agent/vendor/`; do not replace it with a CDN reference. Keep the vendored
+license and version record with the distribution, and review functionality, license,
+and security impact before upgrading the library. Keep
+`black-hat-agent/spreadsheet-worker.js` alongside the application: Excel parsing is
+required to run in that same-origin, time-limited worker.
+
 ## Local verification
 
 From the repository root:
@@ -42,18 +52,52 @@ Before release:
 12. Export the JSON workspace and import it into a clean browser profile.
 13. Attempt to import malformed and incomplete JSON; confirm current data remains
     unchanged.
-14. Create a snapshot, change data, restore the snapshot, and verify recovery.
-15. Verify desktop, keyboard-only, and narrow mobile layouts in current browsers.
+14. Import representative `.xlsx`, `.xls`, and `.csv` files. For Excel, verify
+    worksheet selection; for all formats, verify header-row selection.
+15. Verify automatic column mapping, manual remapping, preview operations, and
+    row/field diagnostics for pursuits, criteria, evidence, competitors, competitor
+    scores, and actions.
+16. Exercise **Append** and confirm matching records are skipped. Exercise
+    **Upsert** and confirm matching records are updated and unmatched records are
+    created.
+17. Exercise **Replace** for each supported active-pursuit destination. Confirm it
+    does not affect another pursuit and is unavailable for pursuits and competitor
+    scores.
+18. Verify that one row or field error blocks the entire atomic import and leaves
+    the workspace unchanged.
+19. Verify the 5 MB file, 2,000 data-row, 100-column, 100,000-total-cell, and
+    10,000-character cell limits at and beyond each boundary.
+20. Verify an expanded ZIP total over 50 MB, a ZIP entry over 20 MB, more than 2,000
+    entries, ZIP64, encryption, more than 50 worksheets, and parsing beyond 20
+    seconds are rejected.
+21. Verify hidden and very hidden worksheets cannot be selected and hidden rows or
+    columns in the selected imported range block the import.
+22. Test formula cells, macros, and external workbook links. Confirm formulas are
+    not evaluated, only cached displayed values may be read, and macros and links
+    never run or fetch remote content.
+23. Inspect the browser network panel while opening, mapping, previewing, and
+    committing Excel and CSV imports. Confirm the parser loads from the repository
+    and no file content reaches a CDN, API, or upload endpoint.
+24. Confirm the original workbook is not retained, mapped values appear in browser
+    storage and a JSON workspace export, and a recovery snapshot is created
+    immediately before a successful import.
+25. Restore the pre-import snapshot and verify the complete workspace returns to its
+    prior state.
+26. Test quoted commas, embedded newlines, empty cells, and UTF-8 text in CSV files,
+    plus a multi-sheet Excel workbook and a file with a non-first header row.
+27. Verify desktop, keyboard-only, and narrow mobile layouts in current browsers.
 
 ## Operational backup and recovery
 
 - Export a dated workspace JSON file before an important Black Hat session, a large
-  import, or browser maintenance.
+  JSON or spreadsheet import, or browser maintenance.
 - Use local snapshots for quick recovery from a recent mistake.
 - Use a downloaded JSON export for durable backup, device transfer, or recovery
   after browser storage has been cleared.
 - Treat Markdown, Word, and PDF reports as deliverables, not full workspace backups;
   they do not contain all editable application state.
+- Do not treat the source spreadsheet as an application backup. The original file is
+  not retained, and only successfully mapped values become workspace data.
 
 Snapshots and workspace data share the same browser origin storage. Clearing site
 data removes both.

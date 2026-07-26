@@ -4,18 +4,19 @@
 
 1. Open the site. No sign-in is presented or required.
 2. Choose a synthetic pursuit or select **Create pursuit**.
-3. Complete the opportunity profile, customer priorities, and evaluation criteria.
-4. Add customer, competitor, and market artifacts in **Evidence Room**.
-5. Create competitor profiles and score your team and the competitors against the
+3. Optionally use **Data Import** to map an Excel or CSV table into the workspace.
+4. Complete the opportunity profile, customer priorities, and evaluation criteria.
+5. Add customer, competitor, and market artifacts in **Evidence Room**.
+6. Create competitor profiles and score your team and the competitors against the
    customer criteria.
-6. Select a built-in facilitation lens or create a custom playbook.
-7. Record the facilitator, participants, session question, and working notes.
-8. Run the Black Hat session to generate a deterministic competitive-analysis
+7. Select a built-in facilitation lens or create a custom playbook.
+8. Record the facilitator, participants, session question, and working notes.
+9. Run the Black Hat session to generate a deterministic competitive-analysis
    report.
-9. Review the evidence citations, edit the report, and save a report version.
-10. Download the approved report as Markdown or a Word-compatible `.doc`, or use
+10. Review the evidence citations, edit the report, and save a report version.
+11. Download the approved report as Markdown or a Word-compatible `.doc`, or use
     the print-ready view to save a PDF.
-11. Use **Export workspace** to make a portable JSON backup.
+12. Use **Export workspace** to make a portable JSON backup.
 
 ## 1. Frame the pursuit
 
@@ -151,16 +152,84 @@ recovery. Use the recovery controls to inspect and restore a recent snapshot aft
 an accidental edit, reset, or import. Because snapshots and the working copy share
 the same browser storage, both disappear if the site's storage is cleared.
 
-## Workspace import and export
+## 9. Import Excel or CSV
+
+Use **Data Import** to add or update structured records from a local `.xlsx`, `.xls`,
+or `.csv` file. The file must be no larger than 5 MB. A single import can contain at
+most 2,000 data rows, 100 columns, 100,000 total cells, and 10,000 characters in
+any cell.
+
+The wizard can target:
+
+- pursuits;
+- evaluation criteria;
+- evidence;
+- competitors;
+- competitor scores; or
+- actions.
+
+For criteria, evidence, competitors, competitor scores, and actions, first select the
+pursuit that should receive the records. Replace operations affect only the active
+pursuit.
+
+### Import steps
+
+1. Export a current workspace JSON backup before a consequential bulk import.
+2. Open **Data Import** and select **Start local import**.
+3. Choose a `.xlsx`, `.xls`, or UTF-8 `.csv` file. Excel runs in a disposable,
+   20-second browser worker with the repository-bundled SheetJS CE 0.20.3 library;
+   CSV is parsed as inert text. There is no CDN, API, or upload.
+4. For an Excel workbook, select a visible worksheet. Hidden and very hidden
+   worksheets are unavailable, and a selected sheet with hidden imported rows or
+   columns is rejected. For every format, select the physical row containing the
+   column headers.
+5. Choose the destination and an available import mode:
+
+   - **Append** creates unmatched records and skips matches.
+   - **Upsert** creates unmatched records and updates matches.
+   - **Replace** removes the selected destination's existing records for the active
+     pursuit, then creates the imported records. Replace is not available for
+     pursuits or competitor scores.
+
+6. Review the suggested field mappings. Correct a mapping manually or leave an
+   optional field unmapped as appropriate.
+7. Review the record preview, create/update/skip summary, and every row or field
+   diagnostic. For large imports, the interface shows the first 100 planned changes
+   and states that the preview is truncated; every row is still validated.
+8. Resolve all errors in the source file or mapping. Any error blocks the complete
+   import; valid rows are not partially committed.
+9. Confirm the import once the plan is valid. The application creates a recovery
+   snapshot immediately before applying the complete change atomically.
+10. Review the imported records in their destination and verify references, dates,
+    scores, and classifications.
+
+Spreadsheet formulas are never calculated by the application. If a workbook stores
+a cached displayed value for a formula cell, that value may be read as ordinary
+input. Macros are never run, and external workbook links are never fetched.
+
+ZIP-based `.xlsx` files are also limited to 50 MB expanded, 20 MB in any one entry,
+and 2,000 entries. ZIP64 and encrypted workbooks are rejected, and all Excel files
+are limited to 50 worksheets.
+
+The original workbook is not retained. Only successfully mapped values persist in
+browser `localStorage`, recovery snapshots, and subsequent workspace JSON exports.
+Canceling before confirmation leaves the workspace unchanged.
+
+## Full-workspace JSON import and export
 
 - **Export workspace** downloads a JSON backup containing the editable workspace.
-- **Import** validates a selected JSON file before replacing the current workspace.
+- **Import** validates a selected JSON file before replacing the full current
+  workspace.
 - **Reset demo** replaces the working workspace with synthetic sample data.
 - **Snapshots/recovery** restore recent local states without a downloaded file.
 
 An invalid or incompatible import is rejected and should leave the current workspace
 unchanged. After a successful import, verify the active pursuit, evidence citations,
 scores, report versions, and actions before continuing.
+
+JSON import restores or replaces the complete application workspace. Excel and CSV
+import is different: it maps tabular rows into one selected destination using append,
+upsert, or a supported active-pursuit replace operation.
 
 Export a dated JSON backup before clearing browser storage, moving to another device,
 performing a major import, or running a consequential session. Private/incognito
@@ -176,5 +245,6 @@ windows may discard all local data when closed.
 - Ask session participants to challenge customer weights and internal bias.
 - Assign owners and dates to validation gaps.
 - Save a report version before material editing.
-- Export a dated workspace backup before major sessions.
+- Export a dated workspace backup before major sessions or bulk imports.
+- Inspect spreadsheet mappings, skipped matches, and diagnostics before committing.
 - Use only synthetic, public, or otherwise approved information in this public site.

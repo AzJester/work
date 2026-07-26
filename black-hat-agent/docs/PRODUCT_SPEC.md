@@ -58,6 +58,37 @@ and portable output.
 Scores are team-entered judgments, not independently calculated market facts. Any
 derived total or ranking is a deterministic summary of those inputs.
 
+### Local Excel and CSV import
+
+- Accept `.xlsx`, `.xls`, and `.csv` files up to 5 MB.
+- Parse Excel locally in a disposable, 20-second browser worker with
+  repository-bundled SheetJS CE 0.20.3 under the Apache-2.0 license. Parse UTF-8 CSV
+  as inert text, with no CDN, API, or upload.
+- Preflight ZIP-based Excel files and enforce 50 MB expanded total, 20 MB per entry,
+  2,000 ZIP entries, no ZIP64 or encryption, and no more than 50 worksheets.
+- Let the user choose a visible worksheet, physical header row, destination, and
+  import mode. Reject hidden/very hidden worksheets and hidden rows or columns in
+  the selected imported range.
+- Support pursuits, evaluation criteria, evidence, competitors, competitor scores,
+  and actions as destinations.
+- Suggest column mappings from headers while allowing every mapping to be reviewed
+  and changed manually.
+- Preview up to 100 creates, updates, skips, and replacements and show row/field
+  diagnostics before any workspace change; disclose preview truncation and validate
+  every row.
+- Limit each import to 2,000 data rows, 100 columns, 100,000 total cells, and
+  10,000 characters per cell.
+- **Append** creates unmatched records and skips matches.
+- **Upsert** creates unmatched records and updates matches.
+- **Replace** is scoped to the active pursuit and is unavailable for pursuits and
+  competitor scores.
+- Treat the import as one atomic operation: any error blocks the complete commit.
+- Create a recovery snapshot immediately before a valid import is committed.
+- Never evaluate formulas; read only a cached displayed value when one exists.
+- Never run macros or fetch external workbook links.
+- Discard the original workbook after use. Persist only mapped values in
+  `localStorage`, snapshots, and workspace exports.
+
 ### Playbooks, sessions, and actions
 
 - Reusable built-in playbooks for common competitive-review lenses.
@@ -84,7 +115,9 @@ derived total or ranking is a deterministic summary of those inputs.
 ### Portability and recovery
 
 - Automatic browser-local persistence.
-- JSON workspace export and validate-before-replace import.
+- JSON workspace export and validate-before-replace full-workspace import.
+- Local Excel and CSV import for adding or updating mapped records without replacing
+  the complete workspace.
 - Import validation for the supported workspace structure, required collections,
   record types, and pursuit references.
 - Recoverable pre-import or pre-reset state.
@@ -143,6 +176,14 @@ Selected to keep report claims traceable to workspace records. A citation proves
 which local record informed a passage; it does not prove that the underlying source
 is true or current.
 
+### Repository-bundled spreadsheet parsing
+
+Selected so Excel and CSV imports remain private and operational on static hosting.
+SheetJS CE 0.20.3 and its Apache-2.0 license are stored with the repository. The
+browser performs parsing, mapping, preview, and validation without a CDN, API, or
+upload. The tradeoffs are a larger static download, browser memory and storage
+limits, and no spreadsheet formula, macro, or external-link execution.
+
 ### Synthetic defaults
 
 Starter records demonstrate the workflow without representing real pursuit data.
@@ -152,7 +193,10 @@ Starter records demonstrate the workflow without representing real pursuit data.
 - AI or LLM-based analysis
 - automatic web research, competitor discovery, or claim verification
 - multi-user or real-time collaboration
-- server-side files, databases, or document parsing
+- server-side file storage, databases, or document parsing
+- live Excel, Microsoft 365, Google Sheets, or other spreadsheet synchronization
+- spreadsheet formula calculation, macros, external-link retrieval, or preservation
+  of the original workbook
 - authentication, role-based access, or approval workflows
 - access-controlled operational pursuit data
 - enterprise audit, retention, or records-management guarantees

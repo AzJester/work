@@ -34,3 +34,35 @@ test("@production deployed GeoPresence release is healthy", async ({ page, reque
   await expect(zoomControls(page)).toHaveCount(4);
   expect(pageErrors).toEqual([]);
 });
+
+test("@production deployed Black Hat Agent release is healthy", async ({ page, request }) => {
+  test.skip(!process.env.PRODUCTION_SMOKE, "runs only after the Pages deployment");
+  test.setTimeout(120_000);
+
+  const route = `../black-hat-agent/?deployment-smoke=${Date.now()}`;
+  await expect
+    .poll(async () => {
+      const response = await request.get(route, { failOnStatusCode: false });
+      return response.status();
+    }, { timeout: 90_000, intervals: [1_000, 2_000, 5_000] })
+    .toBe(200);
+
+  const pageErrors = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+  const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+  expect(response?.status()).toBe(200);
+  await expect(page).toHaveTitle(/^Black Hat Agent$/i);
+  await expect(page.getByText("BLACK HAT AGENT", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Import Excel \/ CSV/i })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => Boolean(window.XLSX && typeof window.XLSX.read === "function"))
+    )
+    .toBe(true);
+  const workerResponse = await request.get("../black-hat-agent/spreadsheet-worker.js", {
+    failOnStatusCode: false,
+  });
+  expect(workerResponse.status()).toBe(200);
+  expect(await workerResponse.text()).toContain('importScripts("./vendor/xlsx.full.min.js")');
+  expect(pageErrors).toEqual([]);
+});
