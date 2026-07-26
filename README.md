@@ -570,6 +570,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
+| `astrion-blackhat-agent/` | Public, no-sign-in Astrion Black Hat pursuit workspace with local persistence, import/export, evidence and competitor tracking, assessment runs, outputs, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
