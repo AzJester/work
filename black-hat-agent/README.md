@@ -24,6 +24,9 @@ evidence-cited scorecards, challenge themes, actions, and versioned reports.
 - local `.xlsx`, `.xls`, and `.csv` import with mapping, preview, and diagnostics
 - validated JSON workspace import/export
 - automatic local snapshots and manual recovery
+- grouped, text-only application navigation
+- in-app user guide with a recommended workflow and direct links to each workspace
+  area
 - responsive desktop and mobile layouts
 
 No account, API key, database, cookies, or hosted AI service is required. Workspace

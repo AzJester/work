@@ -464,31 +464,61 @@ function toast(message) {
 }
 
 function nav() {
-  const entries = [
-    ["portfolio", "PF", "Pursuit Portfolio"],
-    ["command", "CC", "Command Center"],
-    ["opportunity", "OP", "Opportunity"],
-    ["criteria", "CT", "Evaluation Criteria"],
-    ["evidence", "ER", "Evidence Room"],
-    ["competitors", "CO", "Competitors"],
-    ["imports", "IM", "Data Import"],
-    ["playbooks", "PB", "Playbook Library"],
-    ["session", "BH", "Black Hat Session"],
-    ["history", "RH", "Run History"],
-    ["outputs", "OC", "Output Center"],
-    ["actions", "AR", "Action Register"],
-    ["recovery", "RV", "Recovery"]
+  const groups = [
+    {
+      label: "Workspace",
+      entries: [
+        ["portfolio", "Pursuit Portfolio"],
+        ["command", "Command Center"],
+        ["opportunity", "Opportunity"]
+      ]
+    },
+    {
+      label: "Analysis",
+      entries: [
+        ["criteria", "Evaluation Criteria"],
+        ["evidence", "Evidence Room"],
+        ["competitors", "Competitors"]
+      ]
+    },
+    {
+      label: "Workflow",
+      entries: [
+        ["imports", "Data Import"],
+        ["playbooks", "Playbook Library"],
+        ["session", "Black Hat Session"]
+      ]
+    },
+    {
+      label: "Results",
+      entries: [
+        ["history", "Run History"],
+        ["outputs", "Output Center"],
+        ["actions", "Action Register"],
+        ["recovery", "Recovery"]
+      ]
+    },
+    {
+      label: "Help",
+      entries: [["guide", "User Guide"]]
+    }
   ];
   return `<aside class="sidebar">
-    <div class="brand"><div class="mark">BH</div><div><strong>BLACK HAT AGENT</strong><span>COMPETITIVE ANALYSIS</span></div></div>
+    <div class="brand"><strong>BLACK HAT AGENT</strong><span>COMPETITIVE ANALYSIS</span></div>
     <nav class="nav" aria-label="Workspace navigation">
-      <div class="nav-label">WORKSPACE</div>
-      ${entries
+      ${groups
         .map(
-          item =>
-            `<button data-view="${item[0]}" class="${view === item[0] ? "active" : ""}"><b>${
-              item[1]
-            }</b>${item[2]}</button>`
+          (group, groupIndex) => `<section class="nav-section" aria-labelledby="nav-group-${groupIndex}">
+            <div class="nav-label" id="nav-group-${groupIndex}">${group.label}</div>
+            ${group.entries
+              .map(
+                item =>
+                  `<button type="button" data-view="${item[0]}" class="${
+                    view === item[0] ? "active" : ""
+                  }" ${view === item[0] ? 'aria-current="page"' : ""}>${item[1]}</button>`
+              )
+              .join("")}
+          </section>`
         )
         .join("")}
     </nav>
@@ -798,6 +828,118 @@ function importsView() {
   </section>`;
 }
 
+function guideView() {
+  const steps = [
+    [
+      "portfolio",
+      "Choose a pursuit",
+      "Create a pursuit or select the opportunity your team is assessing.",
+      "Open Pursuit Portfolio"
+    ],
+    [
+      "opportunity",
+      "Frame the opportunity",
+      "Record the customer, acquisition context, priorities, decision dates, and your current position.",
+      "Open Opportunity"
+    ],
+    [
+      "criteria",
+      "Define how the customer will evaluate",
+      "Add weighted criteria, gates, your current scores, and the rationale behind each judgment.",
+      "Open Evaluation Criteria"
+    ],
+    [
+      "evidence",
+      "Build the evidence base",
+      "Capture sources, confidence, classification, stance, and links to the criteria each source supports.",
+      "Open Evidence Room"
+    ],
+    [
+      "competitors",
+      "Assess likely competitors",
+      "Describe each competitor and score everyone against the same customer evaluation criteria.",
+      "Open Competitors"
+    ],
+    [
+      "imports",
+      "Import structured data when useful",
+      "Use the local wizard for Excel or CSV data, confirm the column mapping, and resolve every validation error.",
+      "Open Data Import"
+    ],
+    [
+      "session",
+      "Run the Black Hat session",
+      "Select a playbook, add participants and facilitator notes, then generate the deterministic analysis.",
+      "Open Black Hat Session"
+    ],
+    [
+      "outputs",
+      "Review, act, and share",
+      "Challenge the draft, save revisions, assign actions, and export approved reports and workspace backups.",
+      "Open Output Center"
+    ]
+  ];
+  return `${sectionHero(
+    "USER GUIDE",
+    "How to use Black Hat Agent",
+    "Follow this workflow to turn team knowledge and source evidence into a reviewable competitive analysis.",
+    `<button class="btn primary" data-view="portfolio">Start with Pursuit Portfolio</button>`
+  )}
+  <section class="panel guide-panel" aria-labelledby="guideWorkflowHeading">
+    <div class="report-heading">
+      <div><p class="eyebrow">RECOMMENDED WORKFLOW</p><h2 id="guideWorkflowHeading">Build the analysis in eight steps</h2></div>
+      <span class="tag good">START HERE</span>
+    </div>
+    <ol class="guide-steps">
+      ${steps
+        .map(
+          ([destination, title, description, action]) => `<li>
+            <div><strong>${title}</strong><p>${description}</p></div>
+            <button class="btn small" type="button" data-view="${destination}">${action}</button>
+          </li>`
+        )
+        .join("")}
+    </ol>
+  </section>
+  <div class="two-col guide-grid">
+    <section class="panel guide-card">
+      <p class="eyebrow">BEFORE GENERATING A REPORT</p>
+      <h2>Build an evidence-ready workspace</h2>
+      <ul class="guide-checklist">
+        <li>Use one active pursuit with a clear customer, scope, and decision context.</li>
+        <li>Define meaningful evaluation criteria and weights before scoring competitors.</li>
+        <li>Connect important judgments to evidence and label assumptions honestly.</li>
+        <li>Score your team and every competitor against the same criteria.</li>
+        <li>Resolve obvious gaps or record them as actions before sharing the report.</li>
+      </ul>
+    </section>
+    <section class="panel guide-card">
+      <p class="eyebrow">UNDERSTAND THE OUTPUT</p>
+      <h2>Use the report as a structured team judgment</h2>
+      <p>The application compares only the data your team enters. It applies repeatable scoring and report rules; it does not search the web, discover competitors, verify facts, or call an AI model.</p>
+      <p>Treat the generated report as a draft. Review the evidence, challenge assumptions, edit conclusions, save a new version, and record the actions the team agrees to take.</p>
+      <button class="btn small" type="button" data-view="command">Check analysis readiness</button>
+    </section>
+    <section class="panel guide-card">
+      <p class="eyebrow">IMPORTING DATA</p>
+      <h2>Preview spreadsheet changes before applying them</h2>
+      <p>Choose an Excel or UTF-8 CSV file, select the worksheet and header row, choose a destination and mode, then review every suggested field mapping.</p>
+      <p>Nothing changes until validation passes and you select <strong>Apply import</strong>. A recovery point is created immediately before the import is saved.</p>
+      <button class="btn small" type="button" data-view="imports">Open Data Import</button>
+    </section>
+    <section class="panel guide-card">
+      <p class="eyebrow">BACKUP AND PRIVACY</p>
+      <h2>Protect the work stored in this browser</h2>
+      <p>There is no sign-in. Workspace data remains in this browser profile, so clearing site data can remove it. Export a dated workspace backup before major sessions or bulk changes.</p>
+      <p>Use only synthetic, public, or otherwise approved information in this public edition. Browser storage is not an enterprise security boundary.</p>
+      <div class="row">
+        <button class="btn small" type="button" data-action="export">Export workspace</button>
+        <button class="btn small" type="button" data-view="recovery">Open Recovery</button>
+      </div>
+    </section>
+  </div>`;
+}
+
 function playbooksView() {
   return `${sectionHero(
     "PLAYBOOK LIBRARY",
@@ -970,7 +1112,8 @@ function render() {
     history: historyView,
     outputs: outputsView,
     actions: actionsView,
-    recovery: recoveryView
+    recovery: recoveryView,
+    guide: guideView
   };
   document.querySelector("#app").innerHTML = `<a class="skip-link" href="#content">Skip to content</a><div class="app">${nav()}<main class="main">${header()}<div class="content" id="content" tabindex="-1">${views[
     view

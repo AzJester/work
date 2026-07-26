@@ -139,6 +139,18 @@ test("the public entry point uses only the Black Hat Agent product name", () => 
   assert.doesNotMatch(index, /https?:\/\/|api[_-]?key|signin|sign-in/i);
 });
 
+test("workspace navigation is grouped, text-only, and free of icon shorthand", () => {
+  for (const label of ["Workspace", "Analysis", "Workflow", "Results", "Help"]) {
+    assert.match(app, new RegExp(`label:\\s*"${label}"`));
+  }
+  assert.match(app, /aria-current="page"/);
+  assert.match(app, /\["guide",\s*"User Guide"\]/);
+  assert.match(app, /guide:\s*guideView/);
+  assert.doesNotMatch(app, /class="mark"/);
+  assert.doesNotMatch(app, /\["portfolio",\s*"PF"/);
+  assert.doesNotMatch(app, /<b>\s*\$\{/);
+});
+
 test("the engine and browser module parse without a build step", () => {
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", enginePath]));
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", importEnginePath]));
@@ -282,6 +294,7 @@ test("the application exposes complete editing, recovery, and export workflows",
   assert.match(app, /data-clone-playbook/);
   assert.match(app, /openLocalImportWizard/);
   assert.match(app, /data-action="tabular-import"/);
+  assert.match(app, /function\s+guideView\s*\(/);
 });
 
 test("the interface provides accessibility and responsive layout contracts", () => {

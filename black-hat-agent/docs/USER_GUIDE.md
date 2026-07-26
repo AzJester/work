@@ -1,5 +1,8 @@
 # User Guide
 
+Open **User Guide** in the application's **Help** navigation section for an in-app
+version of the recommended workflow with direct links to each workspace area.
+
 ## Quick start
 
 1. Open the site. No sign-in is presented or required.
