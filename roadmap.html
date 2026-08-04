@@ -168,7 +168,8 @@
   .tl-empty .big { font-size:26px; opacity:.5; }
 
   /* ---------- editor ---------- */
-  .lane { border:1px solid var(--line); border-radius:var(--radius); margin:12px 16px; overflow:hidden; transition:box-shadow .15s; }
+  .lane { --item-grid:14px 116px minmax(190px,1fr) 288px 104px 80px 98px;
+    border:1px solid var(--line); border-radius:var(--radius); margin:12px 16px; overflow:hidden; transition:box-shadow .15s; }
   .lane:hover { box-shadow:var(--shadow-sm); }
   .lane-head { display:flex; align-items:center; gap:8px; padding:9px 10px; background:var(--bg); border-bottom:1px solid var(--line); }
   .lane-head .dot { width:12px; height:12px; border-radius:4px; flex:0 0 auto; }
@@ -176,21 +177,41 @@
     background:transparent; border:1px solid transparent; border-radius:6px; padding:5px 8px; }
   .lane-head input.lane-name:hover { border-color:var(--line-2); }
   .lane-head input.lane-name:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
-  .items { padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
-  .item { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:6px; border-radius:8px; transition:background .12s; }
+  .item-columns, .item { display:grid; grid-template-columns:var(--item-grid); column-gap:8px; }
+  .item-columns { grid-template-areas:"marker kind label dates status gate actions"; align-items:end; padding:7px 16px 6px;
+    border-bottom:1px solid var(--line); background:var(--bg); color:var(--mut); font-family:var(--mono); font-size:9.5px;
+    font-weight:700; letter-spacing:0.08em; line-height:1.2; text-transform:uppercase; }
+  .item-columns .item-col-marker, .item .drag { grid-area:marker; }
+  .item-columns .item-col-kind, .item select.kind { grid-area:kind; }
+  .item-columns .item-col-label, .item input.lbl { grid-area:label; }
+  .item-columns .item-col-dates, .item .item-dates { grid-area:dates; }
+  .item-columns .item-col-status, .item select.chip { grid-area:status; }
+  .item-columns .item-col-gate, .item .item-gate-slot { grid-area:gate; }
+  .item-columns .item-col-actions, .item .item-actions { grid-area:actions; }
+  .item-columns .item-col-actions { padding-right:3px; text-align:right; }
+  .items { padding:0 10px 4px; display:flex; flex-direction:column; gap:0; }
+  .item { grid-template-areas:"marker kind label dates status gate actions" ". . note note note note note";
+    align-items:center; row-gap:7px; padding:10px 6px; border-radius:8px; transition:background .12s; }
+  .item + .item { border-top:1px solid var(--line); border-top-left-radius:0; border-top-right-radius:0; }
   .item:hover { background:var(--bg); }
-  .item .drag { color:var(--mut); font-size:13px; cursor:default; }
-  .item select.kind { font-size:12px; padding:5px 8px; border-radius:7px; border:1px solid var(--line-2); background:var(--input-bg); color:var(--ink-2); }
-  .item input.lbl { flex:1 1 220px; min-width:140px; font-size:13.5px; color:var(--ink); background:var(--input-bg);
+  .item .drag { color:var(--mut); font-size:13px; cursor:default; text-align:center; }
+  .item select.kind { width:100%; min-width:0; height:34px; font-size:12px; padding:5px 8px; border-radius:7px;
+    border:1px solid var(--line-2); background:var(--input-bg); color:var(--ink-2); }
+  .item input.lbl { width:100%; min-width:0; height:34px; font-size:13.5px; color:var(--ink); background:var(--input-bg);
     border:1px solid var(--line-2); border-radius:7px; padding:7px 10px; }
   .item input.lbl:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
+  .item .item-dates { display:grid; grid-template-columns:minmax(0,1fr) 12px minmax(0,1fr); align-items:center; gap:6px; min-width:0; }
+  .item .item-dates--milestone input { grid-column:1; }
   .item input[type="date"] { font-family:var(--disp); font-size:12.5px; color:var(--ink); background:var(--input-bg);
-    border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
+    width:100%; min-width:0; height:34px; border:1px solid var(--line-2); border-radius:7px; padding:6px 8px; }
   .item input[type="date"]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
-  .item .dash { color:var(--mut); }
+  .item .dash { color:var(--mut); text-align:center; }
+  .item .item-gate-slot { display:flex; align-items:center; min-width:0; min-height:34px; }
   .item .gate-tog { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-2); white-space:nowrap; cursor:pointer;
-    border:1px solid var(--line-2); border-radius:7px; padding:5px 8px; background:var(--input-bg); }
+    width:100%; height:34px; justify-content:center; border:1px solid var(--line-2); border-radius:7px; padding:5px 6px; background:var(--input-bg); }
   .item .gate-tog input { margin:0; cursor:pointer; }
+  .item .item-actions { display:grid; grid-template-columns:repeat(3,30px); gap:4px; justify-content:end; }
+  .item .item-actions .icon-btn { width:30px; height:34px; }
   .notes-body { padding:12px 16px 16px; }
   .summary-body { padding:14px 16px 16px; font-size:13.5px; line-height:1.6; color:var(--ink); }
   .summary-body .sum-head { font-size:15px; font-weight:800; letter-spacing:-0.01em; }
@@ -215,12 +236,12 @@
     background:var(--input-bg); border:1px solid var(--line-2); border-radius:8px; padding:10px 12px; }
   .rm-notes::placeholder { color:var(--mut); }
   .rm-notes:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
-  .item input.note-inp { flex:1 1 100%; order:2; font-size:12.5px; color:var(--ink-2); background:var(--input-bg);
-    border:1px solid var(--line); border-radius:7px; padding:6px 10px; margin-left:22px; }
+  .item input.note-inp { grid-area:note; width:100%; min-width:0; height:32px; font-size:12.5px; color:var(--ink-2); background:var(--input-bg);
+    border:1px solid var(--line); border-radius:7px; padding:6px 10px; }
   .item input.note-inp::placeholder { color:var(--mut); }
   .item input.note-inp:focus { outline:none; color:var(--ink); border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); }
-  select.chip { font-family:var(--disp); appearance:none; -webkit-appearance:none; border:none; border-radius:var(--pill);
-    padding:6px 14px; font-weight:700; font-size:12px; color:#fff; cursor:pointer;
+  select.chip { width:100%; min-width:0; height:34px; font-family:var(--disp); appearance:none; -webkit-appearance:none; border:none; border-radius:var(--pill);
+    padding:6px 12px; font-weight:700; font-size:12px; color:#fff; cursor:pointer; text-align:center;
     box-shadow:var(--shadow-sm); transition:filter .15s, transform .1s; }
   select.chip:hover { filter:brightness(1.05); }
   select.chip:active { transform:scale(0.97); }
@@ -426,6 +447,14 @@
   .timeline-table td:first-child { font-weight:700; }
   .timeline-empty { color:var(--mut); padding:10px 0; }
 
+  @media (max-width: 1120px) and (min-width: 721px) {
+    .item-columns { display:none; }
+    .item { grid-template-columns:14px 108px minmax(130px,1fr) 100px 76px 98px;
+      grid-template-areas:"marker kind label label label label" ". dates dates status gate actions" ". note note note note note";
+      row-gap:8px; }
+    .item .item-actions { align-self:center; }
+  }
+
   @media (max-width: 720px) {
     .wrap { padding:14px 10px 76px; }
     .mast { align-items:center; margin-bottom:12px; }
@@ -454,12 +483,19 @@
     .lane-head { flex-wrap:wrap; }
     .lane-head input.lane-name { flex-basis:calc(100% - 34px); }
     .lane-head .icon-btn { width:34px; height:34px; }
-    .item { align-items:stretch; padding:8px 2px; }
+    .item-columns { display:none; }
+    .items { padding:0 8px 4px; }
+    .item { grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      grid-template-areas:"kind kind" "label label" "dates dates" "status gate" "actions actions" "note note";
+      align-items:center; gap:8px; padding:12px 2px; }
     .item .drag { display:none; }
-    .item select.kind, .item select.chip { flex:1 1 calc(50% - 5px); }
-    .item input.lbl { flex-basis:100%; order:-1; }
-    .item input[type="date"] { flex:1 1 42%; min-width:0; }
-    .item input.note-inp { margin-left:0; }
+    .item .item-dates--milestone { grid-template-columns:1fr; }
+    .item .item-gate-slot { justify-content:flex-start; }
+    .item .gate-tog { width:auto; min-width:82px; }
+    .item select.kind, .item input.lbl, .item input[type="date"], .item select.chip, .item .gate-tog { height:40px; }
+    .item input.note-inp { height:38px; }
+    .item .item-actions { grid-template-columns:repeat(3,32px); justify-self:end; }
+    .item .item-actions .icon-btn { width:32px; height:40px; }
     .rm-acts { opacity:1; }
     .pub-url { flex-wrap:wrap; }
     .pub-url .pub-input { flex-basis:100%; order:2; }
@@ -1780,18 +1816,20 @@ function renderEditor(){
       const itemLabel=it.label||(it.kind==="milestone"?"milestone":"phase");
       const kindSel = '<select class="kind" data-role="kind" aria-label="Type for '+esc(itemLabel)+'"><option value="bar"'+(it.kind==="bar"?" selected":"")+'>Phase (bar)</option><option value="milestone"'+(it.kind==="milestone"?" selected":"")+'>Milestone</option></select>';
       const dates = it.kind === "milestone"
-        ? '<input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" aria-label="Milestone date for '+esc(itemLabel)+'" />'
-        : '<input type="date" data-role="start" value="'+esc(it.start||"")+'" title="Start" aria-label="Start date for '+esc(itemLabel)+'" /><span class="dash" aria-hidden="true">→</span><input type="date" data-role="end" value="'+esc(it.end||"")+'" title="End" aria-label="End date for '+esc(itemLabel)+'" />';
+        ? '<div class="item-dates item-dates--milestone"><input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" aria-label="Milestone date for '+esc(itemLabel)+'" /></div>'
+        : '<div class="item-dates item-dates--phase"><input type="date" data-role="start" value="'+esc(it.start||"")+'" title="Start" aria-label="Start date for '+esc(itemLabel)+'" /><span class="dash" aria-hidden="true">→</span><input type="date" data-role="end" value="'+esc(it.end||"")+'" title="End" aria-label="End date for '+esc(itemLabel)+'" /></div>';
       itemsHtml += '<div class="item" data-item="'+esc(it.id)+'">'
         + '<span class="drag" aria-hidden="true">'+(it.kind==="milestone"?"◆":"•")+'</span>'
         + kindSel
         + '<input class="lbl" data-role="label" type="text" maxlength="1000" aria-label="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
         + dates
         + statusSelect(st.cls, it.status, itemLabel)
-        + (it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate" aria-label="Mark '+esc(itemLabel)+' as a gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')
+        + '<div class="item-gate-slot">'+(it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate" aria-label="Mark '+esc(itemLabel)+' as a gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')+'</div>'
+        + '<div class="item-actions" role="group" aria-label="Actions for '+esc(itemLabel)+'">'
         + '<button class="icon-btn" type="button" data-role="up" title="Move up" aria-label="Move '+esc(itemLabel)+' up">↑</button>'
         + '<button class="icon-btn" type="button" data-role="down" title="Move down" aria-label="Move '+esc(itemLabel)+' down">↓</button>'
         + '<button class="icon-btn" type="button" data-role="del" title="Delete" aria-label="Delete '+esc(itemLabel)+'">✕</button>'
+        + '</div>'
         + '<input class="note-inp" data-role="note" type="text" maxlength="4000" aria-label="Note for '+esc(itemLabel)+'" placeholder="Add a note or comment (optional)" value="'+esc(it.note||"")+'" />'
         + '</div>';
     });
@@ -1806,6 +1844,7 @@ function renderEditor(){
       + '<button class="icon-btn" type="button" data-role="laneDel" title="Delete lane" aria-label="Delete '+esc(lane.name)+'">✕</button>'
       + '</div>'
       + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" maxlength="2000" aria-label="Contingency note for '+esc(lane.name)+'" placeholder="Contingency note, e.g. “Only if the July 22 decision picks self-hosted”" value="'+esc(lane.sub||"")+'" /></div>' : '')
+      + (lane.items.length ? '<div class="item-columns" aria-hidden="true"><span class="item-col-marker"></span><span class="item-col-kind">Type</span><span class="item-col-label">Item</span><span class="item-col-dates">Schedule</span><span class="item-col-status">Status</span><span class="item-col-gate">Gate</span><span class="item-col-actions">Actions</span></div>' : '')
       + '<div class="items">'+itemsHtml+'</div>'
       + '<div class="add-row"><button class="btn add sm" type="button" data-role="addBar">＋ Phase</button><button class="btn add sm" type="button" data-role="addMile">＋ Milestone</button></div>';
     host.appendChild(laneEl);
