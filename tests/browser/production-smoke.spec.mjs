@@ -51,9 +51,16 @@ test("@production deployed Black Hat Agent release is healthy", async ({ page, r
   page.on("pageerror", error => pageErrors.push(error.message));
   const response = await page.goto(route, { waitUntil: "domcontentloaded" });
   expect(response?.status()).toBe(200);
-  await expect(page).toHaveTitle(/^Black Hat Agent$/i);
-  await expect(page.getByText("BLACK HAT AGENT", { exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /Import Excel \/ CSV/i })).toBeVisible();
+  await expect(page).toHaveTitle(/Black Hat Agent$/i);
+  await expect(
+    page.locator(".sidebar .brand").getByText("Black Hat Agent", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("LOCAL · NO SIGN-IN", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Data Import", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Workspace", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Import Excel or CSV", exact: true })
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => Boolean(window.XLSX && typeof window.XLSX.read === "function"))
