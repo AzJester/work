@@ -17,8 +17,8 @@ version of the recommended workflow with direct links to each workspace area.
 9. Run the Black Hat session to generate a deterministic competitive-analysis
    report.
 10. Review the evidence citations, edit the report, and save a report version.
-11. Download the approved report as Markdown or a Word-compatible `.doc`, or use
-    the print-ready view to save a PDF.
+11. Download the approved report as Markdown, standalone visual HTML, or a
+    Word-compatible `.doc`, or use the print-ready view to save a PDF.
 12. Use **Export workspace** to make a portable JSON backup.
 
 ## 1. Frame the pursuit
@@ -72,6 +72,20 @@ The command center also shows a confidence-adjusted Competitive Position Index a
 when both criteria and competitors are scored, a scenario estimate with a broad
 uncertainty range. The estimate is a planning aid based on entered scores, coverage,
 confidence, and critical-gate gaps. It is explicitly not a statistical forecast.
+
+Use the visual panels to compare:
+
+- ranked CPI, coverage, and confidence across your team and competitors;
+- team and competitor scores for each criterion;
+- the strongest positive and negative criterion gaps;
+- the scenario estimate, prior estimate, and uncertainty range;
+- linked evidence, support/challenge conflicts, and evidence-to-criterion
+  traceability;
+- saved-run trends and the action-register mix.
+
+Each visual includes **View accessible data table**. Use that table for exact values
+or when a graphical encoding is not useful. **Unknown** means the workspace did not
+contain a valid value; it is not treated as zero.
 
 Before accepting a scorecard:
 
@@ -132,14 +146,26 @@ an older report version, which preserves the review trail.
 
 ## 7. Export a report
 
-The output center provides three report formats:
+The output center provides four report formats:
 
 - **Markdown** for repositories, plain-text review, and later editing.
+- **Visuals HTML** downloads a self-contained visual briefing with native SVG charts
+  and accessible data tables. It needs no chart service or API.
 - **Word** downloads an HTML-based `.doc` for Microsoft Word review and
-  incorporation into capture artifacts. It is not a native `.docx` package.
+  incorporation into capture artifacts. Visuals are embedded as local PNG images
+  with their data tables. It is not a native `.docx` package.
 - **PDF** opens a print-ready report. In the browser print dialog, choose
   **Save as PDF** as the destination; the site does not directly download a PDF
-  binary.
+  binary. The print view includes the saved report visuals and tables.
+
+Visuals in a generated report come from its saved visual snapshot. Later workspace
+changes do not silently rewrite an older report's charts. Generate a new report to
+capture the current scores, evidence, and actions. Large analyses retain the
+report-time subset displayed by each chart and table and state the full record
+totals whenever items were omitted. Reports created by an older application version
+without a visual snapshot show **Analysis visuals unavailable** in the app and
+exports; the application never combines an older report's text with current
+workspace visuals.
 
 Review the downloaded file before distribution. A report export is not a complete
 workspace backup and may omit source-detail, snapshot, or version-history records.
@@ -198,7 +224,9 @@ pursuit.
    optional field unmapped as appropriate.
 7. Review the record preview, create/update/skip summary, and every row or field
    diagnostic. For large imports, the interface shows the first 100 planned changes
-   and states that the preview is truncated; every row is still validated.
+   and states that the preview is truncated; every row is still validated. Select
+   **Show all diagnostics** or download the diagnostics CSV when a large source needs
+   offline correction.
 8. Resolve all errors in the source file or mapping. Any error blocks the complete
    import; valid rows are not partially committed.
 9. Confirm the import once the plan is valid. The application creates a recovery
@@ -221,14 +249,17 @@ Canceling before confirmation leaves the workspace unchanged.
 ## Full-workspace JSON import and export
 
 - **Export workspace** downloads a JSON backup containing the editable workspace.
-- **Import** validates a selected JSON file before replacing the full current
-  workspace.
+- **Import** validates a selected JSON file up to 10 MB before replacing the full
+  current workspace.
 - **Reset demo** replaces the working workspace with synthetic sample data.
 - **Snapshots/recovery** restore recent local states without a downloaded file.
 
 An invalid or incompatible import is rejected and should leave the current workspace
-unchanged. After a successful import, verify the active pursuit, evidence citations,
-scores, report versions, and actions before continuing.
+unchanged. Legacy supported workspaces are migrated before use. Identifiers,
+cross-pursuit references, evidence/criterion relationships, attachment encodings,
+and score types are checked before the new workspace is saved. After a successful
+import, verify the active pursuit, evidence citations, scores, report versions, and
+actions before continuing.
 
 JSON import restores or replaces the complete application workspace. Excel and CSV
 import is different: it maps tabular rows into one selected destination using append,
@@ -250,4 +281,8 @@ windows may discard all local data when closed.
 - Save a report version before material editing.
 - Export a dated workspace backup before major sessions or bulk imports.
 - Inspect spreadsheet mappings, skipped matches, and diagnostics before committing.
+- Use the mobile **Menu** button on narrow screens; navigation preserves the active
+  page in the URL so browser Back and Forward work as expected.
+- If the header says **Unsaved changes** or **Save failed**, remain on the current
+  form, correct the issue, and save before navigating elsewhere.
 - Use only synthetic, public, or otherwise approved information in this public site.

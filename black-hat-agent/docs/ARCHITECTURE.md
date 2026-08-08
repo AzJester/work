@@ -13,6 +13,7 @@ GitHub Pages
       |-- import-engine.js: tabular mapping, diagnostics, and import plans
       |-- import-wizard.js: local file, worksheet, mapping, and preview UI
       |-- spreadsheet-worker.js: bounded, isolated Excel parsing
+      |-- visualizations.js: deterministic chart specifications and native SVG
       `-- app.js: views, report workflows, snapshots, and localStorage persistence
 ```
 
@@ -35,7 +36,7 @@ The browser stores one workspace document. Its principal record groups are:
 - **Playbooks** — built-in facilitation lenses and user-created playbooks.
 - **Actions** — owner, due date, status, and follow-up work.
 - **Reports/runs** — generated report text, creation metadata, edits, and retained
-  versions.
+  versions, including a saved visualization snapshot.
 - **Snapshots** — bounded point-in-time copies used for local recovery.
 - **Workspace state** — active pursuit, current view, and supported schema version.
 
@@ -78,12 +79,33 @@ so earlier text can be reviewed or restored. Export formatting is performed in t
 browser:
 
 - Markdown preserves the plain-text report structure and citations.
-- Word downloads an HTML-based, Word-compatible `.doc`; it is not a native `.docx`
-  package.
+- Visual HTML downloads native SVG charts with accessible data tables.
+- Word downloads an HTML-based, Word-compatible `.doc` with charts rasterized
+  locally and data tables retained; it is not a native `.docx` package.
 - PDF opens a print-ready report and relies on the browser print dialog, where the
   user selects **Save as PDF**; the application does not create a PDF binary itself.
+  Native SVG visuals and their tables are included in the print document.
 
 No report content is uploaded while generating or exporting these formats.
+
+Visualization specifications are derived from the same score summary and
+pursuit-scoped records used by the report. Renderers are pure local functions that
+produce accessible SVG with titles and descriptions. Missing or invalid values
+remain unknown instead of being coerced to zero. Each on-screen chart is paired with
+a semantic HTML table, and a generated report stores its specifications as a
+versioned snapshot so later edits do not change historical output.
+
+Report visual snapshot version 2 is intentionally bounded for browser storage. It
+retains the exact report-time rows and columns that the renderers can display
+(14 ranked entities or criterion rows, 7 heatmap entities, and 9 nodes per side in
+the relationship diagram), aggregates action counts, and records original totals
+so every omitted row, entity, node, or relationship is disclosed. Labels are capped
+at 180 UTF-8 bytes, compact snapshot IDs replace workspace IDs, and serialization
+must remain at or below 64 KB. Report generation fails visibly if that invariant
+cannot be met. Legacy report text remains readable, but a report without a valid
+version 2 visual snapshot shows an explicit unavailability notice in the app and
+every visual export; current workspace data is never substituted into historical
+report text.
 
 ## Local Excel and CSV import
 
@@ -131,11 +153,13 @@ Changes are serialized to `localStorage`. Before material workspace changes, the
 application retains bounded local snapshots. Users can restore a snapshot after an
 accidental edit, archive, reset, or import.
 
-Workspace JSON import uses a validate-before-replace flow. The file must be parseable
-JSON with a supported workspace shape and valid record collections and references.
-Invalid files are rejected without replacing the current workspace. A successful
-JSON import becomes the new local workspace only after validation and a recoverable
-pre-import snapshot.
+Workspace JSON import uses a validate-migrate-validate-before-replace flow. The file
+must be parseable JSON with a supported workspace shape, strict bounded identifiers,
+valid record collections, same-pursuit references, reciprocal evidence/criterion
+links, valid scores, and supported attachment data URLs. Supported legacy schemas
+are normalized and migrated before final validation. Invalid files are rejected
+without replacing the current workspace. A successful JSON import becomes the new
+local workspace only after validation and a recoverable pre-import snapshot.
 
 Excel and CSV import is a separate, mapped record-import flow. It can append, upsert,
 or, where supported, replace one active-pursuit record type. It validates a cloned
@@ -147,7 +171,7 @@ export is still required for durable backup or transfer between devices.
 ## Browser support
 
 The application targets current Chrome, Edge, Firefox, and Safari. It uses standard
-DOM APIs, `localStorage`, `Blob`, `FileReader`, the locally bundled SheetJS CE 0.20.3
-parser, browser print/export capabilities, and `crypto.randomUUID` with a fallback
-identifier generator. Browser privacy settings and popup/print settings can affect
-downloads and PDF export.
+DOM APIs, `localStorage`, `Blob`, `FileReader`, native SVG, a canvas for local Word
+image conversion, the locally bundled SheetJS CE 0.20.3 parser, browser print/export
+capabilities, and `crypto.randomUUID` with a fallback identifier generator. Browser
+privacy settings and popup/print settings can affect downloads and PDF export.

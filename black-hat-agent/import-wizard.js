@@ -59,6 +59,8 @@ export function openLocalImportWizard({
     mapping: {},
     plan: null,
     replaceConfirmed: false,
+    showAllDiagnostics: false,
+    focusSelector: "",
     error: "",
     formulaCount: 0,
     linkCount: 0
@@ -75,6 +77,8 @@ export function openLocalImportWizard({
   };
 
   const render = () => {
+    const focusSelector = state.focusSelector;
+    state.focusSelector = "";
     dialog.innerHTML = `<div class="modal import-wizard">
       <header class="wizard-header">
         <div>
@@ -90,7 +94,7 @@ export function openLocalImportWizard({
         state.busy ? "Reading the selected file locally…" : state.error
       )}</div>
     </div>`;
-    focusStep(dialog, state);
+    focusStep(dialog, state, focusSelector);
   };
 
   dialog.addEventListener("cancel", event => {
@@ -107,6 +111,16 @@ export function openLocalImportWizard({
     }
     if (button.hasAttribute("data-wizard-template")) {
       downloadImportTemplate();
+      return;
+    }
+    if (button.hasAttribute("data-wizard-show-all")) {
+      state.showAllDiagnostics = true;
+      state.focusSelector = "#diagnosticHeading";
+      render();
+      return;
+    }
+    if (button.hasAttribute("data-wizard-download-diagnostics")) {
+      downloadDiagnostics(state.plan?.diagnostics || [], state.fileName || "import");
       return;
     }
     if (button.hasAttribute("data-wizard-change-file")) {
@@ -183,12 +197,14 @@ export function openLocalImportWizard({
         target.modes ||
         (target.replaceAllowed ? ["append", "upsert", "replace"] : ["append", "upsert"]);
       state.mode = modes.includes(state.mode) ? state.mode : modes[0];
+      state.focusSelector = "#importTarget";
       render();
       return;
     }
     if (event.target.name === "confirmReplace") {
       state.replaceConfirmed = event.target.checked;
       state.error = "";
+      state.focusSelector = 'input[name="confirmReplace"]';
       render();
     }
   });
@@ -207,6 +223,7 @@ export function openLocalImportWizard({
         state.mapping = suggestColumnMapping(state.target, state.headers).mapping;
         state.plan = null;
         state.replaceConfirmed = false;
+        state.showAllDiagnostics = false;
         state.error = "";
         state.step = 3;
       } catch (error) {
@@ -235,6 +252,7 @@ export function openLocalImportWizard({
         idFactory,
         validator
       });
+      state.showAllDiagnostics = false;
       state.error = "";
       state.step = 4;
       render();
@@ -726,6 +744,7 @@ function reviewMarkup(state) {
     errors: 1
   };
   const diagnostics = plan?.diagnostics || [];
+  const visibleDiagnostics = state.showAllDiagnostics ? diagnostics : diagnostics.slice(0, 50);
   const errorCount = diagnostics.filter(item => item.severity === "error").length;
   const target = IMPORT_TARGETS[state.target];
   return `<section aria-labelledby="reviewHeading">
@@ -740,6 +759,13 @@ function reviewMarkup(state) {
         plan?.valid ? "READY" : `${errorCount} ERROR${errorCount === 1 ? "" : "S"}`
       }</span>
     </div>
+    ${
+      errorCount
+        ? `<div class="note danger" role="alert"><strong>Import blocked by ${errorCount} validation error${
+            errorCount === 1 ? "" : "s"
+          }.</strong> Review the diagnostics below, correct the source or mapping, and validate again.</div>`
+        : ""
+    }
     <div class="import-summary">
       ${summaryTile("ROWS", summary.processedRows ?? summary.totalRows ?? 0)}
       ${summaryTile("CREATE", summary.created ?? 0)}
@@ -748,8 +774,12 @@ function reviewMarkup(state) {
     </div>
     ${
       diagnostics.length
-        ? `<div class="diagnostic-list" aria-label="Import diagnostics">${diagnostics
-            .slice(0, 50)
+        ? `<div class="diagnostic-actions"><h4 id="diagnosticHeading">Import diagnostics</h4><div class="row">${
+            diagnostics.length > 50 && !state.showAllDiagnostics
+              ? `<button class="btn small" type="button" data-wizard-show-all>Show all ${diagnostics.length}</button>`
+              : ""
+          }<button class="btn small" type="button" data-wizard-download-diagnostics>Download diagnostics CSV</button></div></div>
+          <div class="diagnostic-list" aria-labelledby="diagnosticHeading">${visibleDiagnostics
             .map(
               item => `<div class="diagnostic ${item.severity === "error" ? "error" : ""}">
                 <strong>${item.severity === "error" ? "Error" : "Warning"}${
@@ -757,11 +787,7 @@ function reviewMarkup(state) {
                 }</strong>${esc(item.message)}
               </div>`
             )
-            .join("")}${
-              diagnostics.length > 50
-                ? `<div class="diagnostic">${diagnostics.length - 50} more diagnostic(s) are not shown.</div>`
-                : ""
-            }</div>`
+            .join("")}</div>`
         : `<p class="note">No validation errors or warnings were found.</p>`
     }
     ${previewMarkup(plan?.preview || [], summary.processedRows ?? summary.totalRows ?? 0)}
@@ -902,7 +928,32 @@ function spreadsheetLibrary() {
   return XLSX;
 }
 
-function focusStep(dialog, state) {
+function downloadDiagnostics(diagnostics, fileName) {
+  const rows = [
+    ["Severity", "Worksheet row", "Message"],
+    ...diagnostics.map(item => [item.severity || "warning", item.row || "", item.message || ""])
+  ];
+  const csv = rows
+    .map(row =>
+      row
+        .map(value => {
+          const raw = String(value ?? "");
+          const text = /^[\t\r\n ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+          return `"${text.replaceAll('"', '""')}"`;
+        })
+        .join(",")
+    )
+    .join("\r\n");
+  const anchor = document.createElement("a");
+  anchor.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" }));
+  anchor.download = `${String(fileName)
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-z0-9_-]+/gi, "-") || "import"}-diagnostics.csv`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(anchor.href), 800);
+}
+
+function focusStep(dialog, state, preferredSelector = "") {
   requestAnimationFrame(() => {
     if (!dialog.open || state.busy) return;
     const selector = {
@@ -911,6 +962,6 @@ function focusStep(dialog, state) {
       3: ".mapping-table select",
       4: "[data-wizard-apply]:not([disabled]), [data-wizard-back]"
     }[state.step];
-    dialog.querySelector(selector)?.focus();
+    dialog.querySelector(preferredSelector || selector)?.focus();
   });
 }

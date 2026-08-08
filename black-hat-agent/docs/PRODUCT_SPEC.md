@@ -56,6 +56,9 @@ and portable output.
   low-confidence judgments, and incomplete scoring.
 - Confidence-adjusted CPI and a bounded scenario planning estimate that is explicitly
   not presented as a statistical win forecast.
+- Accessible native charts for ranked CPI, score heatmaps, weighted criterion
+  deltas, scenario uncertainty, evidence coverage and relationships, run history,
+  and action status.
 
 Scores are team-entered judgments, not independently calculated market facts. Any
 derived total or ranking is a deterministic summary of those inputs.
@@ -110,9 +113,15 @@ derived total or ranking is a deterministic summary of those inputs.
   guardrail.
 - Editable report content after generation.
 - Saved report versions with the ability to inspect and restore an earlier version.
+- Saved visual specifications for each generated report so historical charts do not
+  drift when workspace data changes. New snapshots are storage-bounded (64 KB
+  maximum), preserve the exact displayed report-time subset, and disclose original
+  totals for omitted records. Legacy reports without snapshots display an explicit
+  unavailable notice instead of rebuilding visuals from current workspace data.
 - Run history scoped to the active pursuit.
-- Markdown download, HTML-based Word-compatible `.doc`, and a print-ready browser
-  flow for **Save as PDF**.
+- Markdown download, standalone visual HTML, HTML-based Word-compatible `.doc`, and
+  a print-ready browser flow for **Save as PDF**. Visual formats retain accessible
+  data tables and require no remote rendering service.
 
 ### Portability and recovery
 
@@ -121,7 +130,8 @@ derived total or ranking is a deterministic summary of those inputs.
 - Local Excel and CSV import for adding or updating mapped records without replacing
   the complete workspace.
 - Import validation for the supported workspace structure, required collections,
-  record types, and pursuit references.
+  record types, bounded identifiers, pursuit references, reciprocal evidence links,
+  valid scores, and supported local attachment encodings.
 - Recoverable pre-import or pre-reset state.
 - Bounded local snapshots with list, restore, and cleanup behavior.
 - Synthetic starter workspace that demonstrates every major workflow.
@@ -130,8 +140,21 @@ derived total or ranking is a deterministic summary of those inputs.
 
 - Static-host compatibility with no application network dependency.
 - Responsive layout and keyboard-accessible native controls.
+- Mobile navigation drawer, URL-backed page navigation, protected unsaved forms, and
+  visible persisted/dirty/save-error states.
 - Clear empty, validation, confirmation, and recovery states.
 - Visible reminders that the site uses local storage and no AI model.
+
+### Visualization rules
+
+- Derive every chart from the same pursuit-scoped records and deterministic score
+  summary used by the report.
+- Never substitute zero for a missing or invalid value; label it **Unknown**.
+- Supply a semantic tabular alternative for exact reading and assistive technology.
+- Use redundant color, labels, patterns, and markers where series must be
+  distinguished.
+- Preserve report-time visual specifications with the report run.
+- Render and export locally without a CDN, API, chart service, or user credential.
 
 ## Competitive-analysis method
 
