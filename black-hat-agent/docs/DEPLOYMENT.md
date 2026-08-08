@@ -37,7 +37,8 @@ behavior can differ for `file:` URLs.
 
 Before release:
 
-1. Run `node --check black-hat-agent/app.js`.
+1. Run `node --check` on `app.js`, `engine.js`, `import-wizard.js`, and
+   `visualizations.js`, then run `npm test`.
 2. Serve the repository locally and verify there is no sign-in or external request.
 3. Create, edit, duplicate, archive, and restore a pursuit.
 4. Add customer priorities and weighted evaluation criteria.
@@ -46,12 +47,15 @@ Before release:
 7. Create a custom playbook and select it for a session.
 8. Record participants and notes, then generate a competitive-analysis report.
 9. Edit the report, save a new version, and restore an earlier version.
-10. Verify the Markdown download and HTML-based `.doc` in Microsoft Word, then
+10. Verify Markdown and standalone visual HTML downloads. Open the HTML-based `.doc`
+    in Microsoft Word and confirm charts plus their data tables are present, then
     verify the print-ready report and browser **Save as PDF** flow.
 11. Add or edit an action and confirm it appears in a regenerated report.
 12. Export the JSON workspace and import it into a clean browser profile.
-13. Attempt to import malformed and incomplete JSON; confirm current data remains
-    unchanged.
+13. Attempt to import malformed and incomplete JSON plus duplicate or hostile IDs,
+    invalid scores, cross-pursuit relationships, asymmetric evidence links, and
+    unsafe attachment data URLs; confirm current data remains unchanged. Import a
+    supported legacy workspace and confirm its relationships are migrated.
 14. Import representative `.xlsx`, `.xls`, and `.csv` files. For Excel, verify
     worksheet selection; for all formats, verify header-row selection.
 15. Verify automatic column mapping, manual remapping, preview operations, and
@@ -86,6 +90,14 @@ Before release:
 26. Test quoted commas, embedded newlines, empty cells, and UTF-8 text in CSV files,
     plus a multi-sheet Excel workbook and a file with a non-first header row.
 27. Verify desktop, keyboard-only, and narrow mobile layouts in current browsers.
+    Confirm the mobile navigation drawer closes through its button, backdrop, and
+    Escape key, and browser Back/Forward follows the URL fragment.
+28. Exercise every chart with complete, sparse, and missing data. Confirm exact
+    values match the accessible table and no missing value is presented as zero.
+29. Generate a report, change the workspace, and confirm the prior report keeps its
+    saved visual snapshot while a new report reflects the new data.
+30. Force browser-storage failure and confirm the header shows a save error, the
+    in-memory change rolls back, and no success message appears.
 
 ## Operational backup and recovery
 

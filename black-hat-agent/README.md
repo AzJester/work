@@ -18,13 +18,19 @@ evidence-cited scorecards, challenge themes, actions, and versioned reports.
 - built-in and user-created Black Hat playbooks
 - deterministic, evidence-grounded competitive-analysis generation
 - confidence-adjusted CPI, comparative margin, and a clearly labeled scenario estimate
+- native, accessible charts for CPI ranking, criterion scores and deltas, scenario
+  uncertainty, evidence coverage and relationships, run history, and action status
 - editable report drafts with saved versions and run history
 - action-register creation and maintenance
-- Markdown download, Word-compatible `.doc`, and print-ready PDF output
+- Markdown, standalone visual HTML, Word-compatible `.doc`, and print-ready PDF output;
+  visual report exports include accessible data tables
 - local `.xlsx`, `.xls`, and `.csv` import with mapping, preview, and diagnostics
-- validated JSON workspace import/export
+- validated and migrated JSON workspace import/export with strict identifiers,
+  pursuit isolation, and relationship checks
 - automatic local snapshots and manual recovery
-- grouped, text-only application navigation
+- grouped, text-only application navigation with a compact mobile drawer
+- visible unsaved and save-error states, protected navigation, and failure-safe
+  persistence
 - in-app user guide with a recommended workflow and direct links to each workspace
   area
 - responsive desktop and mobile layouts
@@ -44,6 +50,11 @@ The application does **not** use an AI model, research the web, discover competi
 or independently verify a claim. The quality of a report depends on the quality and
 completeness of the information the team enters.
 
+The visualizations use the same deterministic workspace values as the report. They
+do not invent missing scores: unavailable values remain labeled **Unknown**, and
+every chart has a tabular alternative. Generated reports retain a visual snapshot so
+an older report continues to show the data available when it was created.
+
 ## Local spreadsheet import
 
 The browser-only import wizard accepts `.xlsx`, `.xls`, and `.csv` files up to 5 MB.
@@ -62,7 +73,8 @@ Three import modes are available where supported:
 
 Any validation error blocks the entire import, so no partial change is applied. The
 application creates a recovery snapshot immediately before a successful atomic
-commit.
+commit. The review step can reveal every diagnostic and download the complete
+diagnostic list as CSV.
 
 Excel parsing runs in a 20-second, disposable browser worker using the
 repository-bundled SheetJS CE 0.20.3 library under the Apache-2.0 license. ZIP-based

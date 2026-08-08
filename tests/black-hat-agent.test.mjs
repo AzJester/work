@@ -132,7 +132,7 @@ function workspaceFixture() {
 
 test("the public entry point uses only the Black Hat Agent product name", () => {
   assert.match(index, /<title>Black Hat Agent<\/title>/);
-  assert.match(app, /<strong>BLACK HAT AGENT<\/strong>/);
+  assert.match(app, /<strong>Black Hat Agent<\/strong>/);
   assert.doesNotMatch(index + app, />\s*ASTRION\s*</i);
   assert.match(index, /<script\b[^>]*src="app\.js"[^>]*type="module"/);
   assert.match(index, /<script\b[^>]*src="vendor\/xlsx\.full\.min\.js"/);
@@ -169,6 +169,89 @@ test("workspace validation rejects malformed data and broken relationships", () 
   assert.equal(result.valid, false);
   assert.match(result.errors.join("\n"), /invalid weight/i);
   assert.match(result.errors.join("\n"), /missing criterion/i);
+});
+
+test("workspace validation rejects unsafe IDs, score coercion, and pursuit boundary violations", () => {
+  const hostile = workspaceFixture();
+  hostile.criteria[0].id = `cr1"><script>`;
+  assert.match(
+    engine.validateWorkspace(hostile).errors.join("\n"),
+    /safe record ID/i
+  );
+
+  const nonnumeric = workspaceFixture();
+  nonnumeric.competitors[0].scores.cr1 = "not-a-score";
+  assert.match(
+    engine.validateWorkspace(nonnumeric).errors.join("\n"),
+    /nonnumeric score|outside 1-5/i
+  );
+
+  const crossPursuit = workspaceFixture();
+  crossPursuit.pursuits.push({
+    id: "p2",
+    name: "Other pursuit",
+    customer: "Other customer",
+    archived: false
+  });
+  crossPursuit.evidence.push({
+    id: "e3",
+    pursuitId: "p2",
+    citation: "E-001",
+    title: "Other evidence",
+    source: "Synthetic source",
+    criterionIds: []
+  });
+  crossPursuit.criteria[0].evidenceIds.push("e3");
+  assert.match(
+    engine.validateWorkspace(crossPursuit).errors.join("\n"),
+    /another pursuit/i
+  );
+});
+
+test("legacy imports repair reciprocal evidence links before strict v3 validation", () => {
+  const legacy = workspaceFixture();
+  legacy.schemaVersion = 2;
+  legacy.evidence[0].criterionIds = [];
+  assert.equal(engine.validateWorkspaceImport(legacy).valid, true);
+  const migrated = engine.normalizeWorkspace(legacy, workspaceFixture());
+  assert.equal(migrated.schemaVersion, 3);
+  assert.deepEqual(migrated.evidence[0].criterionIds, ["cr1"]);
+  assert.equal(engine.validateWorkspace(migrated).valid, true);
+
+  const current = structuredClone(migrated);
+  current.evidence[0].criterionIds = [];
+  assert.match(
+    engine.validateWorkspaceImport(current).errors.join("\n"),
+    /nonreciprocal/i
+  );
+});
+
+test("attachment and recovery snapshot validation fail closed", () => {
+  const unsafeAttachment = engine.normalizeWorkspace(workspaceFixture(), workspaceFixture());
+  unsafeAttachment.evidence[0].attachmentName = "payload.html";
+  unsafeAttachment.evidence[0].attachmentType = "text/html";
+  unsafeAttachment.evidence[0].attachmentData =
+    "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==";
+  assert.match(
+    engine.validateWorkspace(unsafeAttachment).errors.join("\n"),
+    /safe MIME type|allowed MIME type/i
+  );
+
+  const base = engine.normalizeWorkspace(workspaceFixture(), workspaceFixture());
+  const snapshot = {
+    id: "snapshot-1",
+    active: "p1",
+    createdAt: new Date().toISOString(),
+    label: "Test",
+    workspace: Object.fromEntries(
+      ["pursuits", "criteria", "evidence", "competitors", "actions", "playbooks", "runs"].map(
+        name => [name, structuredClone(base[name])]
+      )
+    )
+  };
+  assert.equal(engine.validateWorkspaceSnapshot(snapshot).valid, true);
+  snapshot.workspace.criteria[0].evidenceIds = ["missing"];
+  assert.equal(engine.validateWorkspaceSnapshot(snapshot).valid, false);
 });
 
 test("legacy workspaces migrate without mixing in unrelated sample records", () => {
@@ -264,12 +347,15 @@ test("reports contain the complete decision-oriented competitive analysis", () =
 
 test("Word rendering escapes imported content before producing HTML", () => {
   const html = engine.markdownToWordHtml(
-    "# Report\n\n<script>alert('x')</script>\n\n- **Safe**",
+    "# Report\n\n<script>alert('x')</script>\n\n- **Safe**\n\n| Item | Score |\n| --- | --- |\n| <img src=x onerror=alert(1)> | 4 |",
     "Test"
   );
   assert.doesNotMatch(html, /<script>/i);
   assert.match(html, /&lt;script&gt;/i);
   assert.match(html, /<strong>Safe<\/strong>/);
+  assert.match(html, /<table><thead>/);
+  assert.match(html, /<th scope="col">Item<\/th>/);
+  assert.doesNotMatch(html, /<img\b/i);
 });
 
 test("the application exposes complete editing, recovery, and export workflows", () => {
@@ -278,12 +364,15 @@ test("the application exposes complete editing, recovery, and export workflows",
     "restorePursuit",
     "saveReportVersion",
     "exportMarkdown",
+    "exportVisuals",
     "exportWord",
     "exportPDF"
   ]) {
     assert.match(app, new RegExp(`function\\s+${helper}\\s*\\(`));
   }
-  assert.match(app, /data-edit="(?:evidence|competitors|actions|playbooks):/);
+  assert.match(app, /function\s+rowActions\s*\(/);
+  assert.match(app, /data-edit="\$\{esc\(/);
+  assert.match(app, /data-delete="\$\{esc\(/);
   assert.match(app, /data-restore-pursuit/);
   assert.match(app, /data-restore-snapshot/);
   assert.match(app, /data-edit-report/);
@@ -295,6 +384,25 @@ test("the application exposes complete editing, recovery, and export workflows",
   assert.match(app, /openLocalImportWizard/);
   assert.match(app, /data-action="tabular-import"/);
   assert.match(app, /function\s+guideView\s*\(/);
+});
+
+test("legacy reports never hybridize saved text with current visuals and missing CPI stays unknown", () => {
+  const visualResolver = app.match(
+    /function\s+reportVisualSpecs\s*\([^)]*\)\s*\{[\s\S]*?\n\}/
+  )?.[0];
+  assert.ok(visualResolver);
+  assert.match(visualResolver, /visualSnapshot\?\.visuals/);
+  assert.match(visualResolver, /:\s*null/);
+  assert.doesNotMatch(visualResolver, /buildRunVisualizationSnapshot/);
+  assert.match(
+    app,
+    /Analysis visuals are unavailable because this legacy report has no report-time visual snapshot/
+  );
+  assert.match(app, /class="export-visual legacy-visual-notice"/);
+  assert.match(app, /function\s+formatCpi\s*\(/);
+  assert.match(app, /value === null \|\| value === undefined \|\| value === ""/);
+  assert.doesNotMatch(app, /\?\?\s*50[^;]*CPI\s*\/\s*100/);
+  assert.doesNotMatch(app, /\$\{scores\.us\.cpi\}\/100/);
 });
 
 test("the interface provides accessibility and responsive layout contracts", () => {

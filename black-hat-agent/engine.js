@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const CONFIDENCE_FACTORS = Object.freeze({
   Confirmed: 1,
@@ -18,6 +18,49 @@ const REQUIRED_COLLECTIONS = [
   "runs",
   "snapshots"
 ];
+
+const SAFE_RECORD_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+const SNAPSHOT_MAX_DEPTH = 4;
+const REPORT_STATUSES = Object.freeze(["Draft", "In review", "Approved"]);
+const REPORT_VISUAL_SCHEMA_VERSION = 1;
+const REPORT_VISUAL_SNAPSHOT_VERSION = 2;
+const REPORT_VISUAL_SNAPSHOT_MAX_BYTES = 64_000;
+const REPORT_VISUAL_TEXT_LIMIT = 180;
+const REPORT_VISUAL_SPEC_TEXT_LIMIT = 1_000;
+const REPORT_VISUAL_TOTAL_LIMIT = 100_000;
+const REPORT_VISUAL_KEYS = Object.freeze([
+  "rankedCpi",
+  "scoreHeatmap",
+  "criterionDeltas",
+  "scenarioRange",
+  "evidenceGrid",
+  "evidenceRelationships",
+  "actionSummary"
+]);
+const REPORT_ACTION_PRIORITIES = Object.freeze([
+  "Critical",
+  "High",
+  "Medium",
+  "Low",
+  "Other"
+]);
+const REPORT_ACTION_STATUSES = Object.freeze([
+  "Open",
+  "In progress",
+  "Blocked",
+  "Complete",
+  "Other"
+]);
+const SAFE_ATTACHMENT_MIME_TYPES = new Set([
+  "application/json",
+  "application/msword",
+  "application/octet-stream",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/csv",
+  "text/markdown",
+  "text/plain"
+]);
 
 export function escapeHtml(value) {
   return String(value ?? "").replace(
@@ -39,10 +82,80 @@ export function safeHttpUrl(value) {
   }
 }
 
+export function safeAttachmentDataUrl(value) {
+  if (value === "") return true;
+  if (typeof value !== "string" || value.length > 450_000) return false;
+  const match = /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,([a-z0-9+/]*={0,2})$/i.exec(
+    value
+  );
+  if (!match) return false;
+  const mimeType = match[1].toLowerCase();
+  const payload = match[2];
+  return (
+    SAFE_ATTACHMENT_MIME_TYPES.has(mimeType) &&
+    payload.length > 0 &&
+    payload.length % 4 === 0
+  );
+}
+
+function attachmentMimeType(value) {
+  return (
+    /^data:([a-z0-9.+-]+\/[a-z0-9.+-]+);base64,/i.exec(String(value || ""))?.[1]?.toLowerCase() ||
+    ""
+  );
+}
+
+export function isSafeRecordId(value) {
+  return typeof value === "string" && SAFE_RECORD_ID_PATTERN.test(value);
+}
+
+export function validateWorkspaceImport(candidate) {
+  return validateWorkspaceCandidate(candidate, {
+    path: "Workspace",
+    requireCurrentCollections: candidate?.schemaVersion === SCHEMA_VERSION,
+    enforceReciprocity: candidate?.schemaVersion === SCHEMA_VERSION,
+    validateSnapshots: true,
+    snapshotDepth: 0,
+    maxSnapshotDepth: SNAPSHOT_MAX_DEPTH
+  });
+}
+
+export function validateRawWorkspace(candidate) {
+  return validateWorkspaceImport(candidate);
+}
+
 export function validateWorkspace(candidate) {
+  return validateWorkspaceCandidate(candidate, {
+    path: "Workspace",
+    requireCurrentCollections: true,
+    enforceReciprocity: true,
+    validateSnapshots: true,
+    snapshotDepth: 0,
+    maxSnapshotDepth: SNAPSHOT_MAX_DEPTH
+  });
+}
+
+export function validateWorkspaceSnapshot(snapshot, options = {}) {
   const errors = [];
-  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
-    return { valid: false, errors: ["Workspace must be a JSON object."] };
+  const requestedDepth = Number(options.maxDepth);
+  const maxSnapshotDepth =
+    Number.isInteger(requestedDepth) && requestedDepth >= 0
+      ? Math.min(requestedDepth, SNAPSHOT_MAX_DEPTH)
+      : SNAPSHOT_MAX_DEPTH;
+  validateSnapshotInto(snapshot, errors, {
+    path: "Snapshot",
+    snapshotDepth: 0,
+    maxSnapshotDepth,
+    enforceReciprocity: true
+  });
+  return { valid: errors.length === 0, errors };
+}
+
+function validateWorkspaceCandidate(candidate, context) {
+  const errors = [];
+  const path = context.path || "Workspace";
+  if (!isRecordObject(candidate)) {
+    return { valid: false, errors: [`${path} must be a JSON object.`] };
   }
   if (
     candidate.schemaVersion !== undefined &&
@@ -50,117 +163,785 @@ export function validateWorkspace(candidate) {
       candidate.schemaVersion < 1 ||
       candidate.schemaVersion > SCHEMA_VERSION)
   ) {
-    errors.push(`Unsupported schema version. Expected 1-${SCHEMA_VERSION}.`);
+    errors.push(`${path} has an unsupported schema version. Expected 1-${SCHEMA_VERSION}.`);
   }
-  for (const name of REQUIRED_COLLECTIONS.filter(name => name !== "snapshots")) {
-    if (candidate[name] !== undefined && !Array.isArray(candidate[name])) {
-      errors.push(`${name} must be an array.`);
+  for (const name of REQUIRED_COLLECTIONS) {
+    if (candidate[name] === undefined) {
+      if (
+        context.requireCurrentCollections ||
+        (context.requireSnapshotCollections && name !== "snapshots")
+      ) {
+        errors.push(`${path}.${name} must be an array.`);
+      }
+    } else if (!Array.isArray(candidate[name])) {
+      errors.push(`${path}.${name} must be an array.`);
     }
   }
-  if (!Array.isArray(candidate.pursuits) || !candidate.pursuits.length) {
-    errors.push("At least one pursuit is required.");
+  const collections = Object.fromEntries(
+    REQUIRED_COLLECTIONS.map(name => [name, Array.isArray(candidate[name]) ? candidate[name] : []])
+  );
+  if (!collections.pursuits.length) {
+    errors.push(`${path} requires at least one pursuit.`);
   }
 
-  const pursuitIds = new Set();
-  for (const pursuit of candidate.pursuits || []) {
-    if (!pursuit || typeof pursuit !== "object") {
-      errors.push("Every pursuit must be an object.");
+  const pursuitById = new Map();
+  const seenIds = new Set();
+  for (const [index, pursuit] of collections.pursuits.entries()) {
+    const recordPath = `${path}.pursuits[${index}]`;
+    if (!isRecordObject(pursuit)) {
+      errors.push(`${recordPath} must be an object.`);
       continue;
     }
-    if (!nonEmpty(pursuit.id) || !nonEmpty(pursuit.name) || !nonEmpty(pursuit.customer)) {
-      errors.push("Every pursuit requires id, name, and customer.");
+    if (!isSafeRecordId(pursuit.id)) {
+      errors.push(`${recordPath}.id must be a safe record ID.`);
+    } else {
+      if (seenIds.has(pursuit.id)) errors.push(`${recordPath}.id is duplicated.`);
+      seenIds.add(pursuit.id);
+      if (!pursuitById.has(pursuit.id)) pursuitById.set(pursuit.id, pursuit);
     }
-    if (pursuitIds.has(pursuit.id)) errors.push(`Duplicate pursuit id: ${pursuit.id}.`);
-    pursuitIds.add(pursuit.id);
+    if (!nonEmpty(pursuit.name) || !nonEmpty(pursuit.customer)) {
+      errors.push(`${recordPath} requires name and customer.`);
+    }
   }
 
-  const seenIds = new Set(pursuitIds);
+  const recordsByCollection = Object.fromEntries(
+    ["criteria", "evidence", "competitors", "actions", "runs"].map(name => [name, new Map()])
+  );
   for (const name of ["criteria", "evidence", "competitors", "actions", "runs"]) {
-    for (const record of candidate[name] || []) {
-      if (!record || typeof record !== "object" || !nonEmpty(record.id)) {
-        errors.push(`Every ${name} record requires an id.`);
+    for (const [index, record] of collections[name].entries()) {
+      const recordPath = `${path}.${name}[${index}]`;
+      if (!isRecordObject(record)) {
+        errors.push(`${recordPath} must be an object.`);
         continue;
       }
-      if (seenIds.has(record.id)) errors.push(`Duplicate record id: ${record.id}.`);
-      seenIds.add(record.id);
-      if (!pursuitIds.has(record.pursuitId)) {
-        errors.push(`${name} record ${record.id} references a missing pursuit.`);
+      if (!isSafeRecordId(record.id)) {
+        errors.push(`${recordPath}.id must be a safe record ID.`);
+      } else {
+        if (seenIds.has(record.id)) errors.push(`${recordPath}.id is duplicated.`);
+        seenIds.add(record.id);
+        if (!recordsByCollection[name].has(record.id)) {
+          recordsByCollection[name].set(record.id, record);
+        }
+      }
+      if (!isSafeRecordId(record.pursuitId)) {
+        errors.push(`${recordPath}.pursuitId must be a safe relationship ID.`);
+      } else if (!pursuitById.has(record.pursuitId)) {
+        errors.push(`${recordPath} references a missing pursuit.`);
       }
     }
   }
 
-  for (const playbook of candidate.playbooks || []) {
-    if (!playbook || !nonEmpty(playbook.id) || !nonEmpty(playbook.name)) {
-      errors.push("Every playbook requires an id and name.");
+  for (const [index, playbook] of collections.playbooks.entries()) {
+    const recordPath = `${path}.playbooks[${index}]`;
+    if (!isRecordObject(playbook)) {
+      errors.push(`${recordPath} must be an object.`);
       continue;
     }
-    if (seenIds.has(playbook.id)) errors.push(`Duplicate record id: ${playbook.id}.`);
-    seenIds.add(playbook.id);
+    if (!isSafeRecordId(playbook.id)) {
+      errors.push(`${recordPath}.id must be a safe record ID.`);
+    } else {
+      if (seenIds.has(playbook.id)) errors.push(`${recordPath}.id is duplicated.`);
+      seenIds.add(playbook.id);
+    }
+    if (!nonEmpty(playbook.name)) errors.push(`${recordPath} requires a name.`);
   }
 
-  const criterionIds = new Set((candidate.criteria || []).map(item => item.id));
-  const evidenceIds = new Set((candidate.evidence || []).map(item => item.id));
-  for (const criterion of candidate.criteria || []) {
-    const weight = Number(criterion.weight);
-    const score = Number(criterion.ourScore);
-    if (!nonEmpty(criterion.name)) errors.push(`Criterion ${criterion.id} requires a name.`);
-    if (!Number.isFinite(weight) || weight <= 0 || weight > 1000) {
-      errors.push(`Criterion ${criterion.id} has an invalid weight.`);
-    }
-    if (criterion.ourScore !== "" && (!Number.isFinite(score) || score < 1 || score > 5)) {
-      errors.push(`Criterion ${criterion.id} has an invalid score.`);
-    }
-    for (const evidenceId of criterion.evidenceIds || []) {
-      if (!evidenceIds.has(evidenceId)) {
-        errors.push(`Criterion ${criterion.id} references missing evidence ${evidenceId}.`);
+  if (context.enforceReciprocity) {
+    for (const [index, run] of collections.runs.entries()) {
+      if (!isRecordObject(run)) continue;
+      const revisionsPath = `${path}.runs[${index}].revisions`;
+      if (!Array.isArray(run.revisions)) {
+        errors.push(`${revisionsPath} must be an array.`);
+        continue;
       }
-    }
-  }
-
-  for (const competitor of candidate.competitors || []) {
-    if (!nonEmpty(competitor.name)) errors.push(`Competitor ${competitor.id} requires a name.`);
-    if (competitor.scores && typeof competitor.scores !== "object") {
-      errors.push(`Competitor ${competitor.id} scores must be an object.`);
-    }
-    for (const score of Object.values(competitor.scores || {})) {
-      if (score !== "" && (Number(score) < 1 || Number(score) > 5)) {
-        errors.push(`Competitor ${competitor.id} contains a score outside 1-5.`);
+      for (const [revisionIndex, revision] of run.revisions.entries()) {
+        if (!isValidReportRevision(revision)) {
+          errors.push(
+            `${revisionsPath}[${revisionIndex}] must be a valid report revision object.`
+          );
+        }
       }
-    }
-    for (const criterionId of Object.keys(competitor.scores || {})) {
-      if (!criterionIds.has(criterionId)) {
-        errors.push(`Competitor ${competitor.id} references missing criterion ${criterionId}.`);
-      }
-    }
-    for (const evidenceId of competitor.evidenceIds || []) {
-      if (!evidenceIds.has(evidenceId)) {
-        errors.push(`Competitor ${competitor.id} references missing evidence ${evidenceId}.`);
+      if (
+        run.visualSnapshot !== undefined &&
+        !isValidReportVisualSnapshot(run.visualSnapshot, run.pursuitId)
+      ) {
+        errors.push(
+          `${path}.runs[${index}].visualSnapshot must be a valid compact visualization snapshot no larger than 64 KB.`
+        );
       }
     }
   }
 
-  for (const evidence of candidate.evidence || []) {
+  if (candidate.active !== undefined && candidate.active !== "") {
+    if (!isSafeRecordId(candidate.active)) {
+      errors.push(`${path}.active must be a safe relationship ID.`);
+    } else if (!pursuitById.has(candidate.active)) {
+      errors.push(`${path}.active references a missing pursuit.`);
+    }
+  }
+
+  const criterionById = recordsByCollection.criteria;
+  const evidenceById = recordsByCollection.evidence;
+  for (const [index, criterion] of collections.criteria.entries()) {
+    if (!isRecordObject(criterion)) continue;
+    const recordPath = `${path}.criteria[${index}]`;
+    const weight = strictFiniteNumber(criterion.weight);
+    const allowLegacyDefault =
+      candidate.schemaVersion === undefined || candidate.schemaVersion < SCHEMA_VERSION;
+    if (!nonEmpty(criterion.name)) errors.push(`${recordPath} requires a name.`);
+    if (
+      !(allowLegacyDefault && criterion.weight === undefined) &&
+      (weight === null || weight <= 0 || weight > 1000)
+    ) {
+      errors.push(`${recordPath} has an invalid weight.`);
+    }
+    if (
+      criterion.ourScore !== undefined &&
+      criterion.ourScore !== "" &&
+      !isScoreInRange(criterion.ourScore)
+    ) {
+      errors.push(`${recordPath} has an invalid score.`);
+    }
+    const evidenceIds = validateRelationshipIdArray(
+      criterion.evidenceIds,
+      `${recordPath}.evidenceIds`,
+      errors,
+      context.enforceReciprocity
+    );
+    for (const evidenceId of evidenceIds) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
+        errors.push(`${recordPath} references missing evidence.`);
+        continue;
+      }
+      if (evidence.pursuitId !== criterion.pursuitId) {
+        errors.push(`${recordPath} references evidence from another pursuit.`);
+      }
+      if (
+        context.enforceReciprocity &&
+        Array.isArray(evidence.criterionIds) &&
+        isSafeRecordId(criterion.id) &&
+        !evidence.criterionIds.includes(criterion.id)
+      ) {
+        errors.push(`${recordPath} has a nonreciprocal evidence link.`);
+      }
+    }
+  }
+
+  for (const [index, competitor] of collections.competitors.entries()) {
+    if (!isRecordObject(competitor)) continue;
+    const recordPath = `${path}.competitors[${index}]`;
+    if (!nonEmpty(competitor.name)) errors.push(`${recordPath} requires a name.`);
+    if (
+      competitor.scores !== undefined &&
+      (!isRecordObject(competitor.scores) || Array.isArray(competitor.scores))
+    ) {
+      errors.push(`${recordPath}.scores must be an object.`);
+    }
+    const scores = isRecordObject(competitor.scores) ? competitor.scores : {};
+    for (const [criterionId, score] of Object.entries(scores)) {
+      if (!isSafeRecordId(criterionId)) {
+        errors.push(`${recordPath}.scores contains an unsafe relationship ID.`);
+        continue;
+      }
+      const criterion = criterionById.get(criterionId);
+      if (!criterion) {
+        errors.push(`${recordPath}.scores references a missing criterion.`);
+      } else if (criterion.pursuitId !== competitor.pursuitId) {
+        errors.push(`${recordPath}.scores references a criterion from another pursuit.`);
+      }
+      if (score !== "" && !isScoreInRange(score)) {
+        errors.push(`${recordPath} contains a nonnumeric score or a score outside 1-5.`);
+      }
+    }
+    const evidenceIds = validateRelationshipIdArray(
+      competitor.evidenceIds,
+      `${recordPath}.evidenceIds`,
+      errors,
+      context.enforceReciprocity
+    );
+    for (const evidenceId of evidenceIds) {
+      const evidence = evidenceById.get(evidenceId);
+      if (!evidence) {
+        errors.push(`${recordPath} references missing evidence.`);
+      } else if (evidence.pursuitId !== competitor.pursuitId) {
+        errors.push(`${recordPath} references evidence from another pursuit.`);
+      }
+    }
+  }
+
+  for (const [index, evidence] of collections.evidence.entries()) {
+    if (!isRecordObject(evidence)) continue;
+    const recordPath = `${path}.evidence[${index}]`;
     if (!nonEmpty(evidence.title) || !nonEmpty(evidence.source)) {
-      errors.push(`Evidence ${evidence.id} requires a title and source.`);
+      errors.push(`${recordPath} requires a title and source.`);
     }
     if (evidence.url && !safeHttpUrl(evidence.url)) {
-      errors.push(`Evidence ${evidence.id} has an invalid source URL.`);
+      errors.push(`${recordPath} has an invalid source URL.`);
+    }
+    if (
+      evidence.attachmentData !== undefined &&
+      evidence.attachmentData !== "" &&
+      (typeof evidence.attachmentData !== "string" ||
+        evidence.attachmentData.length > 450_000 ||
+        !safeAttachmentDataUrl(evidence.attachmentData))
+    ) {
+      errors.push(`${recordPath} attachment must be a bounded base64 data URL with a safe MIME type.`);
+    }
+    if (
+      evidence.attachmentType &&
+      !SAFE_ATTACHMENT_MIME_TYPES.has(String(evidence.attachmentType).toLowerCase())
+    ) {
+      errors.push(`${recordPath}.attachmentType is not an allowed MIME type.`);
     }
     if (
       evidence.attachmentData &&
-      typeof evidence.attachmentData === "string" &&
-      evidence.attachmentData.length > 450_000
+      evidence.attachmentType &&
+      attachmentMimeType(evidence.attachmentData) !==
+        String(evidence.attachmentType).toLowerCase()
     ) {
-      errors.push(`Evidence ${evidence.id} attachment exceeds the local-storage limit.`);
+      errors.push(`${recordPath} attachment MIME types do not match.`);
     }
-    for (const criterionId of evidence.criterionIds || []) {
-      if (!criterionIds.has(criterionId)) {
-        errors.push(`Evidence ${evidence.id} references missing criterion ${criterionId}.`);
+    const criterionIds = validateRelationshipIdArray(
+      evidence.criterionIds,
+      `${recordPath}.criterionIds`,
+      errors,
+      context.enforceReciprocity
+    );
+    for (const criterionId of criterionIds) {
+      const criterion = criterionById.get(criterionId);
+      if (!criterion) {
+        errors.push(`${recordPath} references a missing criterion.`);
+        continue;
       }
+      if (criterion.pursuitId !== evidence.pursuitId) {
+        errors.push(`${recordPath} references a criterion from another pursuit.`);
+      }
+      if (
+        context.enforceReciprocity &&
+        Array.isArray(criterion.evidenceIds) &&
+        isSafeRecordId(evidence.id) &&
+        !criterion.evidenceIds.includes(evidence.id)
+      ) {
+        errors.push(`${recordPath} has a nonreciprocal criterion link.`);
+      }
+    }
+  }
+
+  if (context.validateSnapshots && Array.isArray(candidate.snapshots)) {
+    const snapshotIds = new Set();
+    for (const [index, snapshot] of candidate.snapshots.entries()) {
+      const snapshotPath = `${path}.snapshots[${index}]`;
+      if (isRecordObject(snapshot) && isSafeRecordId(snapshot.id)) {
+        if (snapshotIds.has(snapshot.id) || seenIds.has(snapshot.id)) {
+          errors.push(`${snapshotPath}.id is duplicated.`);
+        }
+        snapshotIds.add(snapshot.id);
+      }
+      validateSnapshotInto(snapshot, errors, {
+        path: snapshotPath,
+        snapshotDepth: context.snapshotDepth,
+        maxSnapshotDepth: context.maxSnapshotDepth,
+        enforceReciprocity: context.enforceReciprocity
+      });
     }
   }
 
   return { valid: errors.length === 0, errors };
+}
+
+function validateSnapshotInto(snapshot, errors, context) {
+  const path = context.path;
+  if (!isRecordObject(snapshot)) {
+    errors.push(`${path} must be an object.`);
+    return;
+  }
+  if (!isSafeRecordId(snapshot.id)) {
+    errors.push(`${path}.id must be a safe record ID.`);
+  }
+  if (!isSafeRecordId(snapshot.active)) {
+    errors.push(`${path}.active must be a safe relationship ID.`);
+  }
+  if (!isRecordObject(snapshot.workspace)) {
+    errors.push(`${path}.workspace must be an object.`);
+    return;
+  }
+  const nestingLimitReached = context.snapshotDepth >= context.maxSnapshotDepth;
+  if (nestingLimitReached) {
+    if (
+      Array.isArray(snapshot.workspace.snapshots) &&
+      snapshot.workspace.snapshots.length
+    ) {
+      errors.push(`${path}.workspace exceeds the supported snapshot nesting depth.`);
+    }
+  }
+
+  const nestedCandidate = {};
+  for (const name of REQUIRED_COLLECTIONS) {
+    if (Object.prototype.hasOwnProperty.call(snapshot.workspace, name)) {
+      nestedCandidate[name] = snapshot.workspace[name];
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(snapshot.workspace, "schemaVersion")) {
+    nestedCandidate.schemaVersion = snapshot.workspace.schemaVersion;
+  }
+  nestedCandidate.active = snapshot.active;
+  const result = validateWorkspaceCandidate(nestedCandidate, {
+    path: `${path}.workspace`,
+    requireCurrentCollections: false,
+    requireSnapshotCollections: context.enforceReciprocity,
+    enforceReciprocity: context.enforceReciprocity,
+    validateSnapshots: !nestingLimitReached,
+    snapshotDepth: context.snapshotDepth + 1,
+    maxSnapshotDepth: context.maxSnapshotDepth
+  });
+  errors.push(...result.errors);
+}
+
+function validateRelationshipIdArray(value, path, errors, required = false) {
+  if (value === undefined) {
+    if (required) errors.push(`${path} must be an array of safe record IDs.`);
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    errors.push(`${path} must be an array of safe record IDs.`);
+    return [];
+  }
+  const ids = [];
+  const seen = new Set();
+  for (const id of value) {
+    if (!isSafeRecordId(id)) {
+      errors.push(`${path} contains an unsafe relationship ID.`);
+      continue;
+    }
+    if (seen.has(id)) {
+      errors.push(`${path} contains a duplicate relationship ID.`);
+      continue;
+    }
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+function isScoreInRange(value) {
+  const score = strictFiniteNumber(value);
+  return score !== null && score >= 1 && score <= 5;
+}
+
+function strictFiniteNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function isRecordObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeReportRevisions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isValidReportRevision).map(revision => ({
+    ...revision,
+    version: Number(revision.version),
+    reviewer: typeof revision.reviewer === "string" ? revision.reviewer : "",
+    approvalNote: typeof revision.approvalNote === "string" ? revision.approvalNote : ""
+  }));
+}
+
+function isValidReportRevision(value) {
+  const version = Number(value?.version);
+  return (
+    isRecordObject(value) &&
+    Number.isInteger(version) &&
+    version > 0 &&
+    nonEmpty(value.savedAt) &&
+    Number.isFinite(Date.parse(value.savedAt)) &&
+    REPORT_STATUSES.includes(value.status) &&
+    typeof value.output === "string" &&
+    (value.reviewer === undefined || typeof value.reviewer === "string") &&
+    (value.approvalNote === undefined || typeof value.approvalNote === "string")
+  );
+}
+
+function isValidReportVisualSnapshot(value, pursuitId) {
+  if (
+    !isRecordObject(value) ||
+    !hasExactKeys(value, ["schemaVersion", "snapshotVersion", "pursuitId", "metrics", "visuals"]) ||
+    value.schemaVersion !== REPORT_VISUAL_SCHEMA_VERSION ||
+    value.snapshotVersion !== REPORT_VISUAL_SNAPSHOT_VERSION ||
+    !isSafeRecordId(value.pursuitId) ||
+    value.pursuitId !== pursuitId ||
+    !isRecordObject(value.metrics) ||
+    !isRecordObject(value.visuals) ||
+    !isValidReportVisualMetrics(value.metrics) ||
+    !isValidReportVisuals(value.visuals) ||
+    !reportVisualMetricsMatch(value.metrics, value.visuals)
+  ) {
+    return false;
+  }
+  try {
+    const serialized = JSON.stringify(value);
+    return (
+      typeof serialized === "string" &&
+      utf8ByteLength(serialized) <= REPORT_VISUAL_SNAPSHOT_MAX_BYTES
+    );
+  } catch {
+    return false;
+  }
+}
+
+function reportVisualMetricsMatch(metrics, visuals) {
+  const ourEntities = visuals.rankedCpi.entities.filter(item => item.isUs);
+  if (
+    ourEntities.length === 1 &&
+    (metrics.ourCpi !== ourEntities[0].cpi ||
+      metrics.coverage !== ourEntities[0].coverage ||
+      metrics.confidence !== ourEntities[0].confidence)
+  ) {
+    return false;
+  }
+  const rivalCpis = visuals.rankedCpi.entities
+    .filter(item => !item.isUs && item.cpi !== null)
+    .map(item => item.cpi);
+  const strongestRivalCpi = rivalCpis.length ? Math.max(...rivalCpis) : null;
+  const scenario = visuals.scenarioRange.estimate?.value ?? null;
+  return metrics.strongestRivalCpi === strongestRivalCpi && metrics.scenario === scenario;
+}
+
+function isValidReportVisualMetrics(value) {
+  return (
+    hasExactKeys(value, [
+      "ourCpi",
+      "strongestRivalCpi",
+      "scenario",
+      "coverage",
+      "confidence"
+    ]) &&
+    Object.values(value).every(item => isNullableFiniteRange(item, 0, 100))
+  );
+}
+
+function isValidReportVisuals(value) {
+  return (
+    hasExactKeys(value, REPORT_VISUAL_KEYS) &&
+    isValidRankedCpiSpec(value.rankedCpi) &&
+    isValidScoreHeatmapSpec(value.scoreHeatmap) &&
+    isValidCriterionDeltaSpec(value.criterionDeltas) &&
+    isValidScenarioRangeSpec(value.scenarioRange) &&
+    isValidEvidenceGridSpec(value.evidenceGrid) &&
+    isValidEvidenceRelationshipsSpec(value.evidenceRelationships) &&
+    isValidActionSummarySpec(value.actionSummary)
+  );
+}
+
+function isValidRankedCpiSpec(spec) {
+  if (
+    !isValidVisualSpecBase(spec, "ranked-cpi", ["entities", "totalEntities"]) ||
+    !Array.isArray(spec.entities) ||
+    spec.entities.length > 14 ||
+    !isValidShownTotal(spec.totalEntities, spec.entities.length)
+  ) {
+    return false;
+  }
+  let ourTeamCount = 0;
+  for (const [index, item] of spec.entities.entries()) {
+    if (
+      !hasExactKeys(item, ["id", "name", "cpi", "coverage", "confidence", "isUs"]) ||
+      item.id !== `entity-${index}` ||
+      !isBoundedVisualText(item.name) ||
+      !isNullableFiniteRange(item.cpi, 0, 100) ||
+      !isNullableFiniteRange(item.coverage, 0, 100) ||
+      !isNullableFiniteRange(item.confidence, 0, 100) ||
+      typeof item.isUs !== "boolean"
+    ) {
+      return false;
+    }
+    if (item.isUs) ourTeamCount += 1;
+  }
+  return ourTeamCount === 1;
+}
+
+function isValidScoreHeatmapSpec(spec) {
+  if (
+    !isValidVisualSpecBase(spec, "score-heatmap", [
+      "columns",
+      "rows",
+      "totalColumns",
+      "totalRows"
+    ]) ||
+    !Array.isArray(spec.columns) ||
+    !Array.isArray(spec.rows) ||
+    spec.columns.length < 1 ||
+    spec.columns.length > 7 ||
+    spec.rows.length > 14 ||
+    !isValidShownTotal(spec.totalColumns, spec.columns.length) ||
+    !isValidShownTotal(spec.totalRows, spec.rows.length)
+  ) {
+    return false;
+  }
+  const columnIds = spec.columns.map((item, index) => {
+    if (
+      !hasExactKeys(item, ["id", "name"]) ||
+      item.id !== `entity-${index}` ||
+      !isBoundedVisualText(item.name)
+    ) {
+      return "";
+    }
+    return item.id;
+  });
+  if (columnIds.some(item => !item)) return false;
+  return spec.rows.every(
+    (item, index) =>
+      hasExactKeys(item, ["id", "name", "weight", "values"]) &&
+      item.id === `criterion-${index}` &&
+      isBoundedVisualText(item.name) &&
+      isNullableFiniteRange(item.weight, 0, 1_000) &&
+      isRecordObject(item.values) &&
+      hasExactKeys(item.values, columnIds) &&
+      Object.values(item.values).every(value => isNullableFiniteRange(value, 1, 5))
+  );
+}
+
+function isValidCriterionDeltaSpec(spec) {
+  return (
+    isValidVisualSpecBase(spec, "criterion-deltas", [
+      "competitorName",
+      "rows",
+      "totalRows"
+    ]) &&
+    isBoundedVisualText(spec.competitorName) &&
+    Array.isArray(spec.rows) &&
+    spec.rows.length <= 14 &&
+    isValidShownTotal(spec.totalRows, spec.rows.length) &&
+    spec.rows.every(
+      (item, index) =>
+        hasExactKeys(item, [
+          "id",
+          "name",
+          "weight",
+          "ourEffective",
+          "rivalEffective",
+          "delta"
+        ]) &&
+        item.id === `criterion-${index}` &&
+        isBoundedVisualText(item.name) &&
+        isNullableFiniteRange(item.weight, 0, 1_000) &&
+        isNullableFiniteRange(item.ourEffective, 1, 5) &&
+        isNullableFiniteRange(item.rivalEffective, 1, 5) &&
+        isNullableFiniteRange(item.delta, -4, 4)
+    )
+  );
+}
+
+function isValidScenarioRangeSpec(spec) {
+  if (!isValidVisualSpecBase(spec, "scenario-range", ["estimate"])) return false;
+  if (spec.estimate === null) return true;
+  if (
+    !hasExactKeys(spec.estimate, ["value", "prior", "trust", "low", "high"]) ||
+    !isFiniteRange(spec.estimate.value, 0, 100) ||
+    !["prior", "trust", "low", "high"].every(key =>
+      isNullableFiniteRange(spec.estimate[key], 0, 100)
+    )
+  ) {
+    return false;
+  }
+  return (
+    (spec.estimate.low === null || spec.estimate.low <= spec.estimate.value) &&
+    (spec.estimate.high === null || spec.estimate.value <= spec.estimate.high)
+  );
+}
+
+function isValidEvidenceGridSpec(spec) {
+  return (
+    isValidVisualSpecBase(spec, "evidence-grid", ["rows", "totalRows"]) &&
+    Array.isArray(spec.rows) &&
+    spec.rows.length <= 14 &&
+    isValidShownTotal(spec.totalRows, spec.rows.length) &&
+    spec.rows.every(
+      (item, index) =>
+        hasExactKeys(item, [
+          "id",
+          "name",
+          "weight",
+          "score",
+          "classification",
+          "linked",
+          "support",
+          "challenge",
+          "conflict"
+        ]) &&
+        item.id === `criterion-${index}` &&
+        isBoundedVisualText(item.name) &&
+        isNullableFiniteRange(item.weight, 0, 1_000) &&
+        isNullableFiniteRange(item.score, 1, 5) &&
+        isBoundedVisualText(item.classification) &&
+        isNonnegativeSafeInteger(item.linked) &&
+        isNonnegativeSafeInteger(item.support) &&
+        isNonnegativeSafeInteger(item.challenge) &&
+        item.support <= item.linked &&
+        item.challenge <= item.linked &&
+        typeof item.conflict === "boolean" &&
+        item.conflict === (item.support > 0 && item.challenge > 0)
+    )
+  );
+}
+
+function isValidEvidenceRelationshipsSpec(spec) {
+  if (
+    !isValidVisualSpecBase(spec, "evidence-relationships", [
+      "evidence",
+      "criteria",
+      "links",
+      "totalEvidence",
+      "totalCriteria",
+      "totalLinks"
+    ]) ||
+    !Array.isArray(spec.evidence) ||
+    !Array.isArray(spec.criteria) ||
+    !Array.isArray(spec.links) ||
+    spec.evidence.length > 9 ||
+    spec.criteria.length > 9 ||
+    spec.links.length > 81 ||
+    !isValidShownTotal(spec.totalEvidence, spec.evidence.length) ||
+    !isValidShownTotal(spec.totalCriteria, spec.criteria.length) ||
+    !isValidShownTotal(spec.totalLinks, spec.links.length)
+  ) {
+    return false;
+  }
+  const evidenceIds = new Set();
+  for (const [index, item] of spec.evidence.entries()) {
+    if (
+      !hasExactKeys(item, ["id", "label", "classification", "stance"]) ||
+      item.id !== `evidence-${index}` ||
+      !isBoundedVisualText(item.label) ||
+      !isBoundedVisualText(item.classification) ||
+      !isBoundedVisualText(item.stance)
+    ) {
+      return false;
+    }
+    evidenceIds.add(item.id);
+  }
+  const criterionIds = new Set();
+  for (const [index, item] of spec.criteria.entries()) {
+    if (
+      !hasExactKeys(item, ["id", "label", "weight"]) ||
+      item.id !== `criterion-${index}` ||
+      !isBoundedVisualText(item.label) ||
+      !isNullableFiniteRange(item.weight, 0, 1_000)
+    ) {
+      return false;
+    }
+    criterionIds.add(item.id);
+  }
+  const linkedPairs = new Set();
+  for (const item of spec.links) {
+    const pair = `${item?.evidenceId}\u0000${item?.criterionId}`;
+    if (
+      !hasExactKeys(item, ["evidenceId", "criterionId", "stance"]) ||
+      !evidenceIds.has(item.evidenceId) ||
+      !criterionIds.has(item.criterionId) ||
+      !isBoundedVisualText(item.stance) ||
+      linkedPairs.has(pair)
+    ) {
+      return false;
+    }
+    linkedPairs.add(pair);
+  }
+  return true;
+}
+
+function isValidActionSummarySpec(spec) {
+  if (
+    !isValidVisualSpecBase(spec, "action-summary", ["actions", "counts", "totalActions"]) ||
+    !Array.isArray(spec.actions) ||
+    spec.actions.length !== 0 ||
+    !Array.isArray(spec.counts) ||
+    spec.counts.length > REPORT_ACTION_PRIORITIES.length * REPORT_ACTION_STATUSES.length ||
+    !isNonnegativeSafeInteger(spec.totalActions)
+  ) {
+    return false;
+  }
+  const buckets = new Set();
+  let total = 0;
+  for (const item of spec.counts) {
+    const key = `${item?.priority}\u0000${item?.status}`;
+    if (
+      !hasExactKeys(item, ["priority", "status", "count"]) ||
+      !REPORT_ACTION_PRIORITIES.includes(item.priority) ||
+      !REPORT_ACTION_STATUSES.includes(item.status) ||
+      !isNonnegativeSafeInteger(item.count) ||
+      item.count <= 0 ||
+      buckets.has(key)
+    ) {
+      return false;
+    }
+    buckets.add(key);
+    total += item.count;
+    if (!Number.isSafeInteger(total)) return false;
+  }
+  return spec.totalActions === total;
+}
+
+function isValidVisualSpecBase(spec, type, extraKeys) {
+  return (
+    isRecordObject(spec) &&
+    hasExactKeys(spec, ["type", "title", "description", ...extraKeys]) &&
+    spec.type === type &&
+    isBoundedVisualText(spec.title, REPORT_VISUAL_SPEC_TEXT_LIMIT) &&
+    isBoundedVisualText(spec.description, REPORT_VISUAL_SPEC_TEXT_LIMIT)
+  );
+}
+
+function hasExactKeys(value, expectedKeys) {
+  if (!isRecordObject(value)) return false;
+  const actualKeys = Object.keys(value);
+  return (
+    actualKeys.length === expectedKeys.length &&
+    expectedKeys.every(key => Object.prototype.hasOwnProperty.call(value, key))
+  );
+}
+
+function isBoundedVisualText(value, maximum = REPORT_VISUAL_TEXT_LIMIT) {
+  return typeof value === "string" && utf8ByteLength(value) <= maximum;
+}
+
+function isNullableFiniteRange(value, minimum, maximum) {
+  return value === null || isFiniteRange(value, minimum, maximum);
+}
+
+function isFiniteRange(value, minimum, maximum) {
+  return typeof value === "number" && Number.isFinite(value) && value >= minimum && value <= maximum;
+}
+
+function isNonnegativeSafeInteger(value) {
+  return (
+    Number.isSafeInteger(value) && value >= 0 && value <= REPORT_VISUAL_TOTAL_LIMIT
+  );
+}
+
+function isValidShownTotal(value, shownCount) {
+  return isNonnegativeSafeInteger(value) && value >= shownCount;
+}
+
+function utf8ByteLength(value) {
+  let bytes = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x7f) bytes += 1;
+    else if (code <= 0x7ff) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff) {
+      const next = value.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+    } else bytes += 3;
+  }
+  return bytes;
 }
 
 export function normalizeWorkspace(candidate, fallback) {
@@ -176,7 +957,7 @@ export function normalizeWorkspace(candidate, fallback) {
         );
   }
   workspace.schemaVersion = SCHEMA_VERSION;
-  workspace.appVersion = "2.1.0";
+  workspace.appVersion = "3.0.0";
   workspace.createdAt = source.createdAt || base.createdAt || new Date().toISOString();
   workspace.updatedAt = source.updatedAt || base.updatedAt || workspace.createdAt;
   workspace.active =
@@ -262,27 +1043,115 @@ export function normalizeWorkspace(candidate, fallback) {
     ...item,
     builtIn: Boolean(item.builtIn)
   }));
-  workspace.runs = workspace.runs.map(item => ({
-    title: "Black Hat Competitive Analysis",
-    createdAt: item.date ? `${item.date}T12:00:00` : new Date().toISOString(),
-    updatedAt: item.createdAt || new Date().toISOString(),
-    version: 1,
-    status: "Draft",
-    participants: "",
-    notes: "",
-    reviewer: "",
-    approvalNote: "",
-    sourceHash: "",
-    revisions: [],
-    sections: [],
-    ...item,
-    revisions: Array.isArray(item.revisions) ? item.revisions : [],
-    sections: Array.isArray(item.sections) ? item.sections : []
-  }));
+  workspace.runs = workspace.runs.map(item => {
+    const run = {
+      title: "Black Hat Competitive Analysis",
+      createdAt: item.date ? `${item.date}T12:00:00` : new Date().toISOString(),
+      updatedAt: item.createdAt || new Date().toISOString(),
+      version: 1,
+      status: "Draft",
+      participants: "",
+      notes: "",
+      reviewer: "",
+      approvalNote: "",
+      sourceHash: "",
+      revisions: [],
+      sections: [],
+      ...item,
+      revisions: normalizeReportRevisions(item.revisions),
+      sections: Array.isArray(item.sections) ? item.sections : []
+    };
+    if (!isValidReportVisualSnapshot(run.visualSnapshot, run.pursuitId)) {
+      delete run.visualSnapshot;
+    }
+    return run;
+  });
+  repairCriterionEvidenceLinks(workspace);
   workspace.snapshots = workspace.snapshots
-    .filter(item => item && typeof item === "object" && item.workspace)
+    .filter(item => isRecordObject(item) && isRecordObject(item.workspace))
+    .map(item => normalizeSnapshotForMigration(item))
     .slice(-8);
   return workspace;
+}
+
+function normalizeSnapshotForMigration(snapshot, depth = 0) {
+  const normalized = structuredClone(snapshot);
+  const nested = normalized.workspace;
+  for (const name of REQUIRED_COLLECTIONS.filter(name => name !== "snapshots")) {
+    if (!Array.isArray(nested[name])) nested[name] = [];
+  }
+  nested.criteria = nested.criteria.map(item => ({
+    ...item,
+    evidenceIds: asStringArray(item?.evidenceIds)
+  }));
+  nested.evidence = nested.evidence.map(item => ({
+    ...item,
+    criterionIds: asStringArray(item?.criterionIds)
+  }));
+  nested.competitors = nested.competitors.map(item => ({
+    ...item,
+    evidenceIds: asStringArray(item?.evidenceIds),
+    scores: isRecordObject(item?.scores) ? { ...item.scores } : {}
+  }));
+  nested.runs = nested.runs.map(item => {
+    const run = {
+      ...item,
+      revisions: normalizeReportRevisions(item?.revisions),
+      sections: Array.isArray(item?.sections) ? item.sections : []
+    };
+    if (!isValidReportVisualSnapshot(run.visualSnapshot, run.pursuitId)) {
+      delete run.visualSnapshot;
+    }
+    return run;
+  });
+  repairCriterionEvidenceLinks(nested);
+  if (Array.isArray(nested.snapshots) && depth < SNAPSHOT_MAX_DEPTH) {
+    nested.snapshots = nested.snapshots
+      .filter(item => isRecordObject(item) && isRecordObject(item.workspace))
+      .map(item => normalizeSnapshotForMigration(item, depth + 1));
+  } else {
+    nested.snapshots = [];
+  }
+  return normalized;
+}
+
+function repairCriterionEvidenceLinks(workspace) {
+  const criteria = Array.isArray(workspace.criteria) ? workspace.criteria : [];
+  const evidence = Array.isArray(workspace.evidence) ? workspace.evidence : [];
+  const criterionById = new Map(
+    criteria
+      .filter(item => isRecordObject(item) && isSafeRecordId(item.id))
+      .map(item => [item.id, item])
+  );
+  const evidenceById = new Map(
+    evidence
+      .filter(item => isRecordObject(item) && isSafeRecordId(item.id))
+      .map(item => [item.id, item])
+  );
+  const links = new Set();
+  for (const criterion of criterionById.values()) {
+    for (const evidenceId of uniqueStrings(criterion.evidenceIds)) {
+      const linkedEvidence = evidenceById.get(evidenceId);
+      if (linkedEvidence?.pursuitId === criterion.pursuitId) {
+        links.add(`${criterion.id}\u0000${evidenceId}`);
+      }
+    }
+  }
+  for (const item of evidenceById.values()) {
+    for (const criterionId of uniqueStrings(item.criterionIds)) {
+      const criterion = criterionById.get(criterionId);
+      if (criterion?.pursuitId === item.pursuitId) {
+        links.add(`${criterionId}\u0000${item.id}`);
+      }
+    }
+  }
+  for (const criterion of criteria) criterion.evidenceIds = [];
+  for (const item of evidence) item.criterionIds = [];
+  for (const link of links) {
+    const [criterionId, evidenceId] = link.split("\u0000");
+    criterionById.get(criterionId)?.evidenceIds.push(evidenceId);
+    evidenceById.get(evidenceId)?.criterionIds.push(criterionId);
+  }
 }
 
 export function calculateCompetitiveScores(workspace, pursuitId) {
@@ -320,13 +1189,19 @@ export function calculateCompetitiveScores(workspace, pursuitId) {
     )
   );
 
-  const strongestCompetitor = rivals.slice().sort((a, b) => b.cpi - a.cpi)[0] || null;
-  const margin = strongestCompetitor ? round(us.cpi - strongestCompetitor.cpi, 1) : null;
+  const scoredRivals = rivals
+    .filter(item => item.cpi !== null)
+    .sort((a, b) => b.cpi - a.cpi);
+  const strongestCompetitor = us.cpi !== null ? scoredRivals[0] || null : null;
+  const margin =
+    us.cpi !== null && strongestCompetitor && strongestCompetitor.cpi !== null
+      ? round(us.cpi - strongestCompetitor.cpi, 1)
+      : null;
   const gateWarnings = criteria
-    .filter(item => item.isGate && (Number(item.ourScore) || 0) < 3)
+    .filter(item => item.isGate && numericScore(item.ourScore) !== null && Number(item.ourScore) < 3)
     .map(item => item.name);
   const scenarioEstimate =
-    strongestCompetitor && totalWeight
+    margin !== null && strongestCompetitor && totalWeight
       ? calculateScenarioEstimate(
           workspace.pursuits.find(item => item.id === pursuitId)?.priorEstimate,
           margin,
@@ -373,6 +1248,9 @@ export function buildCompetitiveReport(workspace, pursuitId, session = {}) {
   const contested = [];
   const intelligenceGaps = [];
   const conflicts = [];
+  const reportStatus = REPORT_STATUSES.includes(session.reportStatus)
+    ? session.reportStatus
+    : "Draft";
 
   for (const criterion of criteria.slice().sort((a, b) => positive(b.weight) - positive(a.weight))) {
     const ourScore = numericScore(criterion.ourScore);
@@ -409,7 +1287,7 @@ export function buildCompetitiveReport(workspace, pursuitId, session = {}) {
     `# Black Hat Competitive Analysis: ${pursuit.name}`,
     "",
     `**Report date:** ${date}`,
-    `**Status:** Draft`,
+    `**Status:** ${reportStatus}`,
     `**Playbook:** ${session.playbook || pursuit.playbook || "Competitive assessment"}`,
     `**Facilitator:** ${session.facilitator || "Public workspace facilitator"}`,
     `**Participants:** ${session.participants || "Not recorded"}`,
@@ -417,18 +1295,20 @@ export function buildCompetitiveReport(workspace, pursuitId, session = {}) {
     `**Competitive posture:** ${relativePosture}`,
     scores.scenarioEstimate
       ? `**Scenario win estimate:** ${scores.scenarioEstimate.value}% (${scores.scenarioEstimate.low}-${scores.scenarioEstimate.high}% uncertainty range; planning estimate, not a forecast)`
-      : `**Scenario win estimate:** Not available until criteria and at least one competitor are scored`,
+      : `**Scenario win estimate:** Not available until our team and at least one competitor have scored criteria`,
     "",
     "> This is a deterministic analysis of user-entered judgments and evidence. It does not perform web research, verify claims, or call an AI model.",
     "",
     "## 1. Executive summary",
-    scores.totalWeight
+    scores.us.cpi !== null
       ? `Our Competitive Position Index is **${scores.us.cpi}/100** with **${scores.us.coverage}% evidence coverage** and **${scores.us.confidence}% confidence**. ${
           scores.strongestCompetitor
             ? `${scores.strongestCompetitor.name} is the strongest scored competitor at **${scores.strongestCompetitor.cpi}/100**, producing a margin of **${signed(scores.margin)} points**.`
             : "No competitor has been scored, so a relative ranking is not available."
         }`
-      : "No weighted customer criteria have been entered; scored analysis is blocked until criteria are defined.",
+      : scores.totalWeight
+        ? "Our Competitive Position Index is not available because no customer criterion has an entered score."
+        : "No weighted customer criteria have been entered; scored analysis is blocked until criteria are defined.",
     scores.gateWarnings.length
       ? `Critical gate warning: ${scores.gateWarnings.join(", ")}.`
       : "No scored critical-gate failures are currently recorded.",
@@ -476,7 +1356,11 @@ export function buildCompetitiveReport(workspace, pursuitId, session = {}) {
       return [
         `### ${competitor.name}`,
         `- Role: ${competitor.position}${competitor.incumbent ? "; incumbent" : ""}; bid likelihood: ${competitor.bidLikelihood}`,
-        `- CPI: ${score?.cpi ?? "N/A"}/100; coverage: ${score?.coverage ?? 0}%; confidence: ${score?.confidence ?? 0}%`,
+        `- CPI: ${
+          score?.cpi === null || score?.cpi === undefined
+            ? "Unknown (no scored criteria)"
+            : `${score.cpi}/100`
+        }; coverage: ${score?.coverage ?? 0}%; confidence: ${score?.confidence ?? 0}%`,
         `- Likely strategy (${competitor.classification}): ${competitor.strategy || `May emphasize ${top.map(item => item.name).join(" and ") || "its recorded strengths"}.`} ${citation(competitor.evidenceIds)}`,
         `- Strengths: ${competitor.strengths || "Not recorded"}`,
         `- Weaknesses: ${competitor.weaknesses || "Not recorded"}`,
@@ -605,7 +1489,7 @@ export function buildCompetitiveReport(workspace, pursuitId, session = {}) {
     updatedAt: new Date().toISOString(),
     date,
     version: 1,
-    status: "Draft",
+    status: reportStatus,
     playbook: session.playbook || pursuit.playbook || "Competitive assessment",
     question: session.question || "",
     facilitator: session.facilitator || "",
@@ -660,15 +1544,47 @@ export function splitMarkdownSections(markdown) {
 export function markdownToWordHtml(markdown, title) {
   const html = [];
   let inList = false;
+  const lines = String(markdown).split("\n");
   const closeList = () => {
     if (inList) {
       html.push("</ul>");
       inList = false;
     }
   };
-  for (const raw of String(markdown).split("\n")) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const raw = lines[index];
     const line = escapeHtml(raw);
-    if (raw.startsWith("### ")) {
+    const headerCells = markdownTableCells(raw);
+    const dividerCells = markdownTableCells(lines[index + 1]);
+    if (
+      headerCells &&
+      dividerCells &&
+      headerCells.length === dividerCells.length &&
+      dividerCells.every(cell => /^:?-{3,}:?$/.test(cell))
+    ) {
+      closeList();
+      const bodyRows = [];
+      index += 2;
+      while (index < lines.length) {
+        const cells = markdownTableCells(lines[index]);
+        if (!cells || cells.length !== headerCells.length) break;
+        bodyRows.push(cells);
+        index += 1;
+      }
+      index -= 1;
+      html.push(
+        `<table><thead><tr>${headerCells
+          .map(cell => `<th scope="col">${inlineMarkdown(escapeHtml(cell))}</th>`)
+          .join("")}</tr></thead><tbody>${bodyRows
+          .map(
+            cells =>
+              `<tr>${cells
+                .map(cell => `<td>${inlineMarkdown(escapeHtml(cell))}</td>`)
+                .join("")}</tr>`
+          )
+          .join("")}</tbody></table>`
+      );
+    } else if (raw.startsWith("### ")) {
       closeList();
       html.push(`<h3>${inlineMarkdown(line.slice(4))}</h3>`);
     } else if (raw.startsWith("## ")) {
@@ -683,9 +1599,6 @@ export function markdownToWordHtml(markdown, title) {
         inList = true;
       }
       html.push(`<li>${inlineMarkdown(line.slice(2))}</li>`);
-    } else if (/^\|/.test(raw)) {
-      closeList();
-      html.push(`<p class="matrix">${inlineMarkdown(line)}</p>`);
     } else if (raw.startsWith("> ")) {
       closeList();
       html.push(`<blockquote>${inlineMarkdown(line.slice(2))}</blockquote>`);
@@ -699,9 +1612,18 @@ export function markdownToWordHtml(markdown, title) {
   closeList();
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(
     title
-  )}</title><style>body{font-family:Arial,sans-serif;color:#171327;line-height:1.45;margin:48px}h1{color:#442c81}h2{border-bottom:1px solid #ccc;padding-bottom:4px}blockquote{background:#eef8fc;border-left:4px solid #29aae1;padding:10px}.matrix{font-family:Consolas,monospace;font-size:9pt}</style></head><body>${html.join(
+  )}</title><style>body{font-family:Arial,sans-serif;color:#171327;line-height:1.45;margin:48px}h1{color:#442c81}h2{border-bottom:1px solid #ccc;padding-bottom:4px}blockquote{background:#eef8fc;border-left:4px solid #29aae1;padding:10px}table{border-collapse:collapse;width:100%;margin:16px 0;font-size:9pt}th,td{border:1px solid #bbb;padding:7px;text-align:left;vertical-align:top}th{background:#eef8fc}</style></head><body>${html.join(
     ""
   )}</body></html>`;
+}
+
+function markdownTableCells(line) {
+  const trimmed = String(line ?? "").trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
+  return trimmed
+    .slice(1, -1)
+    .split("|")
+    .map(cell => cell.trim());
 }
 
 function scoreSubject(
@@ -747,11 +1669,12 @@ function scoreSubject(
   }
 
   const denominator = totalWeight || includedWeight;
-  const weightedMean = includedWeight ? weightedEffective / includedWeight : 3;
+  const weightedMean = includedWeight ? weightedEffective / includedWeight : null;
   return {
     id,
     name,
-    cpi: round(25 * (weightedMean - 1), 1),
+    cpi: weightedMean === null ? null : round(25 * (weightedMean - 1), 1),
+    includedWeight,
     coverage: denominator ? round((coveredWeight / denominator) * 100, 0) : 0,
     confidence: denominator ? round((confidenceWeight / denominator) * 100, 0) : 0,
     details
@@ -771,8 +1694,8 @@ function scoreMatrix(criteria, scores, competitors, citation) {
   const totals = [
     "CPI",
     "100 normalized",
-    String(scores.us.cpi),
-    ...scores.competitors.map(item => String(item.cpi))
+    scores.us.cpi === null ? "Unknown" : String(scores.us.cpi),
+    ...scores.competitors.map(item => (item.cpi === null ? "Unknown" : String(item.cpi)))
   ];
   return [headers, divider, ...rows, totals].map(row => `| ${row.join(" | ")} |`).join("\n");
 }

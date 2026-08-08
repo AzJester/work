@@ -46,11 +46,18 @@ process.
 
 ## Input and rendering safety
 
+- The entry page applies a restrictive content security policy: same-origin scripts
+  and styles, no network connections, no frames or objects, no form submissions,
+  and only local data/blob images needed for attachments and exports.
 - User-entered content is treated as data and escaped before HTML rendering.
 - Imported files are parsed as JSON; imported strings are not executed as code.
 - Import uses validate-before-replace behavior and rejects malformed JSON,
   unsupported workspace shapes, invalid collection types, and broken required
   references.
+- Workspace identifiers are bounded to a conservative character set. Duplicate IDs,
+  cross-pursuit links, asymmetric evidence/criterion links, nonnumeric scores, and
+  unsupported attachment data URLs are rejected. Supported legacy workspaces are
+  repaired only through an explicit schema migration before final validation.
 - A rejected import leaves the active workspace unchanged.
 - The tabular wizard accepts only `.xlsx`, `.xls`, and `.csv` files and rejects files
   larger than 5 MB.
@@ -87,9 +94,15 @@ untrusted imported file authoritative or its factual contents safe to use.
 
 JSON workspace exports may contain all entered and spreadsheet-imported pursuit data,
 including participants, notes, sources, score rationales, actions, reports, and
-version history. Markdown, Word-compatible `.doc`, and print-to-PDF reports may
-contain selected portions of the same information. Store and share these files
-according to the sensitivity of their contents.
+version history. Markdown, standalone visual HTML, Word-compatible `.doc`, and
+print-to-PDF reports may contain selected portions of the same information. Store
+and share these files according to the sensitivity of their contents.
+
+Charts and diagrams are rendered locally as native SVG. Word export converts the SVG
+to PNG using an in-browser canvas, and PDF uses the browser print path. No chart
+image, report content, or workspace value is sent to an external rendering service.
+Every exported visual includes its underlying table to preserve exact values and
+accessibility.
 
 Snapshots are local convenience copies. They are stored under the same browser
 origin as the working workspace and are removed if site data is cleared. Export a

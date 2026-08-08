@@ -8,8 +8,10 @@ async function gotoFreshBlackHatAgent(page) {
   expect(response?.status()).toBe(200);
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page).toHaveTitle(/^Black Hat Agent$/i);
-  await expect(page.getByText("BLACK HAT AGENT", { exact: true }).first()).toBeVisible();
+  await expect(page).toHaveTitle(/Black Hat Agent$/i);
+  await expect(
+    page.locator(".sidebar .brand").getByText("Black Hat Agent", { exact: true })
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => Boolean(window.XLSX && typeof window.XLSX.read === "function"))
@@ -18,7 +20,8 @@ async function gotoFreshBlackHatAgent(page) {
 }
 
 async function openImportWizard(page) {
-  await page.getByRole("button", { name: "Import Excel / CSV" }).first().click();
+  await page.getByRole("button", { name: "Workspace", exact: true }).click();
+  await page.getByRole("button", { name: "Import Excel or CSV", exact: true }).click();
   const wizard = page.locator("#localImportWizard");
   await expect(wizard).toBeVisible();
   return wizard;
@@ -135,7 +138,7 @@ test("CSV criteria import previews safely, applies atomically, persists, and cre
   ).toBe(true);
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "Evaluation Criteria" }).click();
+  await page.getByRole("link", { name: "Evaluation Criteria" }).click();
   await expect(page.getByText(hostileName, { exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.__blackHatImportXss)).toBeUndefined();
   expect(pageErrors).toEqual([]);
