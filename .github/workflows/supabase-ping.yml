@@ -27,26 +27,26 @@ jobs:
         run: |
           URL="https://hqqwlkmggwgaoiyzgrhy.supabase.co"
           KEY="sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u"
-          # a real table query so the request reaches Postgres (PostgREST -> DB)
+          # Call the public read-only share RPC with a token that cannot match.
+          # The function still performs a database lookup, but returns null and
+          # exposes no user data. Opaque sb_publishable keys belong only in the
+          # apikey header; sending one as a Bearer token is rejected as invalid JWT.
           code=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
+            -X POST \
             -o /dev/null -w "%{http_code}" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
-            "$URL/rest/v1/reports?select=id&limit=1" || echo "000")
-          echo "reports query -> HTTP $code"
-          # fallback: the REST root also introspects the schema from the DB
-          root=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
-            -o /dev/null -w "%{http_code}" \
-            -H "apikey: $KEY" "$URL/rest/v1/" || echo "000")
-          echo "rest root -> HTTP $root"
+            -H "apikey: $KEY" \
+            -H "Content-Type: application/json" \
+            --data '{"p_token":"00000000-0000-0000-0000-000000000000"}' \
+            "$URL/rest/v1/rpc/secure_shared_dashboard" || echo "000")
+          echo "secure shared-dashboard lookup -> HTTP $code"
 
           # A network response alone is not enough: paused projects (HTTP 540),
           # bad keys, and missing routes must fail the workflow instead of
-          # producing a false keep-alive success. Either successful PostgREST
-          # request is sufficient because both paths reach the database.
-          case "$code:$root" in
-            2??:*|*:2??) ;;
+          # producing a false keep-alive success.
+          case "$code" in
+            2??) ;;
             *)
-              echo "::error::Supabase did not return a successful database response (query=$code, root=$root)"
+              echo "::error::Supabase did not return a successful database response (query=$code)"
               exit 1
               ;;
           esac
