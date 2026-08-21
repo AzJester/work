@@ -11,6 +11,9 @@ on:
     - cron: "23 6 * * *"   # daily at 06:23 UTC
   workflow_dispatch: {}     # allow manual runs from the Actions tab
 
+permissions:
+  contents: read
+
 concurrency:
   group: supabase-ping
   cancel-in-progress: false
@@ -18,6 +21,7 @@ concurrency:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - name: Ping Supabase REST API
         run: |
@@ -34,8 +38,17 @@ jobs:
             -o /dev/null -w "%{http_code}" \
             -H "apikey: $KEY" "$URL/rest/v1/" || echo "000")
           echo "rest root -> HTTP $root"
-          if [ "$code" = "000" ] && [ "$root" = "000" ]; then
-            echo "::error::No response from Supabase (both requests failed)"
-            exit 1
-          fi
+
+          # A network response alone is not enough: paused projects (HTTP 540),
+          # bad keys, and missing routes must fail the workflow instead of
+          # producing a false keep-alive success. Either successful PostgREST
+          # request is sufficient because both paths reach the database.
+          case "$code:$root" in
+            2??:*|*:2??) ;;
+            *)
+              echo "::error::Supabase did not return a successful database response (query=$code, root=$root)"
+              exit 1
+              ;;
+          esac
+
           echo "Supabase responded — activity registered, project stays warm."

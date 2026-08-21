@@ -64,15 +64,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          # Backend detection compares the complete push range, which may span
+          # more than the final commit.
+          fetch-depth: 0
 
       - name: Detect tracker backend changes
         id: backend_changes
         shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || ! git rev-parse HEAD^ >/dev/null 2>&1; then
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "$ZERO_SHA" ]; then
             echo "required=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD^ HEAD | grep -Eq '^(tracker\.html|dashboard\.html|sw\.js|manifest\.webmanifest|assets/vendor/|supabase/|\.github/workflows/pages\.yml$)'; then
+          elif ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" | grep -Eq '^(tracker\.html|dashboard\.html|sw\.js|manifest\.webmanifest|assets/vendor/|supabase/|\.github/workflows/pages\.yml$)'; then
             echo "required=true" >> "$GITHUB_OUTPUT"
           else
             echo "required=false" >> "$GITHUB_OUTPUT"

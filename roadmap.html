@@ -370,6 +370,23 @@
   .share-entry { display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px solid var(--line); border-radius:8px; }
   .share-entry .grow { flex:1 1 auto; min-width:0; }
   .share-entry .meta { color:var(--mut); font-size:11px; }
+  .access-context { display:inline-flex; align-items:center; gap:7px; min-width:0; font-size:11.5px; color:var(--mut); }
+  .access-context .access-owner-email { max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .access-badge { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; padding:2px 8px;
+    border:1px solid var(--line-2); border-radius:var(--pill); font-family:var(--mono); font-size:10px; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); background:var(--bg); }
+  .access-badge[data-access-role="owner"] { color:var(--ok); border-color:var(--ok); background:var(--ok-bg); }
+  .access-badge[data-access-role="editor"] { color:var(--info); border-color:var(--info); background:var(--info-bg); }
+  .access-badge[data-access-role="viewer"] { color:var(--mut); background:var(--bg); }
+  .access-invite { display:grid; grid-template-columns:minmax(180px,1fr) 112px auto; align-items:end; gap:8px; margin-top:14px; }
+  .access-invite .row { margin:0; }
+  .access-list { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+  .access-entry { display:grid; grid-template-columns:minmax(0,1fr) 112px auto; align-items:center; gap:8px; padding:10px 11px;
+    border:1px solid var(--line); border-radius:9px; }
+  .access-entry .nm { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:13.5px; }
+  .access-entry .meta { color:var(--mut); font-size:11px; margin-top:2px; }
+  .access-entry select { width:100%; }
+  body.access-viewer #editorCard { display:none !important; }
 
   /* ---------- read-only mode ---------- */
   body.readonly .app-only { display:none !important; }
@@ -499,6 +516,8 @@
     .rm-acts { opacity:1; }
     .pub-url { flex-wrap:wrap; }
     .pub-url .pub-input { flex-basis:100%; order:2; }
+    .access-context { flex:1 1 100%; justify-content:center; order:19; }
+    .access-invite, .access-entry { grid-template-columns:1fr; align-items:stretch; }
   }
 
   @media (pointer:coarse) {
@@ -631,13 +650,15 @@
       <div class="menu-list" role="menu" hidden>
         <button class="menu-item" data-act="save" role="menuitem">Save to cloud</button>
         <button class="menu-item" data-act="open" role="menuitem">Open from cloud…</button>
-        <button class="menu-item" data-act="share" role="menuitem">Share link…</button>
+        <button class="menu-item" data-act="share" role="menuitem">Share read-only link…</button>
         <button class="menu-item" id="publicItem" data-act="public" role="menuitem">🌐 Make public</button>
+        <button class="menu-item" data-act="access" role="menuitem">Manage access…</button>
       </div>
     </div>
     <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
     <span id="saveStatus" class="save-status" data-state="local" role="status" aria-live="polite">Saved locally</span>
+    <span id="currentAccess" class="access-context" hidden></span>
     <input id="fileIn" type="file" accept="application/json,.json" hidden />
     <input id="jiraIn" type="file" accept=".csv,text/csv" hidden />
   </nav>
@@ -1080,7 +1101,7 @@ function persist(){
   }
 }
 function save(){
-  if (readOnly || !doc) return;
+  if (currentRoadmapReadOnly()) return;
   doc.updatedAt = new Date().toISOString();
   if (session){ syncMeta(doc.id).pending = true; setSaveStatus("pending", "Saving locally · cloud pending"); }
   clearTimeout(saveTimer);
@@ -1089,8 +1110,21 @@ function save(){
 function saveNow(){ clearTimeout(saveTimer); return persist(); }
 function syncMeta(id){
   store.sync = store.sync && typeof store.sync === "object" ? store.sync : {};
-  return store.sync[id] || (store.sync[id] = { revision:null, lastCloudFingerprint:"", pending:false });
+  const meta=store.sync[id] || (store.sync[id] = { revision:null, lastCloudFingerprint:"", pending:false, accessRole:"owner", ownerEmail:"" });
+  meta.accessRole=normAccessRole(meta.accessRole);
+  if (typeof meta.ownerEmail!=="string") meta.ownerEmail="";
+  if (meta.accessRole==="owner" && !meta.ownerEmail && session) meta.ownerEmail=sessionEmail();
+  return meta;
 }
+function normAccessRole(value){ return value==="editor" || value==="viewer" ? value : "owner"; }
+function accessRoleFor(id){ return normAccessRole(syncMeta(id).accessRole); }
+function isRoadmapOwner(id){ return accessRoleFor(id)==="owner"; }
+function canEditRoadmap(id){ const role=accessRoleFor(id); return role==="owner" || role==="editor"; }
+function currentRoadmapReadOnly(){ return readOnly || !doc || !canEditRoadmap(doc.id); }
+function accessRoleLabel(role){ role=normAccessRole(role); return role.charAt(0).toUpperCase()+role.slice(1); }
+function accessBadgeHtml(role){ role=normAccessRole(role); return '<span class="access-badge" data-access-role="'+role+'">'+accessRoleLabel(role)+'</span>'; }
+function accessOwnerHtml(role,email){ return role!=="owner" && email ? '<span class="access-owner-email">Shared by '+esc(email)+'</span>' : ""; }
+function markOwnedLocalRoadmap(id,cloudPending){ const meta=syncMeta(id); meta.accessRole="owner"; meta.ownerEmail=sessionEmail(); if (cloudPending) meta.pending=true; return meta; }
 function stableJson(value){
   if (Array.isArray(value)) return "["+value.map(stableJson).join(",")+"]";
   if (value && typeof value==="object") return "{"+Object.keys(value).sort().map(k=>JSON.stringify(k)+":"+stableJson(value[k])).join(",")+"}";
@@ -1198,6 +1232,7 @@ const TEMPLATES = {
   ]}),
 };
 function applyTemplate(type){
+  if (currentRoadmapReadOnly()){ topNote("info","This shared roadmap is view-only."); return; }
   const fn = TEMPLATES[type];
   if (!fn) return;
   const hasContent = doc.lanes.some(l => l.items.length || (l.name||"").trim() !== "Phase 1") || doc.lanes.length > 1
@@ -1729,17 +1764,20 @@ function renderMiniGantt(d){
 }
 function overviewCard(d){
   const s = roadmapStats(d);
+  const meta=syncMeta(d.id), role=accessRoleFor(d.id), owner=isRoadmapOwner(d.id);
   const accent = (d.lanes[0] && d.lanes[0].color) || "var(--accent)";
   const segs = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-seg" style="flex:'+s.counts[st.v]+';background:'+STATUS_COLOR[st.v]+'"></span>').join("");
   const chips = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-chip"><span class="ov-dot" style="background:'+STATUS_COLOR[st.v]+'"></span>'+s.counts[st.v]+' '+esc(st.label)+'</span>').join("");
-  return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" style="--rm-accent:'+esc(accent)+'">'
-    + '<button class="rm-open" type="button" data-open="'+esc(d.id)+'" aria-label="Open '+esc(d.title||"Untitled")+'"></button>'
-    + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'
-    + '<div class="rm-acts"><button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'" aria-label="'+(d.archived?'Unarchive ':'Archive ')+esc(d.title||"Untitled")+'">'+(d.archived?'↩':'🗄')+'</button>'
+  const actions=readOnly ? "" : '<div class="rm-acts">'
+    + (owner?'<button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'" aria-label="'+(d.archived?'Unarchive ':'Archive ')+esc(d.title||"Untitled")+'">'+(d.archived?'↩':'🗄')+'</button>':'')
     + '<button class="icon-btn" type="button" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate" aria-label="Duplicate '+esc(d.title||"Untitled")+'">⧉</button>'
-    + '<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">✕</button></div></div>'
+    + (owner?'<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">✕</button>':'')+'</div>';
+  return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" data-access-role="'+role+'" style="--rm-accent:'+esc(accent)+'">'
+    + '<button class="rm-open" type="button" data-open="'+esc(d.id)+'" aria-label="Open '+esc(d.title||"Untitled")+'"></button>'
+    + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'+actions+'</div>'
+    + (!readOnly?'<div class="access-context">'+accessBadgeHtml(role)+accessOwnerHtml(role,meta.ownerEmail)+'</div>':"")
     + (d.subtitle ? '<div class="rm-sub">'+esc(d.subtitle)+'</div>' : "")
     + '<div class="rm-mini">'+renderMiniGantt(d)+'</div>'
     + '<div class="ov-bar">'+(segs || '<span class="ov-seg" style="flex:1;background:var(--line-2)"></span>')+'</div>'
@@ -1774,9 +1812,9 @@ function onOverviewClick(e){
   const act = e.target.closest("[data-act]");
   if (act && !readOnly){ e.stopPropagation(); const id = act.dataset.id;
     if (act.dataset.act === "dup") duplicateRoadmapById(id, false);
-    else if (act.dataset.act === "arch") toggleArchiveById(id);
-    else if (act.dataset.act === "del") deleteRoadmapById(id);
-    else if (act.dataset.act === "restore") restoreRoadmapById(id);
+    else if (act.dataset.act === "arch" && isRoadmapOwner(id)) toggleArchiveById(id);
+    else if (act.dataset.act === "del" && isRoadmapOwner(id)) deleteRoadmapById(id);
+    else if (act.dataset.act === "restore" && isRoadmapOwner(id)) restoreRoadmapById(id);
     return; }
   if (act && readOnly){ e.stopPropagation(); return; }   // no editing for public viewers
   if (e.target.closest("#ovNew")){ if (readOnly) return; setMode("editor"); newRoadmap(); return; }
@@ -1849,6 +1887,7 @@ function renderEditor(){
       + '<div class="add-row"><button class="btn add sm" type="button" data-role="addBar">＋ Phase</button><button class="btn add sm" type="button" data-role="addMile">＋ Milestone</button></div>';
     host.appendChild(laneEl);
   });
+  if (currentRoadmapReadOnly()) host.querySelectorAll("input,select,button").forEach(el=>{ el.disabled=true; if ("readOnly" in el) el.readOnly=true; });
 }
 
 /* ---------- editor event delegation ---------- */
@@ -1863,6 +1902,7 @@ function laneNextStart(lane){
 }
 
 function onEditorInput(e){
+  if (currentRoadmapReadOnly()) return;
   const role = e.target.dataset.role; if (!role) return;
   const laneEl = e.target.closest("[data-lane]"); if (!laneEl) return;
   const lane = findLane(laneEl.dataset.lane); if (!lane) return;
@@ -1885,6 +1925,7 @@ function validateItemDates(it, itemEl){
   return valid;
 }
 function onEditorChange(e){
+  if (currentRoadmapReadOnly()) return;
   const role = e.target.dataset.role; if (!role) return;
   const laneEl = e.target.closest("[data-lane]"); if (!laneEl) return;
   const lane = findLane(laneEl.dataset.lane); if (!lane) return;
@@ -1907,6 +1948,7 @@ function onEditorChange(e){
   }
 }
 function onEditorClick(e){
+  if (currentRoadmapReadOnly()) return;
   const btn = e.target.closest("button[data-role]"); if (!btn) return;
   const role = btn.dataset.role;
   const laneEl = btn.closest("[data-lane]"); if (!laneEl) return;
@@ -1939,7 +1981,7 @@ function fullRender(){
     start:typeof active.selectionStart==="number"?active.selectionStart:null,
     end:typeof active.selectionEnd==="number"?active.selectionEnd:null
   }:null;
-  renderGantt(); if (!readOnly) renderEditor();
+  renderGantt(); if (!readOnly) renderEditor(); else $("editor").innerHTML="";
   if (focusState && focusState.role){
     const laneSel=focusState.lane?'[data-lane="'+CSS.escape(focusState.lane)+'"] ':'';
     const itemSel=focusState.item?'[data-item="'+CSS.escape(focusState.item)+'"] ':'';
@@ -1957,7 +1999,7 @@ function renderCallouts(){
   const card = $("calloutsCard"); if (!card) return;
   const body = $("calloutsBody");
   const list = (doc && Array.isArray(doc.callouts)) ? doc.callouts : [];
-  const editable = !readOnly && !printing;   // render clean static prose while printing
+  const editable = !currentRoadmapReadOnly() && !printing;   // render clean static prose while printing
   const hasContent = list.some(c => (c.title || "").trim() || (c.body || "").trim());
   if (!editable && !hasContent){ card.hidden = true; body.innerHTML = ""; return; }
   card.hidden = false;
@@ -1979,27 +2021,49 @@ function renderCallouts(){
   }
 }
 function onCalloutInput(e){
+  if (currentRoadmapReadOnly()) return;
   const role = e.target.dataset.corole; if (role !== "title" && role !== "body") return;
   const el = e.target.closest("[data-co]"); if (!el) return;
   const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (!c) return;
   c[role] = e.target.value; save();
 }
 function onCalloutClick(e){
-  if (readOnly) return;
+  if (currentRoadmapReadOnly()) return;
   if (e.target.closest("#coAdd")){ doc.callouts = doc.callouts || []; doc.callouts.push({ id:uid("co"), title:"", body:"" }); save(); renderCallouts(); const inp = $("calloutsBody").querySelector(".callout:last-of-type .co-title"); if (inp) inp.focus(); return; }
   const listTog = e.target.closest("[data-corole='list']");
   if (listTog){ const el = listTog.closest("[data-co]"); if (!el) return; const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (c){ c.list = listTog.checked; save(); renderCallouts(); } return; }
   const del = e.target.closest("[data-corole='del']");
   if (del){ const el = del.closest("[data-co]"); if (!el) return; if (!checkpointUndo("Analysis card deleted — undo?")) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); showUndo("Analysis card deleted. Undo?"); }
 }
+function reflectAccessUi(){
+  const hasDoc=!!doc, role=hasDoc?accessRoleFor(doc.id):"owner", owner=hasDoc&&role==="owner";
+  const blocked=currentRoadmapReadOnly(), signedViewer=!!session&&!readOnly&&role==="viewer";
+  document.body.classList.toggle("access-viewer",signedViewer);
+  ["titleIn","subIn","premiseIn","rmNotes"].forEach(id=>{ const el=$(id); if (el) el.readOnly=blocked; });
+  { const card=$("editorCard"); if (card) card.hidden=signedViewer; }
+  { const t=$("tmplPicker"); if (t) t.disabled=blocked; }
+  { const a=$("archiveItem"); if (a) a.hidden=!owner; }
+  { const d=document.querySelector('.menu-item[data-act="del"]'); if (d) d.hidden=!owner; }
+  { const s=document.querySelector('.menu-item[data-act="save"]'); if (s) s.disabled=!hasDoc||!canEditRoadmap(doc.id); }
+  ["share","public","access"].forEach(act=>{ const el=document.querySelector('.menu-item[data-act="'+act+'"]'); if (el) el.hidden=!owner; });
+  { const c=$("currentAccess"); if (c){
+      c.hidden=!session||readOnly||!hasDoc;
+      c.innerHTML=c.hidden?"":accessBadgeHtml(role)+accessOwnerHtml(role,syncMeta(doc.id).ownerEmail)
+        +(role==="viewer"?'<span>Read-only</span>':role==="editor"?'<span>Can edit</span>':"");
+    } }
+  { const banner=$("draftBanner"); if (banner) banner.classList.toggle("show",!blocked&&!!draftSnapshot&&draftSnapshot.draftId===doc.id); }
+  { const undo=$("undoBar"); if (signedViewer&&undo) undo.hidden=true; const btn=$("undoBtn"); if (btn) btn.disabled=signedViewer; }
+}
 function syncHeader(){
   $("titleIn").value = doc.title;
   $("subIn").value = doc.subtitle;
+  reflectAccessUi();
+  const blocked=currentRoadmapReadOnly();
   // read-only viewers shouldn't see empty-field placeholders ("Add a subtitle…")
-  $("subIn").hidden = readOnly && !(doc.subtitle || "").trim();
-  { const p = $("premiseIn"); if (p){ p.value = doc.premise || ""; p.readOnly = readOnly; p.hidden = readOnly && !(doc.premise || "").trim(); } }
+  $("subIn").hidden = blocked && !(doc.subtitle || "").trim();
+  { const p = $("premiseIn"); if (p){ p.value = doc.premise || ""; p.readOnly = blocked; p.hidden = blocked && !(doc.premise || "").trim(); } }
   { const rn = $("rmNotes"); if (rn) rn.value = doc.notes || ""; }
-  if (!readOnly){ const meta=syncMeta(doc.id); if (session&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (session&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
+  if (!readOnly){ const meta=syncMeta(doc.id); if (!canEditRoadmap(doc.id)) setSaveStatus("synced","View only · cloud roadmap"); else if (session&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (session&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
   reflectPublicBtn();
   renderCallouts();
   // The Portfolio header count is shown to everyone — including public
@@ -2018,30 +2082,33 @@ function syncHeader(){
   sorted.filter(d => !d.archived).forEach(d => addOpt(pk, d));
   const archived = sorted.filter(d => d.archived);
   if (archived.length){ const og = document.createElement("optgroup"); og.label = "Archived"; archived.forEach(d => addOpt(og, d)); pk.appendChild(og); }
-  { const delItem = document.querySelector('.menu-item[data-act="del"]'); if (delItem) delItem.disabled = Object.keys(store.roadmaps).length <= 1; }
+  { const delItem = document.querySelector('.menu-item[data-act="del"]'); if (delItem) delItem.disabled = !isRoadmapOwner(doc.id)||Object.keys(store.roadmaps).length <= 1; }
 }
 
 /* =========================================================================
    Roadmap CRUD (local)
    ========================================================================= */
-function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); { const n = $("summaryNarrative"); if (n){ n.hidden = true; n.innerHTML = ""; } } store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); if (session&&syncMeta(id).pending) queueCloudSync(id); }
+function switchTo(id){ if (!store.roadmaps[id]) return; draftSnapshot = null; $("draftBanner").classList.remove("show"); { const n = $("summaryNarrative"); if (n){ n.hidden = true; n.innerHTML = ""; } } store.activeId = id; doc = store.roadmaps[id]; saveNow(); syncHeader(); fullRender(); if (session&&canEditRoadmap(id)&&syncMeta(id).pending) queueCloudSync(id); }
 function newRoadmap(){
+  if (readOnly) return;
   const d = normalizeRoadmap({ title:"Untitled roadmap", templateType:"custom", lanes:[{ name:"Phase 1", items:[] }] });
-  if (session) syncMeta(d.id).pending=true;
+  markOwnedLocalRoadmap(d.id,!!session);
   store.roadmaps[d.id] = d; switchTo(d.id); $("titleIn").focus(); $("titleIn").select();
 }
 function duplicateRoadmapById(id, open){
+  if (readOnly) return;
   const src = store.roadmaps[id]; if (!src) return;
   const copy = normalizeRoadmap(JSON.parse(JSON.stringify(src)));
   copy.id = uid("rm"); copy.title = (src.title||"Untitled") + " (copy)"; const now = new Date().toISOString(); copy.createdAt = now; copy.updatedAt = now;
   copy.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
   store.roadmaps[copy.id] = copy;
-  if (session) syncMeta(copy.id).pending=true;
+  markOwnedLocalRoadmap(copy.id,!!session);
   if (open){ switchTo(copy.id); setMode("editor"); }
   else { saveNow(); syncHeader(); if (mode === "overview") renderOverview(); topNote("ok", "Duplicated “"+(src.title||"Untitled")+"”."); }
 }
 function duplicateRoadmap(){ duplicateRoadmapById(doc.id, true); }
 function deleteRoadmapById(id){
+  if (readOnly || !isRoadmapOwner(id)){ topNote("info","Only the roadmap owner can move it to Trash."); return; }
   if (Object.keys(store.roadmaps).length <= 1){ topNote("info", "You need at least one roadmap."); return; }
   const d = store.roadmaps[id]; if (!d) return;
   if (!confirm("Move roadmap “"+(d.title||"Untitled")+"” to Trash? It can be restored later.")) return;
@@ -2060,6 +2127,7 @@ function deleteRoadmapById(id){
 }
 function deleteRoadmap(){ deleteRoadmapById(doc.id); }
 function restoreRoadmapById(id){
+  if (readOnly || !isRoadmapOwner(id)){ topNote("info","Only the roadmap owner can restore it."); return; }
   const d=store.trash&&store.trash[id]; if (!d) return;
   if (!checkpointUndo("Roadmap restored — undo?")) return;
   if (store.undo) store.undo.cloudDeleteId=id;
@@ -2070,6 +2138,7 @@ function restoreRoadmapById(id){
   if (session) cloudRestore(id).catch(()=>{});
 }
 function toggleArchiveById(id){
+  if (readOnly || !isRoadmapOwner(id)){ topNote("info","Only the roadmap owner can archive it."); return; }
   const d = store.roadmaps[id]; if (!d) return;
   d.archived = !d.archived;
   d.updatedAt = new Date().toISOString();
@@ -2462,6 +2531,9 @@ async function exportHtml(){
   download(slug(doc.title) + "-roadmap.html", new Blob([html], { type:"text/html" }));
 }
 function importJsonFile(file){
+  // Import creates a separate owner-controlled roadmap; a viewer may do that
+  // without gaining permission to change the shared roadmap currently open.
+  if (readOnly) return;
   if (!file||file.size>10*1024*1024){ topNote("err","That JSON file is larger than the 10 MB import limit.",true); return; }
   const rd = new FileReader();
   rd.onload = () => {
@@ -2476,16 +2548,16 @@ function importJsonFile(file){
             if (docFingerprint(store.roadmaps[d.id])===docFingerprint(d)){ duplicates++; return; }
             d.id=uid("rm"); d.title=(d.title||"Untitled")+" (Recovered import)";
           }
-          store.roadmaps[d.id]=d; if (session) syncMeta(d.id).pending=true; added++;
+          store.roadmaps[d.id]=d; markOwnedLocalRoadmap(d.id,!!session); added++;
         });
-        Object.values(raw.store.trash||{}).forEach(value=>{ const d=normalizeRoadmap(value); if (!store.trash[d.id]&&!store.roadmaps[d.id]) store.trash[d.id]=d; });
+        Object.values(raw.store.trash||{}).forEach(value=>{ const d=normalizeRoadmap(value); if (!store.trash[d.id]&&!store.roadmaps[d.id]){ store.trash[d.id]=d; markOwnedLocalRoadmap(d.id,!!session); } });
         if (!persist()) throw new Error("The imported portfolio could not be verified in browser storage.");
         syncHeader(); renderOverview(); topNote("ok","Merged "+added+" roadmap"+(added===1?"":"s")+" from the portfolio backup"+(duplicates?"; skipped "+duplicates+" identical "+(duplicates===1?"copy":"copies"):"")+".");
         return;
       }
       if (!raw || raw.schema !== "roadmap.v1") { if (!confirm("This file isn't a roadmap.v1 export. Try to import anyway?")) return; }
       const d = normalizeRoadmap(raw); d.id = uid("rm"); d.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
-      if (session) syncMeta(d.id).pending=true;
+      markOwnedLocalRoadmap(d.id,!!session);
       store.roadmaps[d.id] = d; switchTo(d.id); topNote("ok", "Imported “"+d.title+"”.");
     } catch(e){ topNote("err", "Couldn't read that file: " + (e.message||e)); }
   };
@@ -2542,6 +2614,9 @@ function jiraStatusTo(status){
   return "planned";
 }
 function importJiraCsv(file){
+  // This import also creates a new roadmap, so only the public-link shell is
+  // blocked. Per-roadmap Viewer access does not restrict the user's portfolio.
+  if (readOnly) return;
   if (!file||file.size>10*1024*1024){ topNote("err","That Jira CSV is larger than the 10 MB import limit.",true); return; }
   const rd = new FileReader();
   rd.onload = () => {
@@ -2594,7 +2669,7 @@ function importJiraCsv(file){
       if (!withItems.length) throw new Error("No dated issues found — add Start/Due dates in Jira (or include them in the export) and try again.");
       const project = issues.find(it => it.project) || {};
       const d = normalizeRoadmap({ title: (project.project || file.name.replace(/\.csv$/i, "")) + " — Jira import", lanes: withItems });
-      if (session) syncMeta(d.id).pending=true;
+      markOwnedLocalRoadmap(d.id,!!session);
       store.roadmaps[d.id] = d; switchTo(d.id);
       topNote("ok", "Imported " + bars + " phase" + (bars===1?"":"s") + " and " + miles + " milestone" + (miles===1?"":"s")
         + " into " + withItems.length + " lane" + (withItems.length===1?"":"s")
@@ -2712,6 +2787,9 @@ function handleModalKeydown(e){
 
 /* ---------- AI: build-roadmap edge function ---------- */
 function openAi(){
+  // AI generation produces a new roadmap; it never edits the shared source in
+  // place, so signed-in viewers may use it for their own owner copy.
+  if (readOnly) return;
   // Revisit / refine: prefill with the description this roadmap was built from (if any).
   const saved = doc && doc.aiPrompt ? doc.aiPrompt : "";
   $("aiText").value = saved;
@@ -2724,6 +2802,7 @@ function openAi(){
 }
 function closeAi(){ hideModal($("aiModal")); }
 async function generateFromDescription(){
+  if (readOnly) return;
   const prompt = $("aiText").value.trim();
   if (!prompt){ $("aiText").focus(); return; }
   const hint = $("aiHint").value || null;
@@ -2748,7 +2827,7 @@ async function generateFromDescription(){
     if (!draft.lanes.length) throw new Error("The model didn't return any lanes. Try adding more detail to your description.");
     draft.id = uid("rm"); if (draft.templateType==="custom" && hint) draft.templateType = hint;
     draft.aiPrompt = prompt; draft.aiHint = hint;   // keep the description so it can be revisited/refined
-    if (session) syncMeta(draft.id).pending=true;
+    markOwnedLocalRoadmap(draft.id,!!session);
     draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id }; store.draftSnapshot=draftSnapshot;
     store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
     saveNow(); syncHeader(); setMode("editor"); fullRender();
@@ -2792,11 +2871,13 @@ function reflectCloudUi(){
   $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
   // Signed-in state is shown by the ☁ Sign out button; don't display the account email.
   $("cloudEmail").hidden = true; $("cloudEmail").textContent = "";
-  // Cloud menu (save/open/share/publish) + AI actions are owner-only.
+  // Signed-in accounts can open their accessible portfolio; reflectAccessUi narrows
+  // mutation, sharing, publishing, and access controls for the current role.
   ["cloudMenu","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
   // The "All users' roadmaps" admin item only shows for the super-owner account.
   { const au = $("allUsersItem"); if (au) au.hidden = !(on && isOwnerAccount()); }
   if (!readOnly&&doc){ const meta=syncMeta(doc.id); if (on&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (on&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
+  reflectAccessUi();
   reflectPublicBtn();
 }
 function publicRoadmapUrl(id){ const u = new URL("roadmap.html", location.href); u.search = ""; u.searchParams.set("r", id); return u.href; }
@@ -2809,7 +2890,7 @@ function reflectPublicBtn(){
   const bar = $("publicUrlBar");
   if (bar){
     const confirmedPublic=uncertain ? meta.confirmedPublic===true : pub;
-    const show = confirmedPublic && !!session && !readOnly && !!(doc && doc.id);
+    const show = confirmedPublic && !!session && !readOnly && !!(doc && doc.id) && isRoadmapOwner(doc.id);
     bar.hidden = !show;
     if (show){ const url = publicRoadmapUrl(doc.id); $("publicUrl").value = url; $("publicUrlOpen").href = url; }
   }
@@ -2849,13 +2930,24 @@ function roadmapFromRow(row){
   });
   return normalizeRoadmap(source);
 }
-function recordServerVersion(id,row){
+function recordAccessMetadata(id,row){
   const meta=syncMeta(id);
+  if (row && Object.prototype.hasOwnProperty.call(row,"access_role")) meta.accessRole=normAccessRole(row.access_role);
+  if (row && Object.prototype.hasOwnProperty.call(row,"owner_email")) meta.ownerEmail=String(row.owner_email||"").slice(0,320);
+  if (meta.accessRole==="owner" && !meta.ownerEmail) meta.ownerEmail=sessionEmail();
+  return meta;
+}
+function recordServerVersion(id,row){
+  const meta=recordAccessMetadata(id,row);
   if (row && Number.isFinite(Number(row.revision))) meta.revision=Number(row.revision);
   if (row && typeof row.public==="boolean") meta.confirmedPublic=row.public;
   if (row && Object.prototype.hasOwnProperty.call(row,"deleted_at")) meta.deletedAt=row.deleted_at||null;
   meta.lastCloudFingerprint=docFingerprint(row&&row.doc?roadmapFromRow(row):store.roadmaps[id]);
   meta.pending=false; meta.lastError="";
+  if (meta.accessRole==="viewer") meta.saveOutbox=null;
+  if (meta.accessRole!=="owner"){
+    meta.needsDelete=false; meta.needsRestore=false; meta.deleteOutbox=null; meta.restoreOutbox=null;
+  }
 }
 function preserveCloudConflict(id,row){
   const local=store.roadmaps[id];
@@ -2928,6 +3020,7 @@ async function cloudSaveCore(id, options){
   if (!session) throw new Error("Sign in before saving to the cloud.");
   const target=store.roadmaps[id||(doc&&doc.id)];
   if (!target) throw new Error("That roadmap is no longer available locally.");
+  if (!canEditRoadmap(target.id)) throw new Error("You have view-only access to this roadmap.");
   const meta=syncMeta(target.id);
   if (!meta.saveOutbox){
     const snapshot=JSON.parse(JSON.stringify(target));
@@ -2987,7 +3080,7 @@ async function cloudSaveFully(id,options){
   throw new Error("Cloud sync did not settle after several safe retries.");
 }
 function queueCloudSync(id){
-  if (!session || !id) return;
+  if (!session || !id || !canEditRoadmap(id)) return;
   clearTimeout(cloudSyncTimers.get(id));
   const timer=setTimeout(()=>{
     cloudSyncTimers.delete(id);
@@ -3000,29 +3093,78 @@ async function flushPendingCloudSaves(){
   if (!session) return;
   for (const id of Object.keys(store.roadmaps)){
     const meta=syncMeta(id);
-    if (meta.needsRestore) try{ await cloudRestore(id); }catch(_){}
-    if (meta.pending&&!meta.needsRestore) try{ await cloudSave(id,{announce:false}); }catch(_){}
+    if (meta.needsRestore&&isRoadmapOwner(id)) try{ await cloudRestore(id); }catch(_){}
+    if (meta.pending&&!meta.needsRestore&&canEditRoadmap(id)) try{ await cloudSave(id,{announce:false}); }catch(_){}
   }
-  for (const id of Object.keys(store.trash||{})){ const meta=syncMeta(id); if (meta.needsDelete||meta.pending) try{ await cloudSoftDelete(id); }catch(_){} }
+  for (const id of Object.keys(store.trash||{})){ const meta=syncMeta(id); if (isRoadmapOwner(id)&&(meta.needsDelete||meta.pending)) try{ await cloudSoftDelete(id); }catch(_){} }
+}
+function recoverSharedRoadmapBeforeRemoval(id,source){
+  const meta=store.sync&&store.sync[id], local=source||store.roadmaps[id]||(store.trash&&store.trash[id]);
+  if (!meta||!local) return null;
+  const base=meta.lastCloudFingerprint||"", locallyDiverged=!!base&&docFingerprint(local)!==base;
+  if (!meta.pending&&!meta.saveOutbox&&!locallyDiverged) return null;
+  const copy=normalizeRoadmap(JSON.parse(JSON.stringify(local))), now=new Date().toISOString();
+  copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered after access ended)";
+  copy.public=false; copy.archived=false; copy.createdAt=now; copy.updatedAt=now;
+  store.roadmaps[copy.id]=copy; markOwnedLocalRoadmap(copy.id,!!session);
+  if (session) queueCloudSync(copy.id);
+  if (store.activeId===id){ store.activeId=copy.id; doc=copy; }
+  return copy;
+}
+function reconcileRevokedSharedRoadmaps(rows){
+  const serverIds=new Set((Array.isArray(rows)?rows:[]).map(r=>String(r&&r.id||"")));
+  let removed=0, recovered=0;
+  Object.keys(store.roadmaps||{}).forEach(id=>{
+    const meta=store.sync&&store.sync[id], role=meta&&normAccessRole(meta.accessRole);
+    if (meta&&role!=="owner"&&!serverIds.has(id)){
+      if (recoverSharedRoadmapBeforeRemoval(id,store.roadmaps[id])) recovered++;
+      delete store.roadmaps[id]; delete store.sync[id]; clearTimeout(cloudSyncTimers.get(id)); cloudSyncTimers.delete(id); removed++;
+    }
+  });
+  Object.keys(store.trash||{}).forEach(id=>{
+    const meta=store.sync&&store.sync[id], role=meta&&normAccessRole(meta.accessRole);
+    if (meta&&role!=="owner"&&!serverIds.has(id)){
+      if (recoverSharedRoadmapBeforeRemoval(id,store.trash[id])) recovered++;
+      delete store.trash[id]; delete store.sync[id]; removed++;
+    }
+  });
+  return {removed,recovered};
+}
+function ensureActiveLocalRoadmap(){
+  if (!Object.keys(store.roadmaps||{}).length){
+    const placeholder=normalizeRoadmap({title:"Untitled roadmap",lanes:[{name:"Phase 1",items:[]}]});
+    store.roadmaps[placeholder.id]=placeholder; markOwnedLocalRoadmap(placeholder.id,false);
+  }
+  if (!store.activeId || !store.roadmaps[store.activeId]) store.activeId=Object.keys(store.roadmaps)[0]||null;
+  doc=store.roadmaps[store.activeId]||null;
 }
 async function cloudOpen(){
   if (!session) return;
-  cloudModal("Your cloud roadmaps", '<div id="clNote" class="note info"><span class="spin"></span> Loading…</div><div id="clList" class="cloud-list"></div>', '<button id="clClose" class="btn ghost">Close</button>');
+  cloudModal("Roadmaps you can access", '<div id="clNote" class="note info"><span class="spin"></span> Loading…</div><div id="clList" class="cloud-list"></div>', '<button id="clClose" class="btn ghost">Close</button>');
   $("clClose").onclick = closeCloud;
   try {
     const client = await getSb();
-    const { data, error } = await client.rpc("roadmap_owner_portfolio", { p_include_deleted:true });
+    const { data, error } = await client.rpc("roadmap_accessible_portfolio", { p_include_deleted:true });
     if (error) throw error;
     const rows=Array.isArray(data)?data:[];
+    const reconciliation=reconcileRevokedSharedRoadmaps(rows), removed=reconciliation.removed, recovered=reconciliation.recovered;
+    ensureActiveLocalRoadmap();
+    if (removed){
+      saveNow(); reflectCloudUi(); syncHeader(); if (mode==="overview") renderOverview(); else fullRender();
+      topNote("info",removed+(removed===1?" shared roadmap was":" shared roadmaps were")+" removed because this account no longer has access."
+        +(recovered?" "+recovered+(recovered===1?" unsynced copy was":" unsynced copies were")+" preserved as a new roadmap.":""));
+    }
     $("clNote").className = "note info hide";
-    if (!rows.length){ $("clList").innerHTML = '<div class="tl-empty">No cloud roadmaps yet. Use <b>Save to cloud</b> first.</div>'; return; }
-    $("clList").innerHTML = rows.map(r => '<div class="cloud-row"><div class="grow"><div class="nm">'+esc(r.title||"Untitled")+(r.deleted_at?' <span class="arch-pill">Trash</span>':'')+'</div><div class="mt">updated '+esc((r.updated_at||"").slice(0,10))+'</div></div><button class="btn sm" type="button" '+(r.deleted_at?'data-cloud-restore':'data-open')+'="'+esc(r.id)+'">'+(r.deleted_at?'Restore':'Open')+'</button></div>').join("");
+    if (!rows.length){ $("clList").innerHTML = '<div class="tl-empty">No accessible cloud roadmaps yet. Create one here or ask an owner to invite your sign-in email.</div>'; return; }
+    rows.forEach(r=>recordAccessMetadata(r.id,r));
+    if (doc) syncHeader();
+    $("clList").innerHTML = rows.map(r => { const role=normAccessRole(r.access_role), ownerEmail=String(r.owner_email||""); return '<div class="cloud-row" data-access-role="'+role+'"><div class="grow"><div class="nm">'+esc(r.title||"Untitled")+(r.deleted_at?' <span class="arch-pill">Trash</span>':'')+'</div><div class="mt">'+accessBadgeHtml(role)+' '+accessOwnerHtml(role,ownerEmail)+' · updated '+esc((r.updated_at||"").slice(0,10))+'</div></div>'+(r.deleted_at&&role!=="owner"?'':'<button class="btn sm" type="button" '+(r.deleted_at?'data-cloud-restore':'data-open')+'="'+esc(r.id)+'">'+(r.deleted_at?'Restore':'Open')+'</button>')+'</div>'; }).join("");
     $("clList").querySelectorAll("[data-open]").forEach(b => b.onclick = () => {
       const rec = rows.find(x => x.id===b.dataset.open); if (!rec) return;
       const incoming=roadmapFromRow(rec), existing=store.roadmaps[rec.id];
       if (existing && docFingerprint(existing)!==docFingerprint(incoming)){
         const copy=normalizeRoadmap(JSON.parse(JSON.stringify(existing))); copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered before cloud open)";
-        store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
+        store.roadmaps[copy.id]=copy; markOwnedLocalRoadmap(copy.id,!!session);
       }
       store.roadmaps[rec.id]=incoming; recordServerVersion(rec.id,rec); switchTo(rec.id); closeCloud(); topNote("ok","Opened from cloud. Any different local version was preserved separately.");
     });
@@ -3034,6 +3176,7 @@ async function cloudOpen(){
 }
 async function cloudSoftDeleteCore(id){
   if (!session) return null;
+  if (readOnly || !isRoadmapOwner(id)) throw new Error("Only the roadmap owner can delete it.");
   try{
     const client=await getSb(), meta=syncMeta(id);
     if (!meta.deleteOutbox){ meta.deleteOutbox={mutationId:mutationId(),expectedRevision:meta.revision}; if (!persist()){ meta.deleteOutbox=null; throw new Error("Cloud deletion was not started because its recovery record could not be saved locally."); } }
@@ -3048,6 +3191,7 @@ async function cloudSoftDeleteCore(id){
 function cloudSoftDelete(id){ return serializeRoadmapCloud(id,()=>cloudSoftDeleteCore(id)); }
 async function cloudRestoreCore(id){
   if (!session) return null;
+  if (readOnly || !isRoadmapOwner(id)) throw new Error("Only the roadmap owner can restore it.");
   try{
     const client=await getSb(), meta=syncMeta(id);
     if (!meta.restoreOutbox){ meta.restoreOutbox={mutationId:mutationId(),expectedRevision:meta.revision}; if (!persist()){ meta.restoreOutbox=null; throw new Error("Cloud restore was not started because its recovery record could not be saved locally."); } }
@@ -3187,6 +3331,7 @@ async function initAdminRoadmap(id){
 
 async function togglePublic(){
   if (!session || readOnly || !doc) return;
+  if (!isRoadmapOwner(doc.id)){ topNote("info","Only the roadmap owner can change public visibility."); return; }
   const target=doc, previous=!!target.public, desired=!previous;
   const meta=syncMeta(target.id); if (meta.confirmedPublic==null) meta.confirmedPublic=previous;
   target.public=desired; meta.visibilityUnconfirmed=true; meta.pending=true; persist(); reflectPublicBtn();
@@ -3203,6 +3348,7 @@ async function togglePublic(){
 }
 async function shareFlow(){
   if (!session) return;
+  if (readOnly || !doc || !isRoadmapOwner(doc.id)){ topNote("info","Only the roadmap owner can create read-only share links."); return; }
   cloudModal("Share this roadmap (read-only)", '<div id="shNote" class="note info"><span class="spin"></span> Preparing…</div><div id="shArea"></div><div id="shList" class="share-list"></div>', '<button id="shClose" class="btn ghost">Close</button>');
   $("shClose").onclick = closeCloud;
   try {
@@ -3232,6 +3378,89 @@ async function renderShareList(client){
     const {data:result,error:revokeError}=await client.rpc("roadmap_share_revoke",{p_token:b.dataset.revoke});
     if (revokeError||!result||!result.ok){ b.disabled=false; topNote("err","Could not revoke that link: "+(revokeError?.message||result?.reason||"Unknown error"),true); return; }
     await renderShareList(client); topNote("ok","Share link revoked.");
+  });
+}
+
+/* ---------- owner-managed account access ---------- */
+function collaboratorRows(data){
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.collaborators)) return data.collaborators;
+  if (data && Array.isArray(data.rows)) return data.rows;
+  return [];
+}
+function collaboratorId(c){ return String(c&&((c.id??c.collaborator_id))||""); }
+function collaboratorEmail(c){ return String(c&&(c.email||c.invite_email||c.collaborator_email||c.invitee_email)||""); }
+function collaboratorRole(c){ return c&&(c.role==="viewer"||c.access_role==="viewer")?"viewer":"editor"; }
+function collaboratorStatus(c){
+  const raw=String(c&&(c.status||c.invite_status)||"").toLowerCase();
+  return /joined|active|accepted/.test(raw)||(c&&(c.user_id||c.collaborator_user_id||c.claimed_user_id||c.joined_at||c.claimed_at||c.accepted_at))?"Joined":"Pending";
+}
+function collaboratorResultError(data,error,fallback){
+  if (error) return error.message||String(error);
+  if (data&&data.ok===false) return data.reason||data.error||fallback;
+  return "";
+}
+async function manageAccessFlow(){
+  if (!session || readOnly || !doc || !isRoadmapOwner(doc.id)){ topNote("info","Only the roadmap owner can manage account access."); return; }
+  const roadmapId=doc.id;
+  cloudModal("Manage access",
+    '<p class="pw-intro">Invite a teammate by the email they use to sign in. Editors can update this roadmap; Viewers can only open and read it. Only you can manage access, sharing, or publishing.</p>'
+    + '<div class="note info">This grants access when that email signs in. Roadmap Builder does not send an email, so send the app link to the person yourself.</div>'
+    + '<div class="access-invite"><div class="row"><label class="fld" for="accessEmail">Email</label><input id="accessEmail" class="txt" type="email" autocomplete="off" placeholder="teammate@example.com" /></div>'
+    + '<div class="row"><label class="fld" for="accessRole">Role</label><select id="accessRole" class="sel"><option value="editor">Editor</option><option value="viewer">Viewer</option></select></div>'
+    + '<button id="accessInvite" class="btn sm" type="button">Grant access</button></div>'
+    + '<div id="accessNote" class="note info hide" role="status" aria-live="polite"></div><div id="accessList" class="access-list"><div class="timeline-empty"><span class="spin"></span> Loading access…</div></div>',
+    '<button id="accessClose" class="btn ghost">Close</button>');
+  $("accessClose").onclick=closeCloud;
+  try{
+    const client=await getSb();
+    await cloudSaveFully(roadmapId,{announce:false});
+    $("accessInvite").onclick=async()=>{
+      const email=$("accessEmail").value.trim().toLowerCase(), role=$("accessRole").value==="viewer"?"viewer":"editor";
+      const note=$("accessNote");
+      if (!email || !$("accessEmail").checkValidity()){ note.className="note err"; note.textContent="Enter a valid sign-in email."; $("accessEmail").focus(); return; }
+      const btn=$("accessInvite"); btn.disabled=true; note.className="note info"; note.innerHTML='<span class="spin"></span> Granting access…';
+      try{
+        const {data,error}=await client.rpc("roadmap_collaborator_invite",{p_roadmap_id:roadmapId,p_email:email,p_role:role});
+        const problem=collaboratorResultError(data,error,"Access could not be granted."); if (problem) throw new Error(problem);
+        $("accessEmail").value=""; note.className="note ok"; note.textContent=accessRoleLabel(role)+" access granted. Send the person the Roadmap Builder link so they can sign in.";
+        await renderAccessList(client,roadmapId);
+      }catch(e){ note.className="note err"; note.textContent="Couldn’t grant access: "+(e.message||e); }
+      finally{ btn.disabled=false; }
+    };
+    await renderAccessList(client,roadmapId);
+  }catch(e){ $("accessList").innerHTML='<div class="note err">Couldn’t load access: '+esc(e.message||String(e))+'</div>'; }
+}
+async function renderAccessList(client,roadmapId){
+  const host=$("accessList"); if (!host) return;
+  const {data,error}=await client.rpc("roadmap_collaborator_list",{p_roadmap_id:roadmapId});
+  if (error) throw error;
+  const rows=collaboratorRows(data).filter(c=>!c.revoked_at&&!/^revoked$/i.test(String(c.status||c.invite_status||"")));
+  host.innerHTML=rows.length?'<div class="fld">People with access</div>'+rows.map(c=>{
+    const id=collaboratorId(c), email=collaboratorEmail(c), role=collaboratorRole(c), status=collaboratorStatus(c);
+    return '<div class="access-entry" data-collaborator="'+esc(id)+'"><div><div class="nm">'+esc(email||"Unknown email")+'</div><div class="meta">'+status+'</div></div>'
+      + '<select class="sel" data-collaborator-role data-collaborator-id="'+esc(id)+'" aria-label="Access role for '+esc(email||"collaborator")+'"><option value="editor"'+(role==="editor"?' selected':'')+'>Editor</option><option value="viewer"'+(role==="viewer"?' selected':'')+'>Viewer</option></select>'
+      + '<button class="btn danger sm" type="button" data-revoke-collaborator="'+esc(id)+'">Remove</button></div>';
+  }).join(""):'<div class="timeline-empty">No collaborators yet. Add an email above.</div>';
+  host.querySelectorAll("[data-collaborator-role]").forEach(sel=>sel.onchange=async()=>{
+    const row=rows.find(c=>collaboratorId(c)===sel.dataset.collaboratorId); if (!row) return;
+    const email=collaboratorEmail(row), role=sel.value==="viewer"?"viewer":"editor", previous=collaboratorRole(row), note=$("accessNote");
+    sel.disabled=true; note.className="note info"; note.innerHTML='<span class="spin"></span> Updating role…';
+    try{
+      const {data,error}=await client.rpc("roadmap_collaborator_invite",{p_roadmap_id:roadmapId,p_email:email,p_role:role});
+      const problem=collaboratorResultError(data,error,"The role could not be updated."); if (problem) throw new Error(problem);
+      note.className="note ok"; note.textContent="Updated "+email+" to "+accessRoleLabel(role)+"."; await renderAccessList(client,roadmapId);
+    }catch(e){ sel.value=previous; sel.disabled=false; note.className="note err"; note.textContent="Couldn’t update the role: "+(e.message||e); }
+  });
+  host.querySelectorAll("[data-revoke-collaborator]").forEach(btn=>btn.onclick=async()=>{
+    const id=btn.dataset.revokeCollaborator, row=rows.find(c=>collaboratorId(c)===id), email=collaboratorEmail(row), note=$("accessNote");
+    if (!confirm("Remove access for "+(email||"this collaborator")+"?")) return;
+    btn.disabled=true; note.className="note info"; note.innerHTML='<span class="spin"></span> Removing access…';
+    try{
+      const {data,error}=await client.rpc("roadmap_collaborator_revoke",{p_collaborator_id:id});
+      const problem=collaboratorResultError(data,error,"Access could not be removed."); if (problem) throw new Error(problem);
+      note.className="note ok"; note.textContent="Access removed for "+(email||"that collaborator")+"."; await renderAccessList(client,roadmapId);
+    }catch(e){ btn.disabled=false; note.className="note err"; note.textContent="Couldn’t remove access: "+(e.message||e); }
   });
 }
 
@@ -3335,22 +3564,22 @@ function isEmptyPlaceholder(d){
     && !((d.notes || "").trim()) && !((d.subtitle || "").trim()) && !((d.premise || "").trim());
 }
 
-// On sign-in, pull the account's cloud roadmaps into the portfolio so you see
-// everything — not just what happens to be cached in this browser's localStorage.
-// RLS scopes the query to your own rows; offline / unprovisioned just no-ops.
+// On sign-in, pull every cloud roadmap this account can access — owned or shared.
+// RLS remains authoritative; an absent previously-shared row means access was revoked.
 async function mergeCloudRoadmaps(hadLocal){
   if (!session || readOnly) return;
   let rows;
   try {
     const client = await getSb();
-    const { data, error } = await client.rpc("roadmap_owner_portfolio", { p_include_deleted:true });
+    const { data, error } = await client.rpc("roadmap_accessible_portfolio", { p_include_deleted:true });
     if (error) throw error;
     rows = Array.isArray(data)?data:[];
   } catch(e){ setSaveStatus("error","Offline · local copy available"); topNote("err","Cloud roadmaps could not be checked. Your local portfolio remains available: "+(e.message||e),true); return; }
-  if (!rows.length){ await flushPendingCloudSaves(); return; }
+  const reconciliation=reconcileRevokedSharedRoadmaps(rows);
+  let removed=reconciliation.removed, recovered=reconciliation.recovered;
   // A brand-new browser had no saved roadmaps, so loadStore() minted an empty
   // "My roadmap" placeholder — drop it so the cloud portfolio isn't cluttered.
-  if (!hadLocal){
+  if (rows.length&&!hadLocal){
     const ids = Object.keys(store.roadmaps);
     if (ids.length === 1 && isEmptyPlaceholder(store.roadmaps[ids[0]])){ store.roadmaps = {}; store.activeId = null; }
   }
@@ -3358,7 +3587,16 @@ async function mergeCloudRoadmaps(hadLocal){
   rows.forEach(r => {
     const d = roadmapFromRow(r);
     const knownMeta=syncMeta(d.id);
+    const hadPending=!!(knownMeta.pending||knownMeta.saveOutbox);
+    recordAccessMetadata(d.id,r);
+    const role=accessRoleFor(d.id);
     if (r.deleted_at){
+      if (role!=="owner"){
+        if (recoverSharedRoadmapBeforeRemoval(d.id,store.roadmaps[d.id]||(store.trash&&store.trash[d.id]))) recovered++;
+        if (store.roadmaps[d.id]||store.trash[d.id]) removed++;
+        delete store.roadmaps[d.id]; delete store.trash[d.id]; delete store.sync[d.id];
+        return;
+      }
       recordServerVersion(d.id,r);
       if (store.roadmaps[d.id]&&knownMeta.needsRestore){ knownMeta.pending=true; return; }
       const activeLocal=store.roadmaps[d.id];
@@ -3374,6 +3612,9 @@ async function mergeCloudRoadmaps(hadLocal){
       store.trash[d.id]=d; delete store.roadmaps[d.id]; knownMeta.pending=false; knownMeta.needsDelete=false; return;
     }
     if (store.trash&&store.trash[d.id]){
+      if (role!=="owner"){
+        delete store.trash[d.id]; store.roadmaps[d.id]=d; recordServerVersion(d.id,r); added++; return;
+      }
       if (knownMeta.needsDelete){ recordServerVersion(d.id,r); knownMeta.pending=true; return; }
       const localTrash=store.trash[d.id];
       if (docFingerprint(localTrash)!==docFingerprint(d)){
@@ -3385,6 +3626,15 @@ async function mergeCloudRoadmaps(hadLocal){
     const meta=syncMeta(d.id), cloudFp=docFingerprint(d);
     if (!local){ store.roadmaps[d.id] = d; recordServerVersion(d.id,r); added++; return; }
     const localFp=docFingerprint(local), base=meta.lastCloudFingerprint||"";
+    if (role==="viewer"){
+      if (hadPending&&localFp!==cloudFp){
+        const copy=normalizeRoadmap(JSON.parse(JSON.stringify(local)));
+        copy.id=uid("rm"); copy.title=(copy.title||"Untitled")+" (Recovered before view-only access)"; copy.public=false; copy.updatedAt=new Date().toISOString();
+        store.roadmaps[copy.id]=copy; { const copyMeta=syncMeta(copy.id); copyMeta.accessRole="owner"; copyMeta.ownerEmail=sessionEmail(); copyMeta.pending=true; }
+        conflicts++;
+      }
+      store.roadmaps[d.id] = d; recordServerVersion(d.id,r); return;
+    }
     if (localFp===cloudFp){ recordServerVersion(d.id,r); return; }
     if (base && localFp===base){ store.roadmaps[d.id]=d; recordServerVersion(d.id,r); return; }
     if (base && cloudFp===base){ meta.pending=true; return; }
@@ -3395,10 +3645,9 @@ async function mergeCloudRoadmaps(hadLocal){
     store.roadmaps[copy.id]=copy; syncMeta(copy.id).pending=true;
     store.roadmaps[d.id]=d; recordServerVersion(d.id,r); conflicts++;
   });
-  if (!Object.keys(store.roadmaps).length){ const placeholder=normalizeRoadmap({title:"Untitled roadmap",lanes:[{name:"Phase 1",items:[]}]}); store.roadmaps[placeholder.id]=placeholder; }
-  if (!store.activeId || !store.roadmaps[store.activeId]){
-    store.activeId = Object.keys(store.roadmaps)[0] || null;
-  }
+  ensureActiveLocalRoadmap();
+  // Keep the active binding explicit after same-ID cloud replacements. Event
+  // handlers must never retain the pre-merge object that was just superseded.
   doc = store.roadmaps[store.activeId];
   saveNow();   // cache the merged portfolio so it's there next load too (even offline)
   reflectCloudUi(); syncHeader();
@@ -3406,6 +3655,8 @@ async function mergeCloudRoadmaps(hadLocal){
   setMode(mode);
   await flushPendingCloudSaves();
   if (added > 0) topNote("info", added + (added === 1 ? " roadmap" : " roadmaps") + " loaded from your cloud.");
+  if (removed > 0) topNote("info", removed + (removed === 1 ? " shared roadmap was" : " shared roadmaps were") + " removed because this account no longer has access."
+    +(recovered?" "+recovered+(recovered===1?" unsynced copy was":" unsynced copies were")+" preserved as a new roadmap.":""));
   if (conflicts > 0) topNote("err",conflicts+" cloud conflict"+(conflicts===1?" was":"s were")+" preserved as separate recovered roadmap"+(conflicts===1?"":"s")+".",true);
 }
 
@@ -3434,7 +3685,7 @@ function closeMenus(){
 }
 function runMenuAction(act){
   const map = { png:exportPng, html:exportHtml, json:exportJson, portfolio:exportFullPortfolio, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
-    dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, allusers:cloudOpenAll };
+    dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, access:manageAccessFlow, allusers:cloudOpenAll };
   const result=(map[act] || function(){})();
   if (result && typeof result.catch==="function") result.catch(()=>{});
 }
@@ -3442,15 +3693,15 @@ function onMenuDocClick(e){
   const btn = e.target.closest(".menu-btn");
   if (btn){ const list = btn.nextElementSibling; const willOpen = list && list.hidden; closeMenus(); if (list && willOpen){ list.hidden = false; btn.setAttribute("aria-expanded", "true"); } return; }
   const item = e.target.closest(".menu-item");
-  if (item){ closeMenus(); runMenuAction(item.dataset.act); return; }
+  if (item){ closeMenus(); if (!item.disabled&&!item.hidden) runMenuAction(item.dataset.act); return; }
   closeMenus();   // outside click
 }
 function wire(){
   // title / subtitle
-  $("titleIn").addEventListener("input", e => { doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
-  $("subIn").addEventListener("input", e => { doc.subtitle = e.target.value; save(); });
-  { const p = $("premiseIn"); if (p) p.addEventListener("input", e => { doc.premise = e.target.value; save(); }); }
-  $("rmNotes").addEventListener("input", e => { doc.notes = e.target.value; save(); });
+  $("titleIn").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
+  $("subIn").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.subtitle = e.target.value; save(); });
+  { const p = $("premiseIn"); if (p) p.addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.premise = e.target.value; save(); }); }
+  $("rmNotes").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.notes = e.target.value; save(); });
   $("calloutsBody").addEventListener("input", onCalloutInput);
   $("calloutsBody").addEventListener("click", onCalloutClick);
   // view mode
@@ -3469,7 +3720,7 @@ function wire(){
   ed.addEventListener("input", onEditorInput);
   ed.addEventListener("change", onEditorChange);
   ed.addEventListener("click", onEditorClick);
-  $("addLane").addEventListener("click", () => { doc.lanes.push(normLane({ name:"New lane", items:[] }, doc.lanes.length)); save(); fullRender(); });
+  $("addLane").addEventListener("click", () => { if (currentRoadmapReadOnly()) return; doc.lanes.push(normLane({ name:"New lane", items:[] }, doc.lanes.length)); save(); fullRender(); });
   // export / import / png / print / html run via the Export menu (runMenuAction);
   // the hidden file input is triggered by the menu's Import item.
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
@@ -3480,7 +3731,7 @@ function wire(){
     handleModalKeydown(e);
     if (e.key === "Escape") closeMenus();
     const item=e.target.closest&&e.target.closest(".menu-item"); if (!item || !["ArrowDown","ArrowUp","Home","End"].includes(e.key)) return;
-    e.preventDefault(); const items=[...item.parentElement.querySelectorAll(".menu-item:not([disabled])")]; let i=items.indexOf(item);
+    e.preventDefault(); const items=[...item.parentElement.querySelectorAll(".menu-item:not([disabled]):not([hidden])")]; let i=items.indexOf(item);
     if (e.key==="Home") i=0; else if (e.key==="End") i=items.length-1; else i=(i+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;
     items[i].focus();
   });
