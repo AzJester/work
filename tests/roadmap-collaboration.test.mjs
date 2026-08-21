@@ -9,9 +9,11 @@ const rootDir = resolve(testDir, "..");
 const roadmapPath = resolve(rootDir, "roadmap.html");
 const migrationPath = resolve(rootDir, "supabase/migrations/20260821010000_roadmap_collaboration.sql");
 const pagesWorkflowPath = resolve(rootDir, ".github/workflows/pages.yml");
+const keepAliveWorkflowPath = resolve(rootDir, ".github/workflows/supabase-ping.yml");
 const roadmap = readFileSync(roadmapPath, "utf8");
 const migration = existsSync(migrationPath) ? readFileSync(migrationPath, "utf8") : "";
 const pagesWorkflow = readFileSync(pagesWorkflowPath, "utf8");
+const keepAliveWorkflow = readFileSync(keepAliveWorkflowPath, "utf8");
 
 function requireMigration() {
   assert.ok(existsSync(migrationPath), "Add the additive per-roadmap collaboration migration");
@@ -312,4 +314,16 @@ test("Pages backend detection covers every commit in a push before publishing", 
   assert.match(pagesWorkflow, /0000000000000000000000000000000000000000/, "A new branch's zero before-SHA must fail safe");
   assert.match(pagesWorkflow, /git diff --name-only "\$BEFORE_SHA" "\$CURRENT_SHA"/, "Inspect the complete push range");
   assert.doesNotMatch(pagesWorkflow, /git diff --name-only HEAD\^ HEAD/, "Checking only the final commit can skip an earlier migration");
+});
+
+test("Supabase keep-alive uses a successful data-path RPC with the opaque key in the apikey header only", () => {
+  assert.match(keepAliveWorkflow, /\/rest\/v1\/rpc\/secure_shared_dashboard/);
+  assert.match(keepAliveWorkflow, /p_token[^\n]+00000000-0000-0000-0000-000000000000/);
+  assert.match(keepAliveWorkflow, /apikey:\s*\$KEY/);
+  assert.doesNotMatch(
+    keepAliveWorkflow,
+    /Authorization:\s*Bearer\s*\$KEY/i,
+    "Opaque sb_publishable keys are not JWTs and must never be sent as Bearer tokens",
+  );
+  assert.match(keepAliveWorkflow, /case\s+"\$code"\s+in[\s\S]{0,120}2\?\?/);
 });
