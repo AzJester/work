@@ -338,17 +338,24 @@ cloud sync and shareable links.
   Every mutation has a durable UUID and expected revision, so a network retry is idempotent and
   a stale device cannot overwrite a newer one. Divergent copies are retained as clearly labeled
   recovered roadmaps. Soft-deleted roadmaps appear in cross-device **Trash** and remain restorable.
+- **Per-roadmap collaborators** — an owner can use **Cloud → Manage access…** to grant one
+  sign-in email either **Editor** or **Viewer** access. Editors can change roadmap content;
+  Viewers are read-only. Only the owner can publish, archive, move to Trash, create bearer-share
+  links, change roles, or revoke access. The database enforces the role on every save; hiding a
+  button in the browser is not the security boundary.
 - **Managed read-only share links** — new links use URL fragments, expire after 30 days, can be
   listed/revoked in the app, and continue accepting legacy `?s=<token>` URLs. The server validates
   share ownership and returns a strict presentation-only document.
 - **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
   view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
-  can't edit anything. Only the signed-in owner can create or change roadmaps. Sessions **persist
-  across refreshes** until you sign out. Public and bearer-share RPCs remove private notes, AI
-  prompts/hints, identities, tokens, secrets, and unknown fields before returning any document.
-- **Multi-user portfolios** — each account has an isolated browser key and owner-only server RPCs.
-  Provisioned temporary-password accounts must choose a compliant password (≥12 chars · upper ·
-  lower · number · special) before the editor unlocks.
+  can't edit anything. Signed-in access is decided separately for every roadmap. Sessions
+  **persist across refreshes** until you sign out. Public and bearer-share RPCs remove private
+  notes, AI prompts/hints, identities, tokens, secrets, and unknown fields before returning any
+  document.
+- **Multi-user portfolios** — each account has an isolated browser cache and receives only the
+  owned or explicitly shared roadmaps returned by the access-aware server RPC. Provisioned
+  temporary-password accounts must choose a compliant password (≥12 chars · upper · lower ·
+  number · special) before the application unlocks.
 
 **One-time setup (only for the AI and cloud features — the template/form path needs none):**
 
@@ -388,15 +395,45 @@ cloud sync and shareable links.
     existing IDs/documents/tokens, records every existing row as revision 0, adds append-only
     history, atomic save/delete/restore RPCs, soft-delete Trash, and sanitized public/share APIs.
   - The post-cutover RPC-only migration revokes browser table access after the v2 frontend is live.
+  - `20260821010000_roadmap_collaboration.sql` adds private email-based Editor/Viewer grants,
+    owner-only access-management RPCs, and server-enforced collaborative saves. Revoked grants
+    remain in the owner's audit history and no longer authorize fetching or saving through
+    Supabase.
   GitHub Pages runs `supabase db push --dry-run` and then `supabase db push` before publishing the
   matching frontend, so the browser never gets ahead of its database contract.
 
 ### Multiple users, each with their own portfolio
 
-Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Every
-owner query explicitly uses `auth.uid()` inside a narrowly granted `SECURITY DEFINER` RPC; public
-and bearer-share callers receive only the bounded presentation schema. AI access remains separately
-fail-closed through `AI_ALLOWED_EMAILS` and `AI_ALLOWED_ORIGINS` Edge Function secrets.
+Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Then:
+
+1. Sign in as the roadmap owner and open the roadmap.
+2. Choose **Cloud → Manage access…**, enter the teammate's exact Supabase sign-in email, and choose
+   **Editor** or **Viewer**.
+3. Send the teammate the normal Roadmap Builder URL. The access grant does not send an email; it
+   becomes active automatically when that email signs in.
+4. Change the role or choose **Remove** from the same dialog at any time. Supabase stops authorizing
+   server reads and writes immediately; because a browser may be offline, its shared cache is
+   removed after the next successful access sync. Revocation cannot erase a file the collaborator
+   already exported.
+
+Every account query derives identity from `auth.uid()` inside a narrowly granted
+`SECURITY DEFINER` RPC. Direct browser access to the collaboration and roadmap tables remains
+revoked. Public and bearer-share callers receive only the bounded presentation schema. AI access
+remains separately fail-closed through `AI_ALLOWED_EMAILS` and `AI_ALLOWED_ORIGINS` Edge Function
+secrets.
+
+### Keeping the shared Supabase project active
+
+All users share the same Supabase project; adding collaborators does not create another database.
+Normal use generates database activity. During quiet periods,
+`.github/workflows/supabase-ping.yml` also makes successful PostgREST database requests every day
+and fails visibly if Supabase returns a paused or unsuccessful response. GitHub Actions must remain
+enabled for the repository.
+
+Supabase may still pause a low-activity **Free Plan** project after a seven-day window; the scheduled
+database requests are a practical fallback, not an availability guarantee. Upgrade the Supabase
+organization to **Pro or higher** when uninterrupted production availability is required. See
+[Supabase project pausing](https://supabase.com/docs/guides/platform/free-project-pausing).
 
 ### Temporary passwords & forced reset on first login
 
