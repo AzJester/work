@@ -285,8 +285,9 @@ by Row Level Security — the capability link is the single, revocable door.
 ## Roadmap Builder
 
 A standalone page for building **project roadmaps** — pick a starter template, fill out a form,
-or describe the project in plain language and let Claude draft it — then edit lanes, milestones,
-statuses and dates on a clean Monday-style timeline. Works offline out of the box; sign-in adds
+or describe the project in plain language and let Claude draft it. The application shell keeps
+Portfolio navigation distinct, while each selected roadmap gets its own document header and focused
+**Executive**, **Timeline**, and **Details** views. Works offline out of the box; sign-in adds
 cloud sync and shareable links.
 
 ### → https://azjester.github.io/work/roadmap.html
@@ -296,22 +297,38 @@ cloud sync and shareable links.
     Development**, **Business Dev / GTM Campaign**, **Data &amp; Analytics program**, **Hiring /
     team build**) pre-fill phases and milestones dated relative to today. Add/edit/reorder
     lanes, phases (bars), and milestones (diamonds) inline. No account, no server.
-  - **✨ Build from description** — type what you're planning (phases, rough dates) and Claude
+  - **Build with AI** — type what you're planning (phases, rough dates) and Claude
     returns a structured roadmap you can edit or discard. Runs server-side in a Supabase Edge
     Function (`build-roadmap`) so the API key never reaches the browser.
-- **Portfolio overview** — an **Overview** tab shows every roadmap at once as a card grid, each
-  with a mini-timeline preview, a % complete, a per-status breakdown, date range, and last-updated
-  time — so you can track several programs side by side. Click a card to open it; **Editor** tab
-  edits the active one. Toggle views from the header.
-- **Archive completed roadmaps** — the ⋯ menu (or the 🗄 button on an Overview card) moves a
-  finished roadmap into a collapsed **Archived** section below the active grid; it stays openable
-  and restorable (↩ Unarchive) and is grouped under "Archived" in the roadmap picker. The header
-  count reads e.g. "4 roadmaps · 2 archived".
+- **Portfolio application shell** — Portfolio navigation is separate from the selected-roadmap
+  header, so app-level navigation and document actions no longer compete with the roadmap title.
+  **Active**, **Archived**, and **Trash** filters use the same normalized card layout, with a
+  fixed preview area, completion, health, next milestone, sharing state, and last-updated time.
+- **Three focused roadmap views** — **Executive** combines completion, schedule, next gate,
+  health, upcoming decisions, and authored analysis in one decision-ready view; **Timeline** makes
+  the Gantt the visual centerpiece; **Details** contains the editable roadmap notes, lanes, and items.
+- **Simplified actions** — the roadmap header keeps the roadmap picker and five clear tasks in
+  reach: **New roadmap**, **Share**, **Present**, **Export**, and **More**. The **More** menu retains
+  AI building, templates, import, cloud sync, duplicate, archive, collaborator, public, and Trash
+  controls without crowding the main toolbar.
+- **Progressive Details editor** — lane headers show useful at-a-glance facts and expand on demand;
+  the first lane opens by default, while the rest stay compact until needed. Item labels, dates,
+  status, gate, notes, and ordering remain directly editable with keyboard-accessible controls.
+- **Archive completed roadmaps** — archive from the roadmap menu or its Portfolio card, then use
+  the **Archived** filter to open or restore it. Soft-deleted roadmaps remain separately recoverable
+  under **Trash**, and archived roadmaps stay grouped in the roadmap picker.
 - **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
   (Planned · In progress · Complete · At risk · Blocked · On hold) and outlined milestone diamonds,
   with a legend. **Fit** shows the complete project on a desktop; **− / 100% / +** switch to a
-  detailed 50–300% scale when closer inspection is useful. Sliding light/dark toggle. New phases
-  and milestones are added after the lane's last item so they don't overlap.
+  detailed 50–300% scale when closer inspection is useful. **Present** removes editing chrome for
+  a clean meeting display. Sliding light/dark toggle. New phases and milestones are added after
+  the lane's last item so they don't overlap.
+- **Responsive by design** — long titles wrap instead of disappearing, the mobile shell collapses
+  to one compact action menu, and controls stay inside the page from small phones through large
+  monitors. Timeline **Fit** uses the available width to show the whole project when possible;
+  the accessible timeline list remains available on narrow screens.
+- **Polished visual system** — stronger type hierarchy, restrained surfaces, consistent controls,
+  and softer status treatments keep attention on the schedule in both light and dark modes.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
   date), each with one of six status chips. Lanes get cycling group colors.
 - **Saved and recoverable in your browser** — the original `roadmap_builder_v1` value is retained
@@ -323,11 +340,11 @@ cloud sync and shareable links.
   with the full Gantt, stat chips, summary and analysis cards; its own **Fit / − / 100% / +**
   controls; responsive labels; and print fitting), **PNG** (the timeline as an image), and
   **Print / PDF**.
-- **JSON import template** — *Import ▾ → Download JSON template* downloads an immediately
+- **JSON import template** — **More → Download JSON template** downloads an immediately
   importable `roadmap.v1` starter file. Replace its clearly marked `[REPLACE]` text and ISO
-  dates (`YYYY-MM-DD`), then choose *Import ▾ → Roadmap JSON…*. Template generation and
+  dates (`YYYY-MM-DD`), then choose **More → Import Roadmap JSON…**. Template generation and
   import both work locally in the browser.
-- **Import from Jira (CSV)** — *Import ▾ → Jira CSV…* takes Jira's built-in issue export
+- **Import from Jira (CSV)** — **More → Import Jira CSV…** takes Jira's built-in issue export
   (any Jira: **Export → CSV**, current or all fields) and builds a roadmap deterministically —
   no credentials, works offline, nothing leaves the browser:
   - **Epics → lanes.** Other issues land in their epic's lane (via *Epic Link* or *Parent*),
@@ -339,21 +356,22 @@ cloud sync and shareable links.
     In progress; Blocked; On Hold/Waiting; anything with "risk" → At risk; else Planned).
   - A **`gate` label** in Jira marks the item as a gate (dashed line + GATE flag); each item's
     note keeps its issue key (e.g. `SH-11`).
-  - Prefer AI shaping instead? Paste the raw issue list into **✨ Build from description**.
+  - Prefer AI shaping instead? Paste the raw issue list into **Build with AI**.
 - **Optional cloud (sign in)** — revision-aware Supabase RPCs synchronize the complete portfolio.
   Every mutation has a durable UUID and expected revision, so a network retry is idempotent and
   a stale device cannot overwrite a newer one. Divergent copies are retained as clearly labeled
   recovered roadmaps. Soft-deleted roadmaps appear in cross-device **Trash** and remain restorable.
-- **Per-roadmap collaborators** — an owner can use **Cloud → Manage access…** to grant one
-  sign-in email either **Editor** or **Viewer** access. Editors can change roadmap content;
+- **Per-roadmap collaborators** — an owner can use **More → Manage collaborators…** to
+  grant one sign-in email either **Editor** or **Viewer** access. Editors can change roadmap content;
   Viewers are read-only. Only the owner can publish, archive, move to Trash, create bearer-share
   links, change roles, or revoke access. The database enforces the role on every save; hiding a
   button in the browser is not the security boundary.
-- **Managed read-only share links** — new links use URL fragments, expire after 30 days, can be
-  listed/revoked in the app, and continue accepting legacy `?s=<token>` URLs. The server validates
-  share ownership and returns a strict presentation-only document.
+- **Managed read-only share links** — **More → Create viewer link…** creates a URL-fragment
+  link that expires after 30 days. Links can be listed or revoked in the app, which also continues
+  accepting legacy `?s=<token>` URLs. The primary **Share** action manages named collaborators;
+  the server validates bearer-link ownership and returns a strict presentation-only document.
 - **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
-  view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
+  view: they can browse the roadmaps you've marked **public** (**More → Make public**) but
   can't edit anything. Signed-in access is decided separately for every roadmap. Sessions
   **persist across refreshes** until you sign out. Public and bearer-share RPCs remove private
   notes, AI prompts/hints, identities, tokens, secrets, and unknown fields before returning any
@@ -390,11 +408,12 @@ cloud sync and shareable links.
     tool-use so the model returns exactly this shape (the client normalizes/repairs it too).
   - If the function isn't deployed the page degrades gracefully — the button shows a clear note
     and the offline paths keep working.
-- **AI narrative (`roadmap-summary`)** — powers the **✨ Write narrative** button in the
-  *Progress summary* card: it turns the computed progress facts into a short prose exec summary.
+- **AI narrative (`roadmap-summary`)** — powers the **Write narrative** button in the
+  **Executive** band: it turns the computed progress facts into a short prose exec summary.
   Deploy `supabase functions deploy roadmap-summary`; it reuses the **same** `ANTHROPIC_API_KEY`
   and `ALLOWED_EMAILS` secrets as `build-roadmap` (set once, covers both). See its
-  [README](supabase/functions/roadmap-summary/README.md). The free computed summary shows without it.
+  [README](supabase/functions/roadmap-summary/README.md). The computed Executive facts show
+  without it.
 - **Cloud sync + share** — do not paste ad-hoc table policies or grants into the SQL editor.
   The tracked migrations are the source of truth:
   - `20260711180000_roadmap_data_safety.sql` provisions or upgrades the tables without replacing
@@ -413,8 +432,8 @@ cloud sync and shareable links.
 Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Then:
 
 1. Sign in as the roadmap owner and open the roadmap.
-2. Choose **Cloud → Manage access…**, enter the teammate's exact Supabase sign-in email, and choose
-   **Editor** or **Viewer**.
+2. Choose **More → Manage collaborators…**, enter the teammate's exact Supabase sign-in
+   email, and choose **Editor** or **Viewer**.
 3. Send the teammate the normal Roadmap Builder URL. The access grant does not send an email; it
    becomes active automatically when that email signs in.
 4. Change the role or choose **Remove** from the same dialog at any time. Supabase stops authorizing

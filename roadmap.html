@@ -15,7 +15,7 @@
     --ink:#252831; --ink-2:#515767; --mut:#697181;
     --accent:#0073ea; --accent-2:#0060b9; --accent-soft:#e6f1fd; --ring:rgba(0,115,234,0.30);
     --btn-ink:#ffffff;   /* text on accent-filled buttons — dark navy in dark mode, where the accent is light */
-    --s-planned:#64748b; --s-progress:#b86500; --s-complete:#087a4c; --s-risk:#c83247;
+    --s-planned:#64748b; --s-progress:#9b4c00; --s-complete:#087a4c; --s-risk:#c83247;
     --s-blocked:#6841d8; --s-onhold:#526071; --s-milestone:#0073ea;
     --ok:#00854d; --ok-bg:#e4f7ee; --err:#c2362b; --err-bg:#fdecea; --info:#0060b9; --info-bg:#e6f1fd;
     --input-bg:#ffffff;
@@ -48,24 +48,35 @@
   html, body { margin:0; min-height:100%; }
   body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
     background:var(--bg-wash), var(--bg); background-attachment:fixed; }
-  .wrap { max-width:1800px; margin:0 auto; padding:22px clamp(12px,3vw,30px) 96px; }
+  .wrap { max-width:1920px; margin:0 auto; padding:0 clamp(12px,3vw,30px) 96px; }
   a { color:var(--accent); }
 
-  /* ---------- masthead ---------- */
-  .mast { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  /* ---------- application + roadmap headers ---------- */
+  .app-shell { min-height:56px; margin:0 calc(-1 * clamp(12px,3vw,30px)) 22px; padding:9px clamp(12px,3vw,30px);
+    display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid var(--line);
+    background:color-mix(in srgb,var(--card) 94%,transparent); box-shadow:0 1px 0 rgba(20,28,50,.025); }
+  .app-identity { display:flex; align-items:center; gap:10px; min-width:0; }
+  .app-identity .app-logo { width:32px; height:32px; object-fit:contain; flex:0 0 auto; }
+  .app-identity .app-logo.logo-dark { display:none; }
+  :root[data-theme="dark"] .app-identity .logo-light { display:none; }
+  :root[data-theme="dark"] .app-identity .logo-dark { display:block; }
+  .app-product { font-size:14px; font-weight:800; letter-spacing:-.01em; white-space:nowrap; }
+  .app-shell-center { display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .app-shell-tools { display:flex; align-items:center; gap:8px; }
+  .mast { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:12px; }
+  .roadmap-header { padding:2px 2px 0; }
   .brand { display:flex; align-items:flex-start; gap:14px; min-width:0; flex:1 1 420px; }
-  .brand .mark { width:54px; height:54px; flex:0 0 auto; margin-top:1px;
-    display:flex; align-items:center; justify-content:center; }
+  .brand .mark { display:none; }
   .brand .mark .brand-logo { width:54px; height:54px; display:block; object-fit:contain; }
   .brand .mark .logo-dark { display:none; }
   :root[data-theme="dark"] .brand .mark .logo-light { display:none; }
   :root[data-theme="dark"] .brand .mark .logo-dark { display:block; }
   .titlewrap { min-width:0; flex:1 1 auto; }
   .eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); margin:2px 0 5px; }
-  input.title-in { font-family:var(--disp); font-weight:800; font-size:27px; letter-spacing:-0.025em; color:var(--ink);
+  .title-in { display:block; resize:none; overflow:hidden; font-family:var(--disp); font-weight:800; font-size:clamp(25px,2.25vw,34px); line-height:1.12; letter-spacing:-0.035em; color:var(--ink);
     border:1px solid transparent; background:transparent; border-radius:8px; padding:2px 6px; margin-left:-6px; width:100%; text-overflow:ellipsis; }
-  input.title-in:hover { border-color:var(--line); }
-  input.title-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
+  .title-in:hover { border-color:var(--line); }
+  .title-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
   input.sub-in { font-family:var(--disp); font-size:14px; color:var(--ink-2); border:1px solid transparent; background:transparent;
     border-radius:6px; padding:2px 6px; margin-left:-6px; width:100%; margin-top:2px; text-overflow:ellipsis; }
   input.sub-in:hover { border-color:var(--line); }
@@ -78,6 +89,12 @@
   .ov-h1 { font-weight:800; font-size:27px; letter-spacing:-0.025em; color:var(--ink); }
   .ov-sub { font-size:14px; color:var(--ink-2); margin-top:2px; }
   .mast-tools { display:flex; align-items:center; gap:var(--sp-2); flex:0 0 auto; margin-top:4px; }
+  .roadmap-tabs { display:flex; align-items:center; gap:4px; padding:4px; border:1px solid var(--line); border-radius:11px; background:var(--card); box-shadow:var(--shadow-sm); }
+  .roadmap-tab { display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:7px 12px; border:0; border-radius:8px;
+    color:var(--ink-2); background:transparent; font:700 12.5px/1 var(--disp); cursor:pointer; }
+  .roadmap-tab:hover { color:var(--ink); background:var(--bg); }
+  .roadmap-tab[aria-selected="true"] { color:var(--accent); background:var(--accent-soft); }
+  .ui-icon { width:16px; height:16px; display:inline-block; flex:0 0 auto; }
 
   /* ---------- segmented control ---------- */
   .segmented { display:inline-flex; background:var(--bg); border:1px solid var(--line-2); border-radius:10px; padding:3px; gap:2px; }
@@ -127,9 +144,14 @@
 
   /* ---------- toolbar ---------- */
   .toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--card); border:1px solid var(--line);
-    border-radius:var(--radius); padding:10px 12px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
+    border-radius:var(--radius); padding:8px 10px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
   .toolbar .sep { width:1px; align-self:stretch; background:var(--line); margin:2px 2px; }
   .toolbar .grow { flex:1 1 auto; }
+  .toolbar-primary, .toolbar-actions { display:flex; align-items:center; gap:8px; min-width:0; }
+  .toolbar-primary { flex:1 1 420px; }
+  .toolbar-actions { flex:0 0 auto; }
+  .toolbar-primary #rmPicker { min-width:180px; max-width:360px; flex:1 1 240px; }
+  #mobileActions { display:none; }
   .save-status { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:4px 9px; border-radius:999px;
     color:var(--ink-2); background:var(--bg); border:1px solid var(--line); font-family:var(--mono); font-size:10.5px; white-space:nowrap; }
   .save-status[data-state="pending"] { color:var(--info); background:var(--info-bg); }
@@ -146,12 +168,32 @@
   .card .card-head h2 { margin:0; font-size:12px; font-weight:700; letter-spacing:0.06em; color:var(--ink-2); text-transform:uppercase; }
   .card .card-head .mono { font-family:var(--mono); font-size:11px; color:var(--mut); }
 
+  /* ---------- selected roadmap views ---------- */
+  .roadmap-panel { display:none; }
+  body:not(.mode-overview)[data-active-view="executive"] .roadmap-panel[data-roadmap-view="executive"],
+  body:not(.mode-overview)[data-active-view="timeline"] .roadmap-panel[data-roadmap-view="timeline"],
+  body:not(.mode-overview)[data-active-view="details"] .roadmap-panel[data-roadmap-view="details"] { display:block; }
+  .executive-band { overflow:hidden; margin-bottom:16px; border:1px solid var(--line); border-radius:var(--radius-lg); background:var(--card); box-shadow:var(--shadow); }
+  .executive-band-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px 10px; }
+  .executive-band-title { margin:0; font-size:15px; font-weight:800; letter-spacing:-.01em; }
+  .executive-band-sub { margin-top:2px; color:var(--mut); font-size:12px; }
+  .executive-actions { display:flex; align-items:center; gap:8px; }
+  .executive-band #summaryCard { margin:0; border:0; border-radius:0; box-shadow:none; border-top:1px solid var(--line); }
+  .executive-band #summaryCard .card-head { display:none; }
+  .executive-band .summary-body { padding:14px 16px 16px; }
+  .executive-band .summary-narrative { margin:0 16px 16px; }
+  .executive-phase-strip { min-height:80px; padding:12px 16px; border-top:1px solid var(--line); background:var(--bg); }
+  .executive-phase-strip svg { display:block; width:100%; max-height:150px; }
+  .executive-phase-strip .mini-empty { padding:24px 0; }
+  .editor-helper { display:block; margin-top:4px; color:var(--mut); font-size:12px; font-weight:400; letter-spacing:0; text-transform:none; }
+
   /* ---------- timeline ---------- */
   .tl-scroll { width:100%; overflow-x:auto; padding:10px 6px 6px; }
   .tl-scroll::-webkit-scrollbar { height:10px; }
   .tl-scroll::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:999px; border:3px solid var(--card); }
   svg.gantt { display:block; width:100%; height:auto; }
   .tl-tools { display:flex; align-items:center; gap:12px; }
+  #tlCard > .card-head { position:sticky; top:8px; z-index:8; background:color-mix(in srgb,var(--card) 94%,transparent); backdrop-filter:blur(10px); }
   .zoomer { display:inline-flex; align-items:center; background:var(--bg); border:1px solid var(--line-2); border-radius:8px; padding:2px; gap:1px; }
   .zbtn { font-family:var(--disp); font-size:14px; font-weight:700; color:var(--ink-2); background:transparent; border:none; border-radius:6px; padding:3px 9px; cursor:pointer; line-height:1.1; }
   .zbtn:hover { color:var(--accent); background:var(--card); }
@@ -168,12 +210,22 @@
   .legend .lead { font-family:var(--mono); font-size:10.5px; letter-spacing:0.04em; color:var(--mut); text-transform:uppercase; }
   .tl-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:46px 16px; text-align:center; color:var(--mut); font-size:14px; }
   .tl-empty .big { font-size:26px; opacity:.5; }
+  .tl-empty .big .ui-icon { width:28px; height:28px; }
 
   /* ---------- editor ---------- */
   .lane { --item-grid:14px 116px minmax(190px,1fr) 288px 104px 80px 98px;
     border:1px solid var(--line); border-radius:var(--radius); margin:12px 16px; overflow:hidden; transition:box-shadow .15s; }
   .lane:hover { box-shadow:var(--shadow-sm); }
   .lane-head { display:flex; align-items:center; gap:8px; padding:9px 10px; background:var(--bg); border-bottom:1px solid var(--line); }
+  .lane[data-collapsed="true"] .lane-head { border-bottom:0; }
+  .lane-toggle { order:-1; border-color:transparent; background:transparent; }
+  .lane-toggle .chev { transition:transform .16s ease; }
+  .lane-toggle[aria-expanded="true"] .chev { transform:rotate(90deg); }
+  .lane-summary { display:flex; align-items:center; gap:7px; flex:0 1 auto; min-width:0; margin-left:auto; }
+  .lane-metric { display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border:1px solid var(--line); border-radius:var(--pill);
+    background:var(--card); color:var(--mut); font-size:10.5px; white-space:nowrap; }
+  .lane-metric strong { color:var(--ink-2); }
+  .lane-actions { display:flex; align-items:center; gap:4px; }
   .lane-head .dot { width:12px; height:12px; border-radius:4px; flex:0 0 auto; }
   .lane-head input.lane-name { flex:1 1 auto; min-width:80px; font-family:var(--disp); font-weight:700; font-size:14px; color:var(--ink);
     background:transparent; border:1px solid transparent; border-radius:6px; padding:5px 8px; }
@@ -192,7 +244,7 @@
   .item-columns .item-col-actions, .item .item-actions { grid-area:actions; }
   .item-columns .item-col-actions { padding-right:3px; text-align:right; }
   .items { padding:0 10px 4px; display:flex; flex-direction:column; gap:0; }
-  .item { grid-template-areas:"marker kind label dates status gate actions" ". . note note note note note";
+  .item { grid-template-areas:"marker kind label dates status gate actions";
     align-items:center; row-gap:7px; padding:10px 6px; border-radius:8px; transition:background .12s; }
   .item + .item { border-top:1px solid var(--line); border-top-left-radius:0; border-top-right-radius:0; }
   .item:hover { background:var(--bg); }
@@ -214,6 +266,13 @@
   .item .gate-tog input { margin:0; cursor:pointer; }
   .item .item-actions { display:grid; grid-template-columns:repeat(3,30px); gap:4px; justify-content:end; }
   .item .item-actions .icon-btn { width:30px; height:34px; }
+  .item .item-more { grid-area:actions; justify-self:end; width:34px; height:34px; }
+  .item-detail-panel { grid-column:2 / -1; display:grid; grid-template-columns:minmax(180px,1fr) auto auto; align-items:center; gap:8px;
+    margin:2px 0 3px; padding:10px; border:1px solid var(--line); border-radius:9px; background:var(--bg); }
+  .item-detail-panel[hidden] { display:none; }
+  .item-detail-panel .item-gate-slot { grid-area:auto; }
+  .item-detail-panel .item-actions { grid-area:auto; }
+  .item .item-detail-panel .note-inp { grid-area:auto; }
   .notes-body { padding:12px 16px 16px; }
   .summary-body { padding:14px 16px 16px; font-size:13.5px; line-height:1.6; color:var(--ink); }
   .summary-body .sum-head { font-size:15px; font-weight:800; letter-spacing:-0.01em; }
@@ -265,9 +324,15 @@
   body.mode-overview .editor-view { display:none !important; }
   #overviewTitle { display:none; }
   body.mode-overview #overviewTitle { display:block; }
+  .portfolio-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; }
+  .portfolio-filters { display:inline-flex; align-items:center; gap:4px; padding:4px; border:1px solid var(--line); border-radius:10px; background:var(--card); }
+  .portfolio-filter { border:0; border-radius:7px; padding:7px 11px; background:transparent; color:var(--ink-2); font:700 12px/1 var(--disp); cursor:pointer; }
+  .portfolio-filter[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent); }
+  .portfolio-filter-count { margin-left:5px; font-family:var(--mono); font-size:10px; opacity:.8; }
+  .portfolio-toolbar-note { color:var(--mut); font-size:12px; }
   .ov-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%,300px),1fr)); gap:16px; }
   .rm-card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm);
-    padding:16px 16px 14px 18px; cursor:pointer; display:flex; flex-direction:column; gap:10px; overflow:hidden;
+    padding:16px 16px 14px 18px; min-height:360px; cursor:pointer; display:flex; flex-direction:column; gap:10px; overflow:hidden;
     transition:box-shadow .15s, transform .1s, border-color .15s; }
   .rm-card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--rm-accent, var(--accent)); }
   .rm-card > :not(.rm-open) { position:relative; z-index:1; pointer-events:none; }
@@ -277,29 +342,38 @@
   .rm-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); border-color:var(--line-2); }
   .rm-card:focus-visible { outline:none; box-shadow:0 0 0 3px var(--ring); }
   .rm-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-  .rm-title { font-weight:800; font-size:16px; letter-spacing:-0.01em; color:var(--ink); line-height:1.25; }
+  .rm-title { min-height:40px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-weight:800; font-size:16px; letter-spacing:-0.01em; color:var(--ink); line-height:1.25; }
   .rm-acts { display:flex; gap:4px; opacity:0; transition:opacity .15s; flex:0 0 auto; }
   .rm-card:hover .rm-acts, .rm-card:focus-within .rm-acts { opacity:1; }
-  .rm-sub { font-size:13px; color:var(--ink-2); margin-top:-4px; }
-  .rm-mini { border:1px solid var(--line); border-radius:8px; padding:7px 8px; background:var(--bg); }
-  .rm-mini svg { display:block; width:100%; height:auto; }
+  .rm-sub { min-height:20px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; color:var(--ink-2); margin-top:-4px; }
+  .rm-mini { height:96px; display:flex; align-items:center; border:1px solid var(--line); border-radius:8px; padding:7px 8px; background:var(--bg); overflow:hidden; }
+  .rm-mini svg { display:block; width:100%; max-height:80px; height:auto; }
   .mini-empty { font-size:11px; color:var(--mut); text-align:center; padding:16px 0; }
   .ov-bar { display:flex; height:8px; border-radius:999px; overflow:hidden; background:var(--line); }
   .ov-seg { display:block; }
   .rm-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--ink-2); }
   .rm-meta .pct { font-weight:800; color:var(--ink); }
+  .rm-health-row, .rm-next-row, .rm-sharing-row { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:22px; font-size:11.5px; color:var(--ink-2); }
+  .rm-row-label { color:var(--mut); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+  .health-pill { display:inline-flex; align-items:center; gap:5px; padding:2px 7px; border-radius:var(--pill); background:var(--ok-bg); color:var(--ok); font-size:10.5px; font-weight:800; }
+  .health-pill.attention { background:var(--err-bg); color:var(--err); }
+  .health-pill.complete { background:var(--accent-soft); color:var(--accent); }
+  .health-pill.empty { background:var(--bg); color:var(--mut); }
+  .health-pill .health-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .rm-next-value { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
   .ov-chips { display:flex; flex-wrap:wrap; gap:6px; }
   .ov-chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-2); background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:2px 8px; }
   .ov-dot { width:8px; height:8px; border-radius:2px; flex:0 0 auto; }
-  .rm-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; color:var(--mut); font-family:var(--mono); }
+  .rm-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto; padding-top:8px; border-top:1px solid var(--line); font-size:11px; color:var(--mut); font-family:var(--mono); }
   .rm-new { display:flex; align-items:center; justify-content:center; min-height:200px; border:1.5px dashed var(--line-2); border-radius:var(--radius);
     background:transparent; color:var(--ink-2); font-family:var(--disp); font-weight:700; font-size:14px; cursor:pointer; transition:border-color .15s, color .15s, background .15s; }
   .rm-new:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
-  /* archived section: full-width divider + muted cards */
+  .portfolio-empty { grid-column:1/-1; padding:48px 20px; border:1px dashed var(--line-2); border-radius:var(--radius); color:var(--mut); text-align:center; }
+  /* archived and trash are explicit portfolio filters rather than mixed below active work */
   .ov-divider { grid-column:1 / -1; display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:14px; border-top:1px solid var(--line);
     font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); }
   .ov-divider-n { font-family:var(--mono); font-size:11px; background:var(--bg); border:1px solid var(--line-2); color:var(--ink-2); border-radius:999px; padding:0 7px; }
-  .rm-card.archived { opacity:0.66; }
+  .rm-card.archived { opacity:0.82; }
   .rm-card.archived:hover { opacity:1; }
   .arch-pill { display:inline-block; vertical-align:2px; margin-left:6px; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--ink-2); background:var(--bg); border:1px solid var(--line-2); border-radius:999px; padding:1px 7px; }
@@ -392,6 +466,7 @@
 
   /* ---------- read-only mode ---------- */
   body.readonly .app-only { display:none !important; }
+  body.readonly .segmented { display:none !important; }
 
   /* ---------- public viewer (not signed in): browse a read-only portfolio ---------- */
   /* Hide every editing surface but keep navigation (overview grid, view toggle,
@@ -424,11 +499,30 @@
   .menu-item.danger:hover { background:var(--err-bg); color:var(--err); }
   .menu-item:disabled { opacity:.4; cursor:default; }
   .menu-item:disabled:hover { background:transparent; color:var(--ink); }
-  .stat-chips { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+  .menu-list-wide { min-width:260px; }
+  .menu-field { padding:6px 10px 2px; color:var(--mut); font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .menu-select { width:calc(100% - 12px); margin:0 6px 5px; }
+  .menu-rule { height:1px; margin:5px 6px; background:var(--line); }
+  .present-exit { position:fixed; top:16px; right:18px; z-index:90; box-shadow:var(--shadow-lg); }
+  body.presentation-mode .app-shell,
+  body.presentation-mode #roadmapHeader .mast-tools,
+  body.presentation-mode #toolbar,
+  body.presentation-mode #publicUrlBar,
+  body.presentation-mode #topNote,
+  body.presentation-mode #draftBanner,
+  body.presentation-mode .site-footer { display:none !important; }
+  body.presentation-mode .wrap { max-width:none; padding-top:22px; }
+  body.presentation-mode #roadmapHeader { padding-right:150px; }
+  body.presentation-mode #roadmapHeader input, body.presentation-mode #roadmapHeader textarea { pointer-events:none; }
+  body.presentation-mode #timelinePanel { display:block !important; }
+  body.presentation-mode .present-exit { display:inline-flex !important; }
+  .stat-chips { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:0; margin:0; border-top:1px solid var(--line); }
   .stat-chips[hidden] { display:none !important; }
-  .stat-chip { flex:0 1 auto; min-width:112px; padding:9px 14px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow-sm); }
+  .stat-chip { min-width:0; padding:14px 16px; border-right:1px solid var(--line); background:var(--card); }
+  .stat-chip:last-child { border-right:0; }
   .stat-chip .sc-lbl { display:block; font-family:var(--mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--mut); margin-bottom:3px; }
-  .stat-chip .sc-val { font-size:14px; font-weight:700; color:var(--ink); }
+  .stat-chip .sc-val { display:block; overflow:hidden; text-overflow:ellipsis; font-size:14px; font-weight:800; color:var(--ink); white-space:nowrap; }
+  .stat-chip.primary .sc-val { color:var(--accent); font-size:18px; }
   .stat-chip.warn .sc-val { color:var(--err); }
   .callouts-body { padding:14px 16px 16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%,300px),1fr)); gap:14px; }
   .callout { border:1px solid var(--line-2); border-radius:12px; padding:14px 16px; background:var(--card); }
@@ -467,6 +561,12 @@
   .timeline-empty { color:var(--mut); padding:10px 0; }
 
   @media (max-width: 1120px) and (min-width: 721px) {
+    .stat-chips { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .stat-chip:nth-child(3n) { border-right:0; }
+    .stat-chip:nth-child(-n+3) { border-bottom:1px solid var(--line); }
+    .lane-head { flex-wrap:wrap; }
+    .lane-summary { order:10; flex:1 1 calc(100% - 210px); margin-left:38px; }
+    .lane-actions { order:11; margin-left:auto; }
     .item-columns { display:none; }
     .item { grid-template-columns:14px 108px minmax(130px,1fr) 100px 76px 98px;
       grid-template-areas:"marker kind label label label label" ". dates dates status gate actions" ". note note note note note";
@@ -475,25 +575,53 @@
   }
 
   @media (max-width: 720px) {
-    .wrap { padding:14px 10px 76px; }
-    .mast { align-items:center; margin-bottom:12px; }
-    .brand { flex-basis:100%; gap:10px; }
-    .brand .mark, .brand .mark .brand-logo { width:42px; height:42px; }
-    input.title-in, .ov-h1 { font-size:22px; }
-    .mast-tools { width:100%; justify-content:space-between; margin-top:0; }
-    .toolbar { align-items:stretch; padding:9px; gap:6px; }
+    .wrap { padding:0 10px 76px; }
+    .app-shell { min-height:48px; margin:0 -10px 14px; padding:7px 10px; gap:7px; }
+    .app-identity { gap:7px; }
+    .app-identity .app-logo { width:28px; height:28px; }
+    .app-product { display:none; }
+    .app-shell-center { margin-left:0; flex:1 1 auto; justify-content:center; }
+    .app-shell .seg-btn { padding:6px 8px; font-size:11.5px; }
+    .app-shell-tools { gap:5px; }
+    .app-shell-tools #ownerSignIn, .app-shell-tools #backToPortfolio { max-width:104px; overflow:hidden; text-overflow:ellipsis; }
+    .mast { align-items:flex-start; margin-bottom:10px; }
+    .brand { flex-basis:100%; gap:0; }
+    .title-in, .ov-h1 { min-height:54px; max-height:112px; overflow:auto; text-overflow:clip; white-space:pre-wrap; font-size:23px; }
+    input.sub-in { font-size:13px; }
+    .mast-tools { width:100%; margin-top:2px; }
+    .roadmap-tabs { width:100%; overflow-x:auto; justify-content:stretch; }
+    .roadmap-tab { flex:1 0 auto; justify-content:center; min-width:94px; }
+    .toolbar { position:relative; align-items:center; flex-wrap:wrap; padding:8px; gap:7px; }
     .toolbar .grow, .toolbar .sep { display:none; }
-    .toolbar > select, .toolbar > .menu, .toolbar > button { flex:1 1 calc(50% - 6px); min-width:0; }
-    .toolbar .menu > button { width:100%; }
-    .save-status { flex:1 1 100%; justify-content:center; order:20; }
+    .toolbar-primary { flex:1 1 calc(100% - 96px); min-width:0; }
+    .toolbar-primary #rmPicker { width:100%; max-width:none; min-width:0; height:40px; }
+    #mobileActions { display:inline-flex; flex:0 0 86px; justify-content:center; min-height:40px; }
+    .toolbar-actions { display:none; position:absolute; z-index:24; top:calc(100% + 6px); right:0; width:min(330px,calc(100vw - 20px));
+      padding:10px; border:1px solid var(--line-2); border-radius:12px; background:var(--card); box-shadow:var(--shadow-lg); grid-template-columns:1fr 1fr; }
+    .toolbar.mobile-open .toolbar-actions { display:grid; }
+    .toolbar-actions > button, .toolbar-actions > .menu { width:100%; min-width:0; }
+    .toolbar-actions > .menu > .menu-btn { width:100%; }
+    .toolbar-actions #rmNew { grid-column:1 / -1; }
+    .toolbar-actions #cloudBtn { grid-column:1 / -1; }
+    .toolbar-actions .menu-list { position:fixed; top:auto; left:10px; right:10px; bottom:12px; width:auto; max-height:min(70vh,560px); overflow:auto; }
+    #currentAccess { display:none !important; }
+    .save-status { flex:1 1 100%; max-width:100%; min-width:0; min-height:20px; justify-content:flex-start; padding:0 4px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; order:20; }
     .card .card-head { align-items:flex-start; padding:11px 12px; }
-    .tl-tools { flex-wrap:wrap; justify-content:flex-end; }
-    .zoomer { display:none; }
-    .tl-scroll { display:none; }
+    .executive-band-head { align-items:flex-start; padding:12px; }
+    .executive-actions { flex-direction:column; align-items:stretch; }
+    .stat-chips { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .stat-chip { border-bottom:1px solid var(--line); }
+    .stat-chip:nth-child(2n) { border-right:0; }
+    .executive-phase-strip { padding:10px 12px; }
+    .tl-tools { width:100%; flex-wrap:wrap; justify-content:flex-end; }
+    .zoomer { display:inline-flex; width:100%; }
+    .zbtn { flex:1 1 auto; min-height:36px; }
+    .tl-scroll { display:block; }
     .timeline-data { border-top:0; }
-    .timeline-data summary { display:none; }
+    .timeline-data summary { display:block; }
     .timeline-data .timeline-table-wrap { display:block; padding:0 10px 12px; }
-    .timeline-data:not([open]) .timeline-table-wrap { display:block; }
+    .timeline-data:not([open]) .timeline-table-wrap { display:none; }
     .timeline-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
     .timeline-table, .timeline-table tbody, .timeline-table tr, .timeline-table td { display:block; width:100%; }
     .timeline-table tr { margin:0 0 10px; padding:10px; border:1px solid var(--line); border-radius:9px; }
@@ -501,22 +629,31 @@
     .timeline-table td::before { content:attr(data-label); color:var(--mut); font-family:var(--mono); font-size:10px; text-transform:uppercase; }
     .lane { margin:10px 8px; }
     .lane-head { flex-wrap:wrap; }
-    .lane-head input.lane-name { flex-basis:calc(100% - 34px); }
+    .lane-head input.lane-name { flex:1 1 calc(100% - 84px); }
+    .lane-summary { order:10; flex:1 1 100%; margin:2px 0 0 38px; overflow-x:auto; }
+    .lane-actions { order:11; margin-left:auto; }
     .lane-head .icon-btn { width:34px; height:34px; }
     .item-columns { display:none; }
     .items { padding:0 8px 4px; }
-    .item { grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      grid-template-areas:"kind kind" "label label" "dates dates" "status gate" "actions actions" "note note";
+    .item { grid-template-columns:minmax(0,1fr) 44px;
+      grid-template-areas:"kind kind" "label label" "dates dates" "status actions";
       align-items:center; gap:8px; padding:12px 2px; }
     .item .drag { display:none; }
     .item .item-dates--milestone { grid-template-columns:1fr; }
-    .item .item-gate-slot { justify-content:flex-start; }
+    .item .item-more { width:40px; height:40px; }
+    .item-detail-panel { grid-column:1 / -1; grid-template-columns:1fr; }
+    .item-detail-panel .item-gate-slot { justify-content:flex-start; }
     .item .gate-tog { width:auto; min-width:82px; }
     .item select.kind, .item input.lbl, .item input[type="date"], .item select.chip, .item .gate-tog { height:40px; }
     .item input.note-inp { height:38px; }
     .item .item-actions { grid-template-columns:repeat(3,32px); justify-self:end; }
     .item .item-actions .icon-btn { width:32px; height:40px; }
     .rm-acts { opacity:1; }
+    .portfolio-toolbar { align-items:flex-start; flex-direction:column; }
+    .portfolio-filters { width:100%; overflow-x:auto; }
+    .portfolio-filter { flex:1 0 auto; }
+    .portfolio-toolbar-note { display:none; }
+    .rm-card { min-height:350px; }
     .pub-url { flex-wrap:wrap; }
     .pub-url .pub-input { flex-basis:100%; order:2; }
     .access-context { flex:1 1 100%; justify-content:center; order:19; }
@@ -536,13 +673,17 @@
   @media print {
     :root { --bg:#fff; --card:#fff; --bg-wash:none; }
     body { background:#fff; }
-    .toolbar, .editor-card, .add-lane, .draft-banner, .theme-switch, .mast-tools, .app-only { display:none !important; }
+    .toolbar, .editor-card, .add-lane, .draft-banner, .theme-switch, .mast-tools, .zoomer, .app-only { display:none !important; }
+    #executivePanel, #timelinePanel { display:block !important; }
+    #detailsPanel, #draftBanner { display:none !important; }
     body.mode-overview #tlCard { display:block !important; }
     body.mode-overview #editorTitle { display:block !important; }
     .wrap { max-width:none; padding:0; }
     .mast { margin-bottom:10px; }
     .card { border:none; box-shadow:none; margin-bottom:12px; break-inside:avoid; }
     .card .card-head { border-bottom:1px solid #e2e2e2; }
+    #tlCard > .card-head { position:static; backdrop-filter:none; }
+    #executiveBand { display:block !important; border:1px solid #ddd; box-shadow:none; }
     .legend { background:#fff; }
     .tl-scroll { display:block !important; overflow:visible !important; }
     /* Fit the timeline to the printable page width instead of its (wide) on-screen
@@ -559,13 +700,39 @@
   }
 </style>
 </head>
-<body>
+<body data-active-view="details">
 <a class="skip-link" href="#mainContent">Skip to roadmap content</a>
 <div class="wrap">
   <h1 class="sr-only">Roadmap Builder</h1>
 
-  <!-- masthead -->
-  <header class="mast">
+  <!-- slim application shell: product-level navigation is separate from the selected roadmap -->
+  <header class="app-shell app-only" id="appHeader">
+    <div class="app-identity">
+      <img class="app-logo logo-light" src="assets/dst-logo-black.png" alt="" />
+      <img class="app-logo logo-dark" src="assets/dst-logo-white.png" alt="" />
+      <span class="app-product">Roadmap Builder</span>
+    </div>
+    <div class="app-shell-center">
+      <div class="segmented" role="group" aria-label="Workspace">
+        <button id="segOverview" class="seg-btn" type="button" data-view="portfolio" aria-controls="overviewView" aria-pressed="false">Portfolio <span id="segCount" class="seg-count">0</span></button>
+        <button id="segEditor" class="seg-btn" type="button" data-view="roadmap" aria-pressed="true">Roadmap</button>
+      </div>
+    </div>
+    <div class="app-shell-tools">
+      <button id="ownerSignIn" class="btn ghost sm" type="button" hidden>Sign in to edit</button>
+      <button id="backToPortfolio" class="btn ghost sm" type="button" hidden>All roadmaps</button>
+      <button id="themeBtn" class="theme-switch" role="switch" aria-checked="false" title="Toggle dark mode" aria-label="Dark mode">
+        <svg class="ts-ico ts-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M2.5 12h2M19.5 12h2M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/>
+        </svg>
+        <svg class="ts-ico ts-moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z"/></svg>
+        <span class="ts-knob" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- selected-roadmap header -->
+  <header class="mast roadmap-header" id="roadmapHeader">
     <div class="brand">
       <div class="mark">
         <img class="brand-logo logo-light" src="assets/dst-logo-black.png" alt="Dr. Shane Turner" />
@@ -575,7 +742,7 @@
         <div class="eyebrow" id="eyebrow">Roadmap Builder</div>
         <div id="editorTitle" class="editor-view">
           <label class="sr-only" for="titleIn">Roadmap title</label>
-          <input id="titleIn" class="title-in" type="text" maxlength="500" placeholder="Untitled roadmap" />
+          <textarea id="titleIn" class="title-in" rows="1" maxlength="500" placeholder="Untitled roadmap"></textarea>
           <label class="sr-only" for="subIn">Roadmap subtitle</label>
           <input id="subIn" class="sub-in" type="text" maxlength="1000" placeholder="Add a subtitle (optional)" />
           <label class="sr-only" for="premiseIn">Roadmap premise</label>
@@ -587,79 +754,61 @@
         </div>
       </div>
     </div>
-    <div class="mast-tools app-only">
-      <button id="ownerSignIn" class="btn ghost sm" type="button" hidden>☁ Sign in to edit</button>
-      <button id="backToPortfolio" class="btn ghost sm" type="button" hidden>← All roadmaps</button>
-      <div class="segmented" role="group" aria-label="View">
-        <button id="segOverview" class="seg-btn" type="button" aria-pressed="false">Overview <span id="segCount" class="seg-count">0</span></button>
-        <button id="segEditor" class="seg-btn" type="button" aria-pressed="true">Editor</button>
-      </div>
-      <button id="themeBtn" class="theme-switch" role="switch" aria-checked="false" title="Toggle dark mode" aria-label="Dark mode">
-        <svg class="ts-ico ts-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.2"/>
-          <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M2.5 12h2M19.5 12h2M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"/>
-        </svg>
-        <svg class="ts-ico ts-moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M20 14.5A8 8 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z"/>
-        </svg>
-        <span class="ts-knob" aria-hidden="true"></span>
-      </button>
+    <div class="mast-tools">
+      <nav class="roadmap-tabs editor-view" id="roadmapViews" role="tablist" aria-label="Roadmap views">
+        <button id="segExecutive" class="roadmap-tab" type="button" role="tab" data-view="executive" aria-selected="false" aria-controls="executivePanel">Executive</button>
+        <button id="segTimeline" class="roadmap-tab" type="button" role="tab" data-view="timeline" aria-selected="false" aria-controls="timelinePanel">Timeline</button>
+        <button id="segDetails" class="roadmap-tab" type="button" role="tab" data-view="details" aria-selected="true" aria-controls="detailsPanel">Details</button>
+      </nav>
     </div>
   </header>
 
   <!-- toolbar -->
   <nav class="toolbar app-only editor-view" id="toolbar" aria-label="Roadmap actions">
-    <label class="sr-only" for="rmPicker">Current roadmap</label>
-    <select id="rmPicker" class="sel" title="Switch roadmap" aria-label="Current roadmap"></select>
-    <button id="rmNew" class="btn ghost sm" type="button">＋ New</button>
-    <div class="menu" data-menu>
-      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="More roadmap actions">⋯</button>
-      <div class="menu-list" role="menu" hidden>
-        <button class="menu-item" data-act="dup" role="menuitem">Duplicate roadmap</button>
-        <button class="menu-item" data-act="archive" id="archiveItem" role="menuitem">🗄 Archive roadmap</button>
-        <button class="menu-item danger" data-act="del" role="menuitem">Delete roadmap</button>
-      </div>
+    <div class="toolbar-primary">
+      <label class="sr-only" for="rmPicker">Current roadmap</label>
+      <select id="rmPicker" class="sel" title="Switch roadmap" aria-label="Current roadmap"></select>
     </div>
-    <div class="sep"></div>
-    <select id="tmplPicker" class="sel" title="Start from a template">
-      <option value="">Start from template…</option>
-      <option value="software">Software Dev (Agile/SDLC)</option>
-      <option value="product">Product Development</option>
-      <option value="gtm">Business Dev / GTM Campaign</option>
-      <option value="data">Data &amp; Analytics program</option>
-      <option value="hiring">Hiring / team build</option>
-    </select>
-    <button id="aiBtn" class="btn sm" hidden>✨ Build from description</button>
-    <div class="grow"></div>
-    <div class="menu" data-menu>
-      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">Export ▾</button>
-      <div class="menu-list" role="menu" hidden>
-        <button class="menu-item" data-act="png" role="menuitem">PNG image</button>
-        <button class="menu-item" data-act="html" role="menuitem">HTML page</button>
-        <button class="menu-item" data-act="json" role="menuitem">JSON</button>
-        <button class="menu-item" data-act="portfolio" role="menuitem">Full portfolio backup</button>
-        <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
+    <button id="mobileActions" class="btn ghost sm" type="button" data-action="mobile-actions" aria-expanded="false" aria-controls="toolbarActions">Actions</button>
+    <div class="toolbar-actions" id="toolbarActions">
+      <button id="rmNew" class="btn ghost sm" type="button" data-action="new-roadmap">New roadmap</button>
+      <button id="shareBtn" class="btn ghost sm" type="button" data-action="share">Share</button>
+      <button id="presentBtn" class="btn ghost sm" type="button" data-action="present" aria-pressed="false">Present</button>
+      <div class="menu" data-menu>
+        <button class="btn ghost sm menu-btn" type="button" data-action="export" aria-haspopup="true" aria-expanded="false">Export</button>
+        <div class="menu-list" role="menu" hidden>
+          <button class="menu-item" data-act="png" role="menuitem">PNG image</button>
+          <button class="menu-item" data-act="html" role="menuitem">Interactive HTML</button>
+          <button class="menu-item" data-act="json" role="menuitem">Roadmap JSON</button>
+          <button class="menu-item" data-act="portfolio" role="menuitem">Full portfolio backup</button>
+          <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
+        </div>
       </div>
-    </div>
-    <div class="menu" data-menu>
-      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">Import ▾</button>
-      <div class="menu-list" role="menu" hidden>
-        <button class="menu-item" data-act="import" role="menuitem">Roadmap JSON…</button>
-        <button class="menu-item" data-act="json-template" role="menuitem" type="button">Download JSON template</button>
-        <button class="menu-item" data-act="jira" role="menuitem">Jira CSV…</button>
+      <div class="menu" id="cloudMenu" data-menu>
+        <button class="btn ghost sm menu-btn" type="button" data-action="more" aria-haspopup="true" aria-expanded="false" aria-controls="moreMenu" title="More roadmap actions">More</button>
+        <div class="menu-list menu-list-wide" id="moreMenu" role="group" aria-label="More roadmap actions" hidden>
+          <button id="aiBtn" class="menu-item" type="button" data-action="build-ai" hidden>Build with AI…</button>
+          <label class="menu-field" for="tmplPicker">Start from template</label>
+          <select id="tmplPicker" class="sel menu-select" title="Start from a template">
+            <option value="">Choose a template…</option><option value="software">Software Dev (Agile/SDLC)</option><option value="product">Product Development</option><option value="gtm">Business Dev / GTM Campaign</option><option value="data">Data &amp; Analytics program</option><option value="hiring">Hiring / team build</option>
+          </select>
+          <div class="menu-rule" role="separator"></div>
+          <button class="menu-item" data-act="dup">Duplicate roadmap</button>
+          <button class="menu-item" data-act="archive" id="archiveItem">Archive roadmap</button>
+          <button class="menu-item" data-act="import">Import Roadmap JSON…</button>
+          <button class="menu-item" data-act="json-template" type="button">Download JSON template</button>
+          <button class="menu-item" data-act="jira">Import Jira CSV…</button>
+          <div class="menu-rule" role="separator" data-cloud-only hidden></div>
+          <button class="menu-item" data-act="save" data-cloud-only hidden>Save to cloud</button>
+          <button class="menu-item" data-act="open" data-cloud-only hidden>Open from cloud…</button>
+          <button class="menu-item" data-act="share" data-cloud-only hidden>Create viewer link…</button>
+          <button class="menu-item" id="publicItem" data-act="public" data-cloud-only hidden>Make public</button>
+          <button class="menu-item" data-act="access" data-cloud-only hidden>Manage collaborators…</button>
+          <button class="menu-item danger" data-act="del">Move roadmap to Trash</button>
+        </div>
       </div>
+      <button id="cloudBtn" class="btn ghost sm" data-action="sign-in">Sign in</button>
     </div>
-    <div class="menu" id="cloudMenu" data-menu hidden>
-      <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">☁ Cloud ▾</button>
-      <div class="menu-list" role="menu" hidden>
-        <button class="menu-item" data-act="save" role="menuitem">Save to cloud</button>
-        <button class="menu-item" data-act="open" role="menuitem">Open from cloud…</button>
-        <button class="menu-item" data-act="share" role="menuitem">Share read-only link…</button>
-        <button class="menu-item" id="publicItem" data-act="public" role="menuitem">🌐 Make public</button>
-        <button class="menu-item" data-act="access" role="menuitem">Manage access…</button>
-      </div>
-    </div>
-    <button id="cloudBtn" class="btn ghost sm">☁ Sign in</button>
     <span id="cloudEmail" class="cloud-email" hidden></span>
     <span id="saveStatus" class="save-status" data-state="local" role="status" aria-live="polite">Saved locally</span>
     <span id="currentAccess" class="access-context" hidden></span>
@@ -669,7 +818,7 @@
 
   <!-- public link (shown for the owner when the current roadmap is public) -->
   <div id="publicUrlBar" class="pub-url app-only editor-view" hidden>
-    <span class="pub-ico">🌐</span>
+    <span class="pub-ico"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>
     <span class="pub-lbl">Public link</span>
     <input id="publicUrl" class="pub-input" type="text" readonly aria-label="Public roadmap link" />
     <button id="publicUrlCopy" class="btn ghost sm" type="button">Copy</button>
@@ -681,30 +830,63 @@
 
   <main id="mainContent" tabindex="-1" aria-busy="true">
 
-  <!-- overview / portfolio -->
-  <section id="overviewView" class="app-only" aria-label="Roadmap portfolio"><div id="overviewGrid" class="ov-grid"></div></section>
+  <!-- portfolio is an application view, distinct from the three selected-roadmap views -->
+  <section id="overviewView" class="app-only" aria-label="Roadmap portfolio">
+    <div class="portfolio-toolbar">
+      <div class="portfolio-filters" role="group" aria-label="Portfolio status">
+        <button class="portfolio-filter" type="button" data-portfolio-filter="active" aria-pressed="true">Active <span class="portfolio-filter-count" id="activeCount">0</span></button>
+        <button class="portfolio-filter" type="button" data-portfolio-filter="archived" aria-pressed="false">Archived <span class="portfolio-filter-count" id="archivedCount">0</span></button>
+        <button class="portfolio-filter" type="button" data-portfolio-filter="trash" aria-pressed="false">Trash <span class="portfolio-filter-count" id="trashCount">0</span></button>
+      </div>
+      <span class="portfolio-toolbar-note">Select a roadmap to open its executive view</span>
+    </div>
+    <div id="overviewGrid" class="ov-grid"></div>
+  </section>
 
-  <!-- at-a-glance stat chips (auto-derived) -->
-  <div id="statChips" class="stat-chips editor-view" hidden></div>
+  <div id="draftBanner" class="draft-banner app-only editor-view">
+    <span class="grow"><b>Draft from your description.</b> Review and edit below, or discard to restore your previous roadmap.</span>
+    <button id="draftKeep" class="btn sm">Keep</button>
+    <button id="draftDiscard" class="btn ghost sm">Discard</button>
+  </div>
 
-  <!-- timeline -->
-  <div class="card editor-view" id="tlCard">
+  <!-- executive view: one decision-focused band plus authored analysis -->
+  <section class="roadmap-panel editor-view" id="executivePanel" data-roadmap-view="executive" role="tabpanel" aria-labelledby="segExecutive">
+    <div class="executive-band" id="executiveBand">
+      <div class="executive-band-head">
+        <div><h2 class="executive-band-title">Executive overview</h2><div class="executive-band-sub">Progress, decisions, and near-term attention</div></div>
+        <div class="executive-actions app-only">
+          <button id="summaryAiBtn" class="btn sm" type="button" hidden>Write narrative</button>
+          <button id="summaryCopy" class="btn ghost sm" type="button">Copy summary</button>
+        </div>
+      </div>
+      <div id="statChips" class="stat-chips" hidden></div>
+      <div class="executive-phase-strip" id="executivePhaseStrip" data-role="executive-timeline-preview"></div>
+      <div id="summaryCard" hidden>
+        <div class="summary-body" id="summaryBody"></div>
+        <div class="summary-narrative" id="summaryNarrative" hidden></div>
+      </div>
+    </div>
+
+    <div class="card" id="calloutsCard" hidden>
+      <div class="card-head"><h2>Notes &amp; analysis</h2><span class="mono app-only">decision context</span></div>
+      <div class="callouts-body" id="calloutsBody"></div>
+    </div>
+  </section>
+
+  <!-- timeline view: the visual roadmap is the centerpiece -->
+  <section class="roadmap-panel editor-view" id="timelinePanel" data-roadmap-view="timeline" role="tabpanel" aria-labelledby="segTimeline">
+  <div class="card" id="tlCard">
     <div class="card-head">
-      <h2>Timeline</h2>
+      <h2>Project timeline</h2>
       <div class="tl-tools">
         <span class="mono" id="tlRange"></span>
-        <div class="zoomer app-only" role="group" aria-label="Timeline scale">
+        <div class="zoomer" role="group" aria-label="Timeline scale">
           <button id="zoomFit" class="zbtn zfit" type="button" title="Fit the project when screen space allows" aria-label="Fit project to available timeline space" aria-pressed="true">Fit</button>
           <button id="zoomOut" class="zbtn" type="button" title="Zoom out" aria-label="Zoom out">−</button>
           <button id="zoomReset" class="zbtn zlabel" type="button" title="Reset detailed zoom to 100%" aria-label="Reset detailed zoom to 100 percent">100%</button>
           <button id="zoomIn" class="zbtn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
         </div>
       </div>
-    </div>
-    <div id="draftBanner" class="draft-banner app-only">
-      <span class="grow"><b>Draft from your description.</b> Review and edit below, or discard to restore your previous roadmap.</span>
-      <button id="draftKeep" class="btn sm">Keep</button>
-      <button id="draftDiscard" class="btn ghost sm">Discard</button>
     </div>
     <div class="tl-scroll" tabindex="0" aria-label="Scrollable roadmap timeline"><div id="gantt"></div></div>
     <div class="legend">
@@ -723,30 +905,10 @@
       <div id="timelineTable" class="timeline-table-wrap"></div>
     </details>
   </div>
+  </section>
 
-  <!-- progress summary (auto-computed from the roadmap) -->
-  <div class="card editor-view" id="summaryCard" hidden>
-    <div class="card-head">
-      <h2>Progress summary</h2>
-      <div class="sum-actions">
-        <button id="summaryAiBtn" class="btn sm app-only" type="button" hidden>✨ Write narrative</button>
-        <button id="summaryCopy" class="btn ghost sm app-only" type="button">Copy</button>
-      </div>
-    </div>
-    <div class="summary-body" id="summaryBody"></div>
-    <div class="summary-narrative" id="summaryNarrative" hidden></div>
-  </div>
-
-  <!-- authored analysis / callout cards -->
-  <div class="card editor-view" id="calloutsCard" hidden>
-    <div class="card-head">
-      <h2>Notes &amp; analysis</h2>
-      <span class="mono app-only">shown below the timeline</span>
-    </div>
-    <div class="callouts-body" id="calloutsBody"></div>
-  </div>
-
-  <!-- roadmap notes -->
+  <!-- details view: compact, progressively disclosed editing -->
+  <section class="roadmap-panel editor-view" id="detailsPanel" data-roadmap-view="details" role="tabpanel" aria-labelledby="segDetails">
   <div class="card editor-card app-only editor-view" id="notesCard">
     <div class="card-head">
       <h2>Notes</h2>
@@ -761,12 +923,13 @@
   <!-- editor -->
   <div class="card editor-card app-only editor-view" id="editorCard">
     <div class="card-head">
-      <h2>Lanes &amp; items</h2>
-      <span class="mono">bars = phases · diamonds = milestones</span>
+      <div><h2>Lanes &amp; items</h2><span class="editor-helper">Open a lane to edit its schedule; open item details for notes and advanced actions.</span></div>
+      <span class="mono">phases + milestones</span>
     </div>
     <div id="editor"></div>
-    <button id="addLane" class="btn add add-lane" type="button">＋ Add lane</button>
+    <button id="addLane" class="btn add add-lane" type="button">Add lane</button>
   </div>
+  </section>
 
   </main>
 
@@ -779,6 +942,8 @@
 
 </div>
 
+<button id="presentExit" class="btn ghost present-exit app-only" type="button" hidden>Exit presentation</button>
+
 <div id="undoBar" class="undo-bar" role="status" aria-live="polite" hidden>
   <span id="undoText"></span><button id="undoBtn" class="btn sm" type="button">Undo</button>
 </div>
@@ -787,15 +952,15 @@
 <div id="aiModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle" hidden>
   <div class="modal-card">
     <div class="modal-head">
-      <h3 id="aiModalTitle">✨ Build a roadmap from a description</h3>
-      <button id="aiClose" class="icon-btn" type="button" aria-label="Close AI roadmap dialog">✕</button>
+      <h3 id="aiModalTitle">Build a roadmap from a description</h3>
+      <button id="aiClose" class="icon-btn" type="button" aria-label="Close AI roadmap dialog"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="row">
         <label class="fld" for="aiText">Describe the project, phases, and any known dates</label>
         <textarea id="aiText" maxlength="12000" placeholder="e.g. Launch a new mobile app over the next four months. Discovery and design in the first six weeks, then two build sprints, QA in month three, and a public launch at the end of month four. Beta milestone before launch.
 
-You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export — Claude will structure it. (For a deterministic Jira import, use Export ▾ → Import Jira CSV instead.)"></textarea>
+You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export — Claude will structure it. (For a deterministic Jira import, use More → Import Jira CSV instead.)"></textarea>
       </div>
       <div class="row">
         <label class="fld" for="aiHint">Template hint (optional)</label>
@@ -822,7 +987,7 @@ You can also paste raw notes, meeting minutes, or a Jira issue list / CSV export
   <div class="modal-card">
     <div class="modal-head">
       <h3 id="cloudTitle">Sign in to sync</h3>
-      <button id="cloudClose" class="icon-btn" type="button" aria-label="Close cloud dialog">✕</button>
+      <button id="cloudClose" class="icon-btn" type="button" aria-label="Close cloud dialog"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="modal-body" id="cloudBody"></div>
     <div class="modal-foot" id="cloudFoot"></div>
@@ -843,7 +1008,7 @@ const LS_KEY = "roadmap_builder_v1";
 const ACCOUNT_KEY_PREFIX = "roadmap_builder_v2:";
 const LEGACY_CLAIM_KEY = "roadmap_builder_v1_claimed_by";
 const THEME_KEY = "roadmap_theme";
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 
 // The super-owner account: this email sees an "All users' roadmaps" admin view
 // (read-only, across every account). It only gates the *UI* — the server enforces
@@ -873,7 +1038,7 @@ const STATUSES = [
   { v:"on_hold",     label:"On hold",     cls:"s-onhold"   },
 ];
 const STATUS_SET = new Set(STATUSES.map(s => s.v));
-const STATUS_COLOR = { planned:"#64748b", in_progress:"#b86500", complete:"#087a4c", at_risk:"#c83247", blocked:"#6841d8", on_hold:"#526071" };
+const STATUS_COLOR = { planned:"#64748b", in_progress:"#9b4c00", complete:"#087a4c", at_risk:"#c83247", blocked:"#6841d8", on_hold:"#526071" };
 const STATUS_TEXT  = { planned:"#ffffff", in_progress:"#ffffff", complete:"#ffffff", at_risk:"#ffffff", blocked:"#ffffff", on_hold:"#ffffff" };
 const MILE_BLUE = "#0073ea";
 const GROUP_COLORS = ["#0073ea","#00c875","#a25ddc","#fdab3d","#e2445c","#00d2d2","#ff642e","#579bfc","#037f4c","#9d50dd"];
@@ -881,6 +1046,19 @@ const GROUP_COLORS = ["#0073ea","#00c875","#a25ddc","#fdab3d","#e2445c","#00d2d2
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const escAttr = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+function uiIcon(name,cls){
+  const paths={
+    chevron:'<path d="m9 5 7 7-7 7"/>',
+    flag:'<path d="M5 21V4m0 1h10l-2 4 2 4H5"/>',
+    up:'<path d="m6 15 6-6 6 6"/>',
+    down:'<path d="m6 9 6 6 6-6"/>',
+    palette:'<path d="M12 3a9 9 0 0 0 0 18h1.2a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h3a6 6 0 0 0 0-12h-3Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="9" cy="6.5" r="1"/><circle cx="14" cy="6.5" r="1"/>',
+    trash:'<path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    more:'<circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/>'
+  };
+  return '<svg class="ui-icon'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[name]||paths.more)+'</svg>';
+}
 function boundedString(value, max){
   const text=String(value == null ? "" : value);
   if (text.length>max) throw new Error("Roadmap text exceeds the "+max+" character safety limit.");
@@ -930,9 +1108,13 @@ function uid(prefix){ _seq++; return prefix + "_" + Date.now().toString(36) + _s
 /* =========================================================================
    State
    ========================================================================= */
-let store = { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{} };
+let store = { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{}, mode:null, roadmapView:"details" };
 let doc = null;                 // active roadmap
 let mode = "editor";            // "editor" | "overview"
+let roadmapView = "details";    // selected-roadmap view: "executive" | "timeline" | "details"
+let portfolioFilter = "active";
+const laneDisclosure = new Map();
+const itemDisclosure = new Map();
 let zoom = 1;                   // timeline horizontal zoom (0.5–3)
 let timelineFit = true;         // show the complete project when the viewport can keep it legible
 let saveTimer = null;
@@ -1030,7 +1212,7 @@ function normalizeRoadmap(raw){
 /* =========================================================================
    Local persistence
    ========================================================================= */
-function emptyStore(){ return { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{} }; }
+function emptyStore(){ return { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{}, mode:null, roadmapView:"details" }; }
 function accountStorageKey(userId){ return ACCOUNT_KEY_PREFIX + String(userId || "anonymous"); }
 function setSaveStatus(state, text){
   const el = $("saveStatus"); if (!el) return;
@@ -1073,6 +1255,9 @@ function loadStore(userId){
       if (Object.keys(raw.roadmaps).length>500 || (raw.trash&&Object.keys(raw.trash).length>500)) throw new Error("This portfolio exceeds the 500-roadmap safety limit and needs recovery review.");
       store = Object.assign(emptyStore(), raw, { version:2, roadmaps:{}, trash:{}, sync:raw.sync && typeof raw.sync === "object" ? raw.sync : {} });
       store.mode = (raw.mode === "overview" || raw.mode === "editor") ? raw.mode : null;
+      // Existing portfolios only stored overview/editor. Their editor shell maps
+      // safely to Details so every editing surface remains available after upgrade.
+      store.roadmapView = ["executive","timeline","details"].includes(raw.roadmapView) ? raw.roadmapView : "details";
       Object.entries(raw.roadmaps).forEach(([key,d]) => {
         const n=normalizeRoadmap(Object.assign(safeShallowCopy(d),{id:safeId(d&&d.id||key,"rm")}));
         if (store.roadmaps[n.id]){ n.id=uid("rm"); n.title=(n.title||"Untitled")+" (Recovered duplicate)"; }
@@ -1149,7 +1334,7 @@ function checkpointUndo(label){
   store.undo = {
     label:boundedString(label || "Change", 160),
     at:new Date().toISOString(),
-    snapshot:JSON.parse(JSON.stringify({ activeId:store.activeId, roadmaps:store.roadmaps, trash:store.trash || {}, sync:store.sync || {}, mode:store.mode }))
+    snapshot:JSON.parse(JSON.stringify({ activeId:store.activeId, roadmaps:store.roadmaps, trash:store.trash || {}, sync:store.sync || {}, mode:store.mode, roadmapView:store.roadmapView || roadmapView }))
   };
   if (!persist()){ store.undo=previousUndo; return false; }
   return true;
@@ -1180,11 +1365,14 @@ function applyUndo(skipCloud){
   $("undoBar").hidden=true;
   if (skipCloud){
     mode=store.mode==="overview"?"overview":"editor"; document.body.classList.toggle("mode-overview",mode==="overview");
+    roadmapView=["executive","timeline","details"].includes(store.roadmapView)?store.roadmapView:"details";
+    updateViewUi();
     $("segOverview").setAttribute("aria-pressed",mode==="overview"?"true":"false"); $("segEditor").setAttribute("aria-pressed",mode==="editor"?"true":"false");
     syncHeader(); if (mode==="overview") renderOverview(); else fullRender();
     topNote("err","The change was canceled because it could not be saved safely. Your previous data remains intact.",true);
     return;
   }
+  roadmapView=normalizeRoadmapView(store.roadmapView||"details");
   syncHeader(); setMode(store.mode||"editor"); topNote("ok","Restored the previous version.");
   if (!skipCloud&&session&&restoreId) cloudRestore(restoreId).catch(()=>{});
   if (!skipCloud&&session&&deleteId) cloudSoftDelete(deleteId).catch(()=>{});
@@ -1401,6 +1589,11 @@ function timelineLaneGutter(lanes){
   const desired=36+(widths.length?Math.max(...widths):0)+18;
   return Math.min(360,Math.max(GA.PADL,Math.ceil(desired)));
 }
+function lanePhaseKey(lane,index){
+  const name=String(lane&&lane.name||"").trim();
+  const match=name.match(/^(P\s*\d+|Phase\s+\d+|Stage\s+\d+|Wave\s+\d+)\b/i);
+  return match ? match[1].replace(/\s+/g," ").toUpperCase() : "LANE "+(index+1);
+}
 
 /* ---------- auto progress summary (computed from the roadmap, no AI) ---------- */
 let lastSummaryText = "";
@@ -1444,9 +1637,8 @@ function renderSummary(){
   if (onHold.length)    rows.push('<div class="sum-row"><b>On hold:</b> ' + esc(onHold.join(", ")) + "</div>");
   if (overdue.length)   rows.push('<div class="sum-row warn"><b>Overdue:</b> ' + overdue.length + " item" + (overdue.length > 1 ? "s" : "") + " — " + esc(labelsOf(overdue).join(", ")) + "</div>");
   body.innerHTML =
-    '<div class="sum-head">' + esc(doc.title || "Untitled") + ' — <span class="sum-pct">' + pct + '% complete</span> <span style="font-weight:600;color:var(--mut)">(' + complete + " of " + total + " items)</span></div>"
-    + '<div class="sum-bar"><span style="width:' + pct + '%"></span></div>'
-    + '<div class="sum-row" style="margin-bottom:8px">' + esc(range) + "</div>"
+    '<div class="sum-head">Delivery status <span style="font-weight:600;color:var(--mut)">· ' + complete + " of " + total + " items complete</span></div>"
+    + '<div class="sum-bar" aria-label="' + pct + '% complete"><span style="width:' + pct + '%"></span></div>'
     + '<div class="sum-chips">' + chips + "</div>"
     + rows.join("");
   const tl = [];
@@ -1497,7 +1689,7 @@ async function generateNarrative(){
     // session went stale (revoked/expired server-side) — deploy advice would
     // be misleading, and re-authenticating is the actual fix.
     if (/please sign in/i.test(msg)){
-      out.innerHTML = '<b>Couldn’t generate a narrative.</b> Your sign-in session has gone stale — the server no longer accepts it. Click <b>☁ Sign out</b>, sign back in, and try again.';
+      out.innerHTML = '<b>Couldn’t generate a narrative.</b> Your sign-in session has gone stale — the server no longer accepts it. Choose <b>Sign out</b>, sign back in, and try again.';
     } else {
       out.innerHTML = '<b>Couldn’t generate a narrative.</b> ' + esc(msg)
         + '<br><br>This runs in a Supabase Edge Function named <b>roadmap-summary</b> — deploy it (it uses the same <b>ANTHROPIC_API_KEY</b> and <b>ALLOWED_EMAILS</b> lock as the AI builder).';
@@ -1510,22 +1702,26 @@ function renderStatChips(){
   if (!items.length){ el.hidden = true; el.innerHTML = ""; return; }
   let mn = null, mx = null;
   items.forEach(it => { const s = msOf(itemStart(it)), e = msOf(itemEnd(it)); if (mn === null || s < mn) mn = s; if (mx === null || e > mx) mx = e; });
-  const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()] + " " + d.getDate(); };
+  const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); };
+  const fmtWindow = (a,b) => { const da=new Date(a), db=new Date(b); return MONTHS[da.getMonth()] + " " + da.getFullYear() + " – " + MONTHS[db.getMonth()] + " " + db.getFullYear(); };
   const days = Math.max(1, Math.round((mx - mn) / 864e5));
   const today = msOf(todayIso());
   const upcoming = items.filter(it => it.kind === "milestone" && it.status !== "complete" && msOf(it.date) >= today).sort((a, b) => msOf(a.date) - msOf(b.date));
   const nextGate = upcoming.find(it => it.gate) || upcoming[0] || null;
   const atRisk = items.filter(it => it.status === "at_risk").length;
   const blocked = items.filter(it => it.status === "blocked").length;
+  const onHold = items.filter(it => it.status === "on_hold").length;
+  const complete=items.filter(it=>it.status==="complete").length, pct=Math.round(complete/items.length*100);
+  const duration = days >= 60 ? Math.max(1,Math.round(days/30.4375)) + " months" : days + " day" + (days === 1 ? "" : "s");
   const chips = [
-    { lbl:"Window", val: fmt(mn) + " – " + fmt(mx) },
-    { lbl:"Duration", val: days + " day" + (days === 1 ? "" : "s") },
+    { role:"executive-completion", lbl:"Completion", val:pct+"%", primary:true },
+    { role:"executive-range", lbl:"Window", val:fmtWindow(mn,mx) },
+    { role:"executive-duration", lbl:"Duration", val:duration },
+    { role:"executive-upcoming", lbl:nextGate && nextGate.gate ? "Next gate" : "Next milestone", val:nextGate ? (nextGate.label || "Milestone") + " · " + fmt(msOf(nextGate.date)) : "None scheduled" },
+    { role:"executive-health", lbl:"Needs attention", warn:atRisk+blocked+onHold>0, val:atRisk+blocked+onHold ? [atRisk ? atRisk + " at risk" : "", blocked ? blocked + " blocked" : "", onHold ? onHold + " on hold" : ""].filter(Boolean).join(", ") : "No flags" },
+    { role:"executive-items", lbl:"Items", val:String(items.length) },
   ];
-  if (nextGate) chips.push({ lbl: nextGate.gate ? "Next gate" : "Next milestone", val: (nextGate.label || "Milestone") + " · " + fmt(msOf(nextGate.date)) });
-  chips.push({ lbl:"Items", val: String(items.length) });
-  if (atRisk + blocked > 0) chips.push({ lbl:"Needs attention", warn:true,
-    val: [atRisk ? atRisk + " at risk" : "", blocked ? blocked + " blocked" : ""].filter(Boolean).join(", ") });
-  el.innerHTML = chips.map(c => '<div class="stat-chip' + (c.warn ? " warn" : "") + '"><span class="sc-lbl">' + esc(c.lbl) + '</span><span class="sc-val">' + esc(c.val) + '</span></div>').join("");
+  el.innerHTML = chips.map(c => '<div class="stat-chip' + (c.warn ? " warn" : "") + (c.primary ? " primary" : "") + '" data-role="'+c.role+'"><span class="sc-lbl">' + esc(c.lbl) + '</span><span class="sc-val" title="'+esc(c.val)+'">' + esc(c.val) + '</span></div>').join("");
   el.hidden = false;
 }
 function renderTimelineTable(){
@@ -1547,11 +1743,12 @@ function renderGantt(){
   renderSummary();
   renderStatChips();
   renderTimelineTable();
+  { const preview=$("executivePhaseStrip"); if (preview) preview.innerHTML=renderMiniGantt(doc); }
   const host = $("gantt");
   const lanes = doc.lanes;
   const anyItems = lanes.some(l => l.items.some(itemValid));
   if (!lanes.length || !anyItems){
-    host.innerHTML = '<div class="tl-empty"><span class="big">🗓️</span><div>' + (readOnly
+    host.innerHTML = '<div class="tl-empty"><span class="big">'+uiIcon("calendar")+'</span><div>' + (readOnly
       ? 'No public roadmaps have been published yet.'
       : 'No dated items yet. Add a lane with phases or milestones below, or pick a template.') + '</div></div>';
     $("tlRange").textContent = "";
@@ -1564,19 +1761,21 @@ function renderGantt(){
   const scrollEl = document.querySelector(".tl-scroll");
   const cwv = (scrollEl && scrollEl.clientWidth) || 0;
   const fitW = (cwv > 0 ? cwv - 12 : 1160);
-  const laneGutter = timelineLaneGutter(lanes);
+  const desiredLaneGutter = timelineLaneGutter(lanes);
   // Keep at least ~132px per month so a long timeline stays legible instead of
   // being crushed to fit the viewport; when the result is wider than the viewport
   // the .tl-scroll container scrolls it horizontally (zoom widens it further).
   const months = Math.max(1, Math.round((t1 - t0) / (30.4 * 864e5)));
-  const minW = laneGutter + GA.PADR + months * 132;
-  // Fit uses the whole available desktop timeline. On narrower tablets, keep a
-  // readable 24px/month floor and let the existing scroll container carry the
-  // extra width; phones use the complete accessible list instead of the SVG.
-  const readableFitW = laneGutter + GA.PADR + months * 24;
-  const fitCanUseViewport = cwv >= 1024;
-  const fittedW = fitCanUseViewport ? fitW : Math.max(fitW, readableFitW);
-  const CW = Math.max(480, Math.round(timelineFit ? fittedW : Math.max(fitW, minW) * zoom));
+  const minW = desiredLaneGutter + GA.PADR + months * 132;
+  // Fit means exactly that: show the complete project in the available
+  // timeline viewport. Detailed zoom deliberately restores scrolling.
+  const fittedW = fitW;
+  const CW = Math.max(timelineFit ? 280 : 480, Math.round(timelineFit ? fittedW : Math.max(fitW, minW) * zoom));
+  // Fit reserves most of the small-screen canvas for the schedule itself.
+  // Full lane names remain available in SVG <title> text and are visually
+  // ellipsized; Detailed zoom retains the complete measured lane gutter.
+  const fitGutterCap=Math.max(90,Math.min(CW-GA.PADR-96,Math.floor(CW*.34)));
+  const laneGutter = timelineFit ? Math.min(desiredLaneGutter,fitGutterCap) : desiredLaneGutter;
   const plotW = CW - laneGutter - GA.PADR;
   const span = Math.max(1, t1 - t0);
   const x = ms => laneGutter + (ms - t0) / span * plotW;
@@ -1667,6 +1866,20 @@ function renderGantt(){
   }
   // left gutter label
   out += svgEl("text", { x:16, y:(GA.PADT-30).toFixed(1), fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
+
+  // Consecutive P0/P1, Phase, Stage, or Wave lanes read as one subtle phase
+  // band. Unnamed groupings remain one lane each, so arbitrary roadmaps are safe.
+  const phaseGroups=[];
+  lanes.forEach((lane,i)=>{
+    const key=lanePhaseKey(lane,i), box=laneBox[i], prev=phaseGroups[phaseGroups.length-1];
+    if (prev&&prev.key===key){ prev.end=i; prev.bottom=box.top+box.h; }
+    else phaseGroups.push({key,start:i,end:i,top:box.top,bottom:box.top+box.h,color:lane.color||MILE_BLUE});
+  });
+  phaseGroups.forEach(group=>{
+    const height=Math.max(1,group.bottom-group.top);
+    out += svgEl("rect", { x:0, y:group.top.toFixed(1), width:CW, height:height.toFixed(1), fill:group.color, "fill-opacity":.025, "data-role":"timeline-phase-band", "data-phase":group.key });
+    out += svgEl("rect", { x:0, y:group.top.toFixed(1), width:4, height:height.toFixed(1), fill:group.color, "fill-opacity":.78, "data-role":"timeline-phase-rail" });
+  });
 
   // lane backgrounds + names + dividers
   laneBox.forEach((box, i) => {
@@ -1777,7 +1990,7 @@ function renderGantt(){
     });
   });
 
-  host.innerHTML = '<svg class="gantt" data-lane-gutter="'+laneGutter+'" data-plot-right="'+(laneGutter+plotW).toFixed(1)+'" data-fit-mode="'+(timelineFit?'true':'false')+'" data-period-cadence="'+periodCadence+'" data-month-pixels="'+monthPx.toFixed(2)+'" style="width:'+CW+'px;min-width:0" viewBox="0 0 '+CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
+  host.innerHTML = '<svg class="gantt" data-lane-gutter="'+laneGutter+'" data-plot-width="'+plotW.toFixed(1)+'" data-plot-right="'+(laneGutter+plotW).toFixed(1)+'" data-fit-mode="'+(timelineFit?'true':'false')+'" data-period-cadence="'+periodCadence+'" data-month-pixels="'+monthPx.toFixed(2)+'" style="width:'+CW+'px;min-width:0" viewBox="0 0 '+CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
   const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()]+" "+d.getFullYear(); };
   $("tlRange").textContent = fmt(t0) + " – " + fmt(t1 - 864e5);
 }
@@ -1844,24 +2057,33 @@ function overviewCard(d){
   const s = roadmapStats(d);
   const meta=syncMeta(d.id), role=accessRoleFor(d.id), owner=isRoadmapOwner(d.id);
   const accent = (d.lanes[0] && d.lanes[0].color) || "var(--accent)";
+  const future=[]; (d.lanes||[]).forEach(l=>(l.items||[]).forEach(it=>{ if (it.kind==="milestone"&&itemValid(it)&&it.status!=="complete"&&msOf(it.date)>=msOf(todayIso())) future.push(it); }));
+  future.sort((a,b)=>msOf(a.date)-msOf(b.date));
+  const next=future[0]||null, attention=(s.counts.at_risk||0)+(s.counts.blocked||0)+(s.counts.on_hold||0);
+  const health=s.total===0?"empty":attention?"attention":s.pct===100?"complete":"on-track";
+  const healthLabel=health==="attention"?attention+" need attention":health==="complete"?"Complete":health==="empty"?"No items":"On track";
+  const sharing=d.public?"Public":role!=="owner"?accessRoleLabel(role)+" access":session?"Private":"Local only";
+  const fmtDate=iso=>{ const dt=dateOf(iso); return MONTHS[dt.getMonth()]+" "+dt.getDate()+", "+dt.getFullYear(); };
   const segs = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-seg" style="flex:'+s.counts[st.v]+';background:'+STATUS_COLOR[st.v]+'"></span>').join("");
   const chips = STATUSES.filter(st => s.counts[st.v]).map(st =>
     '<span class="ov-chip"><span class="ov-dot" style="background:'+STATUS_COLOR[st.v]+'"></span>'+s.counts[st.v]+' '+esc(st.label)+'</span>').join("");
   const actions=readOnly ? "" : '<div class="rm-acts">'
-    + (owner?'<button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Unarchive':'Archive')+'" aria-label="'+(d.archived?'Unarchive ':'Archive ')+esc(d.title||"Untitled")+'">'+(d.archived?'↩':'🗄')+'</button>':'')
-    + '<button class="icon-btn" type="button" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate" aria-label="Duplicate '+esc(d.title||"Untitled")+'">⧉</button>'
-    + (owner?'<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">✕</button>':'')+'</div>';
-  return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" data-access-role="'+role+'" style="--rm-accent:'+esc(accent)+'">'
+    + (owner?'<button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Restore to Active':'Archive')+'" aria-label="'+(d.archived?'Restore ':'Archive ')+esc(d.title||"Untitled")+'">'+uiIcon(d.archived?'up':'down')+'</button>':'')
+    + '<button class="icon-btn" type="button" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate" aria-label="Duplicate '+esc(d.title||"Untitled")+'">'+uiIcon("more")+'</button>'
+    + (owner?'<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">'+uiIcon("trash")+'</button>':'')+'</div>';
+  return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" data-roadmap-id="'+esc(d.id)+'" data-status="'+(d.archived?'archived':'active')+'" data-health="'+health+'" data-access-role="'+role+'" style="--rm-accent:'+esc(accent)+'">'
     + '<button class="rm-open" type="button" data-open="'+esc(d.id)+'" aria-label="Open '+esc(d.title||"Untitled")+'"></button>'
-    + '<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'+actions+'</div>'
+    + '<div class="rm-head"><div class="rm-title" data-role="portfolio-title">'+esc(d.title||"Untitled")+(d.archived?' <span class="arch-pill">Archived</span>':'')+'</div>'+actions+'</div>'
     + (!readOnly?'<div class="access-context">'+accessBadgeHtml(role)+accessOwnerHtml(role,meta.ownerEmail)+'</div>':"")
-    + (d.subtitle ? '<div class="rm-sub">'+esc(d.subtitle)+'</div>' : "")
-    + '<div class="rm-mini">'+renderMiniGantt(d)+'</div>'
+    + '<div class="rm-sub">'+esc(d.subtitle||"No subtitle")+'</div>'
+    + '<div class="rm-mini" data-role="portfolio-preview">'+renderMiniGantt(d)+'</div>'
     + '<div class="ov-bar">'+(segs || '<span class="ov-seg" style="flex:1;background:var(--line-2)"></span>')+'</div>'
-    + '<div class="rm-meta"><span class="pct">'+s.pct+'% complete</span><span>'+s.laneCount+' lane'+(s.laneCount===1?"":"s")+' · '+s.total+' item'+(s.total===1?"":"s")+'</span></div>'
-    + (chips ? '<div class="ov-chips">'+chips+'</div>' : "")
-    + '<div class="rm-foot"><span>'+esc(fmtRange(s.mn, s.mx))+'</span><span>'+esc(relativeTime(d.updatedAt))+'</span></div>'
+    + '<div class="rm-meta" data-role="portfolio-progress"><span class="pct">'+s.pct+'% complete</span><span>'+s.laneCount+' lane'+(s.laneCount===1?"":"s")+' · '+s.total+' item'+(s.total===1?"":"s")+'</span></div>'
+    + '<div class="rm-health-row"><span class="rm-row-label">Health</span><span class="health-pill '+health+'" data-role="portfolio-health"><span class="health-dot"></span>'+esc(healthLabel)+'</span></div>'
+    + '<div class="rm-next-row"><span class="rm-row-label">Next</span><span class="rm-next-value" data-role="portfolio-next-milestone">'+esc(next?(next.label||"Milestone")+" · "+fmtDate(next.date):"None scheduled")+'</span></div>'
+    + '<div class="rm-sharing-row"><span class="rm-row-label">Sharing</span><span data-role="portfolio-sharing">'+esc(sharing)+'</span></div>'
+    + '<div class="rm-foot"><span>'+esc(fmtRange(s.mn, s.mx))+'</span><span data-role="portfolio-updated">'+esc(relativeTime(d.updatedAt)||"Not yet saved")+'</span></div>'
     + '</article>';
 }
 function renderOverview(){
@@ -1869,22 +2091,28 @@ function renderOverview(){
   const list = Object.values(store.roadmaps).sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""));
   const active = list.filter(d => !d.archived);
   const archived = list.filter(d => d.archived);
-  let html = active.map(overviewCard).join("");
-  if (!readOnly) html += '<button class="rm-new" id="ovNew" type="button">＋ New roadmap</button>';
-  // completed / retired roadmaps live below the fold, out of the active portfolio
-  if (archived.length){
-    html += '<div class="ov-divider">Archived <span class="ov-divider-n">' + archived.length + '</span></div>'
-      + archived.map(overviewCard).join("");
-  }
   const trashed=Object.values(store.trash||{}).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
-  if (trashed.length && !readOnly){
-    html += '<div class="ov-divider">Trash <span class="ov-divider-n">'+trashed.length+'</span></div>'
-      + trashed.map(d=>'<article class="rm-card archived" data-id="'+esc(d.id)+'" style="--rm-accent:'+esc((d.lanes[0]&&d.lanes[0].color)||"var(--mut)")+'">'
-        +'<div class="rm-head"><div class="rm-title">'+esc(d.title||"Untitled")+' <span class="arch-pill">Trash</span></div>'
-        +'<div class="rm-acts"><button class="btn ghost sm" type="button" data-act="restore" data-id="'+esc(d.id)+'">Restore</button></div></div>'
-        +'<div class="rm-sub">Kept here so it cannot be lost accidentally.</div></article>').join("");
-  }
+  if (readOnly&&portfolioFilter==="trash") portfolioFilter="active";
+  const counts={active:active.length,archived:archived.length,trash:trashed.length};
+  Object.entries(counts).forEach(([key,n])=>{ const c=$(key+"Count"); if(c)c.textContent=n; });
+  document.querySelectorAll("[data-portfolio-filter]").forEach(btn=>{ const key=btn.dataset.portfolioFilter; btn.setAttribute("aria-pressed",key===portfolioFilter?"true":"false"); btn.hidden=readOnly&&key==="trash"; });
+  let html="";
+  if (portfolioFilter==="active"){
+    html=active.map(overviewCard).join("");
+    if (!readOnly) html += '<button class="rm-new" id="ovNew" type="button">New roadmap</button>';
+  } else if (portfolioFilter==="archived") html=archived.map(overviewCard).join("");
+  else if (!readOnly) html=trashed.map(d=>'<article class="rm-card archived" data-id="'+esc(d.id)+'" data-roadmap-id="'+esc(d.id)+'" data-status="trash" data-health="empty" style="--rm-accent:'+esc((d.lanes[0]&&d.lanes[0].color)||"var(--mut)")+'">'
+      +'<div class="rm-head"><div class="rm-title" data-role="portfolio-title">'+esc(d.title||"Untitled")+' <span class="arch-pill">Trash</span></div><div class="rm-acts"><button class="btn ghost sm" type="button" data-act="restore" data-id="'+esc(d.id)+'">Restore</button></div></div>'
+      +'<div class="rm-sub">Recoverable until you choose otherwise.</div><div class="rm-mini" data-role="portfolio-preview">'+renderMiniGantt(d)+'</div>'
+      +'<div class="rm-meta" data-role="portfolio-progress"><span class="pct">—</span><span>In Trash</span></div><div class="rm-health-row"><span class="rm-row-label">Health</span><span class="health-pill empty" data-role="portfolio-health"><span class="health-dot"></span>Not active</span></div>'
+      +'<div class="rm-next-row"><span class="rm-row-label">Next</span><span data-role="portfolio-next-milestone">None scheduled</span></div><div class="rm-sharing-row"><span class="rm-row-label">Sharing</span><span data-role="portfolio-sharing">Private</span></div>'
+      +'<div class="rm-foot"><span>Recoverable</span><span data-role="portfolio-updated">'+esc(relativeTime(d.updatedAt)||"Not yet saved")+'</span></div></article>').join("");
+  if (!html) html='<div class="portfolio-empty">No '+esc(portfolioFilter)+' roadmaps.</div>';
   grid.innerHTML = html;
+}
+function setPortfolioFilter(value){
+  portfolioFilter=["active","archived","trash"].includes(value)?value:"active";
+  renderOverview();
 }
 function onOverviewClick(e){
   const act = e.target.closest("[data-act]");
@@ -1902,15 +2130,39 @@ function onOverviewClick(e){
 function setMode(m){
   mode = (m === "overview") ? "overview" : "editor";
   document.body.classList.toggle("mode-overview", mode === "overview");
-  $("segOverview").setAttribute("aria-pressed", mode === "overview" ? "true" : "false");
-  $("segEditor").setAttribute("aria-pressed", mode === "editor" ? "true" : "false");
-  // public visitors have no Overview/Editor switch; give them a way back to the
-  // portfolio grid when they've opened one of several public roadmaps
-  { const b = $("backToPortfolio"); if (b) b.hidden = !(readOnly && mode === "editor" && Object.keys(store.roadmaps).length > 1); }
+  if (mode==="editor"&&roadmapView==="details"&&currentRoadmapReadOnly()) roadmapView="timeline";
+  updateViewUi();
   store.mode = mode; saveNow();
+  if (mode==="editor") requestAnimationFrame(resizeTitleInput);
   if (mode === "overview"){ renderGantt(); renderOverview(); } else fullRender();
 }
-function openRoadmap(id){ switchTo(id); setMode("editor"); }
+function normalizeRoadmapView(value){ return ["executive","timeline","details"].includes(value)?value:"details"; }
+function updateViewUi(){
+  roadmapView=normalizeRoadmapView(roadmapView);
+  if (mode==="editor"&&roadmapView==="details"&&currentRoadmapReadOnly()) roadmapView="timeline";
+  document.body.dataset.activeView=mode==="overview"?"portfolio":roadmapView;
+  $("segOverview").setAttribute("aria-pressed", mode === "overview" ? "true" : "false");
+  $("segEditor").setAttribute("aria-pressed", mode === "editor" ? "true" : "false");
+  document.querySelectorAll("#roadmapViews [data-view]").forEach(btn=>{
+    const selected=mode==="editor"&&btn.dataset.view===roadmapView;
+    btn.setAttribute("aria-selected",selected?"true":"false"); btn.tabIndex=selected?0:-1;
+    if (btn.dataset.view==="details") btn.hidden=currentRoadmapReadOnly();
+  });
+  document.querySelectorAll(".roadmap-panel[data-roadmap-view]").forEach(panel=>{
+    const active=mode==="editor"&&panel.dataset.roadmapView===roadmapView;
+    panel.setAttribute("aria-hidden",active?"false":"true"); panel.inert=!active;
+  });
+  // public visitors have no workspace switch; retain an explicit route back.
+  { const b = $("backToPortfolio"); if (b) b.hidden = !(readOnly && mode === "editor" && Object.keys(store.roadmaps).length > 1); }
+}
+function setRoadmapView(value){
+  const requested=normalizeRoadmapView(value);
+  roadmapView=(requested==="details"&&currentRoadmapReadOnly())?"timeline":requested;
+  store.roadmapView=roadmapView; mode="editor"; store.mode="editor";
+  document.body.classList.remove("mode-overview"); updateViewUi(); saveNow(); fullRender();
+  requestAnimationFrame(resizeTitleInput);
+}
+function openRoadmap(id){ switchTo(id); setRoadmapView("executive"); }
 
 /* =========================================================================
    Editor
@@ -1920,16 +2172,32 @@ function statusSelect(cls, value, itemLabel){
   STATUSES.forEach(s => { o += '<option value="'+s.v+'"'+(s.v===value?" selected":"")+'>'+s.label+'</option>'; });
   return '<select class="chip '+cls+'" data-role="status" aria-label="Status for '+esc(itemLabel||"item")+'">'+o+'</select>';
 }
+function laneSummaryHtml(lane){
+  const validItems=(lane.items||[]).filter(itemValid), complete=validItems.filter(it=>it.status==="complete").length;
+  const attention=validItems.filter(it=>it.status==="at_risk"||it.status==="blocked"||it.status==="on_hold").length;
+  const lanePct=validItems.length?Math.round(complete/validItems.length*100):0;
+  let laneMin=null,laneMax=null;
+  validItems.forEach(it=>{ const s=msOf(itemStart(it)),e=msOf(itemEnd(it)); laneMin=laneMin===null?s:Math.min(laneMin,s); laneMax=laneMax===null?e:Math.max(laneMax,e); });
+  const laneRange=laneMin===null?"No dates":MONTHS[new Date(laneMin).getMonth()]+" "+new Date(laneMin).getFullYear()+" – "+MONTHS[new Date(laneMax).getMonth()]+" "+new Date(laneMax).getFullYear();
+  return '<span class="lane-metric"><strong>'+lane.items.length+'</strong>&nbsp;items</span><span class="lane-metric"><strong>'+lanePct+'%</strong>&nbsp;complete</span><span class="lane-metric">'+esc(laneRange)+'</span>'+(attention?'<span class="lane-metric" style="color:var(--err)">'+attention+' need attention</span>':'');
+}
+function refreshLaneSummary(lane, laneEl){
+  const summary=laneEl&&laneEl.querySelector(".lane-summary");
+  if (summary) summary.innerHTML=laneSummaryHtml(lane);
+}
 function renderEditor(){
   const host = $("editor");
   host.innerHTML = "";
   doc.lanes.forEach((lane, li) => {
     const laneEl = document.createElement("div");
-    laneEl.className = "lane"; laneEl.dataset.lane = lane.id;
+    const expanded=laneDisclosure.has(lane.id)?laneDisclosure.get(lane.id):li===0;
+    const laneBodyId="lane-body-"+lane.id;
+    laneEl.className = "lane"; laneEl.dataset.lane = lane.id; laneEl.dataset.collapsed=expanded?"false":"true";
     let itemsHtml = "";
     lane.items.forEach(it => {
       const st = STATUSES.find(s => s.v===it.status) || STATUSES[0];
       const itemLabel=it.label||(it.kind==="milestone"?"milestone":"phase");
+      const itemExpanded=itemDisclosure.get(it.id)===true, itemDetailId="item-detail-"+it.id;
       const kindSel = '<select class="kind" data-role="kind" aria-label="Type for '+esc(itemLabel)+'"><option value="bar"'+(it.kind==="bar"?" selected":"")+'>Phase (bar)</option><option value="milestone"'+(it.kind==="milestone"?" selected":"")+'>Milestone</option></select>';
       const dates = it.kind === "milestone"
         ? '<div class="item-dates item-dates--milestone"><input type="date" data-role="date" value="'+esc(it.date||"")+'" title="Milestone date" aria-label="Milestone date for '+esc(itemLabel)+'" /></div>'
@@ -1940,29 +2208,35 @@ function renderEditor(){
         + '<input class="lbl" data-role="label" type="text" maxlength="1000" aria-label="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" placeholder="'+(it.kind==="milestone"?"Milestone name":"Phase name")+'" value="'+esc(it.label||"")+'" />'
         + dates
         + statusSelect(st.cls, it.status, itemLabel)
-        + '<div class="item-gate-slot">'+(it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate / key date — draws a dashed line across the timeline"><input type="checkbox" data-role="gate" aria-label="Mark '+esc(itemLabel)+' as a gate"'+(it.gate?" checked":"")+' />⚑ Gate</label>' : '')+'</div>'
-        + '<div class="item-actions" role="group" aria-label="Actions for '+esc(itemLabel)+'">'
-        + '<button class="icon-btn" type="button" data-role="up" title="Move up" aria-label="Move '+esc(itemLabel)+' up">↑</button>'
-        + '<button class="icon-btn" type="button" data-role="down" title="Move down" aria-label="Move '+esc(itemLabel)+' down">↓</button>'
-        + '<button class="icon-btn" type="button" data-role="del" title="Delete" aria-label="Delete '+esc(itemLabel)+'">✕</button>'
-        + '</div>'
+        + '<button class="icon-btn item-more" type="button" data-role="itemToggle" aria-expanded="'+(itemExpanded?'true':'false')+'" aria-controls="'+esc(itemDetailId)+'" title="'+(itemExpanded?'Hide':'Show')+' item details" aria-label="'+(itemExpanded?'Hide':'Show')+' details for '+esc(itemLabel)+'">'+uiIcon("more")+'</button>'
+        + '<div class="item-detail-panel" id="'+esc(itemDetailId)+'" data-item-panel="'+esc(it.id)+'"'+(itemExpanded?'':' hidden')+'>'
         + '<input class="note-inp" data-role="note" type="text" maxlength="4000" aria-label="Note for '+esc(itemLabel)+'" placeholder="Add a note or comment (optional)" value="'+esc(it.note||"")+'" />'
+        + '<div class="item-gate-slot">'+(it.kind==="milestone" ? '<label class="gate-tog" title="Mark as a gate or key date"><input type="checkbox" data-role="gate" aria-label="Mark '+esc(itemLabel)+' as a gate"'+(it.gate?" checked":"")+' />Gate</label>' : '<span class="lane-metric">Phase item</span>')+'</div>'
+        + '<div class="item-actions" role="group" aria-label="Advanced actions for '+esc(itemLabel)+'">'
+        + '<button class="icon-btn" type="button" data-role="up" title="Move up" aria-label="Move '+esc(itemLabel)+' up">'+uiIcon("up")+'</button>'
+        + '<button class="icon-btn" type="button" data-role="down" title="Move down" aria-label="Move '+esc(itemLabel)+' down">'+uiIcon("down")+'</button>'
+        + '<button class="icon-btn" type="button" data-role="del" title="Delete" aria-label="Delete '+esc(itemLabel)+'">'+uiIcon("trash")+'</button>'
+        + '</div></div>'
         + '</div>';
     });
     laneEl.innerHTML =
       '<div class="lane-head">'
+      + '<button class="icon-btn lane-toggle" type="button" data-role="laneToggle" aria-expanded="'+(expanded?'true':'false')+'" aria-controls="'+esc(laneBodyId)+'" title="'+(expanded?'Collapse':'Expand')+' lane" aria-label="'+(expanded?'Collapse ':'Expand ')+esc(lane.name)+'">'+uiIcon("chevron","chev")+'</button>'
       + '<span class="dot" style="background:'+esc(lane.color)+'" aria-hidden="true"></span>'
       + '<input class="lane-name" data-role="laneName" type="text" maxlength="500" aria-label="Lane name" value="'+esc(lane.name)+'" placeholder="Lane name" />'
-      + '<button class="icon-btn tog'+(lane.contingency?' on':'')+'" type="button" data-role="laneCont" aria-pressed="'+(lane.contingency?'true':'false')+'" title="Contingency lane — renders muted, with a sub-label (e.g. a fallback branch)" aria-label="Toggle contingency for '+esc(lane.name)+'">⚑</button>'
-      + '<button class="icon-btn" type="button" data-role="laneUp" title="Move lane up" aria-label="Move '+esc(lane.name)+' up">↑</button>'
-      + '<button class="icon-btn" type="button" data-role="laneDown" title="Move lane down" aria-label="Move '+esc(lane.name)+' down">↓</button>'
-      + '<button class="icon-btn" type="button" data-role="laneColor" title="Change colour" aria-label="Change color for '+esc(lane.name)+'">🎨</button>'
-      + '<button class="icon-btn" type="button" data-role="laneDel" title="Delete lane" aria-label="Delete '+esc(lane.name)+'">✕</button>'
-      + '</div>'
-      + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" maxlength="2000" aria-label="Contingency note for '+esc(lane.name)+'" placeholder="Contingency note, e.g. “Only if the July 22 decision picks self-hosted”" value="'+esc(lane.sub||"")+'" /></div>' : '')
-      + (lane.items.length ? '<div class="item-columns" aria-hidden="true"><span class="item-col-marker"></span><span class="item-col-kind">Type</span><span class="item-col-label">Item</span><span class="item-col-dates">Schedule</span><span class="item-col-status">Status</span><span class="item-col-gate">Gate</span><span class="item-col-actions">Actions</span></div>' : '')
+      + '<div class="lane-summary" aria-label="Lane summary">'+laneSummaryHtml(lane)+'</div>'
+      + '<div class="lane-actions">'
+      + '<button class="icon-btn tog'+(lane.contingency?' on':'')+'" type="button" data-role="laneCont" aria-pressed="'+(lane.contingency?'true':'false')+'" title="Contingency lane" aria-label="Toggle contingency for '+esc(lane.name)+'">'+uiIcon("flag")+'</button>'
+      + '<button class="icon-btn" type="button" data-role="laneUp" title="Move lane up" aria-label="Move '+esc(lane.name)+' up">'+uiIcon("up")+'</button>'
+      + '<button class="icon-btn" type="button" data-role="laneDown" title="Move lane down" aria-label="Move '+esc(lane.name)+' down">'+uiIcon("down")+'</button>'
+      + '<button class="icon-btn" type="button" data-role="laneColor" title="Change color" aria-label="Change color for '+esc(lane.name)+'">'+uiIcon("palette")+'</button>'
+      + '<button class="icon-btn" type="button" data-role="laneDel" title="Delete lane" aria-label="Delete '+esc(lane.name)+'">'+uiIcon("trash")+'</button>'
+      + '</div></div>'
+      + '<div class="lane-body" id="'+esc(laneBodyId)+'" data-lane-body="'+esc(lane.id)+'"'+(expanded?'':' hidden')+'>'
+      + (lane.contingency ? '<div class="lane-subrow"><input class="lane-sub-in" data-role="laneSub" type="text" maxlength="2000" aria-label="Contingency note for '+esc(lane.name)+'" placeholder="When should this contingency be used?" value="'+esc(lane.sub||"")+'" /></div>' : '')
+      + (lane.items.length ? '<div class="item-columns" aria-hidden="true"><span class="item-col-marker"></span><span class="item-col-kind">Type</span><span class="item-col-label">Item</span><span class="item-col-dates">Schedule</span><span class="item-col-status">Status</span><span class="item-col-gate">Advanced</span><span class="item-col-actions">Details</span></div>' : '')
       + '<div class="items">'+itemsHtml+'</div>'
-      + '<div class="add-row"><button class="btn add sm" type="button" data-role="addBar">＋ Phase</button><button class="btn add sm" type="button" data-role="addMile">＋ Milestone</button></div>';
+      + '<div class="add-row"><button class="btn add sm" type="button" data-role="addBar">Add phase</button><button class="btn add sm" type="button" data-role="addMile">Add milestone</button></div></div>';
     host.appendChild(laneEl);
   });
   if (currentRoadmapReadOnly()) host.querySelectorAll("input,select,button").forEach(el=>{ el.disabled=true; if ("readOnly" in el) el.readOnly=true; });
@@ -1989,9 +2263,9 @@ function onEditorInput(e){
   const itemEl = e.target.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
   if (role === "label"){ it.label = e.target.value; save(); renderGantt(); }
-  else if (role === "start"){ it.start = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); }
-  else if (role === "end"){ it.end = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); }
-  else if (role === "date"){ it.date = e.target.value; save(); renderGantt(); }
+  else if (role === "start"){ it.start = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); refreshLaneSummary(lane,laneEl); }
+  else if (role === "end"){ it.end = e.target.value; validateItemDates(it,itemEl); save(); renderGantt(); refreshLaneSummary(lane,laneEl); }
+  else if (role === "date"){ it.date = e.target.value; save(); renderGantt(); refreshLaneSummary(lane,laneEl); }
   else if (role === "note"){ it.note = e.target.value; save(); renderGantt(); }
 }
 function validateItemDates(it, itemEl){
@@ -2012,7 +2286,7 @@ function onEditorChange(e){
     it.status = normStatus(e.target.value);
     const s = STATUSES.find(x => x.v===it.status);
     e.target.className = "chip " + (s ? s.cls : "s-planned");
-    save(); renderGantt(); return;
+    save(); if (saveNow() && session) queueCloudSync(doc.id); renderGantt(); refreshLaneSummary(lane,laneEl); return;
   }
   if (role === "kind"){
     const itemEl = e.target.closest("[data-item]"); const it = itemEl && findItem(lane, itemEl.dataset.item); if (!it) return;
@@ -2032,15 +2306,26 @@ function onEditorClick(e){
   const laneEl = btn.closest("[data-lane]"); if (!laneEl) return;
   const lane = findLane(laneEl.dataset.lane); if (!lane) return;
   const li = doc.lanes.indexOf(lane);
+  if (role === "laneToggle"){
+    const next=!(laneDisclosure.has(lane.id)?laneDisclosure.get(lane.id):li===0);
+    laneDisclosure.set(lane.id,next); renderEditor();
+    const focus=$("editor").querySelector('[data-lane="'+CSS.escape(lane.id)+'"] [data-role="laneToggle"]'); if (focus) focus.focus();
+    return;
+  }
   if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items? You can undo this change.")) return; if (!checkpointUndo("Lane deleted — undo?")) return; doc.lanes.splice(li,1); save(); fullRender(); showUndo("Lane deleted. Undo?"); return; }
   if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
   if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
   if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
   if (role === "laneCont"){ lane.contingency = !lane.contingency; if (!lane.contingency) lane.sub = ""; save(); fullRender(); return; }
-  if (role === "addBar"){ const s = laneNextStart(lane); lane.items.push(normItem({ kind:"bar", label:"", start:s, end:addWeeksIso(s,3), status:"planned" })); save(); fullRender(); return; }
-  if (role === "addMile"){ lane.items.push(normItem({ kind:"milestone", label:"", date:laneNextStart(lane), status:"planned" })); save(); fullRender(); return; }
+  if (role === "addBar"){ const s = laneNextStart(lane), added=normItem({ kind:"bar", label:"", start:s, end:addWeeksIso(s,3), status:"planned" }); lane.items.push(added); laneDisclosure.set(lane.id,true); save(); fullRender(); return; }
+  if (role === "addMile"){ const added=normItem({ kind:"milestone", label:"", date:laneNextStart(lane), status:"planned" }); lane.items.push(added); laneDisclosure.set(lane.id,true); save(); fullRender(); return; }
   const itemEl = btn.closest("[data-item]"); if (!itemEl) return;
   const it = findItem(lane, itemEl.dataset.item); if (!it) return;
+  if (role === "itemToggle"){
+    itemDisclosure.set(it.id,itemDisclosure.get(it.id)!==true); renderEditor();
+    const focus=$("editor").querySelector('[data-item="'+CSS.escape(it.id)+'"] [data-role="itemToggle"]'); if (focus) focus.focus();
+    return;
+  }
   const ii = lane.items.indexOf(it);
   if (role === "del"){ if (!checkpointUndo("Item deleted — undo?")) return; lane.items.splice(ii,1); save(); fullRender(); showUndo("Item deleted. Undo?"); }
   else if (role === "up" && ii>0){ lane.items.splice(ii,1); lane.items.splice(ii-1,0,it); save(); fullRender(); }
@@ -2086,10 +2371,10 @@ function renderCallouts(){
       '<div class="callout" data-co="' + esc(c.id) + '">'
       + '<div class="co-head"><input class="co-title" data-corole="title" type="text" maxlength="500" aria-label="Analysis card title" placeholder="Card title" value="' + esc(c.title || "") + '" />'
       + '<label class="co-listtog" title="Render as a numbered conditions list (one item per line)"><input type="checkbox" data-corole="list"' + (c.list ? " checked" : "") + ' />＃ List</label>'
-      + '<button class="icon-btn" type="button" data-corole="del" title="Remove card" aria-label="Remove analysis card">✕</button></div>'
+      + '<button class="icon-btn" type="button" data-corole="del" title="Remove card" aria-label="Remove analysis card">'+uiIcon("trash")+'</button></div>'
       + '<textarea class="co-body" data-corole="body" maxlength="10000" aria-label="Analysis card content" placeholder="' + (c.list ? "One condition per line…" : "Context, drivers, risks, decisions…") + '">' + esc(c.body || "") + '</textarea>'
       + '</div>').join("")
-      + '<button id="coAdd" class="btn add co-add" type="button">＋ Add card</button>';
+      + '<button id="coAdd" class="btn add co-add" type="button">Add analysis card</button>';
   } else {
     body.innerHTML = list.filter(c => (c.title || "").trim() || (c.body || "").trim()).map(c =>
       '<div class="callout ro">'
@@ -2123,7 +2408,7 @@ function reflectAccessUi(){
   { const a=$("archiveItem"); if (a) a.hidden=!owner; }
   { const d=document.querySelector('.menu-item[data-act="del"]'); if (d) d.hidden=!owner; }
   { const s=document.querySelector('.menu-item[data-act="save"]'); if (s) s.disabled=!hasDoc||!canEditRoadmap(doc.id); }
-  ["share","public","access"].forEach(act=>{ const el=document.querySelector('.menu-item[data-act="'+act+'"]'); if (el) el.hidden=!owner; });
+  ["share","public","access"].forEach(act=>{ const el=document.querySelector('.menu-item[data-act="'+act+'"]'); if (el) el.hidden=!session||!owner; });
   { const c=$("currentAccess"); if (c){
       c.hidden=!session||readOnly||!hasDoc;
       c.innerHTML=c.hidden?"":accessBadgeHtml(role)+accessOwnerHtml(role,syncMeta(doc.id).ownerEmail)
@@ -2131,9 +2416,18 @@ function reflectAccessUi(){
     } }
   { const banner=$("draftBanner"); if (banner) banner.classList.toggle("show",!blocked&&!!draftSnapshot&&draftSnapshot.draftId===doc.id); }
   { const undo=$("undoBar"); if (signedViewer&&undo) undo.hidden=true; const btn=$("undoBtn"); if (btn) btn.disabled=signedViewer; }
+  { const share=$("shareBtn"); if (share){ share.hidden=!owner; share.disabled=!owner; share.title=owner?"Manage collaborators and sharing":"Only the roadmap owner can manage sharing"; } }
+  if (signedViewer&&roadmapView==="details"){ roadmapView="timeline"; store.roadmapView=roadmapView; updateViewUi(); }
+}
+function resizeTitleInput(){
+  const el=$("titleIn"); if (!el) return;
+  el.style.height="auto";
+  const max=window.innerWidth<=720?112:132, next=Math.min(max,Math.max(40,el.scrollHeight));
+  el.style.height=next+"px"; el.style.overflowY=el.scrollHeight>max?"auto":"hidden";
 }
 function syncHeader(){
   $("titleIn").value = doc.title;
+  resizeTitleInput();
   $("subIn").value = doc.subtitle;
   reflectAccessUi();
   const blocked=currentRoadmapReadOnly();
@@ -2153,7 +2447,7 @@ function syncHeader(){
     $("segCount").textContent = all.length;
     $("ovSub").textContent = active + (active === 1 ? " roadmap" : " roadmaps") + (arch ? " · " + arch + " archived" : ""); }
   if (readOnly) return;
-  { const ai = $("archiveItem"); if (ai) ai.textContent = doc.archived ? "↩ Unarchive roadmap" : "🗄 Archive roadmap"; }
+  { const ai = $("archiveItem"); if (ai) ai.textContent = doc.archived ? "Restore to Active" : "Archive roadmap"; }
   const pk = $("rmPicker"); pk.innerHTML = "";
   const sorted = Object.values(store.roadmaps).sort((a,b) => (b.updatedAt||"").localeCompare(a.updatedAt||""));
   const addOpt = (parent, d) => { const o = document.createElement("option"); o.value = d.id; o.textContent = d.title || "Untitled"; if (d.id===doc.id) o.selected = true; parent.appendChild(o); };
@@ -2171,7 +2465,7 @@ function newRoadmap(){
   if (readOnly) return;
   const d = normalizeRoadmap({ title:"Untitled roadmap", templateType:"custom", lanes:[{ name:"Phase 1", items:[] }] });
   markOwnedLocalRoadmap(d.id,!!session);
-  store.roadmaps[d.id] = d; switchTo(d.id); $("titleIn").focus(); $("titleIn").select();
+  store.roadmaps[d.id] = d; switchTo(d.id); setRoadmapView("details"); $("titleIn").focus(); $("titleIn").select();
 }
 function duplicateRoadmapById(id, open){
   if (readOnly) return;
@@ -2181,7 +2475,7 @@ function duplicateRoadmapById(id, open){
   copy.lanes.forEach(l => { l.id = uid("lane"); l.items.forEach(it => it.id = uid("it")); });
   store.roadmaps[copy.id] = copy;
   markOwnedLocalRoadmap(copy.id,!!session);
-  if (open){ switchTo(copy.id); setMode("editor"); }
+  if (open){ switchTo(copy.id); setRoadmapView("details"); }
   else { saveNow(); syncHeader(); if (mode === "overview") renderOverview(); topNote("ok", "Duplicated “"+(src.title||"Untitled")+"”."); }
 }
 function duplicateRoadmap(){ duplicateRoadmapById(doc.id, true); }
@@ -2212,7 +2506,7 @@ function restoreRoadmapById(id){
   syncMeta(id).needsRestore=true; syncMeta(id).needsDelete=false;
   d.public=false;
   store.roadmaps[id]=d; delete store.trash[id]; store.activeId=id; doc=d;
-  if (!saveNow()){ applyUndo(true); return; } syncHeader(); setMode("editor"); showUndo("Roadmap restored. Undo?");
+  if (!saveNow()){ applyUndo(true); return; } syncHeader(); setRoadmapView("details"); showUndo("Roadmap restored. Undo?");
   if (session) cloudRestore(id).catch(()=>{});
 }
 function toggleArchiveById(id){
@@ -2223,7 +2517,7 @@ function toggleArchiveById(id){
   if (session) syncMeta(id).pending=true;
   saveNow(); syncHeader();
   if (mode === "overview") renderOverview();
-  topNote(d.archived ? "ok" : "info", (d.archived ? "Archived “" : "Restored “") + (d.title || "Untitled") + "”" + (d.archived ? " — find it under Archived in the Overview." : "."));
+  topNote(d.archived ? "ok" : "info", (d.archived ? "Archived “" : "Restored “") + (d.title || "Untitled") + "”" + (d.archived ? " — find it under Archived in Portfolio." : "."));
   if (session) queueCloudSync(id);
 }
 function toggleArchive(){ toggleArchiveById(doc.id); }
@@ -2268,13 +2562,13 @@ function buildRoadmapJsonTemplate(){
 function downloadRoadmapJsonTemplate(){
   const payload=buildRoadmapJsonTemplate();
   download("roadmap-builder-template.roadmap.json", new Blob([JSON.stringify(payload,null,2)+"\n"], { type:"application/json;charset=utf-8" }));
-  topNote("ok","Roadmap JSON template downloaded. Replace the bracketed placeholders, then choose Import → Roadmap JSON….");
+  topNote("ok","Roadmap JSON template downloaded. Replace the bracketed placeholders, then choose More → Import Roadmap JSON….");
 }
 function exportFullPortfolio(){
   const payload={
     schema:"roadmap.portfolio.v2", exportedAt:new Date().toISOString(), appVersion:APP_VERSION,
     accountId:session&&session.user?session.user.id:null,
-    store:{ version:2, activeId:store.activeId, mode:store.mode, roadmaps:store.roadmaps, trash:store.trash||{}, sync:store.sync||{} }
+    store:{ version:2, activeId:store.activeId, mode:store.mode, roadmapView:store.roadmapView||roadmapView, roadmaps:store.roadmaps, trash:store.trash||{}, sync:store.sync||{} }
   };
   download("roadmap-portfolio-backup-"+todayIso()+".json", new Blob([JSON.stringify(payload,null,2)], { type:"application/json" }));
   topNote("ok","Full portfolio backup downloaded.");
@@ -3043,7 +3337,7 @@ async function generateFromDescription(){
   // too — this is just a clearer prompt than a 401).
   if (!session){
     note.className = "note info";
-    note.innerHTML = 'Please <b>sign in</b> to use the AI builder — use the <b>☁ Sign in</b> button (top right). It runs on the owner’s API key, so it’s limited to authorized accounts.';
+    note.innerHTML = 'Please <b>sign in</b> to use the AI builder. It runs on the owner’s API key, so it’s limited to authorized accounts.';
     return;
   }
   btn.disabled = true; btn.textContent = "Generating…";
@@ -3061,7 +3355,7 @@ async function generateFromDescription(){
     markOwnedLocalRoadmap(draft.id,!!session);
     draftSnapshot = { prevActiveId: store.activeId, draftId: draft.id }; store.draftSnapshot=draftSnapshot;
     store.roadmaps[draft.id] = draft; store.activeId = draft.id; doc = draft;
-    saveNow(); syncHeader(); setMode("editor"); fullRender();
+    saveNow(); syncHeader(); setRoadmapView("details"); fullRender();
     $("draftBanner").classList.add("show");
     closeAi();
   } catch(e){
@@ -3069,7 +3363,7 @@ async function generateFromDescription(){
     note.className = "note err";
     if (/please sign in/i.test(msg)){
       // stale session: the server no longer accepts the stored token — re-auth fixes it
-      note.innerHTML = '<b>Couldn’t build that roadmap.</b> Your sign-in session has gone stale — the server no longer accepts it. Click <b>☁ Sign out</b>, sign back in, and try again.';
+      note.innerHTML = '<b>Couldn’t build that roadmap.</b> Your sign-in session has gone stale — the server no longer accepts it. Choose <b>Sign out</b>, sign back in, and try again.';
     } else {
       note.innerHTML = '<b>Couldn’t build that roadmap.</b><br>' + esc(msg)
         + '<br><br>The natural-language builder runs in a Supabase Edge Function named <b>build-roadmap</b>. If it isn’t deployed yet (or you’re offline), that’s expected — the template and form paths work without it. Deploy the function and set an <b>ANTHROPIC_API_KEY</b> secret in your Supabase project to enable this.';
@@ -3099,12 +3393,14 @@ function cloudModal(title, bodyHtml, footHtml){
 function closeCloud(){ hideModal($("cloudModal")); }
 function reflectCloudUi(){
   const on = !!session;
-  $("cloudBtn").textContent = on ? "☁ Sign out" : "☁ Sign in";
-  // Signed-in state is shown by the ☁ Sign out button; don't display the account email.
+  $("cloudBtn").textContent = on ? "Sign out" : "Sign in";
+  // Signed-in state is shown by the account action; don't duplicate the email.
   $("cloudEmail").hidden = true; $("cloudEmail").textContent = "";
   // Signed-in accounts can open their accessible portfolio; reflectAccessUi narrows
   // mutation, sharing, publishing, and access controls for the current role.
-  ["cloudMenu","aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  { const menu=$("cloudMenu"); if (menu) menu.hidden=false; }
+  ["aiBtn","summaryAiBtn"].forEach(id => { const el = $(id); if (el) el.hidden = !on; });
+  document.querySelectorAll("[data-cloud-only]").forEach(el=>{ el.hidden=!on; });
   // The "All users' roadmaps" admin item only shows for the super-owner account.
   { const au = $("allUsersItem"); if (au) au.hidden = !(on && isOwnerAccount()); }
   if (!readOnly&&doc){ const meta=syncMeta(doc.id); if (on&&meta.pending) setSaveStatus("pending","Saved locally · cloud pending"); else if (on&&meta.revision!==null) setSaveStatus("synced","Cloud synced"); else setSaveStatus("local","Saved locally"); }
@@ -3116,7 +3412,7 @@ function reflectPublicBtn(){
   const b = $("publicItem");
   const pub = !!(doc && doc.public);
   const meta=doc?syncMeta(doc.id):null, uncertain=!!(meta&&meta.visibilityUnconfirmed);
-  if (b) b.textContent = uncertain ? "⚠ Visibility change pending" : (pub ? "🌐 Make private" : "🌐 Make public");
+  if (b) b.textContent = uncertain ? "Visibility change pending" : (pub ? "Make private" : "Make public");
   // Show the shareable public link on the page while a public roadmap is open (owner only).
   const bar = $("publicUrlBar");
   if (bar){
@@ -3545,6 +3841,7 @@ async function cloudOpenAll(){
 /* ---------- owner deep link (?admin=<id>): view one user's roadmap read-only ---------- */
 async function initAdminRoadmap(id){
   readOnly = true; document.body.classList.add("readonly");
+  mode="editor"; roadmapView="timeline"; updateViewUi();
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   try {
     const client = await getSb();
@@ -3698,6 +3995,7 @@ async function renderAccessList(client,roadmapId){
 /* ---------- read-only shared view (?s=token) ---------- */
 async function initShared(token){
   readOnly = true; document.body.classList.add("readonly");
+  mode="editor"; roadmapView="timeline"; updateViewUi();
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   try {
     const client = await getSb();
@@ -3715,6 +4013,7 @@ async function initShared(token){
 /* ---------- deep link to one public roadmap (?r=<id>), read-only ---------- */
 async function initPublicRoadmap(id){
   readOnly = true; document.body.classList.add("publicview");
+  mode="editor"; roadmapView="timeline"; updateViewUi();
   $("ownerSignIn").hidden=false;
   $("titleIn").readOnly = true; $("subIn").readOnly = true; { const rn = $("rmNotes"); if (rn) rn.readOnly = true; }
   $("eyebrow").textContent = "Public roadmap · read-only";
@@ -3764,6 +4063,7 @@ async function enterPublicMode(){
   await loadPublicRoadmaps();
   reflectCloudUi(); syncHeader();
   mode = Object.keys(store.roadmaps).length > 1 ? "overview" : "editor";
+  roadmapView="timeline"; store.roadmapView=roadmapView;
   setMode(mode);
 }
 async function enterOwnerMode(){
@@ -3775,6 +4075,7 @@ async function enterOwnerMode(){
   if (draftSnapshot&&store.roadmaps[draftSnapshot.draftId]) $("draftBanner").classList.add("show");
   if (store.undo&&store.undo.snapshot) showUndo((store.undo.label||"Previous version available")+" Undo?");
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
+  roadmapView=normalizeRoadmapView(store.roadmapView||"details");
   setMode(mode);   // paint the local view immediately …
   await mergeCloudRoadmaps(hadLocal);   // … then fold in this account's cloud roadmaps
 }
@@ -3880,6 +4181,7 @@ async function mergeCloudRoadmaps(hadLocal){
   // Keep the active binding explicit after same-ID cloud replacements. Event
   // handlers must never retain the pre-merge object that was just superseded.
   doc = store.roadmaps[store.activeId];
+  roadmapView = ["executive","timeline","details"].includes(store.roadmapView) ? store.roadmapView : "details";
   saveNow();   // cache the merged portfolio so it's there next load too (even offline)
   reflectCloudUi(); syncHeader();
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
@@ -3913,6 +4215,34 @@ function fitTimeline(){
   timelineFit = true; updateTimelineScaleControls(); renderGantt();
   const scroller = document.querySelector(".tl-scroll"); if (scroller) scroller.scrollLeft = 0;
 }
+async function primaryShare(){
+  if (!session){ cloudSignInFlow(); return; }
+  if (!doc || currentRoadmapReadOnly() || !isRoadmapOwner(doc.id)){
+    topNote("info","Only the roadmap owner can manage sharing and collaborators for this roadmap."); return;
+  }
+  manageAccessFlow();
+}
+let prePresentationView="timeline";
+function setPresentation(active){
+  active=!!active;
+  if (active){
+    prePresentationView=roadmapView; setRoadmapView("timeline"); fitTimeline();
+  }
+  document.body.classList.toggle("presentation-mode",active);
+  const btn=$("presentBtn"), exitBtn=$("presentExit");
+  if (btn) btn.setAttribute("aria-pressed",active?"true":"false");
+  if (exitBtn) exitBtn.hidden=!active;
+  if (!active && prePresentationView!==roadmapView) setRoadmapView(prePresentationView);
+  requestAnimationFrame(()=>{
+    if (active){ if (exitBtn) exitBtn.focus(); return; }
+    const target=btn&&btn.getClientRects().length?btn:$("mobileActions"); if (target) target.focus();
+  });
+}
+function setMobileActions(open){
+  const toolbar=$("toolbar"), btn=$("mobileActions"); if (!toolbar||!btn) return;
+  toolbar.classList.toggle("mobile-open",!!open); btn.setAttribute("aria-expanded",open?"true":"false");
+  if (!open) closeMenus();
+}
 
 /* =========================================================================
    Wire up
@@ -3932,12 +4262,17 @@ function onMenuDocClick(e){
   const btn = e.target.closest(".menu-btn");
   if (btn){ const list = btn.nextElementSibling; const willOpen = list && list.hidden; closeMenus(); if (list && willOpen){ list.hidden = false; btn.setAttribute("aria-expanded", "true"); } return; }
   const item = e.target.closest(".menu-item");
-  if (item){ closeMenus(); if (!item.disabled&&!item.hidden) runMenuAction(item.dataset.act); return; }
+  if (item){ closeMenus(); if (!item.disabled&&!item.hidden){ runMenuAction(item.dataset.act); setMobileActions(false); } return; }
+  if (e.target.closest(".menu-list")) return;
   closeMenus();   // outside click
 }
 function wire(){
   // title / subtitle
-  $("titleIn").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled"; });
+  $("titleIn").addEventListener("keydown", e => { if (e.key==="Enter"){ e.preventDefault(); $("subIn").focus(); } });
+  $("titleIn").addEventListener("input", e => {
+    const normalized=e.target.value.replace(/[\r\n]+/g," "); if (normalized!==e.target.value) e.target.value=normalized;
+    resizeTitleInput(); if (currentRoadmapReadOnly()) return; doc.title = e.target.value; save(); const o = $("rmPicker").selectedOptions[0]; if (o) o.textContent = doc.title || "Untitled";
+  });
   $("subIn").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.subtitle = e.target.value; save(); });
   { const p = $("premiseIn"); if (p) p.addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.premise = e.target.value; save(); }); }
   $("rmNotes").addEventListener("input", e => { if (currentRoadmapReadOnly()) return; doc.notes = e.target.value; save(); });
@@ -3946,29 +4281,48 @@ function wire(){
   // view mode
   $("segOverview").addEventListener("click", () => setMode("overview"));
   $("segEditor").addEventListener("click", () => setMode("editor"));
+  $("segExecutive").addEventListener("click", () => setRoadmapView("executive"));
+  $("segTimeline").addEventListener("click", () => setRoadmapView("timeline"));
+  $("segDetails").addEventListener("click", () => setRoadmapView("details"));
   $("backToPortfolio").addEventListener("click", () => setMode("overview"));
   const grid = $("overviewGrid");
   grid.addEventListener("click", onOverviewClick);
+  document.querySelectorAll("[data-portfolio-filter]").forEach(btn=>btn.addEventListener("click",()=>setPortfolioFilter(btn.dataset.portfolioFilter)));
   // picker + CRUD
   $("rmPicker").addEventListener("change", e => switchTo(e.target.value));
-  $("rmNew").addEventListener("click", newRoadmap);
+  $("rmNew").addEventListener("click", () => { newRoadmap(); setMobileActions(false); });
+  $("shareBtn").addEventListener("click", () => { primaryShare(); setMobileActions(false); });
+  $("presentBtn").addEventListener("click", () => { setPresentation(true); setMobileActions(false); });
+  $("presentExit").addEventListener("click", () => setPresentation(false));
+  $("mobileActions").addEventListener("click", e => { e.stopPropagation(); setMobileActions(!$("toolbar").classList.contains("mobile-open")); });
   // template
-  $("tmplPicker").addEventListener("change", e => { const v = e.target.value; if (v) applyTemplate(v); e.target.value = ""; });
+  $("tmplPicker").addEventListener("change", e => { const v = e.target.value; if (v) applyTemplate(v); e.target.value = ""; setMobileActions(false); });
+  $("tmplPicker").addEventListener("keydown", e => {
+    if (e.key!=="Escape") return;
+    e.preventDefault(); e.stopPropagation(); closeMenus();
+    const more=$("cloudMenu").querySelector(".menu-btn"); if (more) more.focus();
+  });
   // editor delegation
   const ed = $("editor");
   ed.addEventListener("input", onEditorInput);
   ed.addEventListener("change", onEditorChange);
   ed.addEventListener("click", onEditorClick);
-  $("addLane").addEventListener("click", () => { if (currentRoadmapReadOnly()) return; doc.lanes.push(normLane({ name:"New lane", items:[] }, doc.lanes.length)); save(); fullRender(); });
+  $("addLane").addEventListener("click", () => { if (currentRoadmapReadOnly()) return; const lane=normLane({ name:"New lane", items:[] }, doc.lanes.length); doc.lanes.push(lane); laneDisclosure.set(lane.id,true); save(); fullRender(); });
   // export / import / png / print / html run via the Export menu (runMenuAction);
   // the hidden file input is triggered by the menu's Import item.
   $("fileIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJsonFile(f); e.target.value = ""; });
   $("jiraIn").addEventListener("change", e => { const f = e.target.files[0]; if (f) importJiraCsv(f); e.target.value = ""; });
   // dropdown menus (Export, Cloud, roadmap ⋯)
   document.addEventListener("click", onMenuDocClick);
+  document.addEventListener("click", e => { if (!e.target.closest("#toolbar")) setMobileActions(false); });
   document.addEventListener("keydown", e => {
     handleModalKeydown(e);
-    if (e.key === "Escape") closeMenus();
+    if (e.key === "Escape"){
+      const mobileWasOpen=$("toolbar").classList.contains("mobile-open"), focusWasInActions=!!(e.target.closest&&e.target.closest("#toolbarActions"));
+      closeMenus(); setMobileActions(false);
+      if (mobileWasOpen&&focusWasInActions) $("mobileActions").focus();
+      if (document.body.classList.contains("presentation-mode")) setPresentation(false);
+    }
     const item=e.target.closest&&e.target.closest(".menu-item"); if (!item || !["ArrowDown","ArrowUp","Home","End"].includes(e.key)) return;
     e.preventDefault(); const items=[...item.parentElement.querySelectorAll(".menu-item:not([disabled]):not([hidden])")]; let i=items.indexOf(item);
     if (e.key==="Home") i=0; else if (e.key==="End") i=items.length-1; else i=(i+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;
@@ -3989,7 +4343,7 @@ function wire(){
   $("draftKeep").addEventListener("click", keepDraft);
   $("draftDiscard").addEventListener("click", discardDraft);
   // cloud
-  $("cloudBtn").addEventListener("click", cloudSignInFlow);
+  $("cloudBtn").addEventListener("click", () => { cloudSignInFlow(); setMobileActions(false); });
   $("ownerSignIn").addEventListener("click", cloudSignInFlow);
   $("publicUrlCopy").addEventListener("click", async () => {
     const el = $("publicUrl"); el.select();
@@ -4007,9 +4361,16 @@ function wire(){
   $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.25));
   $("zoomReset").addEventListener("click", () => setZoom(1));
   updateTimelineScaleControls();
+  $("roadmapViews").addEventListener("keydown",e=>{
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+    const tabs=[...$("roadmapViews").querySelectorAll('[role="tab"]:not([hidden])')]; if (!tabs.length) return;
+    e.preventDefault(); let i=tabs.indexOf(e.target); if(i<0)i=0;
+    if(e.key==='Home')i=0; else if(e.key==='End')i=tabs.length-1; else i=(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    tabs[i].click(); tabs[i].focus();
+  });
   // re-fit the timeline to the viewport on resize (zoom is relative to available width)
   let rzTimer = null;
-  window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(() => { renderGantt(); if (mode === "overview") renderOverview(); }, 150); });
+  window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(() => { resizeTitleInput(); renderGantt(); if (mode === "overview") renderOverview(); if(window.innerWidth>720)setMobileActions(false); }, 150); });
   // print: render the analysis cards as clean static prose (no editing chrome)
   window.addEventListener("beforeprint", () => { printing = true; renderCallouts(); });
   window.addEventListener("afterprint", () => { printing = false; renderCallouts(); });

@@ -94,10 +94,10 @@ async function openSeededRoadmap(page) {
 }
 
 async function downloadStandaloneHtml(page) {
-  await page.getByRole("button", { name: "Export ▾", exact: true }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("menuitem", { name: "HTML page", exact: true }).click(),
+    page.getByRole("menuitem", { name: "Interactive HTML", exact: true }).click(),
   ]);
   expect(download.suggestedFilename()).toBe("standalone-scale-test-roadmap.html");
   const stream = await download.createReadStream();

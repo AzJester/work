@@ -82,6 +82,13 @@ async function openSeededRoadmap(page) {
   await expect(page.locator(".item")).toHaveCount(2);
 }
 
+async function openTimelineView(page) {
+  const timelineView = page.locator('[data-view="timeline"]');
+  await expect(timelineView).toBeVisible();
+  await timelineView.click();
+  await expect(page.locator('[data-roadmap-view="timeline"]')).toBeVisible();
+}
+
 function edge(box) {
   return { left: box.x, right: box.x + box.width, top: box.y, bottom: box.y + box.height };
 }
@@ -92,7 +99,7 @@ test("phase and milestone editor rows share uniform desktop columns", async ({ p
 
   const phase = page.locator('[data-item="layout-phase"]');
   const milestone = page.locator('[data-item="layout-milestone"]');
-  for (const selector of ["select.kind", "input.lbl", ".item-dates", "select.chip", ".item-gate-slot", ".item-actions", "input.note-inp"]) {
+  for (const selector of ["select.kind", "input.lbl", ".item-dates", "select.chip", '[data-role="itemToggle"]']) {
     const [phaseBox, milestoneBox] = await Promise.all([
       phase.locator(selector).boundingBox(),
       milestone.locator(selector).boundingBox(),
@@ -102,17 +109,15 @@ test("phase and milestone editor rows share uniform desktop columns", async ({ p
   }
 
   const controlHeights = await page.locator(
-    '.item select.kind, .item input.lbl, .item input[type="date"], .item select.chip, .item .gate-tog, .item-actions .icon-btn',
+    '.item select.kind, .item input.lbl, .item input[type="date"], .item select.chip, .item [data-role="itemToggle"]',
   ).evaluateAll(controls => controls.map(control => control.getBoundingClientRect().height));
   expect(Math.max(...controlHeights) - Math.min(...controlHeights), "primary controls share one height").toBeLessThanOrEqual(1);
-  await expect(phase.locator(".item-gate-slot")).toBeEmpty();
 
   const headingPairs = [
     [".item-col-kind", "select.kind"],
     [".item-col-label", "input.lbl"],
     [".item-col-dates", ".item-dates"],
     [".item-col-status", "select.chip"],
-    [".item-col-gate", ".item-gate-slot"],
   ];
   for (const [headingSelector, controlSelector] of headingPairs) {
     const [headingBox, controlBox] = await Promise.all([
@@ -121,6 +126,17 @@ test("phase and milestone editor rows share uniform desktop columns", async ({ p
     ]);
     expect(Math.abs(headingBox.x - controlBox.x), `${headingSelector} labels its control column`).toBeLessThanOrEqual(1);
   }
+  const [detailsHeading, detailsButton] = await Promise.all([
+    page.locator(".item-col-actions").boundingBox(),
+    phase.locator('[data-role="itemToggle"]').boundingBox(),
+  ]);
+  expect(Math.abs(edge(detailsHeading).right - edge(detailsButton).right), "Details labels the compact disclosure column").toBeLessThanOrEqual(3);
+  await phase.locator('[data-role="itemToggle"]').click();
+  await milestone.locator('[data-role="itemToggle"]').click();
+  await expect(phase.locator(".item-detail-panel")).toBeVisible();
+  await expect(milestone.locator(".item-detail-panel")).toBeVisible();
+  await expect(phase.locator("input.note-inp")).toHaveValue("Phase detail remains aligned beneath the item name.");
+  await expect(milestone.locator('.gate-tog input[data-role="gate"]')).toBeChecked();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1441);
   await expect(page.locator('[data-lane="empty-lane"] .item-columns')).toHaveCount(0);
 });
@@ -131,30 +147,39 @@ test("tablet rows keep their visual flow in keyboard order", async ({ page }) =>
 
   await expect(page.locator(".item-columns")).toBeHidden();
   for (const item of [page.locator('[data-item="layout-phase"]'), page.locator('[data-item="layout-milestone"]')]) {
-    const [kind, label, dates, status, gate, actions, note] = await Promise.all([
+    const [kind, label, dates, status, details] = await Promise.all([
       item.locator("select.kind").boundingBox(),
       item.locator("input.lbl").boundingBox(),
       item.locator(".item-dates").boundingBox(),
       item.locator("select.chip").boundingBox(),
-      item.locator(".item-gate-slot").boundingBox(),
-      item.locator(".item-actions").boundingBox(),
-      item.locator("input.note-inp").boundingBox(),
+      item.locator('[data-role="itemToggle"]').boundingBox(),
     ]);
     expect(Math.abs(kind.y - label.y), "type and item share the first row").toBeLessThanOrEqual(1);
     expect(edge(label).bottom).toBeLessThanOrEqual(edge(dates).top + 1);
-    for (const secondRowControl of [status, gate, actions]) {
-      expect(Math.abs(dates.y - secondRowControl.y), "schedule, status, gate, and actions share the second row").toBeLessThanOrEqual(1);
+    for (const secondRowControl of [status, details]) {
+      expect(Math.abs(dates.y - secondRowControl.y), "schedule, status, and details share the second row").toBeLessThanOrEqual(1);
     }
-    expect(edge(actions).bottom).toBeLessThanOrEqual(edge(note).top + 1);
+    await item.locator('[data-role="itemToggle"]').click();
+    const [expandedDetails, detailPanel] = await Promise.all([
+      item.locator('[data-role="itemToggle"]').boundingBox(),
+      item.locator(".item-detail-panel").boundingBox(),
+    ]);
+    expect(edge(expandedDetails).bottom).toBeLessThanOrEqual(edge(detailPanel).top + 1);
 
-    const focusCenters = await item.locator(
-      'select.kind, input.lbl, input[type="date"], select.chip, .gate-tog input, .item-actions button, input.note-inp',
-    ).evaluateAll(controls => controls.map(control => {
+    const focusOrder = await item.locator(
+      'select.kind, input.lbl, input[type="date"], select.chip, [data-role="itemToggle"], input.note-inp, .gate-tog input, .item-actions button',
+    ).evaluateAll(controls => controls.filter(control => control.getClientRects().length).map(control => {
       const rect = control.getBoundingClientRect();
-      return rect.top + rect.height / 2;
+      return {
+        name: control.getAttribute("aria-label") || control.dataset.role || control.className,
+        center: rect.top + rect.height / 2,
+      };
     }));
-    for (let index = 1; index < focusCenters.length; index += 1) {
-      expect(focusCenters[index], "tab order never jumps back to an earlier visual row").toBeGreaterThanOrEqual(focusCenters[index - 1] - 2);
+    for (let index = 1; index < focusOrder.length; index += 1) {
+      expect(
+        focusOrder[index].center,
+        `tab order from ${focusOrder[index - 1].name} to ${focusOrder[index].name} never jumps back to an earlier visual row`,
+      ).toBeGreaterThanOrEqual(focusOrder[index - 1].center - 2);
     }
   }
 });
@@ -171,7 +196,7 @@ test("roadmap editor remains contained across responsive breakpoints", async ({ 
 
     const laneBox = edge(await page.locator('[data-lane="layout-lane"]').boundingBox());
     const controls = await page.locator('[data-lane="layout-lane"] .item input, [data-lane="layout-lane"] .item select, [data-lane="layout-lane"] .item button')
-      .evaluateAll(elements => elements.map(element => {
+      .evaluateAll(elements => elements.filter(element => element.getClientRects().length).map(element => {
         const rect = element.getBoundingClientRect();
         return { label: element.getAttribute("aria-label") || element.dataset.role, left: rect.left, right: rect.right };
       }));
@@ -185,6 +210,7 @@ test("roadmap editor remains contained across responsive breakpoints", async ({ 
 test("timeline lane labels stay inside a bounded gutter instead of covering bars", async ({ page }) => {
   await page.setViewportSize({ width: 721, height: 1100 });
   await openSeededRoadmap(page);
+  await openTimelineView(page);
 
   const result = await page.locator("#gantt svg").evaluate(svg => {
     const gutter = Number(svg.dataset.laneGutter);
@@ -218,6 +244,7 @@ test("timeline lane labels stay inside a bounded gutter instead of covering bars
 test("Fit shows a multi-year project without clipping or overlapping header labels", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
   await openSeededRoadmap(page);
+  await openTimelineView(page);
 
   const assertFittedTimeline = async width => {
     await page.setViewportSize({ width, height: 1100 });
@@ -298,8 +325,13 @@ test("roadmap editor rows reflow without clipping on a phone", async ({ page }) 
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
   await expect(page.locator(".item-columns")).toBeHidden();
-  await expect(page.locator(".zoomer")).toBeHidden();
-  expect(await page.locator("#titleIn").evaluate(element => getComputedStyle(element).textOverflow)).toBe("ellipsis");
+  expect(await page.locator("#titleIn").evaluate(element => getComputedStyle(element).textOverflow)).not.toBe("ellipsis");
+
+  await openTimelineView(page);
+  await expect(page.locator(".zoomer")).toBeVisible();
+  await expect(page.locator('#gantt svg[data-plot-width]')).toHaveAttribute("data-plot-width", /^(?!0(?:\.0+)?$)\d+(?:\.\d+)?$/);
+  await page.locator('[data-view="details"]').click();
+  await expect(page.locator('[data-roadmap-view="details"]')).toBeVisible();
 
   const laneBox = edge(await page.locator('[data-lane="layout-lane"]').boundingBox());
   const controls = await page.locator('[data-lane="layout-lane"] .item input, [data-lane="layout-lane"] .item select, [data-lane="layout-lane"] .item button').evaluateAll(elements => elements
@@ -318,18 +350,30 @@ test("roadmap editor rows reflow without clipping on a phone", async ({ page }) 
   }
 
   for (const item of [page.locator('[data-item="layout-phase"]'), page.locator('[data-item="layout-milestone"]')]) {
-    const [kind, label, dates, status, actions, note] = await Promise.all([
+    const [kind, label, dates, status, details] = await Promise.all([
       item.locator("select.kind").boundingBox(),
       item.locator("input.lbl").boundingBox(),
       item.locator(".item-dates").boundingBox(),
       item.locator("select.chip").boundingBox(),
-      item.locator(".item-actions").boundingBox(),
-      item.locator("input.note-inp").boundingBox(),
+      item.locator('[data-role="itemToggle"]').boundingBox(),
     ]);
     expect(edge(kind).bottom).toBeLessThanOrEqual(edge(label).top + 1);
     expect(edge(label).bottom).toBeLessThanOrEqual(edge(dates).top + 1);
     expect(edge(dates).bottom).toBeLessThanOrEqual(edge(status).top + 1);
-    expect(edge(status).bottom).toBeLessThanOrEqual(edge(actions).top + 1);
-    expect(edge(actions).bottom).toBeLessThanOrEqual(edge(note).top + 1);
+    expect(Math.abs(status.y - details.y), "status and details share the compact final row").toBeLessThanOrEqual(1);
+    await item.locator('[data-role="itemToggle"]').click();
+    const [expandedDetails, detailPanel] = await Promise.all([
+      item.locator('[data-role="itemToggle"]').boundingBox(),
+      item.locator(".item-detail-panel").boundingBox(),
+    ]);
+    expect(edge(expandedDetails).bottom).toBeLessThanOrEqual(edge(detailPanel).top + 1);
+    const panelControls = await item.locator(".item-detail-panel input, .item-detail-panel button").evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect();
+      return { left:rect.left, right:rect.right };
+    }));
+    for (const control of panelControls) {
+      expect(control.left).toBeGreaterThanOrEqual(laneBox.left - 1);
+      expect(control.right).toBeLessThanOrEqual(laneBox.right + 1);
+    }
   }
 });

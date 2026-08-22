@@ -210,7 +210,7 @@ test("owner can invite, change a collaborator role, and revoke roadmap access", 
   await openCloudMenu(page);
   const manageAccess = page.locator('#cloudMenu [data-act="access"]');
   await expect(manageAccess).toBeVisible();
-  await expect(manageAccess).toHaveText(/Manage access/i);
+  await expect(manageAccess).toHaveText(/Manage collaborators/i);
   await manageAccess.click();
 
   await expect(page.locator("#accessEmail")).toBeVisible();
@@ -326,7 +326,10 @@ test("viewer in-place mutation handlers remain inert even when hidden controls a
 test("viewer can use AI to create an owned roadmap without changing the shared source", async ({ page }) => {
   const pageErrors = await openRoadmap(page, { accessRole: "viewer" });
   await expect(page.locator('.access-badge[data-access-role="viewer"]')).toBeVisible();
+  await page.locator("#cloudMenu .menu-btn").click();
+  await expect(page.locator("#cloudMenu .menu-list")).toBeVisible();
   await expect(page.locator("#aiBtn")).toBeEnabled();
+  await expect(page.locator("#aiBtn")).toBeVisible();
   await page.locator("#aiBtn").click();
   await expect(page.locator("#aiModal")).toBeVisible();
   await page.locator("#aiText").fill("Create a separate personal delivery plan");
