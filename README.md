@@ -321,6 +321,10 @@ cloud sync and shareable links.
   trashed roadmap plus sync metadata), **HTML** (a self-contained, magazine-style
   page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
   an image), and **Print / PDF**.
+- **JSON import template** — *Import ▾ → Download JSON template* downloads an immediately
+  importable `roadmap.v1` starter file. Replace its clearly marked `[REPLACE]` text and ISO
+  dates (`YYYY-MM-DD`), then choose *Import ▾ → Roadmap JSON…*. Template generation and
+  import both work locally in the browser.
 - **Import from Jira (CSV)** — *Import ▾ → Jira CSV…* takes Jira's built-in issue export
   (any Jira: **Export → CSV**, current or all fields) and builds a roadmap deterministically —
   no credentials, works offline, nothing leaves the browser:

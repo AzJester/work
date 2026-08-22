@@ -48,7 +48,7 @@
   html, body { margin:0; min-height:100%; }
   body { font-family:var(--disp); color:var(--ink); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
     background:var(--bg-wash), var(--bg); background-attachment:fixed; }
-  .wrap { max-width:1240px; margin:0 auto; padding:22px clamp(12px,3vw,30px) 96px; }
+  .wrap { max-width:1800px; margin:0 auto; padding:22px clamp(12px,3vw,30px) 96px; }
   a { color:var(--accent); }
 
   /* ---------- masthead ---------- */
@@ -63,15 +63,15 @@
   .titlewrap { min-width:0; flex:1 1 auto; }
   .eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color:var(--mut); margin:2px 0 5px; }
   input.title-in { font-family:var(--disp); font-weight:800; font-size:27px; letter-spacing:-0.025em; color:var(--ink);
-    border:1px solid transparent; background:transparent; border-radius:8px; padding:2px 6px; margin-left:-6px; width:100%; }
+    border:1px solid transparent; background:transparent; border-radius:8px; padding:2px 6px; margin-left:-6px; width:100%; text-overflow:ellipsis; }
   input.title-in:hover { border-color:var(--line); }
   input.title-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
   input.sub-in { font-family:var(--disp); font-size:14px; color:var(--ink-2); border:1px solid transparent; background:transparent;
-    border-radius:6px; padding:2px 6px; margin-left:-6px; width:100%; margin-top:2px; }
+    border-radius:6px; padding:2px 6px; margin-left:-6px; width:100%; margin-top:2px; text-overflow:ellipsis; }
   input.sub-in:hover { border-color:var(--line); }
   input.sub-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
   input.premise-in { font-family:var(--disp); font-size:15px; line-height:1.4; color:var(--ink); border:1px solid transparent; background:transparent;
-    border-radius:6px; padding:3px 6px; margin-left:-6px; width:100%; max-width:62ch; margin-top:8px; }
+    border-radius:6px; padding:3px 6px; margin-left:-6px; width:100%; max-width:62ch; margin-top:8px; text-overflow:ellipsis; }
   input.premise-in::placeholder { color:var(--mut); font-size:13.5px; }
   input.premise-in:hover { border-color:var(--line); }
   input.premise-in:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--ring); background:var(--input-bg); }
@@ -156,6 +156,8 @@
   .zbtn { font-family:var(--disp); font-size:14px; font-weight:700; color:var(--ink-2); background:transparent; border:none; border-radius:6px; padding:3px 9px; cursor:pointer; line-height:1.1; }
   .zbtn:hover { color:var(--accent); background:var(--card); }
   .zbtn.zlabel { font-family:var(--mono); font-size:11px; font-weight:600; min-width:46px; text-align:center; }
+  .zbtn.zfit { font-family:var(--disp); font-size:11px; min-width:44px; }
+  .zbtn[aria-pressed="true"] { color:var(--accent); background:var(--card); box-shadow:var(--shadow-sm); }
   .legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:11px 16px 13px; border-top:1px solid var(--line); background:var(--bg); }
   .legend .li { display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-2); }
   .legend .sw { width:22px; height:11px; border-radius:var(--pill); display:inline-block; }
@@ -486,6 +488,7 @@
     .save-status { flex:1 1 100%; justify-content:center; order:20; }
     .card .card-head { align-items:flex-start; padding:11px 12px; }
     .tl-tools { flex-wrap:wrap; justify-content:flex-end; }
+    .zoomer { display:none; }
     .tl-scroll { display:none; }
     .timeline-data { border-top:0; }
     .timeline-data summary { display:none; }
@@ -642,6 +645,7 @@
       <button class="btn ghost sm menu-btn" type="button" aria-haspopup="true" aria-expanded="false">Import ▾</button>
       <div class="menu-list" role="menu" hidden>
         <button class="menu-item" data-act="import" role="menuitem">Roadmap JSON…</button>
+        <button class="menu-item" data-act="json-template" role="menuitem" type="button">Download JSON template</button>
         <button class="menu-item" data-act="jira" role="menuitem">Jira CSV…</button>
       </div>
     </div>
@@ -689,9 +693,10 @@
       <h2>Timeline</h2>
       <div class="tl-tools">
         <span class="mono" id="tlRange"></span>
-        <div class="zoomer app-only" role="group" aria-label="Zoom timeline">
+        <div class="zoomer app-only" role="group" aria-label="Timeline scale">
+          <button id="zoomFit" class="zbtn zfit" type="button" title="Fit the project when screen space allows" aria-label="Fit project to available timeline space" aria-pressed="true">Fit</button>
           <button id="zoomOut" class="zbtn" type="button" title="Zoom out" aria-label="Zoom out">−</button>
-          <button id="zoomReset" class="zbtn zlabel" type="button" title="Reset zoom">100%</button>
+          <button id="zoomReset" class="zbtn zlabel" type="button" title="Reset detailed zoom to 100%" aria-label="Reset detailed zoom to 100 percent">100%</button>
           <button id="zoomIn" class="zbtn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
         </div>
       </div>
@@ -928,6 +933,7 @@ let store = { version:2, activeId:null, roadmaps:{}, trash:{}, sync:{} };
 let doc = null;                 // active roadmap
 let mode = "editor";            // "editor" | "overview"
 let zoom = 1;                   // timeline horizontal zoom (0.5–3)
+let timelineFit = true;         // show the complete project when the viewport can keep it legible
 let saveTimer = null;
 let session = null;             // supabase auth session (cloud)
 let sb = null;                  // lazily-created supabase client
@@ -1284,9 +1290,9 @@ function packLane(lane, xOf, plotRight){
   // We therefore reserve that extra span here (in pixels, matching the render
   // math below) so a bar's overflowing label and a milestone sitting at the same
   // date land on separate rows instead of on top of each other.
-  const CHAR = 6.7, MOAT = 11.5, GAP = 6;   // CHAR/MOAT/GAP mirror the render + fitsInside()
+  const MOAT = 11.5, GAP = 6;   // MOAT/GAP mirror the render + fitsInside()
   const px = !!xOf;
-  const labelW = it => String(it.label || (it.kind === "milestone" ? "Milestone" : "")).length * CHAR;
+  const labelW = it => timelineTextWidth(it.label || (it.kind === "milestone" ? "Milestone" : ""),12,600,F_SANS);
   const valid = lane.items.filter(itemValid).map(it => {
     if (!px){
       // no pixel scale (defensive fallback): pack on shape extents only, as before
@@ -1335,7 +1341,7 @@ function computeDomain(lanes, src){
 // (progress %, window, next gate). Falls back to all lanes if every lane is one.
 function calcLanes(){ const ls = (doc && doc.lanes) || []; const c = ls.filter(l => !l.contingency); return c.length ? c : ls; }
 function svgEl(tag, attrs, inner){
-  if (!/^(?:svg|g|rect|text|line|circle|path|pattern|defs|image|title)$/.test(tag)) throw new Error("Unsupported SVG element");
+  if (!/^(?:svg|g|rect|text|line|circle|path|pattern|clipPath|defs|image|title)$/.test(tag)) throw new Error("Unsupported SVG element");
   let s = "<"+tag;
   for (const k in attrs){
     if (!/^[A-Za-z_:][-A-Za-z0-9_:.]*$/.test(k)) continue;
@@ -1357,7 +1363,42 @@ function mdiamond(cx, cy, half, attrs){
 // the packer placed next to the bar.
 function fitsInside(label, widthPx){
   const padL = widthPx >= 15 ? 20 : 9;   // must mirror hasPip/padL in renderGantt
-  return (String(label).length * 6.7 + padL + 8) <= widthPx;
+  return (timelineTextWidth(label,12,600,F_SANS) + padL + 8) <= widthPx;
+}
+let timelineMeasureContext = null;
+function timelineTextWidth(value, size, weight, family){
+  if (!timelineMeasureContext) timelineMeasureContext = document.createElement("canvas").getContext("2d");
+  if (!timelineMeasureContext) return String(value || "").length * size * 0.58;
+  timelineMeasureContext.font = String(weight || 400) + " " + String(size || 13) + "px " + (family || F_SANS);
+  return timelineMeasureContext.measureText(String(value || "")).width;
+}
+function compactTimelineText(value, maxWidth, size, weight, family){
+  const text=String(value || "");
+  if (timelineTextWidth(text,size,weight,family)<=maxWidth) return text;
+  const suffix="…";
+  if (maxWidth <= 0 || timelineTextWidth(suffix,size,weight,family)>maxWidth) return "";
+  let lo=0, hi=text.length;
+  while (lo<hi){
+    const mid=Math.ceil((lo+hi)/2);
+    if (timelineTextWidth(text.slice(0,mid).trimEnd()+suffix,size,weight,family)<=maxWidth) lo=mid;
+    else hi=mid-1;
+  }
+  return text.slice(0,lo).trimEnd()+suffix;
+}
+function boundedTimelineLabel(value, xPos, anchor, minX, maxX, size, weight, family){
+  const x = Math.min(maxX,Math.max(minX,xPos));
+  const maxWidth = maxX > minX ? Math.max(0,anchor === "end" ? x-minX : maxX-x) : 0;
+  return { x, anchor, maxWidth, text:compactTimelineText(value,maxWidth,size,weight,family) };
+}
+function timelineLaneGutter(lanes){
+  const widths=[];
+  (lanes||[]).forEach(lane=>{
+    widths.push(timelineTextWidth(lane.name||"Lane",13,700,F_SANS));
+    const sub=String(lane.sub||"").trim();
+    if (sub) widths.push(timelineTextWidth(sub.length>30?sub.slice(0,29)+"…":sub,10,400,F_MONO));
+  });
+  const desired=36+(widths.length?Math.max(...widths):0)+18;
+  return Math.min(360,Math.max(GA.PADL,Math.ceil(desired)));
 }
 
 /* ---------- auto progress summary (computed from the roadmap, no AI) ---------- */
@@ -1522,19 +1563,26 @@ function renderGantt(){
   const scrollEl = document.querySelector(".tl-scroll");
   const cwv = (scrollEl && scrollEl.clientWidth) || 0;
   const fitW = (cwv > 0 ? cwv - 12 : 1160);
+  const laneGutter = timelineLaneGutter(lanes);
   // Keep at least ~132px per month so a long timeline stays legible instead of
   // being crushed to fit the viewport; when the result is wider than the viewport
   // the .tl-scroll container scrolls it horizontally (zoom widens it further).
   const months = Math.max(1, Math.round((t1 - t0) / (30.4 * 864e5)));
-  const minW = GA.PADL + GA.PADR + months * 132;
-  const CW = Math.max(480, Math.round(Math.max(fitW, minW) * zoom));
-  const plotW = CW - GA.PADL - GA.PADR;
+  const minW = laneGutter + GA.PADR + months * 132;
+  // Fit uses the whole available desktop timeline. On narrower tablets, keep a
+  // readable 24px/month floor and let the existing scroll container carry the
+  // extra width; phones use the complete accessible list instead of the SVG.
+  const readableFitW = laneGutter + GA.PADR + months * 24;
+  const fitCanUseViewport = cwv >= 1024;
+  const fittedW = fitCanUseViewport ? fitW : Math.max(fitW, readableFitW);
+  const CW = Math.max(480, Math.round(timelineFit ? fittedW : Math.max(fitW, minW) * zoom));
+  const plotW = CW - laneGutter - GA.PADR;
   const span = Math.max(1, t1 - t0);
-  const x = ms => GA.PADL + (ms - t0) / span * plotW;
+  const x = ms => laneGutter + (ms - t0) / span * plotW;
   const xi = iso => x(msOf(iso));
 
   // lane layout (label-aware: needs the ms→px scale so label footprints pack correctly)
-  const layout = lanes.map(l => packLane(l, x, GA.PADL + plotW));
+  const layout = lanes.map(l => packLane(l, x, laneGutter + plotW));
   let y = GA.PADT;
   const laneBox = layout.map((lay, i) => {
     const h = GA.lanePadTop + lay.rows*GA.rowUnit + GA.lanePadBot;
@@ -1557,6 +1605,8 @@ function renderGantt(){
       + '<line x1="0" y1="0" x2="0" y2="7" stroke="rgba(' + r + ',' + g + ',' + b + ',0.6)" stroke-width="2.5"/>'
       + '</pattern>';
   });
+  defs += svgEl("clipPath", { id:"timelineLaneLabelClip" },
+    svgEl("rect", { x:12, y:bandBot, width:Math.max(1,laneGutter-24), height:Math.max(1,CH-bandBot) }));
   out += svgEl("defs", {}, defs);
   // background + header band
   out += svgEl("rect", { x:0, y:0, width:CW, height:CH, fill:P.bg, rx:4 });
@@ -1575,23 +1625,44 @@ function renderGantt(){
     wk.setDate(wk.getDate() - ((wk.getDay()+6)%7));   // snap back to the week's Monday
     for (; wk.getTime() <= t1; wk = new Date(wk.getTime() + weekMs)){
       const wkx = x(wk.getTime());
-      if (wkx > GA.PADL+0.5 && wkx < GA.PADL+plotW)
+      if (wkx > laneGutter+0.5 && wkx < laneGutter+plotW)
         out += svgEl("line", { x1:wkx.toFixed(1), y1:gridTop, x2:wkx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.3 });
-      if (showWeekNums && wkx >= GA.PADL-1 && wkx <= GA.PADL+plotW+1)
+      if (showWeekNums && wkx >= laneGutter-1 && wkx <= laneGutter+plotW+1)
         out += svgEl("text", { x:wkx.toFixed(1), y:(GA.PADT-14).toFixed(1), fill:P.mut, "font-size":9, "font-family":F_MONO, "text-anchor":"middle", "fill-opacity":0.7 }, String(wk.getDate()));
     }
   }
-  // month gridlines + labels (stronger, on top of the weekly grid)
-  let m = new Date(t0); let prevYear = null;
+  // Month gridlines stay complete at every scale. Labels become progressively
+  // sparser in Fit mode so a multi-year roadmap can remain readable instead of
+  // stacking 36 month names on top of one another.
+  const monthPx = plotW / months;
+  const periodCadence = monthPx >= 64 ? 1 : monthPx >= 24 ? 3 : monthPx >= 14 ? 6 : 12;
+  let m = new Date(t0); let monthIndex = 0, lastPeriodYear = null, lastPeriodLabelRight = -Infinity;
   while (m.getTime() <= t1){
     const gx = x(m.getTime());
     out += svgEl("line", { x1:gx.toFixed(1), y1:gridTop, x2:gx.toFixed(1), y2:gridBot, stroke:P.grid, "stroke-width":1, "stroke-opacity":0.9 });
     if (m.getTime() < t1){
-      let lbl = MONTHS[m.getMonth()];
-      if (prevYear !== m.getFullYear()){ lbl += " ’" + String(m.getFullYear()).slice(2); prevYear = m.getFullYear(); }
-      out += svgEl("text", { x:(gx+7).toFixed(1), y:(GA.PADT-30).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":700 }, esc(lbl));
+      const monthNo = m.getMonth(), year = m.getFullYear();
+      if (monthIndex === 0 || periodCadence === 1 || monthNo % periodCadence === 0){
+        let lbl;
+        if (periodCadence === 1) lbl = MONTHS[monthNo];
+        else if (periodCadence === 3) lbl = "Q" + (Math.floor(monthNo/3)+1);
+        else if (periodCadence === 6) lbl = monthNo < 6 ? "H1" : "H2";
+        else lbl = String(year);
+        if (periodCadence < 12 && lastPeriodYear !== year) lbl += " ’" + String(year).slice(2);
+        const lx = gx + 7;
+        const labelRight = lx + timelineTextWidth(lbl,12,700,F_SANS);
+        // The cadence handles normal cases; this measured guard also keeps
+        // unusually long timelines safe when even annual labels need skipping.
+        if (lx >= lastPeriodLabelRight + 10 && labelRight <= laneGutter + plotW + 1){
+          out += svgEl("text", { x:lx.toFixed(1), y:(GA.PADT-30).toFixed(1), fill:P.ink2, "font-size":12, "font-family":F_SANS, "font-weight":700,
+            "data-role":"timeline-period-label" }, esc(lbl));
+          lastPeriodLabelRight = labelRight;
+          lastPeriodYear = year;
+        }
+      }
     }
     m = addMonths(m, 1);
+    monthIndex++;
   }
   // left gutter label
   out += svgEl("text", { x:16, y:(GA.PADT-30).toFixed(1), fill:P.mut, "font-size":10.5, "font-family":F_MONO, "letter-spacing":"0.12em" }, "LANE");
@@ -1606,14 +1677,19 @@ function renderGantt(){
     const nameCy = box.top + box.h/2;
     out += svgEl("circle", { cx:24, cy:nameCy.toFixed(1), r:4.5, fill:lane.color, "fill-opacity": cont ? 0.55 : 1 });
     const nameCol = cont ? P.mut : P.ink;
+    const fullName = lane.name || "Lane";
+    const labelMaxWidth = Math.max(24,laneGutter-54);
+    const displayName = compactTimelineText(fullName,labelMaxWidth,13,700,F_SANS);
     const subTxt = (lane.sub || "").trim();
+    let labelSvg = svgEl("title", {}, esc(subTxt ? fullName+" — "+subTxt : fullName));
     if (subTxt){
-      const sub = subTxt.length > 30 ? subTxt.slice(0,29) + "…" : subTxt;
-      out += svgEl("text", { x:36, y:(nameCy-7).toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
-      out += svgEl("text", { x:36, y:(nameCy+9).toFixed(1), fill:P.mut, "font-size":10, "font-family":F_MONO, "dominant-baseline":"middle" }, esc(sub));
+      const sub = compactTimelineText(subTxt,labelMaxWidth,10,400,F_MONO);
+      labelSvg += svgEl("text", { x:36, y:(nameCy-7).toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(displayName));
+      labelSvg += svgEl("text", { x:36, y:(nameCy+9).toFixed(1), fill:P.mut, "font-size":10, "font-family":F_MONO, "dominant-baseline":"middle" }, esc(sub));
     } else {
-      out += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(lane.name || "Lane"));
+      labelSvg += svgEl("text", { x:36, y:nameCy.toFixed(1), fill:nameCol, "font-size":13, "font-weight":700, "font-family":F_SANS, "dominant-baseline":"middle" }, esc(displayName));
     }
+    out += svgEl("g", { "data-role":"timeline-lane-label", "data-lane-index":i, "clip-path":"url(#timelineLaneLabelClip)" }, labelSvg);
   });
 
   // gate / key-date lines (dashed, labeled) drawn under the items
@@ -1623,7 +1699,7 @@ function renderGantt(){
     if (gd < t0 || gd > t1) return;
     const gxx = x(gd);
     out += svgEl("line", { x1:gxx.toFixed(1), y1:bandBot, x2:gxx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.ink2, "stroke-width":1.25, "stroke-dasharray":"5 4", "stroke-opacity":0.5 });
-    const pw = 42, ph = 15, ppx = Math.min(Math.max(gxx-pw/2, GA.PADL), GA.PADL+plotW-pw), ppy = 3;
+    const pw = 42, ph = 15, ppx = Math.min(Math.max(gxx-pw/2, laneGutter), laneGutter+plotW-pw), ppy = 3;
     out += svgEl("rect", { x:ppx.toFixed(1), y:ppy, width:pw, height:ph, rx:3, fill:P.ink });
     out += svgEl("text", { x:(ppx+pw/2).toFixed(1), y:(ppy+ph/2+0.5).toFixed(1), fill:P.bg, "font-size":8.5, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.1em", "dominant-baseline":"middle" }, "GATE");
   }));
@@ -1634,7 +1710,7 @@ function renderGantt(){
   if (showToday){
     const tx = x(todayMs);
     out += svgEl("line", { x1:tx.toFixed(1), y1:bandBot, x2:tx.toFixed(1), y2:(CH-GA.PADB).toFixed(1), stroke:P.today, "stroke-width":2, "stroke-dasharray":"4 4" });
-    const cw = 52, ch = 17, ccx = Math.min(Math.max(tx, GA.PADL+cw/2), GA.PADL+plotW-cw/2), cy = 3;
+    const cw = 52, ch = 17, ccx = Math.min(Math.max(tx, laneGutter+cw/2), laneGutter+plotW-cw/2), cy = 3;
     out += svgEl("rect", { x:(ccx-cw/2).toFixed(1), y:cy, width:cw, height:ch, rx:8.5, fill:P.today });
     out += svgEl("text", { x:ccx.toFixed(1), y:(cy+ch/2+0.5).toFixed(1), fill:P.todayInk, "font-size":10, "font-weight":700, "font-family":F_MONO, "text-anchor":"middle", "letter-spacing":"0.12em", "dominant-baseline":"middle" }, "TODAY");
   }
@@ -1657,12 +1733,13 @@ function renderGantt(){
         if (it.status === "at_risk" || it.status === "blocked")
           g += mdiamond(cx, cy, r+2.5, { fill:"none", stroke:stCol, "stroke-width":3, "stroke-opacity":0.2 });   // soft status glow
         g += mdiamond(cx, cy, r, { fill: hollow ? P.bg : laneCol, stroke:stCol, "stroke-width":2 });
-        const rightSpace = (GA.PADL+plotW) - cx;
+        const rightSpace = (laneGutter+plotW) - cx;
         const labelRight = rightSpace > 120;
         const lx = labelRight ? cx + r + 6 : cx - r - 6;
         const labFill = it.status === "planned" ? P.mut : P.ink2;
-        g += svgEl("text", { x:lx.toFixed(1), y:(cy).toFixed(1), fill:labFill, "font-size":12, "font-family":F_SANS, "font-weight":600,
-          "dominant-baseline":"middle", "text-anchor": labelRight ? "start" : "end" }, esc(it.label || "Milestone"));
+        const milestoneLabel = boundedTimelineLabel(it.label || "Milestone",lx,labelRight?"start":"end",laneGutter+7,laneGutter+plotW-7,12,600,F_SANS);
+        if (milestoneLabel.text) g += svgEl("text", { x:milestoneLabel.x.toFixed(1), y:(cy).toFixed(1), fill:labFill, "font-size":12, "font-family":F_SANS, "font-weight":600,
+          "dominant-baseline":"middle", "text-anchor":milestoneLabel.anchor, "data-role":"timeline-item-label" }, esc(milestoneLabel.text));
         if (note){ g += svgEl("circle", { cx:(cx).toFixed(1), cy:(cy - r - 3).toFixed(1), r:1.9, fill:P.noteDot }); }
       } else {
         let bx = xi(it.start), bxe = xi(it.end);
@@ -1683,23 +1760,23 @@ function renderGantt(){
         const lab = it.label || "";
         if (lab){
           const padL = hasPip ? 20 : 9;
-          if (fitsInside(lab, bw)){
-            g += svgEl("text", { x:(bx+padL).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:txt,
-              "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
-          } else {
-            g += svgEl("text", { x:(bxe+7).toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:P.ink2,
-              "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle" }, esc(lab));
-          }
+          const plotLeft = laneGutter+7, plotRight = laneGutter+plotW-7;
+          const insideLabel = boundedTimelineLabel(lab,bx+padL,"start",Math.max(plotLeft,bx+padL),Math.min(plotRight,bxe-8),12,600,F_SANS);
+          const outsideLabel = boundedTimelineLabel(lab,bxe+7,"start",Math.max(plotLeft,bxe+7),plotRight,12,600,F_SANS);
+          const useOutside = !fitsInside(lab,bw) && outsideLabel.maxWidth >= insideLabel.maxWidth;
+          const visibleLabel = useOutside ? outsideLabel : insideLabel;
+          if (visibleLabel.text) g += svgEl("text", { x:visibleLabel.x.toFixed(1), y:(yTop+GA.barH/2+0.5).toFixed(1), fill:useOutside?P.ink2:txt,
+            "font-size":12, "font-family":F_SANS, "font-weight":600, "dominant-baseline":"middle", "data-role":"timeline-item-label" }, esc(visibleLabel.text));
         }
         if (note){ g += svgEl("circle", { cx:(bxe-5).toFixed(1), cy:(yTop+4.5).toFixed(1), r:2, fill: onhold ? P.noteDot : "#ffffff", "fill-opacity": onhold ? 1 : 0.85 }); }
       }
       const tip = it.label || (it.kind==="milestone" ? "Milestone" : "");
       const titleTxt = note ? (tip + " — " + note) : tip;
-      out += svgEl("g", {}, g + svgEl("title", {}, esc(titleTxt)));
+      out += svgEl("g", {}, svgEl("title", {}, esc(titleTxt)) + g);
     });
   });
 
-  host.innerHTML = '<svg class="gantt" style="width:'+CW+'px;min-width:0" viewBox="0 0 '+CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
+  host.innerHTML = '<svg class="gantt" data-lane-gutter="'+laneGutter+'" data-plot-right="'+(laneGutter+plotW).toFixed(1)+'" data-fit-mode="'+(timelineFit?'true':'false')+'" data-period-cadence="'+periodCadence+'" data-month-pixels="'+monthPx.toFixed(2)+'" style="width:'+CW+'px;min-width:0" viewBox="0 0 '+CW+' '+Math.round(CH)+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Roadmap timeline">'+out+'</svg>';
   const fmt = ms => { const d = new Date(ms); return MONTHS[d.getMonth()]+" "+d.getFullYear(); };
   $("tlRange").textContent = fmt(t0) + " – " + fmt(t1 - 864e5);
 }
@@ -2156,6 +2233,42 @@ function toggleArchive(){ toggleArchiveById(doc.id); }
 function slug(s){ return (String(s||"roadmap").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "roadmap"); }
 function download(name, blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 function exportJson(){ download(slug(doc.title)+".roadmap.json", new Blob([JSON.stringify(doc,null,2)], { type:"application/json" })); }
+function buildRoadmapJsonTemplate(){
+  const start=todayIso(), now=new Date().toISOString();
+  return normalizeRoadmap({
+    schema:"roadmap.v1",
+    id:"rm_template",
+    title:"[REPLACE] Roadmap title",
+    subtitle:"JSON starter file — placeholder content only",
+    premise:"[REPLACE] State the outcome this roadmap is intended to achieve.",
+    notes:"Replace every bracketed placeholder and update the ISO dates (YYYY-MM-DD). Keep schema set to roadmap.v1. A phase needs start and end; a milestone needs date.",
+    public:false,
+    archived:false,
+    templateType:"custom",
+    aiPrompt:"",
+    aiHint:null,
+    createdAt:now,
+    updatedAt:now,
+    range:null,
+    lanes:[
+      { id:"lane_workstream_1", name:"[REPLACE] Workstream 1", color:"#0073ea", contingency:false, sub:"[REPLACE] Optional lane description", items:[
+        { id:"item_phase_1", kind:"bar", label:"[REPLACE] First phase", start, end:addDaysIso(start,14), status:"planned", note:"[REPLACE] Optional phase note", gate:false },
+        { id:"item_milestone_1", kind:"milestone", label:"[REPLACE] Review milestone", date:addDaysIso(start,14), status:"planned", note:"[REPLACE] Optional milestone note", gate:true },
+      ] },
+      { id:"lane_workstream_2", name:"[REPLACE] Workstream 2", color:"#00c875", contingency:false, sub:"", items:[
+        { id:"item_phase_2", kind:"bar", label:"[REPLACE] Follow-on phase", start:addDaysIso(start,14), end:addDaysIso(start,35), status:"planned", note:"", gate:false },
+      ] },
+    ],
+    callouts:[
+      { id:"callout_guidance", title:"[REPLACE] Decision criteria", body:"[REPLACE] Add a short decision, dependency, assumption, or condition here.", list:false },
+    ],
+  });
+}
+function downloadRoadmapJsonTemplate(){
+  const payload=buildRoadmapJsonTemplate();
+  download("roadmap-builder-template.roadmap.json", new Blob([JSON.stringify(payload,null,2)+"\n"], { type:"application/json;charset=utf-8" }));
+  topNote("ok","Roadmap JSON template downloaded. Replace the bracketed placeholders, then choose Import → Roadmap JSON….");
+}
 function exportFullPortfolio(){
   const payload={
     schema:"roadmap.portfolio.v2", exportedAt:new Date().toISOString(), appVersion:APP_VERSION,
@@ -3673,7 +3786,15 @@ function toggleTheme(){ const t = isDark() ? "light":"dark"; applyTheme(t); try 
 
 /* ---------- timeline zoom ---------- */
 function clampZoom(z){ return Math.min(3, Math.max(0.5, Math.round(z*20)/20)); }
-function setZoom(z){ zoom = clampZoom(z); const l = $("zoomReset"); if (l) l.textContent = Math.round(zoom*100)+"%"; renderGantt(); }
+function updateTimelineScaleControls(){
+  const fit = $("zoomFit"); if (fit) fit.setAttribute("aria-pressed", timelineFit ? "true" : "false");
+  const label = $("zoomReset"); if (label) label.textContent = Math.round(zoom*100)+"%";
+}
+function setZoom(z){ timelineFit = false; zoom = clampZoom(z); updateTimelineScaleControls(); renderGantt(); }
+function fitTimeline(){
+  timelineFit = true; updateTimelineScaleControls(); renderGantt();
+  const scroller = document.querySelector(".tl-scroll"); if (scroller) scroller.scrollLeft = 0;
+}
 
 /* =========================================================================
    Wire up
@@ -3684,7 +3805,7 @@ function closeMenus(){
   document.querySelectorAll(".menu-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
 }
 function runMenuAction(act){
-  const map = { png:exportPng, html:exportHtml, json:exportJson, portfolio:exportFullPortfolio, import:() => $("fileIn").click(), jira:() => $("jiraIn").click(), print:() => window.print(),
+  const map = { png:exportPng, html:exportHtml, json:exportJson, portfolio:exportFullPortfolio, import:() => $("fileIn").click(), "json-template":downloadRoadmapJsonTemplate, jira:() => $("jiraIn").click(), print:() => window.print(),
     dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, access:manageAccessFlow, allusers:cloudOpenAll };
   const result=(map[act] || function(){})();
   if (result && typeof result.catch==="function") result.catch(()=>{});
@@ -3763,9 +3884,11 @@ function wire(){
   // theme
   $("themeBtn").addEventListener("click", toggleTheme);
   // zoom
+  $("zoomFit").addEventListener("click", fitTimeline);
   $("zoomIn").addEventListener("click", () => setZoom(zoom + 0.25));
   $("zoomOut").addEventListener("click", () => setZoom(zoom - 0.25));
   $("zoomReset").addEventListener("click", () => setZoom(1));
+  updateTimelineScaleControls();
   // re-fit the timeline to the viewport on resize (zoom is relative to available width)
   let rzTimer = null;
   window.addEventListener("resize", () => { clearTimeout(rzTimer); rzTimer = setTimeout(() => { renderGantt(); if (mode === "overview") renderOverview(); }, 150); });
