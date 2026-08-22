@@ -495,6 +495,18 @@ test("responsive shell contains titles and primary actions at every supported br
     if (width <= 720) {
       await expect(mobileActions).toBeVisible();
       expect(await title.evaluate(element => getComputedStyle(element).textOverflow)).not.toBe("ellipsis");
+      const titleGeometry = await title.evaluate(element => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        overflowY: getComputedStyle(element).overflowY,
+      }));
+      expect(titleGeometry.scrollHeight, `${width}px title is fully visible without an internal scrollbar`).toBeLessThanOrEqual(titleGeometry.clientHeight + 1);
+      expect(titleGeometry.overflowY).toBe("hidden");
+      const tabGeometry = await page.locator("#roadmapViews").evaluate(element => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+      }));
+      expect(tabGeometry.scrollWidth, `${width}px keeps all three roadmap views visible`).toBeLessThanOrEqual(tabGeometry.clientWidth + 1);
     } else {
       await expect(mobileActions).toBeHidden();
     }

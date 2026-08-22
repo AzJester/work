@@ -586,11 +586,11 @@
     .app-shell-tools #ownerSignIn, .app-shell-tools #backToPortfolio { max-width:104px; overflow:hidden; text-overflow:ellipsis; }
     .mast { align-items:flex-start; margin-bottom:10px; }
     .brand { flex-basis:100%; gap:0; }
-    .title-in, .ov-h1 { min-height:54px; max-height:112px; overflow:auto; text-overflow:clip; white-space:pre-wrap; font-size:23px; }
+    .title-in, .ov-h1 { min-height:54px; max-height:none; overflow:hidden; text-overflow:clip; white-space:pre-wrap; font-size:23px; }
     input.sub-in { font-size:13px; }
     .mast-tools { width:100%; margin-top:2px; }
-    .roadmap-tabs { width:100%; overflow-x:auto; justify-content:stretch; }
-    .roadmap-tab { flex:1 0 auto; justify-content:center; min-width:94px; }
+    .roadmap-tabs { width:100%; overflow:hidden; justify-content:stretch; }
+    .roadmap-tab { flex:1 1 0; justify-content:center; min-width:0; min-height:40px; padding:7px 6px; font-size:12px; }
     .toolbar { position:relative; align-items:center; flex-wrap:wrap; padding:8px; gap:7px; }
     .toolbar .grow, .toolbar .sep { display:none; }
     .toolbar-primary { flex:1 1 calc(100% - 96px); min-width:0; }
@@ -2422,8 +2422,10 @@ function reflectAccessUi(){
 function resizeTitleInput(){
   const el=$("titleIn"); if (!el) return;
   el.style.height="auto";
-  const max=window.innerWidth<=720?112:132, next=Math.min(max,Math.max(40,el.scrollHeight));
-  el.style.height=next+"px"; el.style.overflowY=el.scrollHeight>max?"auto":"hidden";
+  const frame=Math.max(0,el.offsetHeight-el.clientHeight);
+  const mobile=window.innerWidth<=720, max=mobile?Number.POSITIVE_INFINITY:132;
+  const next=Math.min(max,Math.max(40,el.scrollHeight));
+  el.style.height=(next+frame)+"px"; el.style.overflowY=!mobile&&el.scrollHeight>max?"auto":"hidden";
 }
 function syncHeader(){
   $("titleIn").value = doc.title;
