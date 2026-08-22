@@ -34,17 +34,17 @@ async function openRoadmap(page) {
   return pageErrors;
 }
 
-test("Import menu downloads a native, clearly marked roadmap JSON template", async ({ page }) => {
+test("More menu downloads a native, clearly marked roadmap JSON template", async ({ page }) => {
   const pageErrors = await openRoadmap(page);
-  const importMenu = page.getByRole("button", { name: "Import ▾", exact: true }).locator("xpath=..");
-  await importMenu.getByRole("button", { name: "Import ▾", exact: true }).click();
+  const importMenu = page.getByRole("button", { name: "More", exact: true }).locator("xpath=..");
+  await importMenu.getByRole("button", { name: "More", exact: true }).click();
 
-  const menuItems = importMenu.getByRole("menuitem");
-  await expect(menuItems).toHaveText(["Roadmap JSON…", "Download JSON template", "Jira CSV…"]);
-  const templateItem = importMenu.getByRole("menuitem", { name: "Download JSON template", exact: true });
+  const menuItems = importMenu.locator("#moreMenu").getByRole("button");
+  await expect(menuItems.filter({ hasText: /Import Roadmap JSON|Download JSON template|Import Jira CSV/ })).toHaveCount(3);
+  const templateItem = importMenu.getByRole("button", { name: "Download JSON template", exact: true });
   await expect(templateItem).toBeVisible();
   await expect(templateItem).toHaveAttribute("type", "button");
-  await importMenu.getByRole("menuitem", { name: "Roadmap JSON…", exact: true }).focus();
+  await importMenu.getByRole("button", { name: "Import Roadmap JSON…", exact: true }).focus();
   await page.keyboard.press("ArrowDown");
   await expect(templateItem).toBeFocused();
 
@@ -85,10 +85,10 @@ test("Import menu downloads a native, clearly marked roadmap JSON template", asy
 
 test("the downloaded template imports without a non-roadmap warning", async ({ page }) => {
   const pageErrors = await openRoadmap(page);
-  await page.getByRole("button", { name: "Import ▾", exact: true }).click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("menuitem", { name: "Download JSON template", exact: true }).click(),
+    page.getByRole("button", { name: "Download JSON template", exact: true }).click(),
   ]);
   const stream = await download.createReadStream();
   const chunks = [];

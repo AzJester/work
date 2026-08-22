@@ -224,7 +224,7 @@ test("the browser uses only collaboration RPCs and exposes stable access-managem
     /\.from\s*\(\s*["']roadmap_collaborators["']\s*\)/,
     "The browser must not bypass collaboration RPC authorization",
   );
-  assert.match(roadmap, /data-act\s*=\s*["']access["'][^>]*>\s*Manage access…?\s*</i);
+  assert.match(roadmap, /data-act\s*=\s*["']access["'][^>]*>\s*Manage collaborators…?\s*</i);
   for (const id of ["accessEmail", "accessRole", "accessInvite", "accessList"]) {
     assert.match(roadmap, new RegExp(`\\bid\\s*=\\s*["']${id}["']`), `Expected stable #${id} access dialog hook`);
   }
