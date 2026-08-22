@@ -13,19 +13,21 @@ const ROADMAP_STORE = {
       title: "Editor alignment test",
       subtitle: "Phase and milestone controls share a grid",
       templateType: "custom",
+      range: { start: "2026-08-01", end: "2029-08-01" },
       createdAt: "2026-08-01T12:00:00.000Z",
       updatedAt: "2026-08-04T12:00:00.000Z",
       lanes: [{
         id: "layout-lane",
-        name: "Delivery",
+        name: "P2 · Access and business development",
         color: "#0073ea",
+        sub: "Long lane names and descriptions stay separate from scheduled work.",
         items: [
           {
             id: "layout-phase",
             kind: "bar",
             label: "Implementation phase with a deliberately descriptive title",
-            start: "2026-08-03",
-            end: "2026-08-21",
+            start: "2029-03-01",
+            end: "2029-09-01",
             status: "in_progress",
             note: "Phase detail remains aligned beneath the item name.",
           },
@@ -161,9 +163,11 @@ test("roadmap editor remains contained across responsive breakpoints", async ({ 
   await page.setViewportSize({ width: 1121, height: 1100 });
   await openSeededRoadmap(page);
 
-  for (const width of [1121, 1120, 721, 720]) {
+  for (const width of [320, 375, 720, 721, 1120, 1121, 1440, 1920, 2560]) {
     await page.setViewportSize({ width, height: 1100 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${width}px viewport has no horizontal overflow`).toBeLessThanOrEqual(width + 1);
+    const shellWidth = await page.locator(".wrap").evaluate(element => element.getBoundingClientRect().width);
+    expect(shellWidth, `${width}px viewport uses the available shell width`).toBeGreaterThanOrEqual(Math.min(width, 1800) - 1);
 
     const laneBox = edge(await page.locator('[data-lane="layout-lane"]').boundingBox());
     const controls = await page.locator('[data-lane="layout-lane"] .item input, [data-lane="layout-lane"] .item select, [data-lane="layout-lane"] .item button')
@@ -178,12 +182,124 @@ test("roadmap editor remains contained across responsive breakpoints", async ({ 
   }
 });
 
-test("roadmap editor rows reflow without clipping on a phone", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 1100 });
+test("timeline lane labels stay inside a bounded gutter instead of covering bars", async ({ page }) => {
+  await page.setViewportSize({ width: 721, height: 1100 });
   await openSeededRoadmap(page);
 
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
+  const result = await page.locator("#gantt svg").evaluate(svg => {
+    const gutter = Number(svg.dataset.laneGutter);
+    const labels = [...svg.querySelectorAll('[data-role="timeline-lane-label"] text')].map(element => {
+      const box = element.getBBox();
+      return { text:element.textContent, left:box.x, right:box.x + box.width, top:box.y, bottom:box.y + box.height };
+    });
+    const bars = [...svg.querySelectorAll('rect[height="22"]')].map(element => {
+      const box = element.getBBox();
+      return { left:box.x, right:box.x + box.width, top:box.y, bottom:box.y + box.height };
+    });
+    const overlaps = labels.flatMap(label => bars.filter(bar =>
+      Math.min(label.right, bar.right) - Math.max(label.left, bar.left) > 2
+      && Math.min(label.bottom, bar.bottom) - Math.max(label.top, bar.top) > 2
+    ).map(bar => ({ label, bar })));
+    return {
+      gutter,
+      labels,
+      overlaps,
+      fullLabel:svg.querySelector('[data-role="timeline-lane-label"] title')?.textContent || "",
+    };
+  });
+
+  expect(result.gutter).toBeGreaterThan(184);
+  expect(result.gutter).toBeLessThanOrEqual(360);
+  for (const label of result.labels) expect(label.right, `${label.text} stays inside the lane gutter`).toBeLessThanOrEqual(result.gutter - 12);
+  expect(result.overlaps).toEqual([]);
+  expect(result.fullLabel).toContain("P2 · Access and business development");
+});
+
+test("Fit shows a multi-year project without clipping or overlapping header labels", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await openSeededRoadmap(page);
+
+  const assertFittedTimeline = async width => {
+    await page.setViewportSize({ width, height: 1100 });
+    await page.waitForTimeout(180);
+    await page.locator("#zoomFit").click();
+    await expect(page.locator("#zoomFit")).toHaveAttribute("aria-pressed", "true");
+
+    const result = await page.locator("#gantt svg").evaluate(svg => {
+      const scroller = document.querySelector(".tl-scroll");
+      const periodLabels = [...svg.querySelectorAll('[data-role="timeline-period-label"]')].map(element => {
+        const box = element.getBBox();
+        return { text:element.textContent, left:box.x, right:box.x + box.width, top:box.y, bottom:box.y + box.height };
+      }).sort((a,b) => a.left-b.left);
+      const headerOverlaps = periodLabels.slice(1).filter((label,index) => label.left < periodLabels[index].right + 9);
+      const laneLabels = [...svg.querySelectorAll('[data-role="timeline-lane-label"] text')].map(element => {
+        const box = element.getBBox();
+        return { left:box.x, right:box.x + box.width, top:box.y, bottom:box.y + box.height };
+      });
+      const bars = [...svg.querySelectorAll('rect[height="22"]')].map(element => {
+        const box = element.getBBox();
+        return { left:box.x, right:box.x + box.width, top:box.y, bottom:box.y + box.height };
+      });
+      const laneBarOverlaps = laneLabels.flatMap(label => bars.filter(bar =>
+        Math.min(label.right, bar.right) - Math.max(label.left, bar.left) > 2
+        && Math.min(label.bottom, bar.bottom) - Math.max(label.top, bar.top) > 2
+      ));
+      const laneGutter = Number(svg.dataset.laneGutter);
+      const plotRight = Number(svg.dataset.plotRight);
+      const itemLabels = [...svg.querySelectorAll('[data-role="timeline-item-label"]')].map(element => {
+        const box = element.getBBox();
+        return { text:element.textContent, left:box.x, right:box.x + box.width };
+      });
+      return {
+        fitMode:svg.dataset.fitMode,
+        svgWidth:svg.getBoundingClientRect().width,
+        viewportWidth:scroller.clientWidth,
+        scrollLeft:scroller.scrollLeft,
+        periodLabels,
+        headerOverlaps,
+        laneBarOverlaps,
+        itemLabelsOutsidePlot:itemLabels.filter(label => label.left < laneGutter - 1 || label.right > plotRight + 1),
+        titles:[...svg.querySelectorAll("title")].map(title => title.textContent),
+      };
+    });
+
+    expect(result.fitMode).toBe("true");
+    expect(result.svgWidth, `${width}px Fit timeline stays inside its viewport`).toBeLessThanOrEqual(result.viewportWidth + 1);
+    expect(result.scrollLeft).toBe(0);
+    expect(result.periodLabels.length).toBeGreaterThanOrEqual(4);
+    expect(result.headerOverlaps).toEqual([]);
+    expect(result.laneBarOverlaps).toEqual([]);
+    expect(result.itemLabelsOutsidePlot).toEqual([]);
+    expect(result.titles.some(title => title.includes("P2 · Access and business development"))).toBe(true);
+    expect(result.titles.some(title => title.includes("Implementation phase with a deliberately descriptive title"))).toBe(true);
+    expect(result.titles.some(title => title.includes("Phase detail remains aligned beneath the item name."))).toBe(true);
+  };
+
+  for (const width of [1440, 1920, 2560]) await assertFittedTimeline(width);
+
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.waitForTimeout(180);
+  await page.locator("#zoomIn").click();
+  await expect(page.locator("#zoomFit")).toHaveAttribute("aria-pressed", "false");
+  expect(await page.locator("#gantt svg").getAttribute("data-fit-mode")).toBe("false");
+  const detailed = await page.locator("#gantt svg").evaluate(svg => ({
+    svgWidth:svg.getBoundingClientRect().width,
+    viewportWidth:document.querySelector(".tl-scroll").clientWidth,
+  }));
+  expect(detailed.svgWidth).toBeGreaterThan(detailed.viewportWidth);
+
+  await page.locator("#zoomFit").click();
+  await expect(page.locator("#zoomFit")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("roadmap editor rows reflow without clipping on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 1100 });
+  await openSeededRoadmap(page);
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
   await expect(page.locator(".item-columns")).toBeHidden();
+  await expect(page.locator(".zoomer")).toBeHidden();
+  expect(await page.locator("#titleIn").evaluate(element => getComputedStyle(element).textOverflow)).toBe("ellipsis");
 
   const laneBox = edge(await page.locator('[data-lane="layout-lane"]').boundingBox());
   const controls = await page.locator('[data-lane="layout-lane"] .item input, [data-lane="layout-lane"] .item select, [data-lane="layout-lane"] .item button').evaluateAll(elements => elements
