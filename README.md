@@ -309,8 +309,9 @@ cloud sync and shareable links.
   count reads e.g. "4 roadmaps · 2 archived".
 - **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
   (Planned · In progress · Complete · At risk · Blocked · On hold) and outlined milestone diamonds,
-  with a legend. **Zoom** the time axis 50–300% and scroll horizontally. Sliding light/dark toggle.
-  New phases and milestones are added after the lane's last item so they don't overlap.
+  with a legend. **Fit** shows the complete project on a desktop; **− / 100% / +** switch to a
+  detailed 50–300% scale when closer inspection is useful. Sliding light/dark toggle. New phases
+  and milestones are added after the lane's last item so they don't overlap.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
   date), each with one of six status chips. Lanes get cycling group colors.
 - **Saved and recoverable in your browser** — the original `roadmap_builder_v1` value is retained
@@ -318,9 +319,10 @@ cloud sync and shareable links.
   `roadmap_builder_v2:<user-id>` copy, with persistent pending-sync operations, Trash, and Undo
   snapshots. The app stops destructive changes if the recovery snapshot cannot be verified.
 - **Exports** — **JSON** (one roadmap), **Full portfolio backup** (every active, archived, and
-  trashed roadmap plus sync metadata), **HTML** (a self-contained, magazine-style
-  page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
-  an image), and **Print / PDF**.
+  trashed roadmap plus sync metadata), **HTML** (a self-contained, offline, magazine-style page
+  with the full Gantt, stat chips, summary and analysis cards; its own **Fit / − / 100% / +**
+  controls; responsive labels; and print fitting), **PNG** (the timeline as an image), and
+  **Print / PDF**.
 - **JSON import template** — *Import ▾ → Download JSON template* downloads an immediately
   importable `roadmap.v1` starter file. Replace its clearly marked `[REPLACE]` text and ISO
   dates (`YYYY-MM-DD`), then choose *Import ▾ → Roadmap JSON…*. Template generation and
