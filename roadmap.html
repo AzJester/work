@@ -2639,67 +2639,219 @@ function xlsxEsc(v){
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function xlsxColRef(i){ let s = ""; i++; while (i){ i--; s = String.fromCharCode(65 + (i % 26)) + s; i = Math.floor(i / 26); } return s; }
-function xlsxSheetXml(rows, widths){
-  const cols = widths && widths.length
-    ? '<cols>'+widths.map((w,i) => '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join("")+'</cols>' : "";
-  const body = rows.map((cells,r) => '<row r="'+(r+1)+'">'+cells.map((v,c) => {
-    if (v===null || v===undefined || v==="") return "";
-    const ref = xlsxColRef(c)+(r+1), style = r===0 ? ' s="1"' : '';
-    if (typeof v === "number" && isFinite(v)) return '<c r="'+ref+'"'+style+'><v>'+v+'</v></c>';
-    return '<c r="'+ref+'" t="inlineStr"'+style+'><is><t xml:space="preserve">'+xlsxEsc(v)+'</t></is></c>';
-  }).join("")+'</row>').join("");
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+cols+'<sheetData>'+body+'</sheetData></worksheet>';
+function xlsxArgb(hex){
+  let h = String(hex||"").replace("#","").trim();
+  if (/^[0-9a-fA-F]{3}$/.test(h)) h = h.split("").map(c => c+c).join("");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) h = "252831";
+  return "FF"+h.toUpperCase();
 }
-function xlsxWorkbook(sheets){
+function xlsxTextOn(hex){
+  const h = xlsxArgb(hex);
+  const r = parseInt(h.slice(2,4),16), g = parseInt(h.slice(4,6),16), b = parseInt(h.slice(6,8),16);
+  return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.62 ? "#252831" : "#ffffff";
+}
+function xlsxTint(hex, amount){
+  const h = xlsxArgb(hex), mix = c => Math.round(c + (255-c)*amount);
+  return "#"+[mix(parseInt(h.slice(2,4),16)), mix(parseInt(h.slice(4,6),16)), mix(parseInt(h.slice(6,8),16))]
+    .map(c => c.toString(16).padStart(2,"0")).join("");
+}
+// Deduplicating style registry: style({bold,size,color,fill,align,valign,wrap,indent})
+// returns a cellXfs index; xml() renders the finished styles part.
+function xlsxStyles(){
+  const fonts = ['<font><sz val="11"/><color rgb="FF252831"/><name val="Calibri"/></font>'];
+  const fills = ['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'];
+  const xfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+  const seen = { font:{}, fill:{}, xf:{} };
+  seen.font[fonts[0]] = 0; seen.fill[fills[0]] = 0; seen.fill[fills[1]] = 1; seen.xf[xfs[0]] = 0;
+  const intern = (xml, list, map) => { if (!(xml in map)){ map[xml] = list.length; list.push(xml); } return map[xml]; };
+  const style = o => {
+    o = o || {};
+    const fontId = intern('<font>'+(o.bold?'<b/>':'')+'<sz val="'+(o.size||11)+'"/><color rgb="'+xlsxArgb(o.color||"#252831")+'"/><name val="Calibri"/></font>', fonts, seen.font);
+    const fillId = o.fill ? intern('<fill><patternFill patternType="solid"><fgColor rgb="'+xlsxArgb(o.fill)+'"/></patternFill></fill>', fills, seen.fill) : 0;
+    const align = (o.align || o.valign || o.wrap || o.indent)
+      ? '<alignment'+(o.align?' horizontal="'+o.align+'"':'')+(o.valign?' vertical="'+o.valign+'"':'')+(o.wrap?' wrapText="1"':'')+(o.indent?' indent="'+o.indent+'"':'')+'/>' : '';
+    return intern('<xf numFmtId="0" fontId="'+fontId+'" fillId="'+fillId+'" borderId="0" xfId="0" applyFont="1"'+(fillId?' applyFill="1"':'')+(align?' applyAlignment="1"':'')+'>'+align+'</xf>', xfs, seen.xf);
+  };
+  const xml = () => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="'+fonts.length+'">'+fonts.join("")+'</fonts><fills count="'+fills.length+'">'+fills.join("")+'</fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="'+xfs.length+'">'+xfs.join("")+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  return { style, xml };
+}
+// A sheet is {name, rows, widths, merges, freeze:{x,y}, gridlines}. Cells are plain
+// values or {v, s} with s a cellXfs index; an empty styled cell is still emitted so
+// its fill paints (that's what draws the timeline bars).
+function xlsxSheetXml(sheet){
+  const rows = sheet.rows || [];
+  const views = sheet.freeze
+    ? '<sheetViews><sheetView workbookViewId="0"'+(sheet.gridlines===false?' showGridLines="0"':'')+'><pane xSplit="'+sheet.freeze.x+'" ySplit="'+sheet.freeze.y+'" topLeftCell="'+xlsxColRef(sheet.freeze.x)+(sheet.freeze.y+1)+'" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>'
+    : (sheet.gridlines===false ? '<sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews>' : "");
+  const cols = sheet.widths && sheet.widths.length
+    ? '<cols>'+sheet.widths.map((w,i) => '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join("")+'</cols>' : "";
+  const body = rows.map((cells,r) => '<row r="'+(r+1)+'">'+cells.map((cell,c) => {
+    const isObj = cell && typeof cell === "object";
+    const v = isObj ? cell.v : cell;
+    const s = isObj && cell.s ? ' s="'+cell.s+'"' : '';
+    const ref = xlsxColRef(c)+(r+1);
+    if (v===null || v===undefined || v==="") return s ? '<c r="'+ref+'"'+s+'/>' : "";
+    if (typeof v === "number" && isFinite(v)) return '<c r="'+ref+'"'+s+'><v>'+v+'</v></c>';
+    return '<c r="'+ref+'" t="inlineStr"'+s+'><is><t xml:space="preserve">'+xlsxEsc(v)+'</t></is></c>';
+  }).join("")+'</row>').join("");
+  const merges = sheet.merges && sheet.merges.length
+    ? '<mergeCells count="'+sheet.merges.length+'">'+sheet.merges.map(m => '<mergeCell ref="'+m+'"/>').join("")+'</mergeCells>' : "";
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+views+cols+'<sheetData>'+body+'</sheetData>'+merges+'</worksheet>';
+}
+function xlsxWorkbook(sheets, stylesXml){
   const files = [
     { name:"[Content_Types].xml", xml:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i) => '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("")+'</Types>' },
     { name:"_rels/.rels", xml:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
     { name:"xl/workbook.xml", xml:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i) => '<sheet name="'+xlsxEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join("")+'</sheets></workbook>' },
     { name:"xl/_rels/workbook.xml.rels", xml:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i) => '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join("")+'<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
-    { name:"xl/styles.xml", xml:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' },
+    { name:"xl/styles.xml", xml:stylesXml },
   ];
-  sheets.forEach((s,i) => files.push({ name:"xl/worksheets/sheet"+(i+1)+".xml", xml:xlsxSheetXml(s.rows, s.widths) }));
+  sheets.forEach((s,i) => files.push({ name:"xl/worksheets/sheet"+(i+1)+".xml", xml:xlsxSheetXml(s) }));
   return xlsxZip(files);
 }
 function exportXlsx(){
   const s = roadmapStats(doc);
-  const statusLabel = v => { const st = STATUSES.find(x => x.v === v); return st ? st.label : (v || ""); };
+  const st = xlsxStyles();
+  const INK = "#252831", MUT = "#697181", LINE = "#e7eaf1", ZEBRA = "#f4f6fb", ACCENT = "#0073ea";
+  const statusLabel = v => { const x = STATUSES.find(o => o.v === v); return x ? x.label : (v || ""); };
+  const statusColor = v => STATUS_COLOR[v] || MUT;
   const yesNo = b => b ? "Yes" : "No";
-  const overview = [["Field","Value"],
-    ["Title", doc.title || "Untitled"],
-    ["Subtitle", doc.subtitle || ""],
-    ["Premise", doc.premise || ""],
-    ["Notes", doc.notes || ""],
-    ["Visibility", doc.public ? "Public" : "Private"],
-    ["Archived", yesNo(doc.archived)],
-    ["Template type", doc.templateType || "custom"],
-    ["Date range", fmtRange(s.mn, s.mx)],
-    ["Lanes", s.laneCount],
-    ["Items", s.total],
-    ["Percent complete", s.pct]];
-  STATUSES.forEach(st => overview.push([st.label + " items", s.counts[st.v] || 0]));
-  overview.push(["Created", doc.createdAt || ""], ["Last updated", doc.updatedAt || ""],
-    ["Exported", new Date().toISOString()], ["App version", APP_VERSION]);
-  const laneRows = [["Lane","Description","Color","Contingency","Items"]];
-  const itemRows = [["Lane","Type","Label","Start","End","Duration (days)","Status","Decision gate","Note"]];
-  (doc.lanes || []).forEach(l => {
-    laneRows.push([l.name || "", l.sub || "", l.color || "", yesNo(l.contingency), (l.items || []).length]);
-    (l.items || []).forEach(it => {
-      const bar = it.kind !== "milestone";
-      const duration = bar && it.start && it.end ? Math.round((msOf(it.end) - msOf(it.start)) / 86400000) + 1 : "";
-      itemRows.push([l.name || "", bar ? "Phase" : "Milestone", it.label || "",
-        bar ? (it.start || "") : (it.date || ""), bar ? (it.end || "") : (it.date || ""),
-        duration, statusLabel(it.status), yesNo(!!it.gate), it.note || ""]);
+  const S = {
+    title: st.style({ bold:true, size:16 }),
+    sub: st.style({ color:MUT }),
+    head: st.style({ bold:true, color:"#ffffff", fill:INK }),
+    headC: st.style({ bold:true, color:"#ffffff", fill:INK, align:"center" }),
+    field: st.style({ bold:true, fill:LINE }),
+    wrap: st.style({ wrap:true, valign:"top" }),
+    top: st.style({ valign:"top" }),
+    zebra: st.style({ fill:ZEBRA, valign:"top" }),
+    zebraWrap: st.style({ fill:ZEBRA, wrap:true, valign:"top" }),
+    section: st.style({ bold:true, size:12, color:ACCENT }),
+  };
+  const laneChip = color => st.style({ bold:true, color:xlsxTextOn(color||ACCENT), fill:color||ACCENT, valign:"top" });
+  const statusChip = v => ({ v:statusLabel(v), s:st.style({ bold:true, color:xlsxTextOn(statusColor(v)), fill:statusColor(v), align:"center", valign:"top" }) });
+
+  /* Roadmap sheet — headline plus field/value overview and per-status counts */
+  const ov = [], ovMerges = [];
+  ov.push([{ v:doc.title||"Untitled", s:S.title }]); ovMerges.push("A1:B1");
+  if (doc.subtitle){ ov.push([{ v:doc.subtitle, s:S.sub }]); ovMerges.push("A2:B2"); }
+  ov.push([]);
+  const fv = (f,v,wrap) => ov.push([{ v:f, s:S.field }, wrap ? { v:v, s:S.wrap } : v]);
+  fv("Premise", doc.premise||"", true);
+  fv("Notes", doc.notes||"", true);
+  fv("Visibility", doc.public ? "Public" : "Private");
+  fv("Archived", yesNo(doc.archived));
+  fv("Template type", doc.templateType||"custom");
+  fv("Date range", fmtRange(s.mn, s.mx));
+  fv("Lanes", s.laneCount);
+  fv("Items", s.total);
+  fv("Percent complete", s.pct+"%");
+  fv("Created", doc.createdAt||"");
+  fv("Last updated", doc.updatedAt||"");
+  fv("Exported", new Date().toISOString());
+  fv("App version", APP_VERSION);
+  ov.push([]);
+  ov.push([{ v:"Items by status", s:S.section }]);
+  STATUSES.forEach(x => { if (s.counts[x.v]) ov.push([{ v:x.label, s:st.style({ bold:true, color:xlsxTextOn(statusColor(x.v)), fill:statusColor(x.v) }) }, s.counts[x.v]]); });
+
+  /* Timeline sheet — the roadmap painted into the grid: weekly columns for spans up
+     to a year, monthly beyond; lane rows tinted with the lane color, bars filled
+     with their status color, milestones marked with a colored diamond. */
+  function timelineSheet(){
+    if (s.mn === null) return { name:"Timeline", rows:[[{ v:"No dated items yet — add start and end dates to see the timeline grid.", s:S.sub }]], widths:[86] };
+    const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+    const mnD = new Date(s.mn), mxD = new Date(s.mx);
+    const weekly = (s.mx - s.mn)/86400000 <= 53*7;
+    const cols = [];
+    if (weekly){
+      let c = addDays(mnD, -((mnD.getDay()+6)%7)); // back to Monday
+      while (c <= mxD){ cols.push({ start:c.getTime(), end:addDays(c,6).getTime(), group:MONTHS[c.getMonth()]+" "+c.getFullYear(), label:String(c.getDate()) }); c = addDays(c,7); }
+    } else {
+      let c = new Date(mnD.getFullYear(), mnD.getMonth(), 1);
+      while (c <= mxD){ const next = new Date(c.getFullYear(), c.getMonth()+1, 1); cols.push({ start:c.getTime(), end:addDays(next,-1).getTime(), group:String(c.getFullYear()), label:MONTHS[c.getMonth()] }); c = next; }
+    }
+    const groupHead = st.style({ bold:true, fill:LINE, align:"center" });
+    const colHead = st.style({ color:MUT, fill:LINE, align:"center" });
+    const rows = [], merges = ["A1:A2"];
+    rows.push([{ v:"Lane / Item", s:S.head }].concat(cols.map(c => ({ v:c.group, s:groupHead }))));
+    rows.push([{ v:"", s:S.head }].concat(cols.map(c => ({ v:c.label, s:colHead }))));
+    for (let i = 0; i < cols.length; ){
+      let j = i; while (j+1 < cols.length && cols[j+1].group === cols[i].group) j++;
+      if (j > i) merges.push(xlsxColRef(i+1)+"1:"+xlsxColRef(j+1)+"1");
+      cols[j].groupEnd = true; i = j+1;
+    }
+    (doc.lanes||[]).forEach(l => {
+      const tint = st.style({ fill:xlsxTint(l.color||ACCENT, 0.85) });
+      rows.push([{ v:l.name||"", s:laneChip(l.color) }].concat(cols.map(() => ({ v:"", s:tint }))));
+      (l.items||[]).forEach(it => {
+        const label = { v:it.label||"", s:st.style({ align:"left", indent:1 }) };
+        if (!itemValid(it)){ rows.push([label]); return; }
+        const a = msOf(itemStart(it)), b = msOf(itemEnd(it));
+        const bar = st.style({ fill:statusColor(it.status) });
+        const diamond = st.style({ bold:true, color:statusColor(it.status), align:"center" });
+        rows.push([label].concat(cols.map(c => {
+          if (it.kind === "milestone") return (a >= c.start && a <= c.end) ? { v:"◆", s:diamond } : "";
+          return (a <= c.end && b >= c.start) ? { v:"", s:bar } : "";
+        })));
+      });
     });
+    rows.push([]);
+    const legend = [{ v:"Legend", s:S.field }];
+    STATUSES.forEach(x => { if (s.counts[x.v]) legend.push(statusChip(x.v)); });
+    legend.push({ v:"◆ Milestone", s:st.style({ bold:true, color:MILE_BLUE }) });
+    rows.push(legend);
+    return { name:"Timeline", rows, widths:[38].concat(cols.map(() => weekly ? 4.5 : 7)), merges, freeze:{ x:1, y:2 }, gridlines:false };
+  }
+
+  /* Lanes sheet */
+  const laneRows = [[{ v:"Lane", s:S.head },{ v:"Description", s:S.head },{ v:"Color", s:S.head },{ v:"Contingency", s:S.head },{ v:"Items", s:S.headC }]];
+  (doc.lanes||[]).forEach((l,i) => {
+    const base = i%2 ? S.zebra : S.top;
+    laneRows.push([
+      { v:l.name||"", s:laneChip(l.color) },
+      { v:l.sub||"", s:i%2 ? S.zebraWrap : S.wrap },
+      { v:(l.color||"").toLowerCase(), s:st.style({ color:xlsxTextOn(l.color||ACCENT), fill:l.color||ACCENT, align:"center" }) },
+      { v:yesNo(l.contingency), s:base },
+      { v:(l.items||[]).length, s:base },
+    ]);
   });
-  const calloutRows = [["Title","Body","Bulleted list"]];
-  (doc.callouts || []).forEach(c => calloutRows.push([c.title || "", c.body || "", yesNo(c.list)]));
+
+  /* Items sheet */
+  const itemRows = [["Lane","Type","Label","Start","End","Duration (days)","Status","Decision gate","Note"].map((h,i) => ({ v:h, s:i===5 ? S.headC : S.head }))];
+  let rowIdx = 0;
+  (doc.lanes||[]).forEach(l => (l.items||[]).forEach(it => {
+    const bar = it.kind !== "milestone";
+    const base = rowIdx%2 ? S.zebra : S.top;
+    const duration = bar && it.start && it.end ? Math.round((msOf(it.end) - msOf(it.start))/86400000) + 1 : "";
+    itemRows.push([
+      { v:l.name||"", s:laneChip(l.color) },
+      { v:bar ? "Phase" : "Milestone", s:base },
+      { v:it.label||"", s:st.style({ bold:true, fill:rowIdx%2 ? ZEBRA : null, valign:"top", wrap:true }) },
+      { v:bar ? (it.start||"") : (it.date||""), s:base },
+      { v:bar ? (it.end||"") : (it.date||""), s:base },
+      { v:duration, s:base },
+      statusChip(it.status),
+      { v:yesNo(!!it.gate), s:base },
+      { v:it.note||"", s:rowIdx%2 ? S.zebraWrap : S.wrap },
+    ]);
+    rowIdx++;
+  }));
+
+  /* Callouts sheet */
+  const calloutRows = [[{ v:"Title", s:S.head },{ v:"Body", s:S.head },{ v:"Bulleted list", s:S.head }]];
+  (doc.callouts||[]).forEach((c,i) => calloutRows.push([
+    { v:c.title||"", s:i%2 ? st.style({ bold:true, fill:ZEBRA, valign:"top" }) : st.style({ bold:true, valign:"top" }) },
+    { v:c.body||"", s:i%2 ? S.zebraWrap : S.wrap },
+    { v:yesNo(c.list), s:i%2 ? S.zebra : S.top },
+  ]));
+
   const blob = xlsxWorkbook([
-    { name:"Roadmap", rows:overview, widths:[22,80] },
+    { name:"Roadmap", rows:ov, widths:[22,86], merges:ovMerges },
+    timelineSheet(),
     { name:"Lanes", rows:laneRows, widths:[28,46,12,14,10] },
-    { name:"Items", rows:itemRows, widths:[28,12,42,12,12,16,14,14,60] },
-    { name:"Callouts", rows:calloutRows, widths:[32,80,14] },
-  ]);
+    { name:"Items", rows:itemRows, widths:[24,12,42,12,12,16,14,14,54] },
+    { name:"Callouts", rows:calloutRows, widths:[32,86,14] },
+  ], st.xml());
   download(slug(doc.title)+"-roadmap.xlsx", blob);
   topNote("ok","Excel workbook downloaded.");
 }

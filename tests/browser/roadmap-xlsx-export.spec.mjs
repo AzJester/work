@@ -132,13 +132,30 @@ test("Export menu downloads a valid Excel workbook capturing every roadmap detai
   const expected = [
     "[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/_rels/workbook.xml.rels",
     "xl/styles.xml", "xl/worksheets/sheet1.xml", "xl/worksheets/sheet2.xml",
-    "xl/worksheets/sheet3.xml", "xl/worksheets/sheet4.xml",
+    "xl/worksheets/sheet3.xml", "xl/worksheets/sheet4.xml", "xl/worksheets/sheet5.xml",
   ];
   for (const name of expected) expect(parts[name], `${name} present`).toBeTruthy();
   for (const name of expected) expect(parts[name].method, `${name} stored`).toBe(0);
 
   const workbook = parts["xl/workbook.xml"].xml;
-  for (const sheet of ["Roadmap", "Lanes", "Items", "Callouts"]) expect(workbook).toContain(`name="${sheet}"`);
+  for (const sheet of ["Roadmap", "Timeline", "Lanes", "Items", "Callouts"]) expect(workbook).toContain(`name="${sheet}"`);
+
+  // Real formatting: lane and status colors become solid fills in the style part.
+  const styles = parts["xl/styles.xml"].xml;
+  expect(styles).toContain("FF0073EA"); // lane color
+  expect(styles).toContain("FF9B4C00"); // in_progress status color
+  expect(styles).toContain("FF64748B"); // planned status color
+  expect(styles).toContain('patternType="solid"');
+
+  // Timeline sheet paints the roadmap: frozen header panes, merged month groups,
+  // status-filled bar cells, and a milestone diamond.
+  const timeline = parts["xl/worksheets/sheet2.xml"].xml;
+  expect(timeline).toContain('state="frozen"');
+  expect(timeline).toContain("<mergeCells");
+  expect(timeline).toContain("Aug 2026");
+  expect(timeline).toContain("Build the thing");
+  expect(timeline).toContain("◆");
+  expect(timeline).toContain("Legend");
 
   const overview = parts["xl/worksheets/sheet1.xml"].xml;
   expect(overview).toContain("Alpha Launch Plan");
@@ -147,12 +164,12 @@ test("Export menu downloads a valid Excel workbook capturing every roadmap detai
   expect(overview).toContain("Owner: platform team &amp; partners");
   expect(overview).toContain("Percent complete");
 
-  const lanes = parts["xl/worksheets/sheet2.xml"].xml;
+  const lanes = parts["xl/worksheets/sheet3.xml"].xml;
   expect(lanes).toContain("Delivery");
   expect(lanes).toContain("Build &amp; validate");
   expect(lanes).toContain("#0073ea");
 
-  const items = parts["xl/worksheets/sheet3.xml"].xml;
+  const items = parts["xl/worksheets/sheet4.xml"].xml;
   expect(items).toContain("Build the thing");
   expect(items).toContain("2026-08-15");
   expect(items).toContain("2026-08-31");
@@ -164,7 +181,7 @@ test("Export menu downloads a valid Excel workbook capturing every roadmap detai
   expect(items).toContain("Milestone");
   expect(items).toContain("Needs exec approval");
 
-  const callouts = parts["xl/worksheets/sheet4.xml"].xml;
+  const callouts = parts["xl/worksheets/sheet5.xml"].xml;
   expect(callouts).toContain("Decision criteria");
   expect(callouts).toContain("Ship only if error rate &lt; 1% &amp; sign-off given");
 
