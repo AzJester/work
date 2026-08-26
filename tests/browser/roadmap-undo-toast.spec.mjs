@@ -100,6 +100,12 @@ test("the Trash undo toast dismisses itself and the roadmap stays restorable", a
   await expect(undoBar).toBeVisible();
   await expect(undoBar).toContainText("Roadmap moved to Trash. Undo?");
 
+  // The toast lives in the top-right corner, not over the bottom of the page.
+  const box = await undoBar.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box.y).toBeLessThan(100);
+  expect(box.x + box.width).toBeGreaterThan(viewport.width * 0.6);
+
   // The toast holds while the user could still want it, then clears on its own.
   await page.clock.runFor(9_000);
   await expect(undoBar).toBeVisible();
