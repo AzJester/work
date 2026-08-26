@@ -1346,6 +1346,10 @@ function showUndo(label){
   const bar=$("undoBar"); if (!bar) return;
   $("undoText").textContent = label;
   bar.hidden=false; clearTimeout(undoTimer);
+  // Auto-dismiss so the bar never lingers over the workspace. The snapshot it
+  // points at survives the dismissal: trashed roadmaps stay restorable from
+  // Portfolio → Trash, so hiding the bar only removes the shortcut.
+  undoTimer = setTimeout(() => { bar.hidden = true; }, 10_000);
 }
 function applyUndo(skipCloud){
   skipCloud=skipCloud===true;
