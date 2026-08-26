@@ -780,6 +780,7 @@
           <button class="menu-item" data-act="png" role="menuitem">PNG image</button>
           <button class="menu-item" data-act="html" role="menuitem">Interactive HTML</button>
           <button class="menu-item" data-act="json" role="menuitem">Roadmap JSON</button>
+          <button class="menu-item" data-act="backup" role="menuitem">Backup this roadmap</button>
           <button class="menu-item" data-act="portfolio" role="menuitem">Full portfolio backup</button>
           <button class="menu-item" data-act="print" role="menuitem">Print / PDF</button>
         </div>
@@ -1055,6 +1056,7 @@ function uiIcon(name,cls){
     palette:'<path d="M12 3a9 9 0 0 0 0 18h1.2a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h3a6 6 0 0 0 0-12h-3Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="9" cy="6.5" r="1"/><circle cx="14" cy="6.5" r="1"/>',
     trash:'<path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6"/>',
     calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+    backup:'<path d="M12 3v11m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
     more:'<circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/>'
   };
   return '<svg class="ui-icon'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[name]||paths.more)+'</svg>';
@@ -2070,6 +2072,7 @@ function overviewCard(d){
     '<span class="ov-chip"><span class="ov-dot" style="background:'+STATUS_COLOR[st.v]+'"></span>'+s.counts[st.v]+' '+esc(st.label)+'</span>').join("");
   const actions=readOnly ? "" : '<div class="rm-acts">'
     + (owner?'<button class="icon-btn" type="button" data-act="arch" data-id="'+esc(d.id)+'" title="'+(d.archived?'Restore to Active':'Archive')+'" aria-label="'+(d.archived?'Restore ':'Archive ')+esc(d.title||"Untitled")+'">'+uiIcon(d.archived?'up':'down')+'</button>':'')
+    + '<button class="icon-btn" type="button" data-act="backup" data-id="'+esc(d.id)+'" title="Backup this roadmap" aria-label="Backup '+esc(d.title||"Untitled")+'">'+uiIcon("backup")+'</button>'
     + '<button class="icon-btn" type="button" data-act="dup" data-id="'+esc(d.id)+'" title="Duplicate" aria-label="Duplicate '+esc(d.title||"Untitled")+'">'+uiIcon("more")+'</button>'
     + (owner?'<button class="icon-btn" type="button" data-act="del" data-id="'+esc(d.id)+'" title="Move to trash" aria-label="Move '+esc(d.title||"Untitled")+' to trash">'+uiIcon("trash")+'</button>':'')+'</div>';
   return '<article class="rm-card'+(d.archived?' archived':'')+'" data-id="'+esc(d.id)+'" data-roadmap-id="'+esc(d.id)+'" data-status="'+(d.archived?'archived':'active')+'" data-health="'+health+'" data-access-role="'+role+'" style="--rm-accent:'+esc(accent)+'">'
@@ -2118,6 +2121,7 @@ function onOverviewClick(e){
   const act = e.target.closest("[data-act]");
   if (act && !readOnly){ e.stopPropagation(); const id = act.dataset.id;
     if (act.dataset.act === "dup") duplicateRoadmapById(id, false);
+    else if (act.dataset.act === "backup") exportRoadmapBackup(id);
     else if (act.dataset.act === "arch" && isRoadmapOwner(id)) toggleArchiveById(id);
     else if (act.dataset.act === "del" && isRoadmapOwner(id)) deleteRoadmapById(id);
     else if (act.dataset.act === "restore" && isRoadmapOwner(id)) restoreRoadmapById(id);
@@ -2574,6 +2578,23 @@ function exportFullPortfolio(){
   };
   download("roadmap-portfolio-backup-"+todayIso()+".json", new Blob([JSON.stringify(payload,null,2)], { type:"application/json" }));
   topNote("ok","Full portfolio backup downloaded.");
+}
+// Single-roadmap backup: the same portfolio.v2 envelope as the full backup, holding
+// only this roadmap and its sync record, so More → Import Roadmap JSON… restores it.
+function exportRoadmapBackup(id){
+  const rid = id || store.activeId;
+  const d = store.roadmaps[rid];
+  if (!d){ topNote("err","That roadmap isn't available to back up."); return; }
+  const payload={
+    schema:"roadmap.portfolio.v2", exportedAt:new Date().toISOString(), appVersion:APP_VERSION,
+    accountId:session&&session.user?session.user.id:null,
+    store:{ version:2, activeId:rid, mode:store.mode, roadmapView:store.roadmapView||roadmapView,
+      roadmaps:(function(){ const one={}; one[rid]=d; return one; })(),
+      trash:{},
+      sync:(function(){ const one={}; if (store.sync&&store.sync[rid]) one[rid]=store.sync[rid]; return one; })() }
+  };
+  download(slug(d.title)+"-backup-"+todayIso()+".json", new Blob([JSON.stringify(payload,null,2)], { type:"application/json" }));
+  topNote("ok","Backup of “"+(d.title||"Untitled")+"” downloaded.");
 }
 // Stylesheet + script for the standalone HTML export (below). Kept as constants
 // so exportHtml() only has to weave in the data. __LABEL__ is substituted with the
@@ -4255,7 +4276,7 @@ function closeMenus(){
   document.querySelectorAll(".menu-btn").forEach(b => b.setAttribute("aria-expanded", "false"));
 }
 function runMenuAction(act){
-  const map = { png:exportPng, html:exportHtml, json:exportJson, portfolio:exportFullPortfolio, import:() => $("fileIn").click(), "json-template":downloadRoadmapJsonTemplate, jira:() => $("jiraIn").click(), print:() => window.print(),
+  const map = { png:exportPng, html:exportHtml, json:exportJson, backup:() => exportRoadmapBackup(store.activeId), portfolio:exportFullPortfolio, import:() => $("fileIn").click(), "json-template":downloadRoadmapJsonTemplate, jira:() => $("jiraIn").click(), print:() => window.print(),
     dup:duplicateRoadmap, archive:toggleArchive, del:deleteRoadmap, save:cloudSave, open:cloudOpen, share:shareFlow, public:togglePublic, access:manageAccessFlow, allusers:cloudOpenAll };
   const result=(map[act] || function(){})();
   if (result && typeof result.catch==="function") result.catch(()=>{});
