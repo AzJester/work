@@ -44,6 +44,13 @@ the function sources when deploying through the dashboard editor as well.
 | `ALLOWED_EMAILS` | no | — | Legacy global allowlist fallback. |
 | `BUILD_ROADMAP_ALLOWED_EMAILS` | no | `AI_ALLOWED_EMAILS`, then `ALLOWED_EMAILS` | Builder-specific allowlist. |
 | `ROADMAP_SUMMARY_ALLOWED_EMAILS` | no | `AI_ALLOWED_EMAILS`, then `ALLOWED_EMAILS` | Narrative-specific allowlist. |
+
+The env allowlists are unioned with rows in `public.ai_allowed_emails`
+(service-role-only table): a row grants one endpoint (its `envPrefix`, e.g.
+`ROADMAP_SUMMARY`) or every endpoint (`ALL`), so individual accounts can be
+added with an insert instead of editing secrets. Database errors fall back to
+the env lists alone, and with both empty the functions still fail closed.
+
 | `ALLOWED_ORIGINS` | no | `https://azjester.github.io` | Comma-separated exact browser origins. |
 | `BUILD_ROADMAP_ALLOWED_ORIGINS` | no | global origin setting | Builder-specific origin override. |
 | `ROADMAP_SUMMARY_ALLOWED_ORIGINS` | no | global origin setting | Narrative-specific origin override. |

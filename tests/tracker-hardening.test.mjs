@@ -380,6 +380,8 @@ test("deleting a structured update purges its log and invalidates older snapshot
 test("AI allowlists fail closed and clients stay within endpoint payload bounds", () => {
   const shared = readFileSync(resolve(rootDir, "supabase/functions/_shared/ai-edge.ts"), "utf8");
   assert.match(shared, /if\s*\(\s*!allowlist\.length\s*\)[\s\S]{0,220}service_unavailable/, "Shared AI auth must fail closed without an allowlist");
+  assert.match(shared, /ai_allowed_emails\?select=email/, "Shared AI auth must consult the database allowlist table");
+  assert.match(shared, /db_allowlist_unavailable/, "Database allowlist failures must be logged and treated as empty, never as allow-all");
   assert.match(edgeSources["plan-day"], /if\s*\(\s*!allowlist\.length\s*\)[\s\S]{0,220}service_unavailable/, "Plan-day must fail closed without an allowlist");
   assert.match(tracker, /taskCandidates\.slice\s*\(\s*0\s*,\s*100\s*\)/, "Weekly summary must cap candidate tasks");
   assert.match(tracker, /kudosCandidates[\s\S]{0,240}12000/, "Weekly summary must budget kudos text");
