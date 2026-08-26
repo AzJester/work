@@ -181,6 +181,44 @@ function allowedEmails(options: EndpointOptions): string[] {
   ).map((email) => email.toLowerCase());
 }
 
+// Database-backed allowlist rows (public.ai_allowed_emails) extend the secret
+// without touching secrets or redeploying: a row grants one endpoint (its
+// envPrefix) or every endpoint ('ALL'). The table is read with the service-role
+// key, cached briefly, and treated as empty on any error, so a database hiccup
+// can only narrow access, never widen it.
+const DB_ALLOWLIST_TTL_MS = 60_000;
+const dbAllowlistCache = new Map<string, { emails: string[]; expires: number }>();
+async function databaseAllowedEmails(options: EndpointOptions, requestId: string): Promise<string[]> {
+  const cached = dbAllowlistCache.get(options.envPrefix);
+  if (cached && cached.expires > Date.now()) return cached.emails;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!supabaseUrl || !serviceKey) return [];
+  let emails: string[] = [];
+  try {
+    const filter = encodeURIComponent(`("${options.envPrefix}","ALL")`);
+    const response = await fetchWithTimeout(
+      `${supabaseUrl}/rest/v1/ai_allowed_emails?select=email&feature=in.${filter}&limit=500`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+      5_000,
+    );
+    if (response.ok) {
+      const rows: unknown = await response.json().catch(() => null);
+      if (Array.isArray(rows)) {
+        emails = rows
+          .map((row) => isRecord(row) && typeof row.email === "string" ? row.email.trim().toLowerCase() : "")
+          .filter(Boolean);
+      }
+    } else {
+      safeLog(requestId, "db_allowlist_unavailable", { status: response.status });
+    }
+  } catch (error) {
+    safeLog(requestId, "db_allowlist_unavailable", { timeout: isAbortError(error) });
+  }
+  dbAllowlistCache.set(options.envPrefix, { emails, expires: Date.now() + DB_ALLOWLIST_TTL_MS });
+  return emails;
+}
+
 export async function authorizeCaller(
   req: Request,
   options: EndpointOptions,
@@ -212,7 +250,10 @@ export async function authorizeCaller(
   const role = isRecord(value) && typeof value.role === "string" ? value.role : "";
   if (!id || role === "anon") throw new RequestError(401, "not_authenticated", `Please sign in to use ${options.featureName}.`);
 
-  const allowlist = allowedEmails(options);
+  const allowlist = [...new Set([
+    ...allowedEmails(options),
+    ...await databaseAllowedEmails(options, requestId),
+  ])];
   if (!allowlist.length) {
     safeLog(requestId, "email_allowlist_missing");
     throw new RequestError(503, "service_unavailable", `${options.featureName} is temporarily unavailable.`);
