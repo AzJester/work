@@ -39,7 +39,22 @@ function roadmap(id, title) {
 const ALPHA = roadmap("rm_undo_alpha", "Alpha Launch Plan");
 const BETA = roadmap("rm_undo_beta", "Beta Program");
 
-async function openRoadmap(page) {
+function baseStore() {
+  return {
+    version: 2,
+    activeId: ALPHA.id,
+    mode: "overview",
+    roadmapView: "details",
+    roadmaps: { [ALPHA.id]: ALPHA, [BETA.id]: BETA },
+    trash: {},
+    sync: {
+      [ALPHA.id]: { accessRole: "owner", ownerEmail: USER_EMAIL },
+      [BETA.id]: { accessRole: "owner", ownerEmail: USER_EMAIL },
+    },
+  };
+}
+
+async function openRoadmap(page, storePatch = {}) {
   const pageErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
   await page.clock.install();
@@ -68,18 +83,7 @@ async function openRoadmap(page) {
   }, {
     userId: USER_ID,
     userEmail: USER_EMAIL,
-    store: {
-      version: 2,
-      activeId: ALPHA.id,
-      mode: "overview",
-      roadmapView: "details",
-      roadmaps: { [ALPHA.id]: ALPHA, [BETA.id]: BETA },
-      trash: {},
-      sync: {
-        [ALPHA.id]: { accessRole: "owner", ownerEmail: USER_EMAIL },
-        [BETA.id]: { accessRole: "owner", ownerEmail: USER_EMAIL },
-      },
-    },
+    store: { ...baseStore(), ...storePatch },
   });
   await page.route("**/assets/vendor/supabase-js-2.110.2.umd.js", route => route.fulfill({
     contentType: "application/javascript",
@@ -91,22 +95,35 @@ async function openRoadmap(page) {
   return pageErrors;
 }
 
-test("the Trash undo toast dismisses itself and the roadmap stays restorable", async ({ page }) => {
+test("the Trash undo strip docks to the bottom edge, states the action once, and dismisses itself", async ({ page }) => {
   const pageErrors = await openRoadmap(page);
   page.on("dialog", dialog => dialog.accept());
 
   await page.getByRole("button", { name: "Move Beta Program to trash", exact: true }).click();
   const undoBar = page.locator("#undoBar");
   await expect(undoBar).toBeVisible();
-  await expect(undoBar).toContainText("Roadmap moved to Trash. Undo?");
 
-  // The toast lives in the top-right corner, not over the bottom of the page.
+  // One plain statement of what happened; the button carries the verb. No
+  // "undo? Undo?" doubling anywhere in the strip.
+  await expect(page.locator("#undoText")).toHaveText("Roadmap moved to Trash");
+  expect(await undoBar.innerText()).not.toMatch(/\?/);
+  await expect(undoBar.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+
+  // Docked to the bottom edge, spanning the width — nowhere near the header,
+  // view tabs, or toolbar it used to cover.
   const box = await undoBar.boundingBox();
   const viewport = page.viewportSize();
-  expect(box.y).toBeLessThan(100);
-  expect(box.x + box.width).toBeGreaterThan(viewport.width * 0.6);
+  expect(box.y).toBeGreaterThan(viewport.height * 0.7);
+  expect(box.y + box.height).toBeGreaterThanOrEqual(viewport.height - 1);
+  expect(box.width).toBeGreaterThanOrEqual(viewport.width - 1);
 
-  // The toast holds while the user could still want it, then clears on its own.
+  // The page always ends with more blank padding than the strip is tall, so
+  // the strip can never sit over content at any scroll position.
+  const wrapPaddingBottom = await page.evaluate(() =>
+    Number.parseFloat(getComputedStyle(document.querySelector(".wrap")).paddingBottom));
+  expect(wrapPaddingBottom).toBeGreaterThanOrEqual(box.height);
+
+  // The strip holds while the user could still want it, then clears on its own.
   await page.clock.runFor(9_000);
   await expect(undoBar).toBeVisible();
   await page.clock.runFor(1_500);
@@ -116,5 +133,57 @@ test("the Trash undo toast dismisses itself and the roadmap stays restorable", a
   await page.locator('[data-portfolio-filter="trash"]').click();
   await expect(page.getByRole("button", { name: "Restore", exact: true })).toBeVisible();
 
+  expect(pageErrors).toEqual([]);
+});
+
+test("the dismiss button hides the strip at once and Undo restores the roadmap", async ({ page }) => {
+  const pageErrors = await openRoadmap(page);
+  page.on("dialog", dialog => dialog.accept());
+  const undoBar = page.locator("#undoBar");
+
+  await page.getByRole("button", { name: "Move Beta Program to trash", exact: true }).click();
+  await expect(undoBar).toBeVisible();
+  await undoBar.getByRole("button", { name: "Dismiss", exact: true }).click();
+  await expect(undoBar).toBeHidden();
+
+  // Dismissing kept the roadmap in Trash; restore it, then undo the restore.
+  await page.locator('[data-portfolio-filter="trash"]').click();
+  await page.getByRole("button", { name: "Restore", exact: true }).click();
+  await expect(page.locator("#undoText")).toHaveText("Roadmap restored");
+  await undoBar.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(undoBar).toBeHidden();
+  // Undoing the restore put the roadmap back in Trash.
+  await expect(page.getByRole("button", { name: "Restore", exact: true })).toBeVisible();
+
+  expect(pageErrors).toEqual([]);
+});
+
+test("a reload right after a change re-offers the undo, cleaned of the legacy label suffix", async ({ page }) => {
+  const snapshot = { ...baseStore() };
+  const pageErrors = await openRoadmap(page, {
+    undo: {
+      // A label persisted by older builds — must render without "undo?".
+      label: "Roadmap moved to Trash — undo?",
+      at: new Date().toISOString(),
+      snapshot,
+    },
+  });
+  const undoBar = page.locator("#undoBar");
+  await expect(undoBar).toBeVisible();
+  await expect(page.locator("#undoText")).toHaveText("Roadmap moved to Trash");
+  expect(await undoBar.innerText()).not.toMatch(/\?/);
+  expect(pageErrors).toEqual([]);
+});
+
+test("a stale undo snapshot no longer greets every page load with a toast", async ({ page }) => {
+  const snapshot = { ...baseStore() };
+  const pageErrors = await openRoadmap(page, {
+    undo: {
+      label: "Roadmap moved to Trash",
+      at: "2026-01-01T00:00:00.000Z",
+      snapshot,
+    },
+  });
+  await expect(page.locator("#undoBar")).toBeHidden();
   expect(pageErrors).toEqual([]);
 });
