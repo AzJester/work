@@ -396,10 +396,18 @@
   .note.ok { color:var(--ok); background:var(--ok-bg); }
   .note.info { color:var(--info); background:var(--info-bg); }
   .note.hide { display:none; }
-  .undo-bar { position:fixed; top:16px; right:16px; z-index:45; max-width:min(560px,calc(100vw - 24px));
-    display:flex; align-items:center; gap:12px; padding:10px 12px 10px 14px; border-radius:11px; color:var(--ink); background:var(--card);
-    border:1px solid var(--line-2); box-shadow:var(--shadow-lg); }
-  .undo-bar span { flex:1 1 auto; font-size:13px; }
+  /* Docked to the bottom edge, clear of every control (tabs, toolbar, menus all
+     live at the top). The page always ends with more blank padding (.wrap) than
+     the strip is tall, so it never covers content at any scroll position. */
+  .undo-bar { position:fixed; left:0; right:0; bottom:0; z-index:45;
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px 12px;
+    padding:9px 16px calc(9px + env(safe-area-inset-bottom,0px)); color:var(--ink); background:var(--card);
+    border-top:1px solid var(--line-2); box-shadow:0 -8px 24px rgba(20,30,40,.10); }
+  .undo-bar span { font-size:13px; min-width:0; }
+  .undo-close { flex:0 0 auto; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;
+    border:0; border-radius:7px; background:transparent; color:var(--mut); font-size:16px; line-height:1; cursor:pointer; }
+  .undo-close:hover { background:var(--bg); color:var(--ink); }
+  body.presentation-mode .undo-bar { display:none !important; }
   .spin { display:inline-block; width:13px; height:13px; border:2px solid currentColor; border-right-color:transparent;
     border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; }
   @keyframes sp { to { transform:rotate(360deg); } }
@@ -673,7 +681,7 @@
   @media print {
     :root { --bg:#fff; --card:#fff; --bg-wash:none; }
     body { background:#fff; }
-    .toolbar, .editor-card, .add-lane, .draft-banner, .theme-switch, .mast-tools, .zoomer, .app-only { display:none !important; }
+    .toolbar, .editor-card, .add-lane, .draft-banner, .theme-switch, .mast-tools, .zoomer, .app-only, .undo-bar { display:none !important; }
     #executivePanel, #timelinePanel { display:block !important; }
     #detailsPanel, #draftBanner { display:none !important; }
     body.mode-overview #tlCard { display:block !important; }
@@ -947,7 +955,7 @@
 <button id="presentExit" class="btn ghost present-exit app-only" type="button" hidden>Exit presentation</button>
 
 <div id="undoBar" class="undo-bar" role="status" aria-live="polite" hidden>
-  <span id="undoText"></span><button id="undoBtn" class="btn sm" type="button">Undo</button>
+  <span id="undoText"></span><button id="undoBtn" class="btn sm" type="button">Undo</button><button id="undoClose" class="undo-close" type="button" aria-label="Dismiss" title="Dismiss">×</button>
 </div>
 
 <!-- AI modal -->
@@ -1342,14 +1350,23 @@ function checkpointUndo(label){
   if (!persist()){ store.undo=previousUndo; return false; }
   return true;
 }
+function undoLabelText(label){
+  // Labels are plain statements ("Item deleted") — the button supplies the verb.
+  // Older builds persisted labels ending in "— undo?", so strip that suffix.
+  return String(label||"").replace(/\s*(?:[—–·.\-]\s*)?undo\?*\s*$/i,"").replace(/[\s—–·.\-]+$/,"").trim();
+}
+function hideUndo(){
+  clearTimeout(undoTimer); undoTimer=null;
+  const bar=$("undoBar"); if (bar) bar.hidden=true;
+}
 function showUndo(label){
   const bar=$("undoBar"); if (!bar) return;
-  $("undoText").textContent = label;
+  $("undoText").textContent = undoLabelText(label);
   bar.hidden=false; clearTimeout(undoTimer);
-  // Auto-dismiss so the bar never lingers over the workspace. The snapshot it
-  // points at survives the dismissal: trashed roadmaps stay restorable from
-  // Portfolio → Trash, so hiding the bar only removes the shortcut.
-  undoTimer = setTimeout(() => { bar.hidden = true; }, 10_000);
+  // Auto-dismiss so the bar never lingers. The snapshot it points at survives
+  // the dismissal: trashed roadmaps stay restorable from Portfolio → Trash, so
+  // hiding the bar only removes the shortcut.
+  undoTimer = setTimeout(hideUndo, 10_000);
 }
 function applyUndo(skipCloud){
   skipCloud=skipCloud===true;
@@ -1369,7 +1386,7 @@ function applyUndo(skipCloud){
     topNote("err","Undo could not be saved. The current version and recovery snapshot are still intact; export a portfolio backup before retrying.",true);
     return;
   }
-  $("undoBar").hidden=true;
+  hideUndo();
   if (skipCloud){
     mode=store.mode==="overview"?"overview":"editor"; document.body.classList.toggle("mode-overview",mode==="overview");
     roadmapView=["executive","timeline","details"].includes(store.roadmapView)?store.roadmapView:"details";
@@ -1441,12 +1458,12 @@ function applyTemplate(type){
     || !!(doc.title||"").trim() || !!(doc.subtitle||"").trim() || !!(doc.premise||"").trim() || !!(doc.notes||"").trim()
     || (doc.callouts||[]).some(c => (c.title||"").trim() || (c.body||"").trim());
   if (hasContent && !confirm("Replace the current roadmap with the “"+ ($("tmplPicker").selectedOptions[0].textContent) +"” template? A recovery snapshot will be kept for Undo.")) return;
-  if (!checkpointUndo("Template replaced — undo?")) return;
+  if (!checkpointUndo("Template replaced")) return;
   const built = normalizeRoadmap(fn());
   built.id = doc.id; built.createdAt = doc.createdAt;   // keep same slot
   store.roadmaps[doc.id] = built; doc = built;
   if (session) syncMeta(doc.id).pending=true;
-  saveNow(); syncHeader(); fullRender(); showUndo("Template replaced. Undo?"); if (session) queueCloudSync(doc.id);
+  saveNow(); syncHeader(); fullRender(); showUndo("Template replaced"); if (session) queueCloudSync(doc.id);
 }
 
 /* =========================================================================
@@ -2321,7 +2338,7 @@ function onEditorClick(e){
     const focus=$("editor").querySelector('[data-lane="'+CSS.escape(lane.id)+'"] [data-role="laneToggle"]'); if (focus) focus.focus();
     return;
   }
-  if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items? You can undo this change.")) return; if (!checkpointUndo("Lane deleted — undo?")) return; doc.lanes.splice(li,1); save(); fullRender(); showUndo("Lane deleted. Undo?"); return; }
+  if (role === "laneDel"){ if (lane.items.length && !confirm("Delete lane “"+lane.name+"” and its items? You can undo this change.")) return; if (!checkpointUndo("Lane deleted")) return; doc.lanes.splice(li,1); save(); fullRender(); showUndo("Lane deleted"); return; }
   if (role === "laneUp" && li>0){ doc.lanes.splice(li,1); doc.lanes.splice(li-1,0,lane); save(); fullRender(); return; }
   if (role === "laneDown" && li<doc.lanes.length-1){ doc.lanes.splice(li,1); doc.lanes.splice(li+1,0,lane); save(); fullRender(); return; }
   if (role === "laneColor"){ const i = GROUP_COLORS.indexOf(lane.color); lane.color = GROUP_COLORS[(i+1)%GROUP_COLORS.length]; save(); fullRender(); return; }
@@ -2336,7 +2353,7 @@ function onEditorClick(e){
     return;
   }
   const ii = lane.items.indexOf(it);
-  if (role === "del"){ if (!checkpointUndo("Item deleted — undo?")) return; lane.items.splice(ii,1); save(); fullRender(); showUndo("Item deleted. Undo?"); }
+  if (role === "del"){ if (!checkpointUndo("Item deleted")) return; lane.items.splice(ii,1); save(); fullRender(); showUndo("Item deleted"); }
   else if (role === "up" && ii>0){ lane.items.splice(ii,1); lane.items.splice(ii-1,0,it); save(); fullRender(); }
   else if (role === "down" && ii<lane.items.length-1){ lane.items.splice(ii,1); lane.items.splice(ii+1,0,it); save(); fullRender(); }
 }
@@ -2405,7 +2422,7 @@ function onCalloutClick(e){
   const listTog = e.target.closest("[data-corole='list']");
   if (listTog){ const el = listTog.closest("[data-co]"); if (!el) return; const c = (doc.callouts || []).find(x => x.id === el.dataset.co); if (c){ c.list = listTog.checked; save(); renderCallouts(); } return; }
   const del = e.target.closest("[data-corole='del']");
-  if (del){ const el = del.closest("[data-co]"); if (!el) return; if (!checkpointUndo("Analysis card deleted — undo?")) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); showUndo("Analysis card deleted. Undo?"); }
+  if (del){ const el = del.closest("[data-co]"); if (!el) return; if (!checkpointUndo("Analysis card deleted")) return; doc.callouts = (doc.callouts || []).filter(x => x.id !== el.dataset.co); save(); renderCallouts(); showUndo("Analysis card deleted"); }
 }
 function reflectAccessUi(){
   const hasDoc=!!doc, role=hasDoc?accessRoleFor(doc.id):"owner", owner=hasDoc&&role==="owner";
@@ -2424,7 +2441,7 @@ function reflectAccessUi(){
         +(role==="viewer"?'<span>Read-only</span>':role==="editor"?'<span>Can edit</span>':"");
     } }
   { const banner=$("draftBanner"); if (banner) banner.classList.toggle("show",!blocked&&!!draftSnapshot&&draftSnapshot.draftId===doc.id); }
-  { const undo=$("undoBar"); if (signedViewer&&undo) undo.hidden=true; const btn=$("undoBtn"); if (btn) btn.disabled=signedViewer; }
+  { if (signedViewer) hideUndo(); const btn=$("undoBtn"); if (btn) btn.disabled=signedViewer; }
   { const share=$("shareBtn"); if (share){ share.hidden=!owner; share.disabled=!owner; share.title=owner?"Manage collaborators and sharing":"Only the roadmap owner can manage sharing"; } }
   if (signedViewer&&roadmapView==="details"){ roadmapView="timeline"; store.roadmapView=roadmapView; updateViewUi(); }
 }
@@ -2495,7 +2512,7 @@ function deleteRoadmapById(id){
   if (Object.keys(store.roadmaps).length <= 1){ topNote("info", "You need at least one roadmap."); return; }
   const d = store.roadmaps[id]; if (!d) return;
   if (!confirm("Move roadmap “"+(d.title||"Untitled")+"” to Trash? It can be restored later.")) return;
-  if (!checkpointUndo("Roadmap moved to Trash — undo?")) return;
+  if (!checkpointUndo("Roadmap moved to Trash")) return;
   if (store.undo) store.undo.cloudRestoreId=id;
   syncMeta(id).needsDelete=true; syncMeta(id).needsRestore=false;
   d.public=false;
@@ -2505,19 +2522,19 @@ function deleteRoadmapById(id){
   if (store.activeId === id){ store.activeId = Object.keys(store.roadmaps)[0]; doc = store.roadmaps[store.activeId]; }
   if (!saveNow()){ applyUndo(true); return; } syncHeader();
   if (mode === "overview") renderOverview(); else fullRender();
-  showUndo("Roadmap moved to Trash. Undo?");
+  showUndo("Roadmap moved to Trash");
   if (session) cloudSoftDelete(id).catch(()=>{});
 }
 function deleteRoadmap(){ deleteRoadmapById(doc.id); }
 function restoreRoadmapById(id){
   if (readOnly || !isRoadmapOwner(id)){ topNote("info","Only the roadmap owner can restore it."); return; }
   const d=store.trash&&store.trash[id]; if (!d) return;
-  if (!checkpointUndo("Roadmap restored — undo?")) return;
+  if (!checkpointUndo("Roadmap restored")) return;
   if (store.undo) store.undo.cloudDeleteId=id;
   syncMeta(id).needsRestore=true; syncMeta(id).needsDelete=false;
   d.public=false;
   store.roadmaps[id]=d; delete store.trash[id]; store.activeId=id; doc=d;
-  if (!saveNow()){ applyUndo(true); return; } syncHeader(); setRoadmapView("details"); showUndo("Roadmap restored. Undo?");
+  if (!saveNow()){ applyUndo(true); return; } syncHeader(); setRoadmapView("details"); showUndo("Roadmap restored");
   if (session) cloudRestore(id).catch(()=>{});
 }
 function toggleArchiveById(id){
@@ -4359,7 +4376,13 @@ async function enterOwnerMode(){
   const hadLocal = hasStoredStore(userId);
   loadStore(userId); reflectCloudUi(); syncHeader();
   if (draftSnapshot&&store.roadmaps[draftSnapshot.draftId]) $("draftBanner").classList.add("show");
-  if (store.undo&&store.undo.snapshot) showUndo((store.undo.label||"Previous version available")+" Undo?");
+  // Re-offer the undo shortcut only right after the change (an accidental
+  // reload mid-flow). Older snapshots stay recoverable — trashed roadmaps
+  // through Portfolio → Trash — without a toast greeting every page load.
+  if (store.undo&&store.undo.snapshot){
+    const at=Date.parse(store.undo.at||"");
+    if (Number.isFinite(at)&&Date.now()-at<10*60_000) showUndo(undoLabelText(store.undo.label)||"A recent change can be undone");
+  }
   mode = store.mode || (Object.keys(store.roadmaps).length > 1 ? "overview" : "editor");
   roadmapView=normalizeRoadmapView(store.roadmapView||"details");
   setMode(mode);   // paint the local view immediately …
@@ -4639,6 +4662,7 @@ function wire(){
   $("cloudClose").addEventListener("click", () => { if (!forcingPassword) closeCloud(); });
   $("cloudModal").addEventListener("click", e => { if (!forcingPassword && e.target === $("cloudModal")) closeCloud(); });
   $("undoBtn").addEventListener("click",applyUndo);
+  $("undoClose").addEventListener("click",hideUndo);
   // theme
   $("themeBtn").addEventListener("click", toggleTheme);
   // zoom
