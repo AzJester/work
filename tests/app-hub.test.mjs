@@ -87,11 +87,19 @@ test("unpublished applications are represented honestly as source-only", () => {
 
 test("The AI Compendium is classified as a graphics application", () => {
   assert.match(hub, /title: "The AI Compendium",[\s\S]{0,260}category: "Design & Graphics"/);
+  assert.match(hub, /title: "The AI Compendium",[\s\S]{0,500}tags: \["Prompt library", "Visual styles", "Infographics"\]/);
+  assert.doesNotMatch(hub, /title: "The AI Compendium",[\s\S]{0,500}(AI skills hub|"Skills")/);
+});
+
+test("Weekly Status links to its live app and real source repository", () => {
+  assert.match(hub, /title: "shAIne Weekly Status",[\s\S]{0,500}liveUrl: "https:\/\/shaine-weekly-status\.onrender\.com\/"/);
+  assert.match(hub, /title: "shAIne Weekly Status",[\s\S]{0,500}repoUrl: "https:\/\/github\.com\/AzJester\/shAIne_Weekly_Status"/);
+  assert.match(hub, /if \(typeof url !== "string" \|\| !url\.trim\(\)\) return null/);
 });
 
 test("search, category filters, and accessible link behavior are present", () => {
   assert.match(hub, /id="app-search"[^>]*type="search"/);
-  assert.match(hub, /aria-label="Filter applications by category"/);
+  assert.match(hub, /id="filters" role="group" aria-label="Filter applications"/);
   assert.match(hub, /aria-live="polite"/);
   assert.match(hub, /rel = "noopener noreferrer"/);
   assert.match(hub, /prefers-reduced-motion/);

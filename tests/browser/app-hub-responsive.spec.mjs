@@ -1,0 +1,98 @@
+import { test, expect } from "@playwright/test";
+
+async function openHub(page, baseURL, query = "", expectedCount = 30) {
+  await page.route("https://api.github.com/**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: "[]",
+  }));
+  const url = new URL("../apps.html", baseURL);
+  url.search = query;
+  await page.goto(url.href);
+  await expect(page.locator(".app-card")).toHaveCount(expectedCount);
+}
+
+for (const width of [280, 320, 390, 640, 641, 980, 981, 1440]) {
+  test(`application library stays contained at ${width}px`, async ({ page, baseURL }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await openHub(page, baseURL);
+
+    const layout = await page.evaluate(() => {
+      const rect = element => {
+        const box = element.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+      };
+      const h1 = document.querySelector("h1");
+      const titleRange = document.createRange();
+      titleRange.selectNodeContents(h1);
+      const titleLines = [...titleRange.getClientRects()].map(box => ({
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
+      }));
+      const cardIssues = [...document.querySelectorAll(".app-card")].flatMap(card => {
+        const cardRect = rect(card);
+        const actions = card.querySelector(".card-actions");
+        const actionRect = rect(actions);
+        const issues = [];
+        if (cardRect.left < -1 || cardRect.right > innerWidth + 1) issues.push("card leaves viewport");
+        if (card.scrollWidth > card.clientWidth + 1 || card.scrollHeight > card.clientHeight + 1) issues.push("card content clips");
+        if (actionRect.left < cardRect.left - 1 || actionRect.right > cardRect.right + 1 || actionRect.bottom > cardRect.bottom + 1) issues.push("actions leave card");
+        for (const link of actions.querySelectorAll(".app-link")) {
+          const linkRect = rect(link);
+          if (linkRect.left < actionRect.left - 1 || linkRect.right > actionRect.right + 1 || linkRect.bottom > actionRect.bottom + 1) issues.push("link leaves actions");
+        }
+        return issues.map(issue => `${card.querySelector("h3").textContent}: ${issue}`);
+      });
+      const controls = [".hero", ".catalog-heading", ".controls", ".search-wrap", ".filters", ".app-grid"]
+        .map(selector => ({ selector, ...rect(document.querySelector(selector)) }));
+      return {
+        viewport: innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        title: rect(h1),
+        titleLines,
+        controls,
+        cardIssues,
+      };
+    });
+
+    expect(layout.documentWidth, "the document must not scroll horizontally").toBeLessThanOrEqual(layout.viewport + 1);
+    expect(layout.titleLines.length, "the hero title should use at most two lines").toBeLessThanOrEqual(2);
+    for (const line of layout.titleLines) {
+      expect(line.left).toBeGreaterThanOrEqual(layout.title.left - 1);
+      expect(line.right).toBeLessThanOrEqual(layout.title.right + 1);
+    }
+    for (const control of layout.controls) {
+      expect(control.left, `${control.selector} starts inside the viewport`).toBeGreaterThanOrEqual(-1);
+      expect(control.right, `${control.selector} ends inside the viewport`).toBeLessThanOrEqual(layout.viewport + 1);
+    }
+    expect(layout.cardIssues).toEqual([]);
+
+    const filters = page.locator("#filters");
+    const all = filters.getByRole("button", { name: "All", exact: true });
+    const sourceOnly = filters.getByRole("button", { name: "Source only", exact: true });
+    await expect(all).toBeInViewport();
+    await filters.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    await expect(sourceOnly).toBeInViewport();
+  });
+}
+
+test("deep-linked filters and application links resolve visibly and correctly", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openHub(page, baseURL, "?category=Source+only", 3);
+
+  const active = page.locator('#filters [aria-pressed="true"]');
+  await expect(active).toHaveText("Source only");
+  await expect(active).toBeInViewport();
+
+  await openHub(page, baseURL);
+  const weeklyStatus = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "shAIne Weekly Status", exact: true }) });
+  await expect(weeklyStatus.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://shaine-weekly-status.onrender.com/");
+  await expect(weeklyStatus.getByRole("link", { name: /^Source:/ })).toHaveAttribute("href", "https://github.com/AzJester/shAIne_Weekly_Status");
+
+  const localLoops = await page.locator(".app-card .app-link").evaluateAll((links, pathname) => links
+    .filter(link => new URL(link.href).pathname === pathname)
+    .map(link => link.getAttribute("aria-label")), new URL("../apps.html", baseURL).pathname);
+  expect(localLoops).toEqual([]);
+});
