@@ -10,7 +10,8 @@ schedule.
 ## What the workbench covers
 
 - **Discover** — mission problem, operational context, stakeholders, sourced customer
-  hot buttons, outcomes, constraints, assumptions, and measures of effectiveness.
+  hot buttons, company mission segments, outcomes, constraints, assumptions, and
+  measures of effectiveness.
 - **Shape** — requirements, nonfunctional requirements, authoritative evidence,
   acceptance methods, and traceability into architecture elements.
 - **Assess** — weighted Technology Assessment for hardware, software, tools, vendors,
@@ -31,6 +32,42 @@ app. A signal becomes part of the requirements baseline only when the architect
 links it to a requirement that has its own authoritative evidence and acceptance
 method.
 
+The six company mission segments are available as a multi-select classification:
+Integrated Air and Missile Defense; Lifecycle Management and Cyber Warfare; Layered
+Defense, Autonomous Warfare & Integrated Fires; Space Warfighting; Critical
+Infrastructure Protection; and Exploration and Lunar Presence. The selected segments
+carry into the decision package and the reviewed AI payload.
+
+## Capture and local source intake
+
+Use **Capture** (`Alt+Q`) to record an idea while it is fresh, then classify it in the
+active solution's separate **Review** inbox. A reviewed item can become a customer hot
+button, evidence, requirement, win theme, assumption, risk, or proposed decision, or
+it can be ignored. Nothing in the inbox becomes an authoritative workspace record
+until the user explicitly selects and commits it.
+
+**Open local files** extracts reviewable text and metadata in the browser from TXT,
+Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS, XLSX, ODS, PNG, JPEG, and WebP sources.
+Images receive a local preview and manual caption/transcription workflow; the app
+does not perform OCR. Original binary bytes are transient: they are not placed in
+browser storage, recovery points, JSON backups, decision packages, service-worker
+caches, AI payloads, or cloud storage. Only user-approved bounded excerpts and source
+metadata can enter the capture inbox.
+
+**Meeting transcript or summary** intake is also local and selection-based. The user
+records the meeting title, type, date, participants, and applicable company mission
+segments, then stages no more than 20 deliberate excerpts of up to 6,000 characters
+each. The complete pasted meeting text is cleared when the dialog closes and is never
+written to workspace storage. Staged excerpts still pass through the Review inbox
+before becoming evidence.
+
+Source intake is deliberately bounded to 8 MB per file, 10 files and 25 MB per
+session, 2,000 ZIP entries, 20 MB per expanded ZIP entry, 50 MB total expanded ZIP
+content, 200 PDF pages, 200,000 extracted text characters, and a 20-second extraction
+timeout. Unlisted legacy Word/PowerPoint formats, macro-enabled Office files, SVG,
+HTML, and arbitrary ZIP archives are not accepted. Extraction makes content easier to review; it does not validate the
+source, accuracy, authority, classification, or provenance.
+
 The command view calculates unscheduled obligations such as missing evidence,
 untraced requirements, unsupported assessment scores, incomplete interfaces,
 unowned risks, unresolved decisions, incomplete reviews, and transition blockers.
@@ -42,10 +79,14 @@ review or a substitute for engineering judgment.
 The app stores a versioned `solution-workspace-v1` document in this site's
 `localStorage`. It supports multiple isolated solutions, bounded recovery points,
 solution duplication, all-or-nothing import validation, and full-workspace JSON
-export. Save failures stay visible; local storage and local recovery points are not
-durable backups.
+export. Each solution's capture inbox is stored separately under the versioned
+`solution-capture-inbox-v1` contract. Save failures stay visible; local storage and
+local recovery points are not durable backups.
 
-Decision packages can be downloaded as Markdown or standalone HTML. **Print / PDF**
+The **System**, **Light**, and **Dark** theme choice is a separate browser setting. It
+does not travel with a workspace backup and does not alter solution content.
+
+Decision packages can be downloaded as Markdown or standalone HTML. **Print / Save PDF**
 opens a separate print-ready view and requests the browser print dialog; if the
 dialog does not appear, use the browser's Print command. Choose **Save as PDF**
 where supported. The app does not generate or retain a PDF itself.
@@ -76,7 +117,7 @@ optional authentication client behave differently on `file:` URLs.
 
 ## Documentation
 
-- [User guide](docs/USER_GUIDE.md)
+- [Rendered user guide](guide.html) ([Markdown source](docs/USER_GUIDE.md))
 - [Architecture](docs/ARCHITECTURE.md)
 - [Deployment and operations](docs/DEPLOYMENT.md)
 - [Security and data handling](docs/SECURITY.md)
@@ -84,11 +125,14 @@ optional authentication client behave differently on `file:` URLs.
 
 ## Data boundary
 
-Use only synthetic, public, or otherwise approved unclassified, non-CUI information.
+The published release is approved-unclassified/non-CUI only. Use only synthetic,
+public, or otherwise approved unclassified, non-CUI information,
+including in Quick Capture, source files, image captions, and extracted excerpts.
+That boundary also applies to meeting transcripts, summaries, participant names, and
+selected meeting excerpts.
 Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted
-information unless the organization has separately authorized this application,
-device, browser, storage, network path, AI service, and export workflow for that
-information.
+information in this published release. A local file picker, browser storage,
+authentication, or AI acknowledgment does not change that boundary.
 
 GitHub Pages, browser storage, local snapshots, and downloaded files are convenience
 features. They are not an authorization boundary, an enterprise system of record, or

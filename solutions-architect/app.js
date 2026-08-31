@@ -2,6 +2,7 @@ import {
   WORKSPACE_SCHEMA,
   STORAGE_KEY,
   STAGES,
+  MISSION_SEGMENTS,
   ELEMENT_TYPES,
   INTERFACE_TYPES,
   VIEW_TEMPLATES,
@@ -25,13 +26,49 @@ import {
   buildAiPayload,
   validateAiResponse
 } from "./engine.js";
+import {
+  CAPTURE_TARGETS,
+  captureStorageKey,
+  createCaptureInbox,
+  createCaptureItem,
+  createCaptureProvenance,
+  materializeCaptureItems,
+  validateCaptureInbox
+} from "./capture.js";
+import {
+  MAX_SOURCE_FILE_BYTES,
+  SOURCE_FILE_ACCEPT,
+  extractLocalSource
+} from "./ingestion.js";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
+const THEME_KEY = "solution_architect_theme_v1";
+const THEME_VALUES = new Set(["system", "light", "dark"]);
+const CAPTURE_TARGET_LABELS = Object.freeze({
+  evidence: "Evidence",
+  hotButton: "Customer hot button",
+  requirement: "Requirement",
+  winTheme: "Win theme",
+  assumption: "Assumption",
+  risk: "Risk",
+  decision: "Decision",
+  ignore: "Ignore"
+});
+const MAX_INTAKE_FILES = 10;
+const MAX_INTAKE_BYTES = 25_000_000;
+const MAX_MEETING_TEXT_CHARS = 200_000;
+const MAX_MEETING_EXCERPT_CHARS = 6_000;
+const MAX_MEETING_EXCERPTS = 20;
+const EVIDENCE_LINK_TARGETS = new Set(["requirement", "winTheme", "decision"]);
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 const app = document.querySelector("#app");
+let themePreference = loadThemePreference();
+applyTheme(themePreference);
 let initialWorkspaceNeedsSave = false;
 let workspace = loadWorkspace();
+let captureInbox = loadCaptureInbox(workspace.activeSolutionId);
 let route = readRoute();
 let selectedCandidateId = "";
 let selectedViewId = "";
@@ -43,6 +80,12 @@ let aiPreview = null;
 let aiResponse = null;
 let drag = null;
 let modalReturnFocus = null;
+let ingestionSession = [];
+let ingestionAcknowledged = false;
+let ingestionGeneration = 0;
+let ingestionProcessing = false;
+let ingestionAbortController = null;
+let meetingSession = null;
 
 function h(value) { return escapeHtml(value); }
 function activeSolution() { return workspace.solutions.find(item => item.id === workspace.activeSolutionId) || workspace.solutions[0]; }
@@ -50,6 +93,52 @@ function readRoute() { const value = location.hash.replace(/^#\/?/, ""); return 
 function stageRoute(stage) { return stage.toLowerCase(); }
 function option(value, label, current) { return `<option value="${h(value)}" ${value === current ? "selected" : ""}>${h(label)}</option>`; }
 function record(collection, id) { return workspace[collection]?.find(item => item.id === id); }
+function captureTitleMax(target) {
+  if (["evidence", "hotButton", "winTheme"].includes(target)) return 280;
+  if (target === "assumption") return 3_000;
+  if (target === "ignore") return 1_000;
+  return 2_000;
+}
+function companionEvidenceTitle(title) {
+  const suffix = " — source excerpt";
+  const clean = String(title || "Source").trim();
+  return `${clean.slice(0, 280 - suffix.length)}${suffix}`;
+}
+
+function loadThemePreference() {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return THEME_VALUES.has(value) ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function applyTheme(preference = themePreference) {
+  const resolved = preference === "system" ? (systemTheme.matches ? "dark" : "light") : preference;
+  const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.dataset.themePreference = preference;
+  root.style.colorScheme = resolved;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b1119" : "#eef3f6");
+  const select = document.querySelector("#theme-select");
+  if (select) select.value = preference;
+  return resolved;
+}
+
+function setThemePreference(value) {
+  if (!THEME_VALUES.has(value)) return;
+  themePreference = value;
+  let persisted = true;
+  try {
+    localStorage.setItem(THEME_KEY, value);
+  } catch {
+    persisted = false;
+  }
+  const resolved = applyTheme(value);
+  const label = value === "system" ? `System theme (${resolved})` : `${value[0].toUpperCase()}${value.slice(1)} theme`;
+  toast(persisted ? `${label} selected.` : `${label} selected for this session. Browser storage is unavailable.`, persisted ? "ok" : "error");
+}
 
 function loadWorkspace() {
   try {
@@ -66,6 +155,135 @@ function loadWorkspace() {
     console.warn("Could not load the saved Solution Architect workspace.", error);
     return createWorkspace();
   }
+}
+
+function loadCaptureInbox(solutionId) {
+  const fresh = () => createCaptureInbox(solutionId);
+  try {
+    const raw = localStorage.getItem(captureStorageKey(solutionId));
+    if (!raw) return fresh();
+    const candidate = JSON.parse(raw);
+    const result = validateCaptureInbox(candidate, { workspace });
+    if (!result.valid) throw new Error(result.errors[0]);
+    return candidate;
+  } catch (error) {
+    console.warn("Could not load the saved capture inbox.", error);
+    return fresh();
+  }
+}
+
+function persistCaptureInbox(candidate, { quiet = false } = {}) {
+  const result = validateCaptureInbox(candidate, { workspace });
+  if (!result.valid) {
+    if (!quiet) toast(`Capture inbox was not saved: ${result.errors[0]}`, "error");
+    return false;
+  }
+  try {
+    localStorage.setItem(captureStorageKey(candidate.solutionId), JSON.stringify(candidate));
+    captureInbox = candidate;
+    return true;
+  } catch {
+    if (!quiet) toast("Capture inbox could not be saved. Browser storage may be unavailable or full.", "error");
+    return false;
+  }
+}
+
+function pendingCaptureCount() {
+  return captureInbox.items.filter(item => item.status === "pending").length;
+}
+
+function captureTargetOptions(current) {
+  return CAPTURE_TARGETS.map(value => option(value, CAPTURE_TARGET_LABELS[value], current)).join("");
+}
+
+function captureTitle(item) {
+  if (item.target === "assumption") return item.fields.statement;
+  if (item.target === "ignore") return item.fields.reason;
+  return item.fields.title || "";
+}
+
+function captureDetail(item) {
+  return ({
+    hotButton: item.fields.detail,
+    evidence: item.fields.notes,
+    requirement: item.excerpt,
+    winTheme: item.fields.customerValue,
+    assumption: item.excerpt,
+    risk: item.excerpt,
+    decision: item.fields.rationale,
+    ignore: item.excerpt
+  })[item.target] || item.excerpt || "";
+}
+
+function fieldsForCapture(target, title, detail, source = "") {
+  const cleanTitle = String(title || "").trim();
+  const cleanDetail = String(detail || "").trim();
+  if (target === "hotButton") return { title: cleanTitle, detail: cleanDetail, source: String(source || "").trim().slice(0, 300) };
+  if (target === "evidence") return { title: cleanTitle, source: String(source || "").trim().slice(0, 500), url: "", notes: cleanDetail, confidence: "Low" };
+  if (target === "requirement") return { title: cleanTitle, type: "Functional", priority: "Must", acceptanceMethod: "", linkedHotButtonIds: [] };
+  if (target === "winTheme") return { title: cleanTitle, customerValue: cleanDetail, linkedHotButtonIds: [], sourceEvidenceIds: [] };
+  if (target === "assumption") return { statement: cleanTitle || cleanDetail, owner: "", validationPlan: "" };
+  if (target === "risk") return { title: cleanTitle, likelihood: "Unknown", impact: "Unknown", owner: "", mitigation: "" };
+  if (target === "decision") return { title: cleanTitle, rationale: cleanDetail, evidenceIds: [], owner: "", date: "" };
+  return { reason: cleanTitle || "Not relevant to this solution" };
+}
+
+function createMeetingSession() {
+  return {
+    solutionId: workspace.activeSolutionId,
+    title: "",
+    sourceType: "Meeting transcript",
+    meetingDate: "",
+    participantsText: "",
+    missionSegments: [...(activeSolution().missionSegments || [])],
+    text: "",
+    excerpts: [],
+    acknowledged: false
+  };
+}
+
+function clearMeetingSession() {
+  if (meetingSession) {
+    meetingSession.text = "";
+    meetingSession.excerpts = [];
+  }
+  meetingSession = null;
+}
+
+function meetingParticipants(value) {
+  return [...new Set(String(value || "")
+    .split(/[\n,;]+/)
+    .map(participant => participant.trim().slice(0, 200))
+    .filter(Boolean))]
+    .slice(0, 50);
+}
+
+function meetingLineLocator(text, start, end) {
+  const first = text.slice(0, start).split("\n").length;
+  const last = text.slice(0, Math.max(start, end - 1)).split("\n").length;
+  return first === last ? `Line ${first}` : `Lines ${first}–${last}`;
+}
+
+function discardMeetingExcerpts(message = "The meeting source changed. Select the needed excerpts again before staging.") {
+  if (!meetingSession?.excerpts.length) return false;
+  meetingSession.excerpts = [];
+  const list = document.querySelector("#meeting-intake-workflow .meeting-excerpts");
+  if (list) list.innerHTML = `<div class="empty-state"><strong>No excerpts selected</strong><p>Highlight a bounded passage in the meeting text, then add it here.</p></div>`;
+  const stage = document.querySelector("[data-meeting-stage]");
+  if (stage) {
+    stage.disabled = true;
+    stage.textContent = "Stage selected excerpts for review";
+  }
+  toast(message, "error");
+  return true;
+}
+
+function sourceLabel(provenance) {
+  if (!provenance) return "Quick capture";
+  const source = provenance.sourceTitle || provenance.sourceFileName || "Quick capture";
+  if (!provenance.locator || provenance.locator === source) return source.slice(0, 500);
+  const combined = `${source} · ${provenance.locator}`;
+  return combined.length <= 500 ? combined : provenance.locator.slice(0, 500);
 }
 
 function setSaveState(text, tone = "") {
@@ -139,15 +357,25 @@ function toast(message, tone = "info") {
   setTimeout(() => item.remove(), 5_000);
 }
 
-function openModal(title, body, { wide = false } = {}) {
+function clearTransientModalSessions({ preserve = "" } = {}) {
   const root = document.querySelector("#modal-root");
+  if (preserve !== "file" && root?.querySelector("#file-intake-workflow")) clearIngestionSession();
+  if (preserve !== "meeting" && root?.querySelector("#meeting-intake-workflow")) clearMeetingSession();
+}
+
+function openModal(title, body, { wide = false, transient = "" } = {}) {
+  const root = document.querySelector("#modal-root");
+  clearTransientModalSessions({ preserve: transient });
   if (!root.querySelector(".modal")) modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   root.innerHTML = `<div class="modal-backdrop" data-modal-backdrop><section class="modal ${wide ? "wide" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header><h2 id="modal-title">${h(title)}</h2><button class="icon-button" type="button" data-close-modal aria-label="Close dialog">×</button></header><div class="modal-body">${body}</div></section></div>`;
-  root.querySelector("[autofocus], input:not([type='hidden']), textarea, select, button:not([data-close-modal])")?.focus();
+  const initialFocus = root.querySelector("[autofocus], input:not([type='hidden']), textarea, select, button:not([data-close-modal])")
+    || root.querySelector("[data-close-modal]");
+  initialFocus?.focus();
 }
 
 function closeModal() {
   const root = document.querySelector("#modal-root");
+  clearTransientModalSessions();
   if (root) root.innerHTML = "";
   aiPreview = null;
   aiResponse = null;
@@ -192,6 +420,7 @@ function emptyState(title, copy, action = "") {
 function render() {
   const solution = activeSolution();
   if (!solution) return;
+  clearTransientModalSessions();
   const navItems = [
     ["dashboard", "00", "Command view"],
     ...STAGES.map((stage, index) => [stageRoute(stage), `0${index + 1}`, stage]),
@@ -211,9 +440,10 @@ function render() {
           <button class="mobile-menu" type="button" data-action="toggle-nav" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div class="title-block"><h2>${h(routeTitle(route))}</h2><p>${h(solution.name)} · ${h(solution.stage)}</p></div>
           <span id="save-state" class="save-state" data-tone="${dirty ? "warn" : "ok"}">${dirty ? "Unsaved changes" : "Saved locally"}</span>
-          <div class="top-actions"><button class="button secondary" type="button" data-action="open-ai">AI assist</button><button class="button primary" type="button" data-action="new-solution">＋ New solution</button><button class="icon-button" type="button" data-action="open-tools" aria-label="Workspace tools">•••</button></div>
+          <label class="theme-control" title="Color theme"><span class="theme-control-icon" aria-hidden="true">◐</span><span class="visually-hidden">Color theme</span><select id="theme-select" aria-label="Color theme">${option("system", "System", themePreference)}${option("light", "Light", themePreference)}${option("dark", "Dark", themePreference)}</select></label>
+          <div class="top-actions"><button class="button secondary" type="button" data-action="open-files">Open local files</button><button class="button secondary" type="button" data-action="open-ai">AI assist</button><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Review capture inbox, ${pendingCaptureCount()} pending"><span>Review</span><strong>${pendingCaptureCount()}</strong></button><button class="button secondary" type="button" data-action="new-solution">＋ New solution</button><button class="icon-button" type="button" data-action="open-tools" aria-label="Workspace tools">•••</button></div>
         </header>
-        <div class="data-boundary" role="note"><strong>Data boundary</strong><span>Approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content unless separately authorized. Browser storage is not an authorization boundary. <a href="https://www.acquisition.gov/dfars/204.7302-policy." target="_blank" rel="noopener noreferrer">DFARS safeguarding policy context</a>.</span></div>
+        <div class="data-boundary" role="note"><strong>Data boundary</strong><span>Approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content. Browser storage is not an authorization boundary. <a href="https://www.acquisition.gov/dfars/204.7302-policy." target="_blank" rel="noopener noreferrer">DFARS safeguarding policy context</a>.</span></div>
         <div class="content">${renderRoute(solution)}</div>
       </main>
     </div>
@@ -255,7 +485,7 @@ function renderDashboard(solution) {
       <div class="readiness"><article><small>Traceability</small><strong>${readiness.traceability}%</strong><p>Source, acceptance, architecture</p></article><article><small>Evidence</small><strong>${readiness.evidence}%</strong><p>Assessed claims with support</p></article><article><small>Interfaces</small><strong>${readiness.interfaces}%</strong><p>Connected architecture elements</p></article><article><small>Transition</small><strong>${readiness.transition}%</strong><p>Owned, unblocked actions</p></article></div></section>
     <section class="panel obligations"><div class="panel-head"><div><p class="section-kicker">Unscheduled obligations</p><h3>Needs architect attention</h3><p>Gaps that can weaken the decision or delivery</p></div><span class="metric">${obligations.length}</span></div>
       ${obligations.length ? `<ul class="obligation-list">${obligations.slice(0, 12).map(item => `<li class="obligation"><span class="severity ${item.severity}"></span><div><strong>${h(item.message)}</strong><span>${h(item.stage)} · ${h(item.kind.replaceAll("-", " "))}</span></div><a href="#${stageRoute(item.stage)}">Resolve →</a></li>`).join("")}</ul>` : emptyState("No deterministic gaps detected", "Use a formal review before treating the solution as complete.")}</section>
-  </div><aside class="panel mission-card"><p class="eyebrow">${h(solution.classification)}</p><h3>${h(solution.name)}</h3><p>${h(solution.description || solution.mission.problem || "Define the mission problem and decision this solution must support.")}</p><div class="tags"><span class="tag">${h(solution.domain)}</span><span class="tag">${h(solution.stage)}</span><span class="tag">${h(solution.status)}</span></div><dl class="mini-list"><div><dt>Decision</dt><dd>${h(solution.decision || "Not defined")}</dd></div><div><dt>Candidates</dt><dd>${candidates.length}</dd></div><div><dt>Win themes</dt><dd>${winThemes.length}</dd></div><div><dt>Open risks</dt><dd>${risks.length}</dd></div><div><dt>Architecture views</dt><dd>${views.length}</dd></div></dl><button class="button block" type="button" data-route-button="discover">Open solution brief</button></aside></div>`;
+  </div><aside class="panel mission-card"><p class="eyebrow">${h(solution.classification)}</p><h3>${h(solution.name)}</h3><p>${h(solution.description || solution.mission.problem || "Define the mission problem and decision this solution must support.")}</p><div class="tags">${(solution.missionSegments || []).map(segment => `<span class="tag mission-segment-tag">${h(segment)}</span>`).join("")}<span class="tag">${h(solution.domain)}</span><span class="tag">${h(solution.stage)}</span><span class="tag">${h(solution.status)}</span></div><dl class="mini-list"><div><dt>Decision</dt><dd>${h(solution.decision || "Not defined")}</dd></div><div><dt>Candidates</dt><dd>${candidates.length}</dd></div><div><dt>Win themes</dt><dd>${winThemes.length}</dd></div><div><dt>Open risks</dt><dd>${risks.length}</dd></div><div><dt>Architecture views</dt><dd>${views.length}</dd></div></dl><button class="button block" type="button" data-route-button="discover">Open solution brief</button></aside></div>`;
 }
 
 function renderDiscover(solution) {
@@ -268,6 +498,7 @@ function renderDiscover(solution) {
     ${field("Customer / mission partner", solution.customer, `data-solution-field="customer" maxlength="180"`)}
     ${selectField("Lifecycle stage", `data-solution-field="stage"`, STAGES.map(item => option(item, item, solution.stage)).join(""))}
     ${field("Domain", solution.domain, `data-solution-field="domain" maxlength="180"`)}
+    <fieldset class="mission-segments span-2"><legend>Company mission segment(s)</legend><p>Select every segment this solution supports. This classification carries into the decision package and reviewed AI payload.</p><div class="mission-segment-grid">${MISSION_SEGMENTS.map(segment => `<label class="mission-segment-option"><input type="checkbox" value="${h(segment.name)}" data-mission-segment ${solution.missionSegments?.includes(segment.name) ? "checked" : ""}><span><strong>${h(segment.name)}</strong><small>${h(segment.description)}</small></span></label>`).join("")}</div></fieldset>
     <div class="span-2">${field("Decision to support", solution.decision, `data-solution-field="decision" maxlength="1200"`, { multiline: true, hint: "Write the specific choice, approval, or commitment this package must support." })}</div>
     <div class="span-2">${field("Mission problem", solution.mission.problem, `data-solution-nested="mission.problem" maxlength="5000"`, { multiline: true })}</div>
     <div class="span-2">${field("Operational context", solution.mission.operationalContext, `data-solution-nested="mission.operationalContext" maxlength="5000"`, { multiline: true })}</div>
@@ -289,6 +520,17 @@ function hotButtonCard(item) {
   return `<article class="record-card hot-button-card"><button class="delete-record" type="button" data-delete="hotButtons" data-id="${h(item.id)}" aria-label="Delete customer hot button">×</button><label class="hot-button-title"><span>Customer signal</span><input value="${h(item.title)}" maxlength="280" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="title"></label><label><span>Source</span><input value="${h(item.source)}" maxlength="300" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Confidence</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="confidence">${["Unverified", "Low", "Medium", "High"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Validation</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="status">${["Captured", "Validated", "Retired"].map(value => option(value, value, item.status)).join("")}</select></label><label class="hot-button-detail"><span>Why it matters / exact context</span><textarea rows="3" maxlength="2000" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="detail">${h(item.detail)}</textarea></label></article>`;
 }
 
+function evidenceCard(item) {
+  const hasMeetingMetadata = ["Meeting transcript", "Meeting summary"].includes(item.sourceType);
+  const meetingMetadata = hasMeetingMetadata ? `<dl class="evidence-meeting-meta">
+    <div><dt>Meeting source</dt><dd>${h(item.sourceType)}</dd></div>
+    <div><dt>Date</dt><dd>${h(item.meetingDate || "Not recorded")}</dd></div>
+    <div><dt>Participants</dt><dd>${h((item.participants || []).join(", ") || "Not recorded")}</dd></div>
+    <div class="span-2"><dt>Mission segments</dt><dd class="evidence-segment-tags">${(item.missionSegments || []).length ? item.missionSegments.map(segment => `<span>${h(segment)}</span>`).join("") : "Not tagged"}</dd></div>
+  </dl>` : "";
+  return `<article class="evidence-card"><button class="delete-record" type="button" data-delete="evidence" data-id="${h(item.id)}" aria-label="Delete evidence">×</button><input class="card-title-input" value="${h(item.title)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="title">${meetingMetadata}<label><span>Source</span><input value="${h(item.source)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Reference URL</span><input type="url" value="${h(item.url)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="url"></label><label><span>Confidence</span><select data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="confidence">${["High", "Medium", "Low", "Conflicting"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Notes</span><textarea rows="3" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="notes">${h(item.notes)}</textarea></label></article>`;
+}
+
 function renderShape(solution) {
   const requirements = scoped(workspace, "requirements", solution.id);
   const evidence = scoped(workspace, "evidence", solution.id);
@@ -296,7 +538,7 @@ function renderShape(solution) {
   const elements = scoped(workspace, "elements", solution.id);
   return `${renderStageRail("Shape")}<div class="section-toolbar"><div><p class="section-kicker">Traceability</p><h3>Requirements and evidence</h3><p>Bind every requirement to its source, acceptance logic, and architecture realization.</p></div><div><button class="button secondary" type="button" data-add="evidence">＋ Evidence</button><button class="button primary" type="button" data-add="requirements">＋ Requirement</button></div></div>
   <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Requirement</th><th>Type / priority</th><th>Customer drivers</th><th>Source evidence</th><th>Acceptance method</th><th>Architecture trace</th><th></th></tr></thead><tbody>${requirements.map(item => `<tr><td><textarea rows="2" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="title">${h(item.title)}</textarea><small>${h(item.status)}</small></td><td><select data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="type">${["Functional", "Performance", "Interface", "Data", "Cyber", "Safety", "Resilience", "Physical", "Sustainment"].map(value => option(value, value, item.type)).join("")}</select><select data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="priority">${["Must", "Should", "Could"].map(value => option(value, value, item.priority)).join("")}</select></td><td><select multiple size="3" data-requirement-hot-buttons="${h(item.id)}">${hotButtons.map(driver => `<option value="${h(driver.id)}" ${item.linkedHotButtonIds?.includes(driver.id) ? "selected" : ""}>${h(driver.title)}</option>`).join("")}</select></td><td><select data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="sourceEvidenceId"><option value="">Untraced</option>${evidence.map(source => option(source.id, source.title, item.sourceEvidenceId)).join("")}</select></td><td><textarea rows="2" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="acceptanceMethod">${h(item.acceptanceMethod)}</textarea></td><td><select multiple size="3" data-requirement-elements="${h(item.id)}">${elements.map(element => `<option value="${h(element.id)}" ${item.linkedElementIds?.includes(element.id) ? "selected" : ""}>${h(element.name)}</option>`).join("")}</select></td><td><button class="icon-button" type="button" data-delete="requirements" data-id="${h(item.id)}" aria-label="Delete requirement">×</button></td></tr>`).join("")}</tbody></table></div>${!requirements.length ? emptyState("No requirements", "Add requirements only when they can be traced to a mission need or authoritative source.") : ""}</section>
-  <section class="panel evidence-panel"><div class="panel-head"><div><h3>Evidence library</h3><p>References and notes only; v1 does not store binary attachments.</p></div></div><div class="card-grid">${evidence.map(item => `<article class="evidence-card"><button class="delete-record" type="button" data-delete="evidence" data-id="${h(item.id)}" aria-label="Delete evidence">×</button><input class="card-title-input" value="${h(item.title)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="title"><label><span>Source</span><input value="${h(item.source)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Reference URL</span><input type="url" value="${h(item.url)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="url"></label><label><span>Confidence</span><select data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="confidence">${["High", "Medium", "Low", "Conflicting"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Notes</span><textarea rows="3" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="notes">${h(item.notes)}</textarea></label></article>`).join("")}</div>${!evidence.length ? emptyState("No evidence", "Record authoritative sources, test observations, customer statements, and documented constraints.") : ""}</section>`;
+  <section class="panel evidence-panel"><div class="panel-head"><div><h3>Evidence library</h3><p>References and approved excerpts only; v1 does not store binary attachments or full meeting transcripts.</p></div></div><div class="card-grid">${evidence.map(evidenceCard).join("")}</div>${!evidence.length ? emptyState("No evidence", "Record authoritative sources, test observations, customer statements, and documented constraints.") : ""}</section>`;
 }
 
 function renderAssess(solution) {
@@ -353,7 +595,7 @@ function renderProve(solution) {
   return `${renderStageRail("Prove")}<div class="section-toolbar"><div><p class="section-kicker">Technical assurance</p><h3>Make trade-offs, evidence, and residual risk explicit</h3><p>Govern the solution without replacing domain specialists or formal authorities.</p></div></div><div class="governance-stack">
   ${governanceSection("Trade studies", "Frame the question, compare assessed candidates, and record the current recommendation.", "trades", trades, [{ label: "Trade / question", field: "title" }, { label: "Decision question", field: "question", multiline: true }, { label: "Candidates", field: "optionIds", multipleOptions: candidates, emptyLabel: "Add candidates in Assess" }, { label: "Recommendation", field: "recommendation", multiline: true }, { label: "Status", field: "status", options: ["In analysis", "Ready for decision", "Closed"] }])}
   ${governanceSection("Decision records", "Preserve design intent, ownership, rationale, supporting evidence, and approval state.", "decisions", decisions, [{ label: "Decision", field: "title" }, { label: "Rationale", field: "rationale", multiline: true }, { label: "Evidence", field: "evidenceIds", multipleOptions: evidence, emptyLabel: "Add evidence in Shape" }, { label: "Owner", field: "owner" }, { label: "Status", field: "status", options: ["Proposed", "Approved", "Superseded"] }])}
-  ${governanceSection("Risks", "Track technical, integration, delivery, cyber, safety, supply, and transition exposure.", "risks", risks, [{ label: "Risk", field: "title" }, { label: "Likelihood", field: "likelihood", options: ["Low", "Medium", "High"] }, { label: "Impact", field: "impact", options: ["Low", "Medium", "High"] }, { label: "Owner", field: "owner" }, { label: "Mitigation", field: "mitigation", multiline: true }, { label: "Status", field: "status", options: ["Open", "Watching", "Mitigated", "Closed"] }])}
+  ${governanceSection("Risks", "Track technical, integration, delivery, cyber, safety, supply, and transition exposure. Keep new captures Unknown until reviewed.", "risks", risks, [{ label: "Risk", field: "title" }, { label: "Likelihood", field: "likelihood", options: ["Unknown", "Low", "Medium", "High"] }, { label: "Impact", field: "impact", options: ["Unknown", "Low", "Medium", "High"] }, { label: "Owner", field: "owner" }, { label: "Mitigation", field: "mitigation", multiline: true }, { label: "Status", field: "status", options: ["Open", "Watching", "Mitigated", "Closed"] }])}
   ${governanceSection("Dependencies", "Make external inputs, access, decisions, facilities, data, and schedule commitments visible.", "dependencies", dependencies, [{ label: "Dependency", field: "title" }, { label: "Type", field: "type" }, { label: "Provider", field: "provider" }, { label: "Owner", field: "owner" }, { label: "Needed by", field: "neededBy", type: "date" }, { label: "Status", field: "status", options: ["Open", "At risk", "Blocked", "Satisfied"] }, { label: "Impact", field: "impact", multiline: true }])}
   ${governanceSection("Review gates", "Define entry evidence and the accountable review owner.", "reviews", reviews, [{ label: "Review", field: "name" }, { label: "Type", field: "type", options: ["Mission", "Requirements", "Technology", "Architecture", "Proposal", "Transition"] }, { label: "Due", field: "due", type: "date" }, { label: "Owner", field: "owner" }, { label: "Entry criteria", field: "entryCriteria", multiline: true }, { label: "Status", field: "status", options: ["Planned", "Ready", "Complete"] }])}
   <section class="panel ai-drafts"><div class="panel-head"><div><h3>AI drafts</h3><p>Structured output stays separate from authored content. Review and explicitly accept or reject it; acceptance never overwrites a record.</p></div><span class="metric">${drafts.length}</span></div>${drafts.length ? `<div class="draft-list">${drafts.map(draft => `<article><div><span class="draft-status ${h(draft.status.toLowerCase().replaceAll(" ", "-"))}">${h(draft.status)}</span><h4>${h(draft.title)}</h4><p>${h(draft.result?.summary || `${draft.action.replaceAll("_", " ")} · ${draft.stage}`)}</p><small>${h(new Date(draft.createdAt).toLocaleString())} · ${h(draft.citationIds.length)} cited workspace records</small></div><div class="draft-actions"><button class="small-button" type="button" data-ai-draft-view="${h(draft.id)}">Review</button>${draft.status === "Pending review" ? `<button class="small-button" type="button" data-ai-draft-status="Accepted" data-id="${h(draft.id)}">Accept</button><button class="small-button" type="button" data-ai-draft-status="Rejected" data-id="${h(draft.id)}">Reject</button>` : ""}<button class="icon-button" type="button" data-delete="aiDrafts" data-id="${h(draft.id)}" aria-label="Delete AI draft">×</button></div></article>`).join("")}</div>` : emptyState("No saved AI drafts", "AI assistance is optional. Any response must pass citation validation before it can be saved here.")}</section></div>`;
@@ -390,7 +632,7 @@ function renderTransition(solution) {
 function renderDecisionPackage(solution) {
   const readiness = buildReadiness(workspace, solution.id);
   const markdown = buildDecisionPackageMarkdown(workspace, solution.id);
-  return `${renderStageRail(solution.stage)}<div class="section-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div><button class="button secondary" type="button" data-action="export-markdown">Download Markdown</button><button class="button secondary" type="button" data-action="export-html">Standalone HTML</button><button class="button primary" type="button" data-action="print-package">Print / PDF</button></div></div><section class="panel package-summary"><div><span>Overall readiness</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Interfaces</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><h3>Markdown preview</h3><p>Exports include separate SVG/PNG diagram controls in the Architect view.</p></div></div><pre>${h(markdown)}</pre></section>`;
+  return `${renderStageRail(solution.stage)}<div class="section-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div><button class="button secondary" type="button" data-action="export-markdown">Download Markdown</button><button class="button secondary" type="button" data-action="export-html">Standalone HTML</button><button class="button primary" type="button" data-action="print-package">Print / Save PDF</button></div></div><section class="panel package-summary"><div><span>Overall readiness</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Interfaces</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><h3>Markdown preview</h3><p>Exports include separate SVG/PNG diagram controls in the Architect view.</p></div></div><pre>${h(markdown)}</pre></section>`;
 }
 
 const ADD_DEFAULTS = {
@@ -456,12 +698,383 @@ function deleteRecord(collection, id) {
   if (selectedViewId === id) selectedViewId = "";
 }
 
+function showQuickCapture() {
+  const solution = activeSolution();
+  const segmentText = (solution.missionSegments || []).join(" · ") || "No company mission segment selected";
+  openModal("Quick capture", `<form id="quick-capture-form">
+    <p class="modal-intro">Capture once, classify now or refine later. This creates a proposal in the <strong>${h(solution.name)}</strong> review inbox; it does not change an authoritative workspace record.</p>
+    <p class="capture-context"><strong>Active solution</strong><span>${h(segmentText)}</span></p>
+    <button class="capture-path" type="button" data-action="meeting-capture"><strong>Meeting transcript or summary</strong><span>Select only the useful excerpts and tag them to company mission segments.</span></button>
+    <div class="form-grid">
+      <label class="field"><span>Proposed record type</span><select name="target">${captureTargetOptions("evidence")}</select></label>
+      <label class="field"><span>Source / interaction</span><input name="source" maxlength="300" placeholder="Meeting, email, field note, document, or observation"></label>
+      <label class="field span-2"><span>Short title or statement</span><input name="title" maxlength="280" required autofocus placeholder="What needs to be remembered or reviewed?"><small>Keep the short title to 280 characters or fewer; put supporting detail below.</small></label>
+      <label class="field span-2"><span>Context, excerpt, or rationale</span><textarea name="detail" rows="6" maxlength="6000" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" placeholder="Paste the smallest useful excerpt and preserve the context needed to evaluate it."></textarea><small>Ctrl/Command + Enter saves and keeps Quick capture open. Alt + Q opens this dialog from anywhere.</small></label>
+    </div>
+    <div class="guide-note warning"><strong>Review boundary</strong><p>Use approved unclassified, non-CUI information only. Inbox proposals remain separate until you explicitly review and commit them.</p></div>
+    <div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button secondary" type="submit" name="next" value="continue">Save & continue</button><button class="button primary" type="submit" name="next" value="review">Save & review inbox</button></div>
+  </form>`, { wide: true });
+}
+
+function captureSupplementalControls(item) {
+  const disabled = item.status === "pending" ? "" : "disabled";
+  if (item.target === "evidence") return `<label><span>Initial confidence</span><select data-capture-field="confidence" data-capture-id="${h(item.id)}" ${disabled}>${["Low", "Medium", "High", "Conflicting"].map(value => option(value, value, item.fields.confidence)).join("")}</select></label>`;
+  if (item.target === "requirement") return `<label><span>Type</span><select data-capture-field="type" data-capture-id="${h(item.id)}" ${disabled}>${["Functional", "Performance", "Interface", "Data", "Cyber", "Safety", "Resilience", "Physical", "Sustainment"].map(value => option(value, value, item.fields.type)).join("")}</select></label><label><span>Priority</span><select data-capture-field="priority" data-capture-id="${h(item.id)}" ${disabled}>${["Must", "Should", "Could"].map(value => option(value, value, item.fields.priority)).join("")}</select></label>`;
+  if (item.target === "risk") return `<label><span>Likelihood</span><select data-capture-field="likelihood" data-capture-id="${h(item.id)}" ${disabled}>${["Unknown", "Low", "Medium", "High"].map(value => option(value, value, item.fields.likelihood)).join("")}</select></label><label><span>Impact</span><select data-capture-field="impact" data-capture-id="${h(item.id)}" ${disabled}>${["Unknown", "Low", "Medium", "High"].map(value => option(value, value, item.fields.impact)).join("")}</select></label><label class="span-2"><span>Initial mitigation (optional)</span><textarea rows="2" maxlength="3000" data-capture-field="mitigation" data-capture-id="${h(item.id)}" ${disabled}>${h(item.fields.mitigation)}</textarea></label>`;
+  return "";
+}
+
+function captureInboxCard(item) {
+  const provenance = captureInbox.provenance.find(record => record.id === item.provenanceId);
+  const pending = item.status === "pending";
+  const linkedEvidence = item.target !== "evidence" && item.evidenceProposalId
+    ? captureInbox.items.find(candidate => candidate.proposalId === item.evidenceProposalId)
+    : null;
+  const titleLimit = captureTitleMax(item.target);
+  return `<article class="capture-card ${pending ? "" : "capture-complete"}" data-capture-card="${h(item.id)}"><div class="capture-card-head"><label class="capture-select"><input type="checkbox" data-capture-select value="${h(item.id)}" ${pending ? "checked" : "disabled"}><span class="visually-hidden">Select ${h(captureTitle(item))}</span></label><div><span class="capture-status">${h(item.status)}</span><strong>${h(sourceLabel(provenance))}</strong></div><label class="capture-target"><span>Map to</span><select data-capture-target data-capture-id="${h(item.id)}" ${pending ? "" : "disabled"}>${captureTargetOptions(item.target)}</select></label></div><div class="capture-card-fields"><label class="span-2"><span>${item.target === "assumption" ? "Assumption statement" : item.target === "ignore" ? "Reason to ignore" : "Proposed title"}</span><input value="${h(captureTitle(item))}" maxlength="${titleLimit}" data-capture-title data-capture-id="${h(item.id)}" ${pending ? "" : "disabled"}><small>Maximum ${titleLimit.toLocaleString()} characters for ${h(CAPTURE_TARGET_LABELS[item.target]).toLowerCase()}.</small></label><label class="span-2"><span>Selected excerpt / context</span><textarea rows="4" maxlength="6000" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-capture-detail data-capture-id="${h(item.id)}" ${pending ? "" : "disabled"}>${h(captureDetail(item))}</textarea></label>${captureSupplementalControls(item)}</div>${linkedEvidence ? `<p class="capture-link-note">Source evidence will be committed in the same batch: <strong>${h(captureTitle(linkedEvidence))}</strong></p>` : ""}</article>`;
+}
+
+function showCaptureInbox() {
+  const pending = captureInbox.items.filter(item => item.status === "pending");
+  const completed = captureInbox.items.length - pending.length;
+  openModal("Review capture inbox", `<div class="capture-inbox"><p class="modal-intro">Nothing enters the authoritative solution until you select proposals and commit them. Every proposal is locked to <strong>${h(activeSolution().name)}</strong>.</p><div class="capture-summary"><div><span>Pending review</span><strong>${pending.length}</strong></div><div><span>Completed / ignored</span><strong>${completed}</strong></div><div><span>Source records</span><strong>${captureInbox.provenance.length}</strong></div></div>${captureInbox.items.length ? `<div class="capture-list">${captureInbox.items.map(captureInboxCard).join("")}</div>` : emptyState("Inbox is clear", "Use Quick capture, paste customer hot buttons, or open local files to create reviewable proposals.", `<button class="button primary" type="button" data-action="quick-capture">Start a capture</button>`) }<div class="modal-actions capture-inbox-actions"><button class="button secondary" type="button" data-capture-export>Download inbox JSON</button>${completed ? `<button class="button secondary" type="button" data-capture-clear>Clear completed</button>` : ""}<button class="button secondary" type="button" data-close-modal>Close</button><button class="button primary" type="button" data-capture-commit ${pending.length ? "" : "disabled"}>Commit selected proposals</button></div></div>`, { wide: true });
+}
+
+function updateCaptureItem(itemId, updater, { rerender = false } = {}) {
+  const next = structuredClone(captureInbox);
+  const item = next.items.find(candidate => candidate.id === itemId && candidate.status === "pending");
+  if (!item) return false;
+  try {
+    updater(item, next);
+  } catch (error) {
+    toast(error.message, "error");
+    if (rerender) showCaptureInbox();
+    return false;
+  }
+  next.updatedAt = new Date().toISOString();
+  if (!persistCaptureInbox(next)) {
+    if (rerender) showCaptureInbox();
+    return false;
+  }
+  if (rerender) showCaptureInbox();
+  return true;
+}
+
+function changeCaptureTarget(itemId, target) {
+  if (!CAPTURE_TARGETS.includes(target)) return;
+  updateCaptureItem(itemId, (item, next) => {
+    if (item.target === "evidence" && target !== "evidence" && next.items.some(candidate => candidate.id !== item.id && candidate.evidenceProposalId === item.proposalId)) {
+      throw new Error("This source evidence is linked to another pending proposal. Change or commit the linked proposal first.");
+    }
+    const provenance = next.provenance.find(record => record.id === item.provenanceId);
+    const evidenceProposalId = target === "evidence" || item.target === "evidence" || !EVIDENCE_LINK_TARGETS.has(target)
+      ? ""
+      : item.evidenceProposalId;
+    const replacement = createCaptureItem(item.solutionId, {
+      id: item.id,
+      provenanceId: item.provenanceId,
+      target,
+      excerpt: item.excerpt,
+      evidenceProposalId,
+      fields: fieldsForCapture(target, captureTitle(item), captureDetail(item), sourceLabel(provenance))
+    });
+    next.items.splice(next.items.indexOf(item), 1, replacement);
+  }, { rerender: true });
+}
+
+function commitCaptureSelection() {
+  const itemIds = [...document.querySelectorAll("[data-capture-select]:checked")].map(input => input.value);
+  if (!itemIds.length) { toast("Select at least one pending capture proposal.", "error"); return; }
+  let base = pushSnapshot(workspace, "Before committing capture inbox");
+  const solution = base.solutions.find(item => item.id === base.activeSolutionId);
+  if (solution) solution.updatedAt = new Date().toISOString();
+  const result = materializeCaptureItems(base, captureInbox, { itemIds });
+  if (!result.valid) { toast(`Capture commit blocked: ${result.errors[0]}`, "error"); return; }
+  const savedAt = new Date().toISOString();
+  const persistedWorkspace = { ...result.nextWorkspace, savedAt };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedWorkspace));
+  } catch {
+    toast("Capture commit was not applied because the workspace could not be saved.", "error");
+    return;
+  }
+  workspace = persistedWorkspace;
+  dirty = false;
+  try {
+    localStorage.setItem(captureStorageKey(result.nextInbox.solutionId), JSON.stringify(result.nextInbox));
+    captureInbox = result.nextInbox;
+  } catch {
+    toast("Workspace records were saved, but the inbox status could not be updated. Retrying is safe and will not create duplicates.", "error");
+    closeModal();
+    render();
+    return;
+  }
+  closeModal();
+  render();
+  toast(`${result.materializedItemIds.length} capture proposal${result.materializedItemIds.length === 1 ? "" : "s"} committed.`, "ok");
+}
+
+function clearCompletedCaptures() {
+  const next = structuredClone(captureInbox);
+  next.items = next.items.filter(item => item.status === "pending");
+  const sourceIds = new Set(next.items.map(item => item.provenanceId).filter(Boolean));
+  next.provenance = next.provenance.filter(item => sourceIds.has(item.id));
+  next.updatedAt = new Date().toISOString();
+  if (persistCaptureInbox(next)) showCaptureInbox();
+}
+
+function clearIngestionSession() {
+  ingestionGeneration += 1;
+  ingestionProcessing = false;
+  ingestionAbortController?.abort();
+  ingestionAbortController = null;
+  for (const url of new Set(ingestionSession.map(item => item.previewUrl).filter(Boolean))) URL.revokeObjectURL(url);
+  ingestionSession = [];
+  ingestionAcknowledged = false;
+}
+
+function intakeResultCard(item) {
+  if (item.error) return `<article class="intake-card intake-error"><div class="intake-card-head"><strong>${h(item.filename)}</strong><span>Rejected</span></div><p>${h(item.error)}</p></article>`;
+  const result = item.result;
+  const sections = result.sections || [];
+  const titleLimit = captureTitleMax(item.target);
+  return `<article class="intake-card" data-intake-card="${h(item.id)}"><div class="intake-card-head"><label class="capture-select"><input type="checkbox" data-intake-select data-intake-id="${h(item.id)}" ${item.selected ? "checked" : ""}><span class="visually-hidden">Select ${h(result.filename)}</span></label><div><strong>${h(result.filename)}</strong><span>${h(result.format.toUpperCase())} · ${(result.sizeBytes / 1024).toFixed(1)} KB · SHA-256 ${h(result.sha256.slice(0, 12))}…</span></div><button class="small-button" type="button" data-intake-duplicate="${h(item.id)}">＋ Another excerpt</button></div>${item.previewUrl ? `<img class="intake-image-preview" src="${h(item.previewUrl)}" alt="Local preview of ${h(result.filename)}">` : ""}<div class="intake-fields"><label><span>Map selected excerpt to</span><select data-intake-target data-intake-id="${h(item.id)}">${captureTargetOptions(item.target)}</select></label>${sections.length ? `<label><span>Source section</span><select data-intake-section data-intake-id="${h(item.id)}"><option value="-1">Entire extracted preview</option>${sections.map((section, index) => option(String(index), `${section.label || `Section ${index + 1}`} — ${section.locator}`, String(item.sectionIndex))).join("")}</select></label>` : `<label><span>Source locator</span><input value="${h(item.locator)}" maxlength="500" data-intake-locator data-intake-id="${h(item.id)}"></label>`}<label class="span-2"><span>Proposed title</span><input value="${h(item.title)}" maxlength="${titleLimit}" data-intake-title data-intake-id="${h(item.id)}"><small data-intake-title-limit>Maximum ${titleLimit.toLocaleString()} characters for ${h(CAPTURE_TARGET_LABELS[item.target]).toLowerCase()}.</small></label><label class="span-2"><span>${result.needsManualText ? "Manual caption or transcription (no OCR is performed)" : "Selected excerpt"}</span><textarea rows="7" maxlength="6000" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-intake-excerpt data-intake-id="${h(item.id)}" placeholder="${result.needsManualText ? "Describe only what you can verify in the image." : "Keep only the text needed for this proposed record."}">${h(item.excerpt)}</textarea></label></div>${result.diagnostics.length ? `<ul class="intake-diagnostics">${result.diagnostics.map(note => `<li>${h(note.message)}</li>`).join("")}</ul>` : ""}</article>`;
+}
+
+function showFileIntake() {
+  openModal("Open local files", `<div id="file-intake-workflow">
+    <p class="modal-intro">Files are opened and extracted locally in this browser. They are not uploaded. Reviewable excerpts can be copied to the active solution's capture inbox; original file bytes are discarded when you close this dialog.</p>
+    <button class="capture-path" type="button" data-action="meeting-capture"><strong>Have meeting text instead?</strong><span>Paste a transcript or summary and preserve only selected excerpts.</span></button>
+    <label class="intake-ack"><input type="checkbox" id="intake-ack" ${ingestionAcknowledged ? "checked" : ""}> <span>I confirm these files are approved unclassified, non-CUI and contain no classified, export-controlled, proprietary, or customer-restricted information.</span></label>
+    <label class="source-drop-zone" id="source-drop-zone"><strong>Choose or drop local files</strong><span>TXT, Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS, XLSX, ODS, PNG, JPEG, or WebP · 8 MB each · 10 files / 25 MB per session</span><input id="source-files" type="file" multiple accept="${h(SOURCE_FILE_ACCEPT)}" ${ingestionAcknowledged ? "" : "disabled"}></label>
+    <p id="intake-progress" class="intake-progress" aria-live="polite"></p>
+    ${ingestionSession.length ? `<div class="intake-list">${ingestionSession.map(intakeResultCard).join("")}</div>` : `<div class="guide-note"><strong>Safe extraction, not source validation</strong><p>PDF and Office layout may not reproduce exactly. Images are previewed locally and require a manual caption; no OCR or AI classification runs. Verify every excerpt and locator before committing it.</p></div>`}
+    <div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="button" data-intake-add ${ingestionSession.some(item => !item.error && item.selected) ? "" : "disabled"}>Add selected excerpts to review inbox</button></div>
+  </div>`, { wide: true, transient: "file" });
+}
+
+async function processSourceFiles(files) {
+  const selected = [...files];
+  if (!ingestionAcknowledged) { toast("Confirm the data-handling acknowledgment before opening files.", "error"); return; }
+  if (ingestionProcessing) { toast("Wait for the current local files to finish opening before adding more.", "error"); return; }
+  if (ingestionSession.length + selected.length > MAX_INTAKE_FILES) { toast(`A local intake session is limited to ${MAX_INTAKE_FILES} files.`, "error"); return; }
+  const currentBytes = ingestionSession.reduce((total, item) => total + (item.result?.sizeBytes || 0), 0);
+  const incomingBytes = selected.reduce((total, file) => total + file.size, 0);
+  if (currentBytes + incomingBytes > MAX_INTAKE_BYTES) { toast("A local intake session is limited to 25 MB total.", "error"); return; }
+  const generation = ingestionGeneration;
+  const abortController = new AbortController();
+  ingestionAbortController = abortController;
+  ingestionProcessing = true;
+  const progress = document.querySelector("#intake-progress");
+  const workflow = document.querySelector("#file-intake-workflow");
+  workflow?.setAttribute("aria-busy", "true");
+  const input = workflow?.querySelector("#source-files");
+  if (input) input.disabled = true;
+  try {
+    for (const [index, file] of selected.entries()) {
+      if (generation !== ingestionGeneration || !document.querySelector("#file-intake-workflow")) return;
+      if (progress) progress.textContent = `Opening ${index + 1} of ${selected.length}: ${file.name}`;
+      let previewUrl = "";
+      try {
+        if (file.size > MAX_SOURCE_FILE_BYTES) throw new Error("This file exceeds the 8 MB local extraction limit.");
+        const result = await extractLocalSource(file, { signal: abortController.signal });
+        if (generation !== ingestionGeneration || !document.querySelector("#file-intake-workflow")) return;
+        if (["png", "jpg", "webp"].includes(result.format)) previewUrl = URL.createObjectURL(file);
+        const title = result.filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || result.filename;
+        ingestionSession.push({ id: makeId("intake"), filename: result.filename, result, previewUrl, selected: true, target: "evidence", title, excerpt: result.text.slice(0, 6000), locator: result.locator, sectionIndex: -1 });
+      } catch (error) {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        if (generation !== ingestionGeneration || !document.querySelector("#file-intake-workflow")) return;
+        ingestionSession.push({ id: makeId("intake"), filename: file.name.slice(0, 255), error: String(error.message || error).slice(0, 500), selected: false });
+      }
+    }
+    if (generation !== ingestionGeneration || !document.querySelector("#file-intake-workflow")) return;
+    ingestionProcessing = false;
+    showFileIntake();
+    const summary = ingestionSession.filter(item => !item.error).length;
+    const currentProgress = document.querySelector("#intake-progress");
+    if (currentProgress) currentProgress.textContent = `${summary} file${summary === 1 ? "" : "s"} ready for excerpt review.`;
+  } finally {
+    if (generation === ingestionGeneration) {
+      ingestionProcessing = false;
+      if (ingestionAbortController === abortController) ingestionAbortController = null;
+      const currentWorkflow = document.querySelector("#file-intake-workflow");
+      currentWorkflow?.removeAttribute("aria-busy");
+      const currentInput = currentWorkflow?.querySelector("#source-files");
+      if (currentInput) currentInput.disabled = !ingestionAcknowledged;
+    }
+  }
+}
+
+function addIntakeToCaptureInbox() {
+  const selectedIds = new Set([...document.querySelectorAll("[data-intake-select]:checked")].map(input => input.dataset.intakeId));
+  const selected = ingestionSession.filter(item => selectedIds.has(item.id) && !item.error);
+  if (!selected.length) { toast("Select at least one extracted source excerpt.", "error"); return; }
+  const oversizedTitle = selected.find(item => item.title.length > captureTitleMax(item.target));
+  if (oversizedTitle) { toast(`Shorten the proposed ${CAPTURE_TARGET_LABELS[oversizedTitle.target].toLowerCase()} title to ${captureTitleMax(oversizedTitle.target).toLocaleString()} characters or fewer.`, "error"); return; }
+  if (selected.some(item => item.target !== "ignore" && !item.excerpt.trim())) { toast("Every selected source needs an excerpt or a verified manual image caption.", "error"); return; }
+  const next = structuredClone(captureInbox);
+  try {
+    for (const item of selected) {
+      const provenance = createCaptureProvenance(next.solutionId, { sourceFileName: item.result.filename, sourceTitle: item.result.filename, locator: item.locator, sha256: item.result.sha256 });
+      next.provenance.push(provenance);
+      if (item.target === "ignore") {
+        next.items.push(createCaptureItem(next.solutionId, { provenanceId: provenance.id, target: "ignore", excerpt: item.excerpt, fields: fieldsForCapture("ignore", item.title, item.excerpt) }));
+        continue;
+      }
+      const source = sourceLabel(provenance);
+      const evidenceTitle = item.target === "evidence" ? item.title : companionEvidenceTitle(item.title);
+      const evidence = createCaptureItem(next.solutionId, { provenanceId: provenance.id, target: "evidence", excerpt: item.excerpt, fields: fieldsForCapture("evidence", evidenceTitle, item.excerpt, source) });
+      next.items.push(evidence);
+      if (item.target !== "evidence") {
+        const evidenceProposalId = EVIDENCE_LINK_TARGETS.has(item.target) ? evidence.proposalId : "";
+        next.items.push(createCaptureItem(next.solutionId, { provenanceId: provenance.id, target: item.target, excerpt: item.excerpt, evidenceProposalId, fields: fieldsForCapture(item.target, item.title, item.excerpt, source) }));
+      }
+    }
+    next.updatedAt = new Date().toISOString();
+  } catch (error) {
+    toast(`Source excerpts could not be prepared: ${error.message}`, "error");
+    return;
+  }
+  if (!persistCaptureInbox(next)) return;
+  const count = selected.length;
+  clearIngestionSession();
+  showCaptureInbox();
+  toast(`${count} source excerpt${count === 1 ? "" : "s"} added for review. Original file bytes were discarded.`, "ok");
+}
+
+function meetingExcerptCard(excerpt, index) {
+  return `<article class="meeting-excerpt" data-meeting-excerpt-card="${h(excerpt.id)}">
+    <div><span>Excerpt ${index + 1}</span><strong>${h(excerpt.locator)}</strong></div>
+    <p>${h(excerpt.text)}</p>
+    <button class="small-button" type="button" data-meeting-remove="${h(excerpt.id)}" aria-label="Remove excerpt ${index + 1}">Remove</button>
+  </article>`;
+}
+
+function showMeetingIntake({ fresh = false, focusSelector = "" } = {}) {
+  if (fresh || !meetingSession || meetingSession.solutionId !== workspace.activeSolutionId) meetingSession = createMeetingSession();
+  const session = meetingSession;
+  const textLength = session.text.length;
+  const wholeSummaryReady = session.acknowledged && session.sourceType === "Meeting summary" && textLength > 0 && textLength <= MAX_MEETING_EXCERPT_CHARS;
+  openModal("Paste meeting transcript or summary", `<div id="meeting-intake-workflow">
+    <p class="modal-intro">Paste meeting text temporarily, select only the excerpts that matter, and stage them as source evidence for review. The complete transcript or summary is discarded when this dialog closes.</p>
+    <label class="intake-ack"><input type="checkbox" id="meeting-ack" ${session.acknowledged ? "checked" : ""}> <span>I confirm this meeting content is approved unclassified, non-CUI and contains no classified, export-controlled, proprietary, or customer-restricted information.</span></label>
+    <div class="form-grid meeting-metadata">
+      <label class="field"><span>Meeting title</span><input data-meeting-field="title" value="${h(session.title)}" maxlength="280" placeholder="Example: Synthetic mission integration review" autofocus></label>
+      <label class="field"><span>Content type</span><select data-meeting-field="sourceType">${option("Meeting transcript", "Transcript", session.sourceType)}${option("Meeting summary", "Summary", session.sourceType)}</select></label>
+      <label class="field"><span>Meeting date</span><input type="date" data-meeting-field="meetingDate" value="${h(session.meetingDate)}"></label>
+      <label class="field"><span>Participants</span><input data-meeting-field="participantsText" value="${h(session.participantsText)}" maxlength="3000" placeholder="Names or roles, separated by commas"></label>
+      <fieldset class="mission-segments span-2"><legend>Company mission segment(s)</legend><p>Tag every segment this meeting excerpt informs.</p><div class="mission-segment-grid">${MISSION_SEGMENTS.map(segment => `<label class="mission-segment-option"><input type="checkbox" value="${h(segment.name)}" data-meeting-segment ${session.missionSegments.includes(segment.name) ? "checked" : ""}><span><strong>${h(segment.name)}</strong><small>${h(segment.description)}</small></span></label>`).join("")}</div></fieldset>
+      <label class="field span-2"><span>${session.sourceType}</span><textarea id="meeting-source-text" data-meeting-field="text" rows="12" maxlength="${MAX_MEETING_TEXT_CHARS}" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" ${session.acknowledged ? "" : "disabled"} placeholder="Paste the meeting ${session.sourceType === "Meeting summary" ? "summary" : "transcript"} here. Select the exact text you want to preserve.">${h(session.text)}</textarea><small><span id="meeting-text-count">${textLength.toLocaleString()}</span> / ${MAX_MEETING_TEXT_CHARS.toLocaleString()} characters · Full text is transient and is never saved to browser storage.</small></label>
+    </div>
+    <div class="meeting-selection-actions">
+      <button class="button secondary" type="button" data-meeting-add-selection ${session.acknowledged ? "" : "disabled"}>Add highlighted excerpt</button>
+      ${session.sourceType === "Meeting summary" ? `<button class="button secondary" type="button" data-meeting-add-summary ${wholeSummaryReady ? "" : "disabled"}>Use whole short summary</button>` : ""}
+      <span>Up to ${MAX_MEETING_EXCERPTS} excerpts · ${MAX_MEETING_EXCERPT_CHARS.toLocaleString()} characters each</span>
+    </div>
+    <div class="meeting-excerpts" aria-live="polite">${session.excerpts.length ? session.excerpts.map(meetingExcerptCard).join("") : `<div class="empty-state"><strong>No excerpts selected</strong><p>Highlight a bounded passage in the meeting text, then add it here.</p></div>`}</div>
+    <div class="guide-note warning"><strong>Evidence, not automatic authority</strong><p>Meeting statements remain source evidence. Validate them before turning them into requirements, commitments, customer hot buttons, or win-theme claims.</p></div>
+    <div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel and discard full text</button><button class="button primary" type="button" data-meeting-stage ${session.excerpts.length ? "" : "disabled"}>Stage ${session.excerpts.length || "selected"} excerpt${session.excerpts.length === 1 ? "" : "s"} for review</button></div>
+  </div>`, { wide: true, transient: "meeting" });
+  if (focusSelector) document.querySelector(`#meeting-intake-workflow ${focusSelector}`)?.focus();
+}
+
+function addMeetingExcerpt({ wholeSummary = false } = {}) {
+  if (!meetingSession?.acknowledged) { toast("Confirm the data-handling acknowledgment before pasting meeting content.", "error"); return; }
+  if (meetingSession.excerpts.length >= MAX_MEETING_EXCERPTS) { toast(`A meeting intake is limited to ${MAX_MEETING_EXCERPTS} excerpts.`, "error"); return; }
+  const textarea = document.querySelector("#meeting-source-text");
+  if (!textarea) return;
+  meetingSession.text = textarea.value;
+  let start = 0;
+  let end = meetingSession.text.length;
+  if (wholeSummary) {
+    if (meetingSession.sourceType !== "Meeting summary") return;
+  } else {
+    start = textarea.selectionStart;
+    end = textarea.selectionEnd;
+    if (start === end) { toast("Highlight the exact transcript or summary passage you want to preserve.", "error"); return; }
+  }
+  const excerptText = meetingSession.text.slice(start, end).trim();
+  if (!excerptText) { toast("The selected meeting excerpt is empty.", "error"); return; }
+  if (excerptText.length > MAX_MEETING_EXCERPT_CHARS) { toast(`Meeting excerpts are limited to ${MAX_MEETING_EXCERPT_CHARS.toLocaleString()} characters. Select a smaller passage.`, "error"); return; }
+  if (meetingSession.excerpts.some(excerpt => excerpt.text === excerptText)) { toast("That exact meeting excerpt is already selected.", "error"); return; }
+  meetingSession.excerpts.push({
+    id: makeId("meeting_excerpt"),
+    text: excerptText,
+    locator: wholeSummary ? "Complete meeting summary" : meetingLineLocator(meetingSession.text, start, end),
+    start,
+    end,
+    sourceType: meetingSession.sourceType
+  });
+  showMeetingIntake({ focusSelector: "[data-meeting-add-selection]" });
+}
+
+function removeMeetingExcerpt(excerptId) {
+  if (!meetingSession) return;
+  meetingSession.excerpts = meetingSession.excerpts.filter(excerpt => excerpt.id !== excerptId);
+  showMeetingIntake({ focusSelector: "[data-meeting-add-selection]" });
+}
+
+function stageMeetingExcerpts() {
+  if (!meetingSession?.acknowledged) { toast("Confirm the data-handling acknowledgment before staging meeting excerpts.", "error"); return; }
+  const title = meetingSession.title.trim();
+  if (!title) { toast("Add a meeting title before staging excerpts.", "error"); return; }
+  if (!meetingSession.missionSegments.length) { toast("Select at least one company mission segment for this meeting.", "error"); return; }
+  if (!meetingSession.excerpts.length) { toast("Select at least one meeting excerpt.", "error"); return; }
+  if (meetingSession.excerpts.some(excerpt => excerpt.sourceType !== meetingSession.sourceType || meetingSession.text.slice(excerpt.start, excerpt.end).trim() !== excerpt.text)) {
+    discardMeetingExcerpts("The meeting text or content type changed. Re-select the exact excerpts before staging.");
+    return;
+  }
+  const next = structuredClone(captureInbox);
+  const participants = meetingParticipants(meetingSession.participantsText);
+  try {
+    for (const [index, excerpt] of meetingSession.excerpts.entries()) {
+      const dateLabel = meetingSession.meetingDate || "Date not recorded";
+      const provenance = createCaptureProvenance(next.solutionId, {
+        sourceTitle: title,
+        locator: `${meetingSession.sourceType} · ${dateLabel} · ${excerpt.locator}`
+      });
+      const evidenceTitle = (meetingSession.excerpts.length === 1 ? title : `${title} — excerpt ${index + 1}`).slice(0, 280);
+      const source = sourceLabel(provenance);
+      const fields = {
+        ...fieldsForCapture("evidence", evidenceTitle, excerpt.text, source),
+        sourceType: meetingSession.sourceType,
+        meetingDate: meetingSession.meetingDate,
+        participants,
+        missionSegments: [...meetingSession.missionSegments]
+      };
+      next.provenance.push(provenance);
+      next.items.push(createCaptureItem(next.solutionId, { provenanceId: provenance.id, target: "evidence", excerpt: excerpt.text, fields }));
+    }
+    next.updatedAt = new Date().toISOString();
+  } catch (error) {
+    toast(`Meeting excerpts could not be prepared: ${error.message}`, "error");
+    return;
+  }
+  if (!persistCaptureInbox(next)) return;
+  const count = meetingSession.excerpts.length;
+  clearMeetingSession();
+  showCaptureInbox();
+  toast(`${count} meeting excerpt${count === 1 ? "" : "s"} staged as evidence for review. The full meeting text was discarded.`, "ok");
+}
+
 function showNewSolution() {
   openModal("Create a solution workspace", `<form id="new-solution-form"><p class="modal-intro">Start with a clean solution and the default Technology Assessment criteria.</p>${field("Solution name", "", `name="name" required maxlength="180" autofocus`)}<div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">Create solution</button></div></form>`);
 }
 
 function showTools() {
-  openModal("Workspace tools", `<div class="tool-list"><button class="tool-card" type="button" data-tool="export-json"><strong>Export JSON backup</strong><span>Download the complete validated workspace, including all solutions.</span></button><button class="tool-card" type="button" data-tool="import-json"><strong>Import JSON backup</strong><span>Validate the entire file before atomically replacing this browser workspace.</span></button><button class="tool-card" type="button" data-tool="snapshot"><strong>Create recovery point</strong><span>Save a bounded local snapshot without nesting older snapshots.</span></button><button class="tool-card" type="button" data-tool="duplicate"><strong>Duplicate active solution</strong><span>Create an independent working copy with new record identifiers.</span></button><button class="tool-card danger" type="button" data-tool="delete-solution" ${workspace.solutions.length === 1 ? "disabled" : ""}><strong>Delete active solution</strong><span>Remove the solution and every record bound to it.</span></button></div>`);
+  openModal("Workspace tools", `<div class="tool-list">
+    <button class="tool-card" type="button" data-action="new-solution"><strong>Create a new solution</strong><span>Start a clean, independently scoped solution with default assessment criteria.</span></button>
+    <button class="tool-card" type="button" data-action="meeting-capture"><strong>Paste meeting transcript or summary</strong><span>Tag selected excerpts to mission segments and stage them as evidence without retaining the full meeting text.</span></button>
+    <button class="tool-card" type="button" data-action="open-capture-inbox"><strong>Review capture inbox</strong><span>${pendingCaptureCount()} pending proposal${pendingCaptureCount() === 1 ? "" : "s"} for the active solution.</span></button>
+    <button class="tool-card" type="button" data-action="open-guide"><strong>Open the workbench guide</strong><span>Use the fast start, lifecycle playbook, capture guidance, and complete task-oriented user guide.</span></button>
+    <button class="tool-card" type="button" data-action="open-recovery"><strong>Open recovery points</strong><span>Restore a validated local snapshot after preserving the current workspace.</span></button>
+    <button class="tool-card" type="button" data-tool="export-json"><strong>Export JSON backup</strong><span>Download the complete validated workspace, including all solutions.</span></button>
+    <button class="tool-card" type="button" data-tool="import-json"><strong>Import JSON backup</strong><span>Validate the entire file before atomically replacing this browser workspace.</span></button>
+    <button class="tool-card" type="button" data-tool="snapshot"><strong>Create recovery point</strong><span>Save a bounded local snapshot without nesting older snapshots.</span></button>
+    <button class="tool-card" type="button" data-tool="duplicate"><strong>Duplicate active solution</strong><span>Create an independent working copy with new record identifiers.</span></button>
+    <button class="tool-card danger" type="button" data-tool="delete-solution" ${workspace.solutions.length === 1 ? "disabled" : ""}><strong>Delete active solution</strong><span>Remove the solution and every record bound to it.</span></button>
+  </div>`);
 }
 
 function showHotButtonIngest() {
@@ -469,7 +1082,14 @@ function showHotButtonIngest() {
 }
 
 function showGuide() {
-  openModal("Solution Architect Workbench guide", `<div class="guide"><p class="modal-intro">The architect owns solution coherence and defensibility. The workbench coordinates specialist inputs; it does not replace cyber, safety, systems engineering, test, pricing, contracts, logistics, or domain authorities.</p><ol class="guide-steps"><li><strong>Discover</strong><span>Frame the mission, operational context, stakeholders, customer hot buttons, outcomes, measures, constraints, and the exact decision. Preserve each customer signal's source and validation state.</span></li><li><strong>Shape</strong><span>Translate authoritative needs into traceable requirements, nonfunctional requirements, evidence, and acceptance logic. A hot button is not a contractual requirement until it is validated through the proper source.</span></li><li><strong>Assess</strong><span>Compare hardware, software, tools, vendors, platforms, and integrated options. Unknown remains unknown.</span></li><li><strong>Architect</strong><span>Model people, process, hardware, software, data, networks, facilities, and external systems through fit-for-purpose views.</span></li><li><strong>Prove</strong><span>Record trades, decisions, risks, dependencies, reviews, demonstrations, and residual uncertainty.</span></li><li><strong>Propose</strong><span>Build win themes by connecting customer value, a real discriminator, and proof; then carry those themes into the CONOPS and technical narrative.</span></li><li><strong>Transition</strong><span>Handoff configuration, interfaces, evidence, risks, training, sustainment, and ownership into delivery.</span></li></ol><div class="guide-note"><strong>DoDAF and MOSA</strong><p>Use only the views needed for the decision. The app uses selected DoDAF viewpoint concepts and fit-for-purpose presentation guidance but does not implement or certify DoDAF conformance. Treat MOSA as both a technical and business strategy: modular boundaries, open interfaces, standards, upgrade paths, competition, sustainment, and data rights.</p></div><div class="guide-note warning"><strong>Data handling</strong><p>The site is public, but workspace content is stored only in this browser unless exported or deliberately sent through AI assistance. Do not use it for classified, CUI, export-controlled, proprietary, or restricted customer content unless your organization separately authorizes that handling.</p></div></div>`, { wide: true });
+  openModal("Solution Architect Workbench guide", `<div class="guide">
+    <p class="modal-intro">The architect owns solution coherence and defensibility. The workbench coordinates specialist inputs; it does not replace cyber, safety, systems engineering, test, pricing, contracts, logistics, or domain authorities.</p>
+    <div class="guide-note"><strong>Fast start</strong><p>Create or select a solution, choose its company mission segments in Discover, then capture only what you know. Use Capture for one note, Meeting transcript or summary for selected meeting excerpts, and Open local files for bounded document or image evidence. Nothing in the Review inbox changes the solution until you explicitly commit it. Use Command view to choose the next gap and Decision package to review the connected story.</p><p><a href="./guide.html" target="_blank" rel="noopener noreferrer">Open the complete task-oriented user guide →</a></p></div>
+    <ol class="guide-steps"><li><strong>Discover</strong><span>Frame the mission, operational context, stakeholders, customer hot buttons, outcomes, measures, constraints, and the exact decision. Preserve each customer signal's source and validation state.</span></li><li><strong>Shape</strong><span>Translate authoritative needs into traceable requirements, nonfunctional requirements, evidence, and acceptance logic. A hot button is not a contractual requirement until it is validated through the proper source.</span></li><li><strong>Assess</strong><span>Compare hardware, software, tools, vendors, platforms, and integrated options. Unknown remains unknown.</span></li><li><strong>Architect</strong><span>Model people, process, hardware, software, data, networks, facilities, and external systems through fit-for-purpose views.</span></li><li><strong>Prove</strong><span>Record trades, decisions, risks, dependencies, reviews, demonstrations, and residual uncertainty.</span></li><li><strong>Propose</strong><span>Build win themes by connecting customer value, a real discriminator, and proof; then carry those themes into the CONOPS and technical narrative.</span></li><li><strong>Transition</strong><span>Handoff configuration, interfaces, evidence, risks, training, sustainment, and ownership into delivery.</span></li></ol>
+    <div class="guide-note"><strong>Meeting capture</strong><p>Open Quick capture or Workspace tools, choose Meeting transcript or summary, add the meeting metadata and mission segments, then highlight only the passages worth retaining. The full pasted text is discarded on close; selected excerpts become evidence proposals and remain non-authoritative until review and commit.</p></div>
+    <div class="guide-note"><strong>DoDAF and MOSA</strong><p>Use only the views needed for the decision. The app uses selected DoDAF viewpoint concepts and fit-for-purpose presentation guidance but does not implement or certify DoDAF conformance. Treat MOSA as both a technical and business strategy: modular boundaries, open interfaces, standards, upgrade paths, competition, sustainment, and data rights.</p></div>
+    <div class="guide-note warning"><strong>Data handling</strong><p>The site is public, and browser storage is not an authorization boundary. Use approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content.</p></div>
+  </div>`, { wide: true });
 }
 
 function showRecovery() {
@@ -504,6 +1124,7 @@ async function importWorkspaceFile(file) {
       throw persistenceError;
     }
     workspace = persistedCandidate;
+    captureInbox = loadCaptureInbox(workspace.activeSolutionId);
     dirty = false;
     setSaveState("Saved locally", "ok");
     selectedCandidateId = selectedViewId = selectedElementId = "";
@@ -520,7 +1141,7 @@ async function importWorkspaceFile(file) {
 
 function duplicateActiveSolution() {
   const sourceId = workspace.activeSolutionId;
-  commit(next => {
+  const duplicated = commit(next => {
     const source = next.solutions.find(item => item.id === sourceId);
     const idMap = new Map([[sourceId, makeId("solution")]]);
     for (const collection of Object.keys(ADD_DEFAULTS).concat(["criteria", "architectureViews", "elements", "connections"])) {
@@ -551,19 +1172,26 @@ function duplicateActiveSolution() {
       next[collection].push(...copies);
     }
     next.activeSolutionId = copyId;
-  }, { snapshot: "Before duplicating solution" });
+  }, { snapshot: "Before duplicating solution", renderAfter: false });
+  if (duplicated) { captureInbox = loadCaptureInbox(workspace.activeSolutionId); render(); }
 }
 
 function deleteActiveSolution() {
   if (workspace.solutions.length === 1) return;
   const solution = activeSolution();
   if (!confirm(`Delete “${solution.name}” and every record bound to it? A recovery point will be created first.`)) return;
-  commit(next => {
+  const deletedSolutionId = solution.id;
+  const deleted = commit(next => {
     const id = next.activeSolutionId;
     next.solutions = next.solutions.filter(item => item.id !== id);
     for (const collection of ["stakeholders", "hotButtons", "outcomes", "measures", "requirements", "evidence", "criteria", "candidates", "winThemes", "architectureViews", "elements", "connections", "trades", "decisions", "risks", "dependencies", "assumptions", "roadmapItems", "reviews", "transitionActions", "aiDrafts"]) next[collection] = next[collection].filter(item => item.solutionId !== id);
     next.activeSolutionId = next.solutions[0].id;
-  }, { snapshot: "Before deleting solution" });
+  }, { snapshot: "Before deleting solution", renderAfter: false });
+  if (deleted) {
+    try { localStorage.removeItem(captureStorageKey(deletedSolutionId)); } catch { /* Workspace deletion remains valid if inbox cleanup is unavailable. */ }
+    captureInbox = loadCaptureInbox(workspace.activeSolutionId);
+    render();
+  }
   closeModal();
 }
 
@@ -632,7 +1260,7 @@ function showAiDialog() {
 function renderAiPreview() {
   const workflow = document.querySelector("#ai-workflow");
   if (!workflow || !aiPreview) return;
-  workflow.innerHTML = `<p class="modal-intro">Inspect the exact JSON below. These are the selected <strong>${h(aiPreview.stage)}</strong> facts. Nothing is sent until you sign in, make all three acknowledgments, and select Send.</p><pre class="payload-preview">${h(JSON.stringify(aiPreview.payload, null, 2))}</pre><div class="ack-list"><label><input type="checkbox" id="ack-payload"> I reviewed this exact payload.</label><label><input type="checkbox" id="ack-data"> It contains approved unclassified, non-CUI information only.</label><label><input type="checkbox" id="ack-restricted"> It contains no classified, export-controlled, proprietary, or customer-restricted information unless separately authorized.</label></div><details class="sign-in-box"><summary>Sign in for AI access</summary><div class="form-grid"><label class="field"><span>Email</span><input type="email" id="ai-email" autocomplete="username"></label><label class="field"><span>Password</span><input type="password" id="ai-password" autocomplete="current-password"></label></div><button class="button secondary" type="button" data-ai="sign-in">Sign in</button><span id="ai-auth-state"></span></details><div class="modal-actions"><button class="button secondary" type="button" data-ai="back">Back</button><button class="button primary" type="button" data-ai="send">Send selected facts to AI</button></div>`;
+  workflow.innerHTML = `<p class="modal-intro">Inspect the exact JSON below. These are the selected <strong>${h(aiPreview.stage)}</strong> facts. Nothing is sent until you sign in, make all three acknowledgments, and select Send.</p><pre class="payload-preview">${h(JSON.stringify(aiPreview.payload, null, 2))}</pre><div class="ack-list"><label><input type="checkbox" id="ack-payload"> I reviewed this exact payload.</label><label><input type="checkbox" id="ack-data"> It contains approved unclassified, non-CUI information only.</label><label><input type="checkbox" id="ack-restricted"> It contains no classified, export-controlled, proprietary, or customer-restricted information.</label></div><details class="sign-in-box"><summary>Sign in for AI access</summary><div class="form-grid"><label class="field"><span>Email</span><input type="email" id="ai-email" autocomplete="username"></label><label class="field"><span>Password</span><input type="password" id="ai-password" autocomplete="current-password"></label></div><button class="button secondary" type="button" data-ai="sign-in">Sign in</button><span id="ai-auth-state"></span></details><div class="modal-actions"><button class="button secondary" type="button" data-ai="back">Back</button><button class="button primary" type="button" data-ai="send">Send selected facts to AI</button></div>`;
 }
 
 function getSupabase() {
@@ -777,6 +1405,13 @@ document.addEventListener("click", event => {
   const routeButton = event.target.closest("[data-route-button]"); if (routeButton) { location.hash = routeButton.dataset.routeButton; return; }
   const action = event.target.closest("[data-action]")?.dataset.action;
   if (action === "new-solution") showNewSolution();
+  if (action === "quick-capture") showQuickCapture();
+  if (action === "open-capture-inbox") showCaptureInbox();
+  if (action === "open-files") { clearIngestionSession(); showFileIntake(); }
+  if (action === "meeting-capture") {
+    if (document.querySelector("#file-intake-workflow")) clearIngestionSession();
+    showMeetingIntake({ fresh: true });
+  }
   if (action === "open-tools") showTools();
   if (action === "open-guide") showGuide();
   if (action === "open-recovery") showRecovery();
@@ -796,7 +1431,22 @@ document.addEventListener("click", event => {
   const deletion = event.target.closest("[data-delete]"); if (deletion && confirm("Delete this record? A recovery point will be created first.")) deleteRecord(deletion.dataset.delete, deletion.dataset.id);
   const candidate = event.target.closest("[data-candidate]")?.dataset.candidate; if (candidate) { selectedCandidateId = candidate; render(); }
   const view = event.target.closest("[data-view]")?.dataset.view; if (view) { selectedViewId = view; selectedElementId = ""; render(); }
-  const restore = event.target.closest("[data-restore]")?.dataset.restore; if (restore) { try { workspace = restoreSnapshot(workspace, restore); saveNow(); closeModal(); render(); toast("Recovery point restored.", "ok"); } catch (error) { toast(error.message, "error"); } }
+  const restore = event.target.closest("[data-restore]")?.dataset.restore; if (restore) { try { workspace = restoreSnapshot(workspace, restore); saveNow(); captureInbox = loadCaptureInbox(workspace.activeSolutionId); closeModal(); render(); toast("Recovery point restored.", "ok"); } catch (error) { toast(error.message, "error"); } }
+  if (event.target.closest("[data-capture-commit]")) commitCaptureSelection();
+  if (event.target.closest("[data-capture-clear]")) clearCompletedCaptures();
+  if (event.target.closest("[data-capture-export]")) download(`solution-capture-inbox-${slug(activeSolution().name)}.json`, JSON.stringify(captureInbox, null, 2), "application/json;charset=utf-8");
+  if (event.target.closest("[data-intake-add]")) addIntakeToCaptureInbox();
+  if (event.target.closest("[data-meeting-add-selection]")) addMeetingExcerpt();
+  if (event.target.closest("[data-meeting-add-summary]")) addMeetingExcerpt({ wholeSummary: true });
+  if (event.target.closest("[data-meeting-stage]")) stageMeetingExcerpts();
+  const removeMeeting = event.target.closest("[data-meeting-remove]")?.dataset.meetingRemove;
+  if (removeMeeting) removeMeetingExcerpt(removeMeeting);
+  const duplicateIntake = event.target.closest("[data-intake-duplicate]")?.dataset.intakeDuplicate;
+  if (duplicateIntake) {
+    const source = ingestionSession.find(item => item.id === duplicateIntake && !item.error);
+    if (source) ingestionSession.splice(ingestionSession.indexOf(source) + 1, 0, { ...source, id: makeId("intake"), selected: true });
+    showFileIntake();
+  }
   const draftView = event.target.closest("[data-ai-draft-view]")?.dataset.aiDraftView; if (draftView) showAiDraft(draftView);
   const draftStatus = event.target.closest("[data-ai-draft-status]"); if (draftStatus) setAiDraftStatus(draftStatus.dataset.id, draftStatus.dataset.aiDraftStatus);
   const tool = event.target.closest("[data-tool]")?.dataset.tool;
@@ -817,6 +1467,28 @@ document.addEventListener("submit", event => {
   event.preventDefault();
   const form = event.target;
   const data = new FormData(form);
+  if (form.id === "quick-capture-form") {
+    const target = String(data.get("target") || "evidence");
+    const title = String(data.get("title") || "").trim();
+    const detail = String(data.get("detail") || "").trim();
+    const source = String(data.get("source") || "").trim();
+    if (!title) { toast("Add a short title or statement before saving the capture.", "error"); return; }
+    const next = structuredClone(captureInbox);
+    try {
+      const provenance = createCaptureProvenance(next.solutionId, { sourceTitle: source || "Quick capture", locator: source || "Quick capture" });
+      const item = createCaptureItem(next.solutionId, { provenanceId: provenance.id, target, excerpt: detail, fields: fieldsForCapture(target, title, detail, source) });
+      next.provenance.push(provenance);
+      next.items.push(item);
+      next.updatedAt = new Date().toISOString();
+    } catch (error) {
+      toast(`Capture was not prepared: ${error.message}`, "error");
+      return;
+    }
+    if (!persistCaptureInbox(next)) return;
+    toast("Capture saved for review. No workspace record was changed.", "ok");
+    if (event.submitter?.value === "continue") showQuickCapture();
+    else showCaptureInbox();
+  }
   if (form.id === "hot-button-ingest-form") {
     const source = String(data.get("source") || "").trim();
     const confidence = String(data.get("confidence") || "Medium");
@@ -828,7 +1500,7 @@ document.addEventListener("submit", event => {
     toast(`${titles.length} customer hot button${titles.length === 1 ? "" : "s"} ingested for validation and traceability.`, "ok");
   }
   if (form.id === "new-solution-form") {
-    const result = addBlankSolution(workspace, data.get("name")); workspace = pushSnapshot(result.workspace, "Created solution"); saveNow(); closeModal(); route = "discover"; location.hash = "discover"; render();
+    const result = addBlankSolution(workspace, data.get("name")); workspace = pushSnapshot(result.workspace, "Created solution"); saveNow(); captureInbox = loadCaptureInbox(workspace.activeSolutionId); closeModal(); route = "discover"; location.hash = "discover"; render();
   }
   if (form.id === "new-view-form") {
     const view = createArchitectureView(workspace.activeSolutionId, data.get("template")); view.name = String(data.get("name")).trim(); commit(next => next.architectureViews.push(view), { snapshot: "Before creating architecture view" }); selectedViewId = view.id; closeModal(); render();
@@ -849,6 +1521,42 @@ document.addEventListener("submit", event => {
 document.addEventListener("input", event => {
   const node = event.target;
   const solution = activeSolution();
+  if (node.matches("[data-meeting-field]") && meetingSession) {
+    const meetingField = node.dataset.meetingField;
+    const changed = meetingSession[meetingField] !== node.value;
+    meetingSession[meetingField] = node.value;
+    if (meetingField === "text") {
+      if (changed) discardMeetingExcerpts();
+      const count = document.querySelector("#meeting-text-count");
+      if (count) count.textContent = node.value.length.toLocaleString();
+      const wholeSummary = document.querySelector("[data-meeting-add-summary]");
+      if (wholeSummary) wholeSummary.disabled = node.value.trim().length === 0 || node.value.trim().length > MAX_MEETING_EXCERPT_CHARS;
+    }
+  }
+  if (node.matches("[data-capture-title]")) {
+    updateCaptureItem(node.dataset.captureId, item => {
+      if (item.target === "assumption") item.fields.statement = node.value;
+      else if (item.target === "ignore") item.fields.reason = node.value;
+      else item.fields.title = node.value;
+    });
+  }
+  if (node.matches("[data-capture-detail]")) {
+    updateCaptureItem(node.dataset.captureId, item => {
+      item.excerpt = node.value;
+      if (item.target === "hotButton") item.fields.detail = node.value;
+      if (item.target === "evidence") item.fields.notes = node.value;
+      if (item.target === "winTheme") item.fields.customerValue = node.value;
+      if (item.target === "decision") item.fields.rationale = node.value;
+    });
+  }
+  if (node.matches("[data-intake-title], [data-intake-excerpt], [data-intake-locator]")) {
+    const item = ingestionSession.find(candidate => candidate.id === node.dataset.intakeId);
+    if (item) {
+      if (node.matches("[data-intake-title]")) item.title = node.value;
+      if (node.matches("[data-intake-excerpt]")) item.excerpt = node.value;
+      if (node.matches("[data-intake-locator]")) item.locator = node.value;
+    }
+  }
   if (node.dataset.solutionField) { solution[node.dataset.solutionField] = node.value; scheduleSave(); if (node.dataset.solutionField === "name") document.querySelector(".title-block p").textContent = `${node.value} · ${solution.stage}`; }
   if (node.dataset.solutionNested) { const [group, fieldName] = node.dataset.solutionNested.split("."); solution[group][fieldName] = node.value; scheduleSave(); }
   if (node.dataset.recordCollection && node.dataset.recordField && !node.multiple) { const item = record(node.dataset.recordCollection, node.dataset.recordId); if (item) { item[node.dataset.recordField] = node.value; scheduleSave(); } }
@@ -858,7 +1566,80 @@ document.addEventListener("input", event => {
 
 document.addEventListener("change", event => {
   const node = event.target;
-  if (node.id === "solution-select") { if (dirty && !saveNow()) return; workspace.activeSolutionId = node.value; selectedCandidateId = selectedViewId = selectedElementId = ""; saveNow(); render(); }
+  if (node.id === "theme-select") { setThemePreference(node.value); return; }
+  if (node.id === "meeting-ack" && meetingSession) {
+    meetingSession.acknowledged = node.checked;
+    const textarea = document.querySelector("#meeting-source-text");
+    if (textarea) textarea.disabled = !node.checked;
+    const add = document.querySelector("[data-meeting-add-selection]");
+    if (add) add.disabled = !node.checked;
+    const wholeSummary = document.querySelector("[data-meeting-add-summary]");
+    if (wholeSummary) wholeSummary.disabled = !node.checked || meetingSession.text.trim().length === 0 || meetingSession.text.trim().length > MAX_MEETING_EXCERPT_CHARS;
+    return;
+  }
+  if (node.matches('[data-meeting-field="sourceType"]') && meetingSession) {
+    discardMeetingExcerpts("The meeting content type changed. Select the needed excerpts again before staging.");
+    meetingSession.sourceType = node.value;
+    showMeetingIntake({ focusSelector: '[data-meeting-field="sourceType"]' });
+    return;
+  }
+  if (node.matches("[data-meeting-segment]") && meetingSession) {
+    meetingSession.missionSegments = [...document.querySelectorAll("[data-meeting-segment]:checked")].map(input => input.value);
+    return;
+  }
+  if (node.id === "intake-ack") {
+    ingestionAcknowledged = node.checked;
+    const input = document.querySelector("#source-files");
+    if (input) input.disabled = !ingestionAcknowledged;
+    return;
+  }
+  if (node.id === "source-files") {
+    processSourceFiles(node.files || []).catch(error => toast(error.message, "error"));
+    return;
+  }
+  if (node.matches("[data-capture-target]")) { changeCaptureTarget(node.dataset.captureId, node.value); return; }
+  if (node.matches("[data-capture-field]")) {
+    updateCaptureItem(node.dataset.captureId, item => { item.fields[node.dataset.captureField] = node.value; });
+    return;
+  }
+  if (node.matches("[data-intake-select]")) {
+    const item = ingestionSession.find(candidate => candidate.id === node.dataset.intakeId);
+    if (item) item.selected = node.checked;
+    return;
+  }
+  if (node.matches("[data-intake-target]")) {
+    const item = ingestionSession.find(candidate => candidate.id === node.dataset.intakeId);
+    if (item) {
+      item.target = node.value;
+      const card = node.closest("[data-intake-card]");
+      const title = card?.querySelector("[data-intake-title]");
+      const limit = captureTitleMax(item.target);
+      if (title) title.maxLength = limit;
+      const hint = card?.querySelector("[data-intake-title-limit]");
+      if (hint) hint.textContent = `Maximum ${limit.toLocaleString()} characters for ${CAPTURE_TARGET_LABELS[item.target].toLowerCase()}.`;
+    }
+    return;
+  }
+  if (node.matches("[data-intake-section]")) {
+    const item = ingestionSession.find(candidate => candidate.id === node.dataset.intakeId);
+    if (item) {
+      const index = Number(node.value);
+      item.sectionIndex = index;
+      if (index < 0) { item.excerpt = item.result.text.slice(0, 6000); item.locator = item.result.locator; }
+      else {
+        const section = item.result.sections[index];
+        if (section) { item.excerpt = item.result.text.slice(section.start, section.end).slice(0, 6000); item.locator = section.locator; }
+      }
+      showFileIntake();
+    }
+    return;
+  }
+  if (node.matches("[data-mission-segment]")) {
+    activeSolution().missionSegments = [...document.querySelectorAll("[data-mission-segment]:checked")].map(input => input.value);
+    scheduleSave();
+    return;
+  }
+  if (node.id === "solution-select") { if (dirty && !saveNow()) return; workspace.activeSolutionId = node.value; selectedCandidateId = selectedViewId = selectedElementId = ""; saveNow(); captureInbox = loadCaptureInbox(node.value); render(); }
   if (node.id === "workspace-import") importWorkspaceFile(node.files?.[0]);
   if (node.dataset.solutionField) { const solution = activeSolution(); solution[node.dataset.solutionField] = node.value; scheduleSave(); if (node.tagName === "SELECT") render(); }
   if (node.dataset.recordCollection && node.dataset.recordField && node.tagName === "SELECT" && !node.multiple) { const item = record(node.dataset.recordCollection, node.dataset.recordId); if (item) { item[node.dataset.recordField] = node.value; scheduleSave(); render(); } }
@@ -872,12 +1653,37 @@ document.addEventListener("change", event => {
 });
 
 window.addEventListener("hashchange", () => { route = readRoute(); document.querySelector("#sidebar")?.classList.remove("open"); render(); document.querySelector("#workspace")?.focus(); });
-window.addEventListener("storage", event => { if (event.key === STORAGE_KEY) toast("This workspace changed in another tab. Export your work, then reload before continuing.", "error"); });
+window.addEventListener("storage", event => {
+  if (event.key === THEME_KEY) {
+    themePreference = THEME_VALUES.has(event.newValue) ? event.newValue : "system";
+    applyTheme(themePreference);
+  }
+  if (event.key === STORAGE_KEY) toast("This workspace changed in another tab. Export your work, then reload before continuing.", "error");
+  if (event.key === captureStorageKey(workspace.activeSolutionId)) toast("This solution's capture inbox changed in another tab. Reload before reviewing or committing it.", "error");
+});
 window.addEventListener("beforeunload", event => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
 document.addEventListener("keydown", event => {
+  if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "q") { event.preventDefault(); showQuickCapture(); return; }
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && event.target.closest("#quick-capture-form")) {
+    event.preventDefault();
+    event.target.closest("#quick-capture-form").querySelector('button[name="next"][value="continue"]')?.click();
+    return;
+  }
   if (event.key === "Escape" && document.querySelector("#modal-root .modal")) { event.preventDefault(); closeModal(); return; }
   trapModalFocus(event);
 });
+document.addEventListener("dragover", event => {
+  if (event.target.closest("#source-drop-zone")) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }
+});
+document.addEventListener("drop", event => {
+  if (!event.target.closest("#source-drop-zone")) return;
+  event.preventDefault();
+  processSourceFiles(event.dataTransfer?.files || []).catch(error => toast(error.message, "error"));
+});
+
+const handleSystemThemeChange = () => { if (themePreference === "system") applyTheme(themePreference); };
+if (typeof systemTheme.addEventListener === "function") systemTheme.addEventListener("change", handleSystemThemeChange);
+else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(error => console.warn("Offline shell registration failed.", error));
 render();

@@ -201,6 +201,19 @@ test("modal focus is trapped and restored to the invoking control", async ({ pag
   await expect(trigger).toBeFocused();
 });
 
+test("the informational Guide dialog receives focus and links to the rendered guide", async ({ page }) => {
+  await gotoFresh(page, "dashboard");
+  const trigger = page.getByRole("button", { name: "Guide", exact: true });
+  await trigger.focus();
+  await trigger.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "Solution Architect Workbench guide" });
+  await expect(dialog.getByRole("button", { name: "Close dialog" })).toBeFocused();
+  await expect(dialog.getByRole("link", { name: /complete task-oriented user guide/i })).toHaveAttribute("href", "./guide.html");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+});
+
 test("diagram keyboard movement, accessible data, and decision-package downloads remain deterministic", async ({ page }) => {
   await gotoFresh(page, "architect");
   const element = page.locator("#diagram-canvas [data-element-id]").first();
@@ -232,7 +245,7 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
     });
   });
   const popupPromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Print / PDF", exact: true }).click();
+  await page.getByRole("button", { name: "Print / Save PDF", exact: true }).click();
   const printPage = await popupPromise;
   await printPage.waitForLoadState("domcontentloaded");
   await expect(printPage.locator(".marking")).toContainText("NO CUI / CLASSIFIED DATA");

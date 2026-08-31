@@ -1,13 +1,24 @@
-const CACHE_NAME = "solution-architect-workbench-v2";
+const CACHE_NAME = "solution-architect-workbench-v4";
 const SHELL = [
   "./",
   "./index.html",
+  "./guide.html",
+  "./guide.js",
   "./styles.css",
   "./print-package.css",
   "./engine.js",
+  "./capture.js",
+  "./ingestion.js",
+  "./ingestion-worker.js",
   "./app.js",
   "./icon.svg",
   "./og-card.png",
+  "./vendor/pdf-6.3.289.min.mjs",
+  "./vendor/pdf.worker-6.3.289.min.mjs",
+  "./vendor/PDFJS-LICENSE.txt",
+  "./vendor/README.md",
+  "../black-hat-agent/vendor/xlsx.full.min.js",
+  "../black-hat-agent/vendor/SHEETJS-LICENSE.txt",
   "../assets/vendor/supabase-js-2.110.2.umd.js"
 ];
 
@@ -31,7 +42,7 @@ self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(request)
       .then(response => {
-        if (response.ok && ["document", "script", "style", "image"].includes(request.destination)) {
+        if (response.ok && ["document", "script", "style", "image", "worker"].includes(request.destination)) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
         }

@@ -7,3 +7,9 @@ const destination = resolve(root, "assets/vendor/supabase-js-2.110.2.umd.js");
 await mkdir(dirname(destination), { recursive:true });
 await copyFile(resolve(root, "node_modules/@supabase/supabase-js/dist/umd/supabase.js"), destination);
 await copyFile(resolve(root, "node_modules/@supabase/supabase-js/LICENSE"), resolve(root, "assets/vendor/SUPABASE-LICENSE.txt"));
+
+const pdfDestination = resolve(root, "solutions-architect/vendor");
+await mkdir(pdfDestination, { recursive: true });
+await copyFile(resolve(root, "node_modules/pdfjs-dist/build/pdf.min.mjs"), resolve(pdfDestination, "pdf-6.3.289.min.mjs"));
+await copyFile(resolve(root, "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"), resolve(pdfDestination, "pdf.worker-6.3.289.min.mjs"));
+await copyFile(resolve(root, "node_modules/pdfjs-dist/LICENSE"), resolve(pdfDestination, "PDFJS-LICENSE.txt"));

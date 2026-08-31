@@ -23,6 +23,15 @@ solution workspace instead of turning the work into a calendar or task schedule.
   Transition** lifecycle while the command view surfaces unscheduled obligations
 - manage multiple isolated solutions with automatic local saves, bounded recovery
   points, duplication, and validated full-workspace JSON import/export
+- classify each solution against one or more of the six company mission segments and
+  carry that alignment into decision-package and reviewed AI outputs
+- capture approved facts quickly, then classify them through a separate per-solution
+  Review inbox before they can become authoritative workspace records
+- paste permitted meeting transcripts or summaries, tag them to the applicable
+  mission segments, and preserve only deliberately selected evidence excerpts
+- open bounded TXT, Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS, XLSX, ODS, PNG, JPEG,
+  and WebP files locally; only reviewed excerpts/metadata persist, images use manual
+  captions rather than OCR, and original binary bytes are never stored or uploaded
 - ingest customer hot buttons from a bounded pasted list, preserve source and
   confidence, validate them separately, and trace them into requirements
 - build win themes that connect a customer priority to value, a differentiator, and
@@ -34,19 +43,21 @@ solution workspace instead of turning the work into a calendar or task schedule.
   deployment/transition views with accessible tables and SVG/PNG export
 - generate a decision package as Markdown, standalone HTML, or a print-ready browser
   view for PDF output
+- use System, Light, or Dark presentation without changing workspace content
 - optionally send an exact, user-reviewed subset of approved workspace facts to the
   authenticated `solution-assist` Edge Function; AI responses remain drafts and cannot
   overwrite authored records
 
 Workspace content stays in the current browser unless the user downloads an export or
 explicitly approves an AI payload. The public site and browser storage are not an
-authorization boundary: use only approved unclassified, non-CUI information and do not
-enter classified, export-controlled, proprietary, or customer-restricted content unless
-the organization has separately authorized that handling.
+authorization boundary: the published release is approved-unclassified/non-CUI only.
+Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted
+content.
 
 Start locally from the repository root with `python -m http.server 8000`, then open
 `http://localhost:8000/solutions-architect/`. See the app's
-[README](solutions-architect/README.md), [user guide](solutions-architect/docs/USER_GUIDE.md),
+[README](solutions-architect/README.md), [rendered user guide](solutions-architect/guide.html),
+[guide source](solutions-architect/docs/USER_GUIDE.md),
 [architecture](solutions-architect/docs/ARCHITECTURE.md),
 [deployment guide](solutions-architect/docs/DEPLOYMENT.md), and
 [security guide](solutions-architect/docs/SECURITY.md).
@@ -682,7 +693,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
-| `solutions-architect/` | Browser-local **Solution Architect Workbench** for mission discovery, traceable requirements, Technology Assessment, architecture views, technical assurance, proposal inputs, transition planning, and decision-package export, with optional reviewed AI assistance. |
+| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, Light/Dark/System themes, and optional reviewed AI assistance. |
 | `black-hat-agent/` | Public, no-sign-in Black Hat Agent competitive-analysis workspace with local persistence, Excel/CSV and JSON import, evidence and competitor tracking, accessible native charts and diagrams, versioned report visuals, multi-format exports, recovery, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |

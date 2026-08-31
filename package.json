@@ -11,9 +11,10 @@
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
-    "@supabase/supabase-js": "2.110.2"
+    "@supabase/supabase-js": "2.110.2",
+    "pdfjs-dist": "6.3.289"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13.0"
   }
 }

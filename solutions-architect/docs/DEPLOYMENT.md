@@ -8,6 +8,14 @@ The repository's Pages workflow publishes the application from the default branc
 
 The workflow copies `solutions-architect/` recursively into the Pages artifact. The
 frontend needs no build command, cloud project database, or server-rendered runtime.
+Pinned PDF and spreadsheet parsing assets are repository-owned and published with the
+static site; production source ingestion does not depend on a CDN.
+
+Light/Dark/System themes, Quick Capture, the per-solution Review inbox, company
+mission segments, and local source extraction are frontend-only capabilities. They
+add no cloud upload endpoint, Supabase table, storage bucket, migration, or new Edge
+Function. Original selected files remain in the browser intake session and are never
+part of the deploy artifact or backend request.
 
 ## Optional AI backend
 
@@ -51,6 +59,7 @@ From the repository root:
 
 ```powershell
 npm ci
+npm run build:vendor
 python -m http.server 8000
 ```
 
@@ -61,8 +70,11 @@ Run focused checks:
 ```powershell
 node --check solutions-architect/app.js
 node --check solutions-architect/engine.js
-node --test tests/solutions-architect.test.mjs tests/solution-assist-contract.test.mjs
-npm run test:browser -- tests/browser/solutions-architect.spec.mjs
+node --check solutions-architect/capture.js
+node --check solutions-architect/ingestion.js
+node --check solutions-architect/ingestion-worker.js
+node --test tests/solutions-architect.test.mjs tests/solutions-architect-capture.test.mjs tests/solutions-architect-ingestion.test.mjs tests/solutions-architect-mission-segments.test.mjs tests/solutions-architect-meeting-evidence.test.mjs tests/solution-assist-contract.test.mjs
+npm run test:browser -- tests/browser/solutions-architect.spec.mjs tests/browser/solutions-architect-theme.spec.mjs tests/browser/solutions-architect-mission-segments.spec.mjs tests/browser/solutions-architect-capture-ingestion.spec.mjs tests/browser/solutions-architect-meeting-capture.spec.mjs
 ```
 
 Then run the complete pre-release suites:
@@ -82,22 +94,44 @@ npm run test:browser
 5. Create and restore a recovery point; force a storage failure and confirm a visible
    error rather than a false success.
 6. Complete and compare assessments with complete, partial, and unknown scores.
-7. Ingest sourced customer hot buttons, reject duplicates, trace them to requirements,
+7. Select multiple company mission segments; confirm they persist, export in the
+   decision package, appear in reviewed AI payload scope, and stay isolated by
+   solution.
+8. Select System, Light, and Dark themes. Confirm the preference persists separately
+   from workspace content and System responds to operating-system preference changes.
+9. Use Quick Capture and the Review inbox across two solutions. Confirm no capture
+   crosses solutions, no item changes the workspace before explicit commit, dependent
+   records commit atomically, and failed validation/storage leaves current data in
+   place.
+10. Open supported TXT, Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS, XLSX, ODS, PNG,
+    JPEG, and WebP sources. Confirm local preview, manual image captioning with no OCR,
+    explicit excerpt review, and no network request or persisted binary bytes.
+11. Reject unsupported, renamed, malformed, encrypted, macro-enabled, oversized, and
+    ZIP-bomb-like sources. Exercise the 8 MB/file, 10 file/25 MB session, 2,000 entry,
+    20 MB entry, 50 MB expanded, 200 page, 200,000 character, and 20-second bounds.
+12. Paste a synthetic meeting transcript and summary. Tag each to one or more mission
+    segments, stage only highlighted/short-summary excerpts, and confirm the complete
+    text never appears in localStorage, cache storage, workspace export, logs, or a
+    network request. Commit an excerpt and confirm its type, date, participants,
+    segments, and locator appear in evidence and the decision package.
+13. Ingest sourced customer hot buttons, reject duplicates, trace them to requirements,
    and confirm unvalidated or untraced signals remain visible obligations.
-8. Create a win theme linked to customer signals and evidence; confirm missing
+14. Create a win theme linked to customer signals and evidence; confirm missing
    customer value, discriminator, proof, or evidence remains a proposal obligation.
-9. Create every architecture template; verify drag, keyboard movement, auto-layout,
+15. Create every architecture template; verify drag, keyboard movement, auto-layout,
    accessible tables, and SVG/PNG downloads.
-10. Verify Markdown and standalone HTML downloads, then open the separate print view
+16. Verify Markdown and standalone HTML downloads, then open the separate print view
     and create a PDF with the browser print workflow.
-11. Test current desktop and narrow-phone layouts, keyboard-only operation, reduced
-   motion, long content, and page-level horizontal overflow.
-12. Mock AI unauthenticated, unauthorized, quota, timeout, malformed-output, and
+17. Test current desktop and narrow-phone layouts, keyboard-only operation, Quick
+   Capture's shortcut, touch intake/review, reduced motion, long content, and
+   page-level horizontal overflow.
+18. Mock AI unauthenticated, unauthorized, quota, timeout, malformed-output, and
    unavailable-service responses. Confirm payload cancellation sends nothing and an
-   accepted result remains a draft.
-13. With an approved production account, send one safe synthetic payload and confirm
+   accepted result remains a draft. Confirm selected mission segments appear and
+   source binaries never do.
+19. With an approved production account, send one safe synthetic payload and confirm
    origin, allowlist, quota metadata, citations, and content-free operational logs.
-14. After merging to `main`, wait for **Deploy to GitHub Pages** and run the production
+20. After merging to `main`, wait for **Deploy to GitHub Pages** and run the production
    smoke checks against the final URL and Application Library link.
 
 The existing workflow does not publish feature-branch preview environments. Validate

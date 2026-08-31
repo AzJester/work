@@ -13,6 +13,45 @@ export const STAGES = Object.freeze([
   "Transition"
 ]);
 
+export const MISSION_SEGMENTS = Object.freeze([
+  Object.freeze({
+    name: "Integrated Air and Missile Defense",
+    description: "Integrate capabilities that defend the homeland, joint force, and allies against ballistic, cruise, hypersonic, unmanned-aircraft, and related air and missile threats."
+  }),
+  Object.freeze({
+    name: "Lifecycle Management and Cyber Warfare",
+    description: "Integrate weapon-system testing and lifecycle management with offensive and defensive cyberspace operations and cryptologic capabilities."
+  }),
+  Object.freeze({
+    name: "Layered Defense, Autonomous Warfare & Integrated Fires",
+    description: "Synchronize detection, identification, tracking, and defeat capabilities with multi-domain autonomous systems."
+  }),
+  Object.freeze({
+    name: "Space Warfighting",
+    description: "Employ military spacepower to sustain freedom of movement and action in, from, and to space for the United States and its allies while denying the same to adversaries."
+  }),
+  Object.freeze({
+    name: "Critical Infrastructure Protection",
+    description: "Integrate capabilities to identify, assess, prevent, detect, respond to, mitigate, and recover from threats and hazards to the U.S. homeland."
+  }),
+  Object.freeze({
+    name: "Exploration and Lunar Presence",
+    description: "Integrate transportation, power, communications, mobility, habitation, autonomy, and in-situ resources for an enduring human and robotic presence on and around the Moon."
+  })
+]);
+
+const MISSION_SEGMENT_NAMES = new Set(MISSION_SEGMENTS.map(segment => segment.name));
+
+export const EVIDENCE_SOURCE_TYPES = Object.freeze([
+  "Meeting transcript",
+  "Meeting summary",
+  "Document",
+  "Observation",
+  "Other"
+]);
+
+const EVIDENCE_SOURCE_TYPE_NAMES = new Set(EVIDENCE_SOURCE_TYPES);
+
 export const DEFAULT_CRITERIA = Object.freeze([
   ["mission-fit", "Mission fit", 14],
   ["performance", "Performance", 10],
@@ -116,6 +155,10 @@ const RECORD_FIELD_TYPES = Object.freeze({
   aiDrafts: { action: "string", stage: "string", title: "string", status: "string", createdAt: "string", citationIds: "id-array", result: "object", requestId: "string", model: "string" }
 });
 
+const OPTIONAL_RECORD_FIELD_TYPES = Object.freeze({
+  evidence: Object.freeze({ sourceType: "string", meetingDate: "string", participants: "array", missionSegments: "array" })
+});
+
 const AI_ACTIONS = Object.freeze(["draft_artifact", "critique_artifact", "find_gaps", "generate_review_questions", "propose_architecture_view"]);
 const AI_ARTIFACT_TYPES = Object.freeze(["mission_brief", "conops", "technical_approach", "discriminators", "compliance_trace", "estimate_assumptions", "delivery_commitments", "trade_study", "decision_brief", "transition_plan", "review_package"]);
 const AI_FINDING_SEVERITIES = Object.freeze(["critical", "high", "medium", "low", "info"]);
@@ -176,6 +219,7 @@ export function createBlankSolution(name = "Untitled solution") {
     name: String(name).trim().slice(0, 180) || "Untitled solution",
     customer: "",
     domain: "Defense capability integration",
+    missionSegments: [],
     stage: "Discover",
     status: "Working",
     decision: "",
@@ -240,6 +284,7 @@ function seedSyntheticSolution(workspace) {
     name: "Expeditionary Sensor Node Upgrade",
     customer: "Synthetic joint mission partner",
     domain: "Mission systems and platform integration",
+    missionSegments: ["Layered Defense, Autonomous Warfare & Integrated Fires"],
     stage: "Assess",
     status: "Working",
     decision: "Select the modular sensor and edge package for an integration demonstration.",
@@ -487,22 +532,71 @@ function validateFieldType(value, type, path, errors) {
   else if (type === "id-array") validateIdArray(value, path, errors);
 }
 
-function validateRequiredFields(value, fieldTypes, path, errors, commonKeys = []) {
-  const allowedKeys = new Set([...commonKeys, ...Object.keys(fieldTypes)]);
+function validateRequiredFields(value, fieldTypes, path, errors, commonKeys = [], optionalFieldTypes = {}) {
+  const allowedKeys = new Set([...commonKeys, ...Object.keys(fieldTypes), ...Object.keys(optionalFieldTypes)]);
   validateKnownKeys(value, allowedKeys, path, errors);
   for (const [field, type] of Object.entries(fieldTypes)) {
     if (!Object.hasOwn(value, field)) errors.push(`${path}.${field} is required.`);
     else validateFieldType(value[field], type, `${path}.${field}`, errors);
   }
+  for (const [field, type] of Object.entries(optionalFieldTypes)) {
+    if (Object.hasOwn(value, field)) validateFieldType(value[field], type, `${path}.${field}`, errors);
+  }
+}
+
+function validCalendarDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function validateEvidenceMetadata(record, path, errors) {
+  if (Object.hasOwn(record, "sourceType") && !EVIDENCE_SOURCE_TYPE_NAMES.has(record.sourceType)) {
+    errors.push(`${path}.sourceType is unsupported.`);
+  }
+  if (Object.hasOwn(record, "meetingDate") && record.meetingDate !== "" && !validCalendarDate(record.meetingDate)) {
+    errors.push(`${path}.meetingDate must use a valid YYYY-MM-DD date or be empty.`);
+  }
+  if (Array.isArray(record.participants)) {
+    if (record.participants.length > 100) errors.push(`${path}.participants exceeds 100 people.`);
+    record.participants.forEach((participant, index) => {
+      if (typeof participant !== "string") errors.push(`${path}.participants[${index}] must be a string.`);
+      else if (!participant.trim()) errors.push(`${path}.participants[${index}] must not be empty.`);
+      else if (participant.length > 300) errors.push(`${path}.participants[${index}] exceeds 300 characters.`);
+    });
+  }
+  if (Array.isArray(record.missionSegments)) {
+    if (record.missionSegments.length > MISSION_SEGMENTS.length) errors.push(`${path}.missionSegments has too many values.`);
+    const seen = new Set();
+    record.missionSegments.forEach((segment, index) => {
+      if (typeof segment !== "string" || !MISSION_SEGMENT_NAMES.has(segment)) errors.push(`${path}.missionSegments[${index}] is unsupported.`);
+      else if (seen.has(segment)) errors.push(`${path}.missionSegments[${index}] is duplicated.`);
+      seen.add(segment);
+    });
+  }
 }
 
 function validateSolutionShape(solution, path, errors) {
   const stringFields = ["name", "customer", "domain", "stage", "status", "decision", "description", "classification", "createdAt", "updatedAt"];
-  const allowedKeys = new Set(["id", ...stringFields, "mission", "proposal"]);
+  const allowedKeys = new Set(["id", ...stringFields, "missionSegments", "mission", "proposal"]);
   validateKnownKeys(solution, allowedKeys, path, errors);
   for (const field of stringFields) {
     if (!Object.hasOwn(solution, field)) errors.push(`${path}.${field} is required.`);
     else if (typeof solution[field] !== "string") errors.push(`${path}.${field} must be a string.`);
+  }
+  // missionSegments was added without changing the v1 envelope so saved v1
+  // workspaces remain importable. New workspaces always include the field.
+  if (Object.hasOwn(solution, "missionSegments")) {
+    if (!Array.isArray(solution.missionSegments)) errors.push(`${path}.missionSegments must be an array.`);
+    else {
+      if (solution.missionSegments.length > MISSION_SEGMENTS.length) errors.push(`${path}.missionSegments has too many values.`);
+      const seen = new Set();
+      for (const [index, segment] of solution.missionSegments.entries()) {
+        if (typeof segment !== "string" || !MISSION_SEGMENT_NAMES.has(segment)) errors.push(`${path}.missionSegments[${index}] is unsupported.`);
+        else if (seen.has(segment)) errors.push(`${path}.missionSegments[${index}] is duplicated.`);
+        seen.add(segment);
+      }
+    }
   }
   for (const [field, nestedFields] of [["mission", MISSION_FIELDS], ["proposal", PROPOSAL_FIELDS]]) {
     if (!isObject(solution[field])) {
@@ -530,7 +624,8 @@ function validateRecordShape(record, collectionName, path, errors) {
     errors.push(`${path} must be an object.`);
     return;
   }
-  validateRequiredFields(record, RECORD_FIELD_TYPES[collectionName], path, errors, ["id", "solutionId"]);
+  validateRequiredFields(record, RECORD_FIELD_TYPES[collectionName], path, errors, ["id", "solutionId"], OPTIONAL_RECORD_FIELD_TYPES[collectionName]);
+  if (collectionName === "evidence") validateEvidenceMetadata(record, path, errors);
   if (collectionName === "candidates" && Array.isArray(record.scores)) {
     record.scores.forEach((score, index) => validateScoreShape(score, `${path}.scores[${index}]`, errors));
   }
@@ -751,6 +846,7 @@ export function collectObligations(workspace, solutionId = workspace.activeSolut
   const solution = workspace.solutions.find(record => record.id === solutionId);
   if (!solution) return obligations;
   if (!solution.mission.problem.trim()) add("high", "Discover", "mission-gap", "Mission problem is not defined", solution.id);
+  if (!(solution.missionSegments || []).length) add("low", "Discover", "mission-segment-gap", "Company mission segment is not selected", solution.id);
   if (!solution.decision.trim()) add("medium", "Discover", "decision-gap", "Decision to be supported is not defined", solution.id);
   for (const outcome of scoped(workspace, "outcomes", solutionId)) {
     if (!outcome.verificationMethod?.trim()) add("high", "Shape", "unverified-outcome", `Outcome lacks a verification method: ${outcome.title}`, outcome.id);
@@ -788,7 +884,10 @@ export function collectObligations(workspace, solutionId = workspace.activeSolut
     if (decision.status !== "Approved") add("medium", "Prove", "open-decision", `Decision is unresolved: ${decision.title}`, decision.id);
     if (!decision.evidenceIds?.length) add("low", "Prove", "decision-evidence-gap", `Decision has no evidence link: ${decision.title}`, decision.id);
   }
-  for (const risk of scoped(workspace, "risks", solutionId)) if (risk.status !== "Closed" && !risk.owner?.trim()) add("high", "Prove", "unowned-risk", `Risk has no owner: ${risk.title}`, risk.id);
+  for (const risk of scoped(workspace, "risks", solutionId)) {
+    if (risk.status !== "Closed" && !risk.owner?.trim()) add("high", "Prove", "unowned-risk", `Risk has no owner: ${risk.title}`, risk.id);
+    if (risk.status !== "Closed" && [risk.likelihood, risk.impact].includes("Unknown")) add("medium", "Prove", "unassessed-risk", `Risk likelihood or impact is unknown: ${risk.title}`, risk.id);
+  }
   for (const dependency of scoped(workspace, "dependencies", solutionId)) {
     if (dependency.status !== "Satisfied" && !dependency.owner?.trim()) add("medium", "Prove", "dependency-owner-gap", `Dependency has no owner: ${dependency.title}`, dependency.id);
     if (["At risk", "Blocked"].includes(dependency.status)) add(dependency.status === "Blocked" ? "high" : "medium", "Transition", "dependency-gap", `Dependency is ${dependency.status.toLowerCase()}: ${dependency.title}`, dependency.id);
@@ -928,7 +1027,7 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
     "## Decision",
     markdownText(solution.decision) || "Not yet defined.",
     "## Mission brief",
-    `**Problem.** ${markdownText(solution.mission.problem) || "Not yet defined."}\n\n**Operational context.** ${markdownText(solution.mission.operationalContext) || "Not yet defined."}\n\n**Current state.** ${markdownText(solution.mission.currentState) || "Not yet defined."}\n\n**Desired state.** ${markdownText(solution.mission.desiredState) || "Not yet defined."}\n\n**Constraints.** ${markdownText(solution.mission.constraints) || "Not yet defined."}`,
+    `**Company mission segments.** ${(solution.missionSegments || []).map(markdownText).join("; ") || "Not yet selected."}\n\n**Problem.** ${markdownText(solution.mission.problem) || "Not yet defined."}\n\n**Operational context.** ${markdownText(solution.mission.operationalContext) || "Not yet defined."}\n\n**Current state.** ${markdownText(solution.mission.currentState) || "Not yet defined."}\n\n**Desired state.** ${markdownText(solution.mission.desiredState) || "Not yet defined."}\n\n**Constraints.** ${markdownText(solution.mission.constraints) || "Not yet defined."}`,
     "## Outcomes and verification",
     markdownTable(["Outcome", "Verification method"], outcomes.map(record => [record.title, record.verificationMethod])),
     "## Customer hot buttons and decision drivers",
@@ -964,7 +1063,10 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
     `Overall ${readiness.overall}% · Traceability ${readiness.traceability}% · Evidence ${readiness.evidence}% · Interfaces ${readiness.interfaces}% · Transition ${readiness.transition}%`,
     obligations.length ? obligations.map(item => `- **${markdownText(item.stage)} · ${markdownText(item.severity.toUpperCase())}:** ${markdownText(item.message)}`).join("\n") : "No deterministic gaps detected.",
     "## Source evidence",
-    markdownTable(["Evidence", "Source", "Confidence", "Reference", "Notes"], evidence.map(record => [record.title, record.source, record.confidence, safeHttpUrl(record.url), record.notes]))
+    markdownTable(
+      ["Evidence", "Type", "Meeting date", "Participants", "Mission segments", "Source", "Confidence", "Reference", "Notes"],
+      evidence.map(record => [record.title, record.sourceType || "", record.meetingDate || "", record.participants?.join("; ") || "", record.missionSegments?.join("; ") || "", record.source, record.confidence, safeHttpUrl(record.url), record.notes])
+    )
   ];
   return `${sections.filter(value => value !== "").join("\n\n")}\n`;
 }
@@ -1038,6 +1140,7 @@ export function buildAiPayload(workspace, solutionId, action, stage, options = {
     content: JSON.stringify({
       customer: solution.customer,
       domain: solution.domain,
+      mission_segments: solution.missionSegments || [],
       decision: solution.decision,
       description: solution.description,
       mission: solution.mission,

@@ -60,7 +60,12 @@ capability, capture, internal research, or transition effort.
 
 A successful workspace lets that user:
 
-- explain the mission, decision, and intended operational effect;
+- explain the mission, applicable company mission segments, decision, and intended
+  operational effect;
+- capture approved information quickly, then review and classify it without silently
+  changing authoritative solution records;
+- extract bounded, reviewable content from supported local documents, spreadsheets,
+  and images without retaining the original binary;
 - distinguish sourced customer signals from validated requirements and trace the
   signals that materially shape the solution;
 - trace material requirements to sources, acceptance methods, and architecture;
@@ -88,6 +93,77 @@ A successful workspace lets that user:
 - Export the complete versioned JSON workspace and validate an entire import before
   replacing the active in-memory workspace. Report any final browser-storage failure
   visibly rather than claiming a successful save.
+- Offer System, Light, and Dark themes as a separate per-browser preference that does
+  not alter or travel with workspace content.
+
+### Company mission segments
+
+- Provide a multi-select classification for Integrated Air and Missile Defense;
+  Lifecycle Management and Cyber Warfare; Layered Defense, Autonomous Warfare &
+  Integrated Fires; Space Warfighting; Critical Infrastructure Protection; and
+  Exploration and Lunar Presence.
+- Require only supported segment values and keep selections solution-scoped.
+- Carry the selections into the mission brief, decision package, readiness checks,
+  and exact stage-scoped AI payload preview.
+- Treat selection as company mission alignment, not proof of a solution's mission
+  contribution, contract scope, or organizational ownership.
+
+### Quick Capture and Review inbox
+
+- Make Quick Capture available from every stage with a visible control and `Alt+Q`
+  shortcut.
+- Lock each capture to the active solution and preserve bounded source provenance.
+- Store pending entries in a separate versioned `solution-capture-inbox-v1` envelope,
+  not in the authoritative workspace.
+- Let a reviewer classify and edit an item as a customer hot button, evidence,
+  requirement, win theme, assumption, risk, or decision, or ignore it.
+- Use conservative initial states: unverified/captured hot buttons and assumptions,
+  low-confidence evidence, draft requirements and win themes, open risks with Unknown
+  likelihood/impact, and proposed decisions.
+- Never materialize an item without explicit selection. Validate dependent evidence
+  and hot-button proposals together and keep commit retries idempotent.
+- Keep inboxes separate by solution. Do not include them in workspace snapshots,
+  decision packages, or JSON workspace backups.
+- Allow a separate active-inbox JSON download for reference. Do not imply that v1 can
+  import that artifact or that it replaces committing reviewed workspace records.
+
+### Local source ingestion
+
+- Provide **Open local files** for TXT, Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS,
+  XLSX, ODS, PNG, JPEG, and WebP.
+- Extract and preview content entirely in the browser before creating capture-inbox
+  proposals. Opening a file must not call Supabase, AI, or another cloud service.
+- Provide local image preview plus manual caption/transcription and make clear that
+  the product does not perform OCR.
+- Reject unlisted legacy Word/PowerPoint formats, macro-enabled Office files, SVG,
+  HTML, arbitrary ZIP archives, and unlisted or renamed formats.
+- Enforce 8 MB per file; 10 files and 25 MB per session; 2,000 ZIP entries; 20 MB per
+  expanded entry; 50 MB total expanded ZIP content; 200 PDF pages; 200,000 extracted
+  text characters; and a 20-second extraction timeout.
+- Never store, export, service-worker-cache, log, or send original file bytes. Only a
+  user-approved bounded excerpt and source metadata may persist to the Review inbox
+  and later to an authoritative record.
+- Present extraction as an aid, not source validation. Require the user to verify
+  accuracy, completeness, authority, provenance, and data handling.
+
+### Meeting transcript and summary intake
+
+- Provide a dedicated paste workflow for a meeting transcript or summary from Quick
+  Capture, Open local files, and Workspace tools.
+- Collect meeting title, transcript-versus-summary type, optional valid date,
+  bounded participant names or roles, and one or more canonical company mission
+  segments.
+- Keep the complete pasted meeting text transient. Do not place it in localStorage,
+  workspace snapshots, inbox exports, decision packages, service-worker caches,
+  logs, AI payloads, or network requests.
+- Require deliberate excerpt selection for transcripts. Permit a whole summary only
+  when it is no more than 6,000 characters. Limit a session to 20 excerpts and
+  200,000 pasted characters.
+- Stage excerpts only as low-confidence evidence proposals in the solution-specific
+  Review inbox. Preserve source type, date, participants, mission segments, and a
+  line-oriented locator when the evidence is committed.
+- Treat meeting statements as evidence, not automatic contractual direction,
+  requirements, customer hot buttons, decisions, or commitments.
 
 ### Customer hot buttons
 
@@ -135,7 +211,8 @@ as a reference, not as a certification automatically produced by the app.
 
 ### Decision package
 
-- Assemble the mission brief, customer hot buttons, requirements traceability,
+- Assemble selected company mission segments, the mission brief, customer hot
+  buttons, requirements traceability,
   assessments, architecture, trades, decisions, risks, dependencies, win themes,
   roadmap, evidence gaps, and transition plan.
 - Export Markdown and standalone HTML.
@@ -169,7 +246,8 @@ as a reference, not as a certification automatically produced by the app.
 
 - shared real-time editing or cloud project storage;
 - classified/CUI authorization or enterprise records management;
-- arbitrary document ingestion or binary attachment storage;
+- arbitrary or unsupported document ingestion, OCR, source-document retention, or
+  binary attachment storage;
 - automatic research, source verification, DoDAF certification, ATO evidence, or
   engineering approval;
 - cost-estimating, pricing, contract, requirements-management, digital-thread, PLM,
@@ -182,5 +260,7 @@ as a reference, not as a certification automatically produced by the app.
 The release is acceptable when the schema and solution isolation are enforced,
 unknowns stay explicit, import validation is all-or-nothing, storage failures stay
 visible, readiness and exports are deterministic, diagrams have keyboard and tabular
-alternatives, the public data warning remains visible, optional AI sends only a
-reviewed bounded payload, and all static, browser, and production smoke checks pass.
+alternatives, themes remain separate from content, capture never bypasses review,
+source binaries remain transient, the public data warning remains visible, optional
+AI sends only a reviewed bounded payload, and all static, browser, and production
+smoke checks pass.
