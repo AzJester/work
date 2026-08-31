@@ -1,9 +1,10 @@
-const CACHE_NAME = "solution-architect-workbench-v4";
+const CACHE_NAME = "solution-architect-workbench-v5";
 const SHELL = [
   "./",
   "./index.html",
   "./guide.html",
   "./guide.js",
+  "./theme-init.js",
   "./styles.css",
   "./print-package.css",
   "./engine.js",

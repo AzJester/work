@@ -52,7 +52,7 @@ test("decision packages include meeting evidence provenance without changing leg
   Object.assign(workspace.evidence[0], meetingMetadata);
 
   const markdown = buildDecisionPackageMarkdown(workspace);
-  assert.match(markdown, /\| Evidence \| Type \| Meeting date \| Participants \| Mission segments \|/);
+  assert.match(markdown, /\| Evidence \| Type \| Source date \| Participants \| Mission segments \|/);
   assert.match(markdown, /Meeting transcript/);
   assert.match(markdown, /2026-08-29/);
   assert.match(markdown, /Avery Chen; Morgan Ellis/);

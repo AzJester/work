@@ -148,7 +148,7 @@ test("Quick Capture stays separate until explicit review and materializes a cons
   expect(after.records).toHaveLength(1);
   expect(after.records[0]).toMatchObject({ confidence: "Unverified", status: "Captured", source: "Synthetic customer exchange, 2026-08-31" });
   expect(after.capture.items[0].status).toBe("materialized");
-  await expect(page.getByRole("button", { name: /Review capture inbox, 0 pending/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open capture inbox, 0 pending/ })).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
 

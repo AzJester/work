@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   ACTIONS,
+  ARTIFACT_TYPES,
   ASSIST_TOOL,
   AssistContractError,
   buildSystemPrompt,
@@ -119,6 +120,11 @@ test("all five action request shapes parse into one bounded contract", () => {
       no_restricted_content: true,
     });
   }
+});
+
+test("proposal assistance uses requirement support terminology instead of implying formal compliance", () => {
+  assert.ok(ARTIFACT_TYPES.includes("requirement_support_check"));
+  assert.ok(!ARTIFACT_TYPES.includes("compliance_trace"));
 });
 
 test("browser-generated previews satisfy the server contract for every action", () => {

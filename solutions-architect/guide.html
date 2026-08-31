@@ -11,6 +11,7 @@
   <title>Solution Architect Workbench User Guide</title>
   <link rel="canonical" href="https://azjester.github.io/work/solutions-architect/guide.html">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <script src="theme-init.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="guide-document">
@@ -21,7 +22,7 @@
       <p>Task-oriented guide</p>
     </div>
     <div class="guide-header-actions">
-      <button class="theme-toggle guide-theme-toggle" id="guide-theme-toggle" type="button" role="switch" aria-label="Dark mode" aria-checked="false" title="Switch to dark mode"><span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span></button>
+      <button class="theme-toggle guide-theme-toggle" id="guide-theme-toggle" type="button" role="switch" aria-label="Dark theme" aria-checked="false" title="Switch to dark theme"><span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span></button>
       <a class="button primary" href="./">Open workbench</a>
     </div>
   </header>
@@ -38,7 +39,7 @@ traceable solution, and produce a decision package.</p>
 <li><a href="#choose-the-fastest-safe-intake-path">Choose the right capture or ingestion path</a></li>
 <li><a href="#ingest-a-meeting-transcript-or-summary">Ingest a meeting transcript or summary</a></li>
 <li><a href="#open-local-files-for-ingestion">Open permitted local files</a></li>
-<li><a href="#work-the-solution-lifecycle">Work the seven-stage solution lifecycle</a></li>
+<li><a href="#work-the-solution-lifecycle">Work the iterative solution lifecycle</a></li>
 <li><a href="#produce-and-review-the-decision-package">Produce the decision package</a></li>
 <li><a href="#back-up-recover-and-move-work">Back up, recover, or move work</a></li>
 <li><a href="#use-optional-ai-assistance-safely">Use optional AI safely</a></li>
@@ -66,7 +67,7 @@ name.</li>
 decision owner.</li>
 <li>Press <code>Alt+Q</code> or select <strong>Capture</strong>. Record the most important customer concern or
 unknown, name its source, and save it to the inbox.</li>
-<li>Select <strong>Review</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>,
+<li>Select <strong>Inbox</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>,
 verify the item, classify it as a customer hot button, requirement, evidence, win
 theme, assumption, risk, or decision, and commit it.</li>
 <li>Open <strong>Command</strong>. Resolve the highest-value obligation instead of trying to fill
@@ -79,12 +80,13 @@ after a substantial working session. Resolve or commit useful capture-inbox item
 first because the separate inbox is not included in the workspace JSON backup.</p>
 <h2 id="set-up-the-workspace-for-how-you-work">Set up the workspace for how you work</h2>
 <h3 id="choose-a-visual-theme">Choose a visual theme</h3>
-<p>Use the compact <strong>Dark mode</strong> switch on the left side of the workbench. The
-standalone guide has the same switch in its header.</p>
-<p>Light is the default when this browser has no saved theme. Switching Dark mode on or
-off saves an explicit Dark or Light choice. A previously stored <strong>System</strong> preference
-is still honored: it follows the operating-system preference until you use the
-switch. To restore automatic operating-system behavior later, open <strong>Workspace
+<p>Use the compact theme toggle on the left side of the workbench. Turn it on for the
+Dark theme and off for the Light theme. The standalone guide has the same toggle in
+its header.</p>
+<p>Light is the default when this browser has no saved theme. Changing the toggle saves
+an explicit Dark or Light choice. A previously stored <strong>System</strong> preference is still
+honored: it follows the operating-system preference until you use the toggle. To
+restore automatic operating-system behavior later, open <strong>Workspace
 tools</strong> and choose <strong>Use device theme</strong>.</p>
 <p>The setting does not change the solution, appear in exports, or travel with a JSON
 backup. If browser storage is unavailable, the choice lasts only for the current
@@ -172,7 +174,7 @@ control.</p>
 <p>Captured items enter the separate <strong>Review</strong> inbox. They do not immediately change
 requirements, evidence, risks, decisions, or proposal claims.</p>
 <h3 id="review-the-inbox">Review the inbox</h3>
-<p>Select <strong>Review</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>. Work
+<p>Select <strong>Inbox</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>. Work
 each pending item deliberately:</p>
 <table>
 <thead>
@@ -243,7 +245,7 @@ single-vendor upgrade path.”</p>
 <ol>
 <li>Use Quick Capture to preserve the exact statement, working-session source, and
 surrounding context as a proposed customer hot button.</li>
-<li>In Review, correct the wording and commit it as <strong>Captured / Unverified</strong>. Validate
+<li>In the inbox, correct the wording and commit it as <strong>Captured / Unverified</strong>. Validate
 it through the responsible customer or capture authority before raising confidence.</li>
 <li>In Shape, create the defensible requirement from its authoritative source—for
 example, a governed modular interface and necessary interface/data rights—and link
@@ -283,7 +285,7 @@ excerpt</strong>. Repeat for up to 20 excerpts, each no more than 6,000 characte
 summary</strong>. A longer summary must be divided into deliberate excerpts.</li>
 <li>Review the excerpt list and select <strong>Stage excerpts for review</strong>. Closing or
 canceling the dialog discards the complete pasted text.</li>
-<li>Open <strong>Review</strong>, verify each excerpt against the authorized source, and commit only
+<li>Open <strong>Inbox</strong>, verify each excerpt against the authorized source, and commit only
 the evidence you intend to use.</li>
 </ol>
 <p>The committed evidence preserves source type, date, participants, mission segments,
@@ -299,7 +301,7 @@ requirement only after identifying its authoritative source; link the meeting
 evidence as context rather than presenting the conversation as contractual authority.</p>
 <p><strong>Privacy check:</strong> before closing the dialog, the browser contains both the pasted
 text and selected excerpts in memory. After staging, only selected excerpts and
-metadata enter the separate Review inbox. Neither the complete meeting text nor an
+metadata enter the separate review inbox. Neither the complete meeting text nor an
 audio/video recording is stored, exported, cached, logged, or sent to AI by this
 workflow.</p>
 <h2 id="open-local-files-for-ingestion">Open local files for ingestion</h2>
@@ -375,7 +377,7 @@ result.</li>
 or meaning that is not visible.</li>
 <li>Select only the passage or metadata needed for the solution.</li>
 <li>Add it to <strong>Review</strong>; no authoritative solution record is created yet.</li>
-<li>In <strong>Review</strong>, verify the excerpt against the original, correct the proposed
+<li>In <strong>Inbox</strong>, verify the excerpt against the original, correct the proposed
 record type, and commit only the useful items.</li>
 <li>In the destination stage, complete source authority, confidence, acceptance,
 ownership, and trace links.</li>
@@ -400,6 +402,11 @@ architecture links, and the decision that uses the requirement. The PDF itself i
 discarded from the intake session and must remain in the organization's approved
 record system.</p>
 <h2 id="work-the-solution-lifecycle">Work the solution lifecycle</h2>
+<p>Treat Discover, Shape, Assess, Architect, Prove, Propose, and Transition as iterative
+work lenses—not approval gates, a required sequence, or a calendar. The selected
+stage records the team's current emphasis. Move between lenses whenever new evidence,
+a trade, or a review changes the solution. Formal technical, program, customer, and
+authority reviews remain governed processes outside the app.</p>
 <h3 id="discover-establish-the-decision-context">1. Discover — establish the decision context</h3>
 <p>Define the mission problem, current and desired operational states, stakeholders,
 outcomes, measures of effectiveness, constraints, customer hot buttons, company
@@ -408,7 +415,7 @@ mission segments, and the decision owner.</p>
 plain-text list: one signal per line, up to 50. Name the actual interaction and review
 confidence and validation status. Bullets and numbered-list prefixes are removed and
 exact duplicates are skipped. Use <strong>Workspace tools → Open local files</strong> for supported
-documents, spreadsheets, or images that need source preview and the separate Review
+documents, spreadsheets, or images that need source preview and the separate review
 step.</p>
 <p>A hot button is a sourced customer signal, not an authoritative requirement. The
 source, confidence, and validation fields record the architect's judgment; the app
@@ -433,8 +440,9 @@ absent acceptance methods before comparing solution candidates.</p>
 <h3 id="assess-compare-complete-solution-candidates">3. Assess — compare complete solution candidates</h3>
 <p>Compare integrated options, not isolated products stripped of their integration and
 sustainment consequences. The default weighted criteria cover mission fit,
-performance, maturity, integration, cyber and safety, MOSA and openness, data rights,
-supply chain, affordability, schedule, and sustainment.</p>
+performance, maturity, integration, cybersecurity and authorization, system safety,
+MOSA and openness, data rights, supply chain, affordability, schedule, and
+sustainment.</p>
 <p>Enter a 0–5 score only when it has defensible rationale and evidence confidence. Link
 supporting evidence. Use optional TRL, MRL, and IRL values only when the team has an
 agreed basis. An empty score remains <strong>Unknown</strong> and does not silently become zero.</p>
@@ -443,10 +451,22 @@ agreed basis. An empty score remains <strong>Unknown</strong> and does not silen
 from early research through proven use in an operational environment.</li>
 <li><strong>MRL — Manufacturing Readiness Level (1–10):</strong> how ready the team and
 industrial base are to produce it consistently at the needed quality, rate, and cost.</li>
-<li><strong>IRL — Integration Readiness Level (1–9):</strong> how ready the technology is to
+<li><strong>IRL — Integration Readiness Level (0–9):</strong> how ready the technology is to
 connect and operate with the other components, interfaces, and processes in the
 complete solution.</li>
 </ul>
+<p>The workbench stores one TRL, MRL, and IRL value per candidate. Treat each as a
+candidate-level summary and use the least-mature essential technology, manufacturing
+path, or integration point as the limiting basis. In particular, IRL summarizes the
+limiting integration maturity; it is not a separate assessment of every interface.
+Record the assessment basis and as-of date when known. The v1 JSON contract can
+retain optional <code>readinessBasis</code> and <code>readinessAsOf</code> metadata without making them
+mandatory for older v1 workspaces. Use the visible basis/scope and as-of fields, score
+rationales, and linked evidence to make the summary reviewable.</p>
+<p>The displayed candidate order is provisional. The weighted score uses only criteria
+that have a number, so an option with many <strong>Unknown</strong> values can appear stronger or
+weaker as coverage changes. Compare assessment coverage, evidence coverage, weights,
+and consequential criteria before making a recommendation.</p>
 <p><strong>What to do next:</strong> investigate unsupported scores and criteria with high weight but
 low confidence. Carry consequential differences into a trade or decision.</p>
 <h3 id="architect-show-how-the-complete-capability-works">4. Architect — show how the complete capability works</h3>
@@ -497,6 +517,12 @@ likely to win.</p>
 <p>Build the CONOPS, technical approach, discriminators, estimate assumptions, and
 delivery commitments from the same facts. V1 supports proposal inputs; it is not a
 complete evaluator-ready proposal-volume generator.</p>
+<p>The <strong>Requirement support check</strong> reports whether each current requirement has a
+linked source and acceptance method. It is not a solicitation compliance matrix: it
+does not parse solicitation instructions or evaluation criteria, track every shall,
+assign proposal response locations and owners, manage exceptions, or determine
+compliance. Maintain the governed solicitation matrix in the approved proposal
+system and use this check only to find missing internal support.</p>
 <p><strong>What to do next:</strong> read the win theme backward. If proof does not support the
 discriminator, or the discriminator does not create the stated customer value,
 revise it before export.</p>
@@ -507,19 +533,39 @@ sustainment, residual risks, and blockers. A transition action is incomplete unt
 the accountable receiver and acceptance target are clear.</p>
 <p><strong>What to do next:</strong> walk the transition package with the receiving team and capture
 their acceptance evidence or remaining blockers.</p>
+<h3 id="know-the-current-field-limits">Know the current field limits</h3>
+<p>V1 intentionally keeps several records lightweight:</p>
+<ul>
+<li>a requirement has one direct source-evidence field, not a many-source authority
+model;</li>
+<li>TRL, MRL, and IRL are candidate-level summaries, not maturity records for every
+component, manufacturing process, or integration point;</li>
+<li>an assessment score has rationale and evidence links, but no separate score-level
+confidence field; inspect the confidence of its linked evidence;</li>
+<li>an architecture exchange has type, label, protocol, and description fields, but
+owner, standard, security boundary, and verification method are not separate
+structured fields;</li>
+<li>evidence provenance is user-entered and the app does not verify source authority,
+freshness, authenticity, or customer approval;</li>
+<li>the Requirement support check is not a solicitation compliance matrix.</li>
+</ul>
+<p>Keep the detailed authoritative artifacts in the organization's approved systems and
+reference only permitted evidence here. Do not fill a missing field with unsupported
+certainty simply to improve coverage.</p>
 <h2 id="use-command-as-the-daily-work-queue">Use Command as the daily work queue</h2>
-<p>Command shows readiness indicators and unscheduled obligations such as missing
+<p>Command shows coverage indicators and unscheduled obligations such as missing
 evidence, untraced requirements, unsupported scores, incomplete interfaces, unowned
 risks, unresolved decisions, incomplete reviews, weak win themes, and transition
 blockers. Select <strong>Resolve</strong> to go to the owning stage.</p>
-<p>Readiness is deterministic completeness, not a probability of contract award,
-mission success, technical approval, authority to operate, or design certification.
-A formal review can identify issues no automated rule sees.</p>
+<p>The percentages measure deterministic record coverage from the current workspace.
+They are not engineering-maturity ratings, a formal readiness review, or a probability
+of contract award, mission success, technical approval, authority to operate, or
+design certification. A formal review can identify issues no automated rule sees.</p>
 <h2 id="produce-and-review-the-decision-package">Produce and review the decision package</h2>
 <p>Open <strong>Decision package</strong> to assemble the selected company mission segments, mission
 brief, customer signals, requirements trace, assessments, architecture summary,
 trades, decisions, risks, dependencies, win themes, roadmap, transition actions,
-readiness, and evidence gaps.</p>
+coverage indicators, and evidence gaps.</p>
 <ul>
 <li><strong>Download Markdown</strong> creates an editable narrative.</li>
 <li><strong>Standalone HTML</strong> creates a printable self-contained report with diagrams.</li>
@@ -546,7 +592,7 @@ are not yet available. The recommended next additions are:</p>
 </table>
 <p>Every future format should render the same validated, selected-solution package so
 content cannot drift between files. It should include committed workspace records
-only—not pending Review items, original source files, full meeting text, snapshots,
+only—not pending inbox items, original source files, full meeting text, snapshots,
 or unaccepted AI drafts—and it should generate locally without macros, formulas,
 remote images, external relationships, or cloud conversion.</p>
 <h2 id="back-up-recover-and-move-work">Back up, recover, and move work</h2>
@@ -558,7 +604,7 @@ workspace and every solution it contains.</li>
 <li><strong>Create recovery point</strong> keeps a bounded local snapshot.</li>
 <li><strong>Recovery</strong> restores a selected snapshot after first preserving the current state.</li>
 </ul>
-<p>The per-solution Review inbox is stored separately and is not part of the workspace
+<p>The per-solution review inbox is stored separately and is not part of the workspace
 JSON export or recovery snapshots. <strong>Download inbox JSON</strong> can preserve a separate
 reference copy, but the current UI does not import it. Commit useful items before a
 workspace backup or transfer, and do not treat the inbox as a durable source
@@ -596,9 +642,9 @@ reviews and acknowledges an AI payload that contains it.</p>
 not the only way to work.</li>
 <li>Move a selected diagram element with an arrow key; hold Shift for 1-pixel movement.</li>
 <li>Use <strong>Accessible architecture data</strong> as a table alternative to the diagram.</li>
-<li>The interface starts in Light, supports an explicit Dark choice, honors a legacy
+<li>The interface starts in Light, offers a compact theme toggle, honors a legacy
 System preference, and respects reduced-motion preferences.</li>
-<li>On touch devices, use Capture and Review in the header, use Workspace tools for
+<li>On touch devices, use Capture and Inbox in the header, use Workspace tools for
 Open local files and other grouped actions, and use the visible diagram controls;
 no hover-only action is required.</li>
 </ul>
@@ -640,7 +686,7 @@ no hover-only action is required.</li>
 <td>Download dated JSON backups</td>
 </tr>
 <tr>
-<td>Expecting JSON backup to include pending Review items or source files</td>
+<td>Expecting JSON backup to include pending inbox items or source files</td>
 <td>Commit reviewed records and retain authorized originals elsewhere</td>
 </tr>
 <tr>
@@ -660,7 +706,7 @@ no hover-only action is required.</li>
 <td>Disable unapproved enhanced spellcheck, translation, extensions, and input services before opening source content</td>
 </tr>
 <tr>
-<td>Treating readiness as approval</td>
+<td>Treating workspace coverage as approval</td>
 <td>Use it as a completeness aid and still conduct accountable reviews</td>
 </tr>
 </tbody>

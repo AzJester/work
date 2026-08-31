@@ -19,8 +19,8 @@ solution workspace instead of turning the work into a calendar or task schedule.
 
 ### [Open Solution Architect Workbench](https://azjester.github.io/work/solutions-architect/)
 
-- follow a guided **Discover → Shape → Assess → Architect → Prove → Propose →
-  Transition** lifecycle while the command view surfaces unscheduled obligations
+- move among the iterative **Discover → Shape → Assess → Architect → Prove → Propose
+  → Transition** work lenses while the command view surfaces unscheduled obligations
 - manage multiple isolated solutions with automatic local saves, bounded recovery
   points, duplication, and validated full-workspace JSON import/export
 - classify each solution against one or more of the six company mission segments and
@@ -38,13 +38,14 @@ solution workspace instead of turning the work into a calendar or task schedule.
   evidence-backed proof instead of storing disconnected proposal slogans
 - compare hardware, software, tools, vendors, platforms, and integrated options using
   weighted 0–5 criteria, explicit unknown values, rationale, evidence confidence, and
-  optional TRL/MRL/IRL measures
+  optional TRL 1–9, MRL 1–10, and IRL 0–9 candidate summaries; rankings remain
+  provisional until coverage and evidence are comparable
 - create fit-for-purpose mission, mission-thread, system-interface, data-flow, and
   deployment/transition views with accessible tables and SVG/PNG export
 - generate a decision package as Markdown, standalone HTML, or a print-ready browser
   view for PDF output
-- start in Light mode, switch compactly between Light and Dark, or opt into the
-  device theme without changing workspace content
+- start in the Light theme, use a compact theme toggle, or opt into the device theme
+  without changing workspace content
 - optionally send an exact, user-reviewed subset of approved workspace facts to the
   authenticated `solution-assist` Edge Function; AI responses remain drafts and cannot
   overwrite authored records
@@ -694,7 +695,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
-| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact Light/Dark toggle, and optional reviewed AI assistance. |
+| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
 | `black-hat-agent/` | Public, no-sign-in Black Hat Agent competitive-analysis workspace with local persistence, Excel/CSV and JSON import, evidence and competitor tracking, accessible native charts and diagrams, versioned report visuals, multi-format exports, recovery, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |

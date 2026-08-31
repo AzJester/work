@@ -74,7 +74,7 @@ test("meeting transcript intake persists only selected evidence with mission met
   await page.locator('a[data-route="shape"]').click();
   const evidence = page.locator(".evidence-card").filter({ has: page.locator('input.card-title-input[value="Synthetic integrated mission review"]') });
   await expect(evidence).toContainText("Meeting transcript");
-  await expect(evidence).toContainText("2026-08-30");
+  await expect(evidence.getByLabel("Source date")).toHaveValue("2026-08-30");
   await expect(evidence).toContainText("Mission lead, Platform architect, Test lead");
   await expect(evidence).toContainText("Integrated Air and Missile Defense");
   await expect(evidence).toContainText("Space Warfighting");

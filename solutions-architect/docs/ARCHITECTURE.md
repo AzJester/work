@@ -47,6 +47,10 @@ It contains:
   actions;
 - pending, accepted, and rejected AI drafts kept separate from authored records.
 
+Assessment-score records contain a 0–5 or unknown value, rationale, and evidence
+links. They do not contain a separate score-confidence field; confidence is an
+attribute of each linked evidence record.
+
 Every domain record carries one `solutionId`. Architecture elements and connections
 also carry a `viewId`; connections reference source and target element IDs.
 Requirements can reference customer hot buttons, evidence, and architecture elements.
@@ -63,6 +67,13 @@ Evidence records may also carry backward-compatible optional provenance metadata
 evidence uses the optional fields so decision packages can show which source and
 company mission segments support an excerpt without changing the workspace schema
 version.
+
+Candidate records may carry backward-compatible optional `readinessBasis` and
+`readinessAsOf` metadata. Existing v1 candidates without those fields remain valid;
+when present, `readinessAsOf` must be empty or a valid `YYYY-MM-DD` calendar date.
+TRL and MRL remain nullable integer summaries on their established 1–9 and 1–10
+scales. IRL is a nullable integer on the 0–9 scale and should summarize the limiting
+essential integration maturity, not imply a rating for every interface.
 
 ## Capture-inbox contract
 
@@ -178,12 +189,16 @@ snapshots, imports, and exports.
 ## Deterministic decision support
 
 The engine calculates weighted assessment results, traceability, evidence coverage,
-interface completeness, transition completeness, readiness, and the unscheduled
-obligation list from the stored records. Missing scores remain unknown; the engine
-does not coerce them to zero or invent rationale.
+element-connectivity coverage, transition-action coverage, an aggregate coverage
+indicator, and the unscheduled obligation list from the stored records. Missing scores
+remain unknown; the engine does not coerce them to zero or invent rationale. Candidate
+ordering is provisional because the weighted mean uses only scored criteria and must
+be read with assessment and evidence coverage.
 
 These calculations are transparent completeness and comparison aids. They do not
-predict mission success, technical approval, acquisition outcome, or contract award.
+represent engineering maturity, formal readiness review, certification, authority to
+operate, or predict mission success, technical approval, acquisition outcome, or
+contract award.
 
 ## Architecture views
 
@@ -209,7 +224,7 @@ Markdown generation reads only records scoped to the selected solution and assem
 the selected company mission segments, mission brief, customer signals,
 traceability, assessments, architecture
 inventory, trades, decisions, risks, dependencies, win themes, roadmap, transition,
-readiness, and evidence gaps. Standalone HTML escapes the Markdown and embeds locally
+coverage indicators, and evidence gaps. Standalone HTML escapes the Markdown and embeds locally
 generated SVG diagrams. **Print / Save PDF** opens this HTML in a separate browser view
 and requests the browser print dialog; the user can invoke Print manually if the
 dialog does not appear. JavaScript does not create or store a PDF binary.

@@ -6,7 +6,8 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:4173/geopr
 
 async function gotoFresh(page, route = "dashboard") {
   const response = await page.goto(`${APP_PATH}#${route}`, { waitUntil: "domcontentloaded" });
-  expect(response?.status()).toBe(200);
+  if (response) expect(response.status()).toBe(200);
+  else await expect(page).toHaveURL(new RegExp(`solutions-architect/#${route}$`));
   await page.evaluate(key => localStorage.removeItem(key), STORAGE_KEY);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator("#workspace")).toBeVisible();
@@ -266,7 +267,7 @@ test("narrow touch layout, reduced motion, and every lifecycle route avoid page 
   const context = await browser.newContext({ ...devices["iPhone 13"], baseURL: BASE_URL, reducedMotion: "reduce" });
   const page = await context.newPage();
   await gotoFresh(page, "dashboard");
-  await page.getByRole("button", { name: "Toggle navigation", exact: false }).click();
+  await page.getByRole("button", { name: "Open workspace navigation", exact: true }).click();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
 
   for (const route of ["discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]) {
@@ -280,6 +281,52 @@ test("narrow touch layout, reduced motion, and every lifecycle route avoid page 
   await expect(page.locator(".inspector")).toContainText("Edit the selected architecture element");
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
   await context.close();
+});
+
+test("mobile editable tables stack into labeled cards instead of requiring a wide horizontal pan", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const { route, tableSelector, reveal } of [
+    { route: "shape", tableSelector: ".table-panel table" },
+    { route: "assess", tableSelector: ".score-table" },
+    { route: "architect", tableSelector: ".accessible-model .editable-table", reveal: ".accessible-model" },
+    { route: "prove", tableSelector: ".governance-section .editable-table" },
+  ]) {
+    await test.step(route, async () => {
+      await gotoFresh(page, route);
+      if (reveal) await page.locator(reveal).evaluate(node => { node.open = true; });
+      const table = page.locator(tableSelector).first();
+      await expect(table).toBeVisible();
+
+      const metrics = await table.evaluate(node => {
+        const scrollContainer = node.closest(".table-scroll");
+        const row = node.querySelector("tbody tr");
+        const cells = row ? [...row.querySelectorAll("td")] : [];
+        return {
+          overflow: scrollContainer ? scrollContainer.scrollWidth - scrollContainer.clientWidth : Number.POSITIVE_INFINITY,
+          rowDisplay: row ? getComputedStyle(row).display : "",
+          headersRemainAvailable: getComputedStyle(node.querySelector("thead")).display !== "none",
+          cellsAreLabeled: cells.length > 0 && cells.every(cell => {
+            const pseudoContent = getComputedStyle(cell, "::before").content;
+            return Boolean(cell.dataset.label?.trim()) || !["", "none", "normal", '""'].includes(pseudoContent);
+          }),
+          controlsAreNamed: [...node.querySelectorAll("input, textarea, select, button")].every(control => {
+            const labelledBy = control.getAttribute("aria-labelledby")?.trim();
+            const ariaLabel = control.getAttribute("aria-label")?.trim();
+            const nativeLabel = control.labels?.length > 0;
+            const buttonText = control.tagName === "BUTTON" && control.textContent.trim().length > 0;
+            return Boolean(labelledBy || ariaLabel || nativeLabel || buttonText);
+          }),
+        };
+      });
+
+      expect.soft(metrics.overflow, `${route} editable table should not require horizontal panning`).toBeLessThanOrEqual(1);
+      expect.soft(["block", "grid", "flex"], `${route} records should stack at phone width`).toContain(metrics.rowDisplay);
+      expect.soft(metrics.headersRemainAvailable, `${route} table headers should remain available to assistive technology`).toBe(true);
+      expect.soft(metrics.cellsAreLabeled, `${route} stacked cells should retain their column labels`).toBe(true);
+      expect.soft(metrics.controlsAreNamed, `${route} table controls should have programmatic names`).toBe(true);
+    });
+  }
 });
 
 test("AI cancellation sends nothing and 403, quota, timeout, and malformed output remain safe", async ({ page }) => {
@@ -350,7 +397,7 @@ test("the app shell reopens offline after one controlled online visit", async ({
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page).toHaveTitle("Solution Architect Workbench");
     await expect(page.getByRole("note")).toContainText("Approved unclassified, non-CUI information only");
-    await expect(page.getByText("Decision readiness", { exact: true })).toBeVisible();
+    await expect(page.getByText("Workspace coverage", { exact: true })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }

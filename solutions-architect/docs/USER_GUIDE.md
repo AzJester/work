@@ -10,7 +10,7 @@ traceable solution, and produce a decision package.
 - [Choose the right capture or ingestion path](#choose-the-fastest-safe-intake-path)
 - [Ingest a meeting transcript or summary](#ingest-a-meeting-transcript-or-summary)
 - [Open permitted local files](#open-local-files-for-ingestion)
-- [Work the seven-stage solution lifecycle](#work-the-solution-lifecycle)
+- [Work the iterative solution lifecycle](#work-the-solution-lifecycle)
 - [Produce the decision package](#produce-and-review-the-decision-package)
 - [Back up, recover, or move work](#back-up-recover-and-move-work)
 - [Use optional AI safely](#use-optional-ai-assistance-safely)
@@ -39,7 +39,7 @@ security, export-control, or mission-domain authorities.
    decision owner.
 4. Press `Alt+Q` or select **Capture**. Record the most important customer concern or
    unknown, name its source, and save it to the inbox.
-5. Select **Review** in the header or **Workspace tools → Review capture inbox**,
+5. Select **Inbox** in the header or **Workspace tools → Review capture inbox**,
    verify the item, classify it as a customer hot button, requirement, evidence, win
    theme, assumption, risk, or decision, and commit it.
 6. Open **Command**. Resolve the highest-value obligation instead of trying to fill
@@ -55,13 +55,14 @@ first because the separate inbox is not included in the workspace JSON backup.
 
 ### Choose a visual theme
 
-Use the compact **Dark mode** switch on the left side of the workbench. The
-standalone guide has the same switch in its header.
+Use the compact theme toggle on the left side of the workbench. Turn it on for the
+Dark theme and off for the Light theme. The standalone guide has the same toggle in
+its header.
 
-Light is the default when this browser has no saved theme. Switching Dark mode on or
-off saves an explicit Dark or Light choice. A previously stored **System** preference
-is still honored: it follows the operating-system preference until you use the
-switch. To restore automatic operating-system behavior later, open **Workspace
+Light is the default when this browser has no saved theme. Changing the toggle saves
+an explicit Dark or Light choice. A previously stored **System** preference is still
+honored: it follows the operating-system preference until you use the toggle. To
+restore automatic operating-system behavior later, open **Workspace
 tools** and choose **Use device theme**.
 
 The setting does not change the solution, appear in exports, or travel with a JSON
@@ -137,7 +138,7 @@ requirements, evidence, risks, decisions, or proposal claims.
 
 ### Review the inbox
 
-Select **Review** in the header or **Workspace tools → Review capture inbox**. Work
+Select **Inbox** in the header or **Workspace tools → Review capture inbox**. Work
 each pending item deliberately:
 
 | Destination | Use it for | Initial posture after commit |
@@ -173,7 +174,7 @@ single-vendor upgrade path.”
 
 1. Use Quick Capture to preserve the exact statement, working-session source, and
    surrounding context as a proposed customer hot button.
-2. In Review, correct the wording and commit it as **Captured / Unverified**. Validate
+2. In the inbox, correct the wording and commit it as **Captured / Unverified**. Validate
    it through the responsible customer or capture authority before raising confidence.
 3. In Shape, create the defensible requirement from its authoritative source—for
    example, a governed modular interface and necessary interface/data rights—and link
@@ -215,7 +216,7 @@ solution. This workflow is available from Quick Capture and Workspace tools.
    summary**. A longer summary must be divided into deliberate excerpts.
 7. Review the excerpt list and select **Stage excerpts for review**. Closing or
    canceling the dialog discards the complete pasted text.
-8. Open **Review**, verify each excerpt against the authorized source, and commit only
+8. Open **Inbox**, verify each excerpt against the authorized source, and commit only
    the evidence you intend to use.
 
 The committed evidence preserves source type, date, participants, mission segments,
@@ -233,7 +234,7 @@ evidence as context rather than presenting the conversation as contractual autho
 
 **Privacy check:** before closing the dialog, the browser contains both the pasted
 text and selected excerpts in memory. After staging, only selected excerpts and
-metadata enter the separate Review inbox. Neither the complete meeting text nor an
+metadata enter the separate review inbox. Neither the complete meeting text nor an
 audio/video recording is stored, exported, cached, logged, or sent to AI by this
 workflow.
 
@@ -288,7 +289,7 @@ classification control.
    or meaning that is not visible.
 5. Select only the passage or metadata needed for the solution.
 6. Add it to **Review**; no authoritative solution record is created yet.
-7. In **Review**, verify the excerpt against the original, correct the proposed
+7. In **Inbox**, verify the excerpt against the original, correct the proposed
    record type, and commit only the useful items.
 8. In the destination stage, complete source authority, confidence, acceptance,
    ownership, and trace links.
@@ -319,6 +320,12 @@ record system.
 
 ## Work the solution lifecycle
 
+Treat Discover, Shape, Assess, Architect, Prove, Propose, and Transition as iterative
+work lenses—not approval gates, a required sequence, or a calendar. The selected
+stage records the team's current emphasis. Move between lenses whenever new evidence,
+a trade, or a review changes the solution. Formal technical, program, customer, and
+authority reviews remain governed processes outside the app.
+
 ### 1. Discover — establish the decision context
 
 Define the mission problem, current and desired operational states, stakeholders,
@@ -329,7 +336,7 @@ Use **Ingest** under **Customer hot buttons** when you already have a short appr
 plain-text list: one signal per line, up to 50. Name the actual interaction and review
 confidence and validation status. Bullets and numbered-list prefixes are removed and
 exact duplicates are skipped. Use **Workspace tools → Open local files** for supported
-documents, spreadsheets, or images that need source preview and the separate Review
+documents, spreadsheets, or images that need source preview and the separate review
 step.
 
 A hot button is a sourced customer signal, not an authoritative requirement. The
@@ -361,8 +368,9 @@ absent acceptance methods before comparing solution candidates.
 
 Compare integrated options, not isolated products stripped of their integration and
 sustainment consequences. The default weighted criteria cover mission fit,
-performance, maturity, integration, cyber and safety, MOSA and openness, data rights,
-supply chain, affordability, schedule, and sustainment.
+performance, maturity, integration, cybersecurity and authorization, system safety,
+MOSA and openness, data rights, supply chain, affordability, schedule, and
+sustainment.
 
 Enter a 0–5 score only when it has defensible rationale and evidence confidence. Link
 supporting evidence. Use optional TRL, MRL, and IRL values only when the team has an
@@ -372,9 +380,23 @@ agreed basis. An empty score remains **Unknown** and does not silently become ze
   from early research through proven use in an operational environment.
 - **MRL — Manufacturing Readiness Level (1–10):** how ready the team and industrial
   base are to produce it consistently at the needed quality, rate, and cost.
-- **IRL — Integration Readiness Level (1–9):** how ready the technology is to connect
+- **IRL — Integration Readiness Level (0–9):** how ready the technology is to connect
   and operate with the other components, interfaces, and processes in the complete
   solution.
+
+The workbench stores one TRL, MRL, and IRL value per candidate. Treat each as a
+candidate-level summary and use the least-mature essential technology, manufacturing
+path, or integration point as the limiting basis. In particular, IRL summarizes the
+limiting integration maturity; it is not a separate assessment of every interface.
+Record the assessment basis and as-of date when known. The v1 JSON contract can
+retain optional `readinessBasis` and `readinessAsOf` metadata without making them
+mandatory for older v1 workspaces. Use the visible basis/scope and as-of fields, score
+rationales, and linked evidence to make the summary reviewable.
+
+The displayed candidate order is provisional. The weighted score uses only criteria
+that have a number, so an option with many **Unknown** values can appear stronger or
+weaker as coverage changes. Compare assessment coverage, evidence coverage, weights,
+and consequential criteria before making a recommendation.
 
 **What to do next:** investigate unsupported scores and criteria with high weight but
 low confidence. Carry consequential differences into a trade or decision.
@@ -440,6 +462,13 @@ Build the CONOPS, technical approach, discriminators, estimate assumptions, and
 delivery commitments from the same facts. V1 supports proposal inputs; it is not a
 complete evaluator-ready proposal-volume generator.
 
+The **Requirement support check** reports whether each current requirement has a
+linked source and acceptance method. It is not a solicitation compliance matrix: it
+does not parse solicitation instructions or evaluation criteria, track every shall,
+assign proposal response locations and owners, manage exceptions, or determine
+compliance. Maintain the governed solicitation matrix in the approved proposal
+system and use this check only to find missing internal support.
+
 **What to do next:** read the win theme backward. If proof does not support the
 discriminator, or the discriminator does not create the stated customer value,
 revise it before export.
@@ -454,23 +483,45 @@ the accountable receiver and acceptance target are clear.
 **What to do next:** walk the transition package with the receiving team and capture
 their acceptance evidence or remaining blockers.
 
+### Know the current field limits
+
+V1 intentionally keeps several records lightweight:
+
+- a requirement has one direct source-evidence field, not a many-source authority
+  model;
+- TRL, MRL, and IRL are candidate-level summaries, not maturity records for every
+  component, manufacturing process, or integration point;
+- an assessment score has rationale and evidence links, but no separate score-level
+  confidence field; inspect the confidence of its linked evidence;
+- an architecture exchange has type, label, protocol, and description fields, but
+  owner, standard, security boundary, and verification method are not separate
+  structured fields;
+- evidence provenance is user-entered and the app does not verify source authority,
+  freshness, authenticity, or customer approval;
+- the Requirement support check is not a solicitation compliance matrix.
+
+Keep the detailed authoritative artifacts in the organization's approved systems and
+reference only permitted evidence here. Do not fill a missing field with unsupported
+certainty simply to improve coverage.
+
 ## Use Command as the daily work queue
 
-Command shows readiness indicators and unscheduled obligations such as missing
+Command shows coverage indicators and unscheduled obligations such as missing
 evidence, untraced requirements, unsupported scores, incomplete interfaces, unowned
 risks, unresolved decisions, incomplete reviews, weak win themes, and transition
 blockers. Select **Resolve** to go to the owning stage.
 
-Readiness is deterministic completeness, not a probability of contract award,
-mission success, technical approval, authority to operate, or design certification.
-A formal review can identify issues no automated rule sees.
+The percentages measure deterministic record coverage from the current workspace.
+They are not engineering-maturity ratings, a formal readiness review, or a probability
+of contract award, mission success, technical approval, authority to operate, or
+design certification. A formal review can identify issues no automated rule sees.
 
 ## Produce and review the decision package
 
 Open **Decision package** to assemble the selected company mission segments, mission
 brief, customer signals, requirements trace, assessments, architecture summary,
 trades, decisions, risks, dependencies, win themes, roadmap, transition actions,
-readiness, and evidence gaps.
+coverage indicators, and evidence gaps.
 
 - **Download Markdown** creates an editable narrative.
 - **Standalone HTML** creates a printable self-contained report with diagrams.
@@ -498,7 +549,7 @@ are not yet available. The recommended next additions are:
 
 Every future format should render the same validated, selected-solution package so
 content cannot drift between files. It should include committed workspace records
-only—not pending Review items, original source files, full meeting text, snapshots,
+only—not pending inbox items, original source files, full meeting text, snapshots,
 or unaccepted AI drafts—and it should generate locally without macros, formulas,
 remote images, external relationships, or cloud conversion.
 
@@ -512,7 +563,7 @@ Open **Workspace tools**:
 - **Create recovery point** keeps a bounded local snapshot.
 - **Recovery** restores a selected snapshot after first preserving the current state.
 
-The per-solution Review inbox is stored separately and is not part of the workspace
+The per-solution review inbox is stored separately and is not part of the workspace
 JSON export or recovery snapshots. **Download inbox JSON** can preserve a separate
 reference copy, but the current UI does not import it. Commit useful items before a
 workspace backup or transfer, and do not treat the inbox as a durable source
@@ -554,9 +605,9 @@ reviews and acknowledges an AI payload that contains it.
   not the only way to work.
 - Move a selected diagram element with an arrow key; hold Shift for 1-pixel movement.
 - Use **Accessible architecture data** as a table alternative to the diagram.
-- The interface starts in Light, supports an explicit Dark choice, honors a legacy
+- The interface starts in Light, offers a compact theme toggle, honors a legacy
   System preference, and respects reduced-motion preferences.
-- On touch devices, use Capture and Review in the header, use Workspace tools for
+- On touch devices, use Capture and Inbox in the header, use Workspace tools for
   Open local files and other grouped actions, and use the visible diagram controls;
   no hover-only action is required.
 
@@ -571,12 +622,12 @@ reviews and acknowledges an AI payload that contains it.
 | Writing a generic win-theme slogan | Trace customer value, discriminator, proof, and evidence |
 | Selecting a mission segment without showing contribution | Connect the segment to outcomes, measures, architecture, and transition |
 | Keeping the only copy in browser storage | Download dated JSON backups |
-| Expecting JSON backup to include pending Review items or source files | Commit reviewed records and retain authorized originals elsewhere |
+| Expecting JSON backup to include pending inbox items or source files | Commit reviewed records and retain authorized originals elsewhere |
 | Pasting an entire transcript and assuming it is saved | Select and stage the needed excerpts; the complete meeting text is discarded on close |
 | Treating a meeting statement as contractual direction | Preserve it as evidence, then validate authority before creating a requirement or commitment |
 | Assuming login makes restricted data safe | Apply the data-handling boundary before capture, ingestion, export, or AI use |
 | Assuming local intake controls browser/OS services | Disable unapproved enhanced spellcheck, translation, extensions, and input services before opening source content |
-| Treating readiness as approval | Use it as a completeness aid and still conduct accountable reviews |
+| Treating workspace coverage as approval | Use it as a completeness aid and still conduct accountable reviews |
 
 ## When something goes wrong
 

@@ -47,7 +47,7 @@ test("core lifecycle editing persists locally and architecture exports remain se
 
   await expect(page).toHaveTitle("Solution Architect Workbench");
   await expect(page.getByRole("note")).toContainText("Approved unclassified, non-CUI information only");
-  const navigation = page.getByRole("navigation", { name: "Lifecycle stages" });
+  const navigation = page.getByRole("navigation", { name: "Solution workspace" });
   for (const [route, label] of [
     ["dashboard", "Command view"],
     ["discover", "Discover"],
@@ -81,7 +81,7 @@ test("core lifecycle editing persists locally and architecture exports remain se
   const seededWinTheme = page.locator(".win-theme-card").first();
   await expect(seededWinTheme).toBeVisible();
   await expect(seededWinTheme.locator('[data-record-field="title"]')).toHaveValue("Mission flexibility without platform redesign");
-  await expect(seededWinTheme.locator('[data-record-field="status"]')).toHaveValue("Substantiated");
+  await expect(seededWinTheme.locator('[data-record-field="status"]')).toHaveValue("Draft");
 
   await openRoute(page, "architect");
   await expect(page.locator("#diagram-canvas svg[role='img']")).toBeVisible();
@@ -121,7 +121,9 @@ test("Technology Assessment explains TRL, MRL, and IRL beside the readiness fiel
   await expect(key).toContainText("Integration Readiness Level");
   await expect(page.getByLabel("Technology Readiness Level (TRL)")).toHaveAttribute("max", "9");
   await expect(page.getByLabel("Manufacturing Readiness Level (MRL)")).toHaveAttribute("max", "10");
-  await expect(page.getByLabel("Integration Readiness Level (IRL)")).toHaveAttribute("max", "9");
+  const irl = page.getByLabel(/Integration Readiness Level \(IRL\)$/);
+  await expect(irl).toHaveAttribute("min", "0");
+  await expect(irl).toHaveAttribute("max", "9");
 });
 
 test("win themes persist edited customer hot-button and evidence links", async ({ page }) => {
@@ -171,7 +173,7 @@ test("bulk hot-button ingestion deduplicates signals without silently creating r
 
   await expect(page.getByText("2 customer hot buttons ingested for validation and traceability.", { exact: true })).toBeVisible();
   await expect(hotButtonCards).toHaveCount(hotButtonsBefore + 2);
-  await expect(page.locator('input[data-record-collection="hotButtons"][data-record-field="title"]').nth(hotButtonsBefore)).toHaveValue("Prioritize operator setup under 15 minutes");
+  await expect(page.locator('[data-record-collection="hotButtons"][data-record-field="title"]').nth(hotButtonsBefore)).toHaveValue("Prioritize operator setup under 15 minutes");
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
   const ingested = await page.evaluate(key => {
     const workspace = JSON.parse(localStorage.getItem(key));

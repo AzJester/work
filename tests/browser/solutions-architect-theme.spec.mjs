@@ -5,10 +5,10 @@ const THEME_KEY = "solution_architect_theme_v1";
 
 test.use({ serviceWorkers: "block" });
 
-async function gotoFresh(page) {
-  const response = await page.goto(`${APP_PATH}#dashboard`, { waitUntil: "domcontentloaded" });
+async function gotoFresh(page, route = "dashboard") {
+  const response = await page.goto(`${APP_PATH}#${route}`, { waitUntil: "domcontentloaded" });
   if (response) expect(response.status()).toBe(200);
-  else await expect(page).toHaveURL(/solutions-architect\/#dashboard$/);
+  else await expect(page).toHaveURL(new RegExp(`solutions-architect/#${route}$`));
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator("#workspace")).toBeVisible();
@@ -17,7 +17,7 @@ async function gotoFresh(page) {
 async function expectResolvedTheme(page, preference, resolved, { toggleSelector = "#theme-toggle", themeColor = true } = {}) {
   const toggle = page.locator(toggleSelector);
   await expect(toggle).toHaveAttribute("role", "switch");
-  await expect(toggle).toHaveAttribute("aria-label", "Dark mode");
+  await expect(toggle).toHaveAttribute("aria-label", "Dark theme");
   await expect(toggle).toHaveAttribute("aria-checked", resolved === "dark" ? "true" : "false");
   await expect(page.locator("html")).toHaveAttribute("data-theme-preference", preference);
   await expect(page.locator("html")).toHaveAttribute("data-theme", resolved);
@@ -84,6 +84,7 @@ test("a fresh theme defaults to Light and the switch persists the explicit oppos
   await toggle.click();
   await expectResolvedTheme(page, "dark", "dark");
   await expectCoreContrast(page);
+  await expect(page.locator(".toast")).toHaveCount(0);
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBe("dark");
 
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -102,12 +103,28 @@ test("stored System follows OS changes and Use device theme restores that behavi
 
   await page.locator("#theme-toggle").click();
   await expectResolvedTheme(page, "dark", "dark");
+  await expect(page.locator(".toast")).toHaveCount(0);
   await page.getByRole("button", { name: "Workspace tools", exact: true }).click();
   const useDeviceTheme = page.getByRole("dialog", { name: "Workspace tools" }).getByRole("button", { name: "Use device theme", exact: true });
   await expect(useDeviceTheme).toHaveAttribute("aria-pressed", "false");
   await useDeviceTheme.click();
   await expectResolvedTheme(page, "system", "light");
+  await expect(page.locator(".toast")).toHaveCount(0);
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBe("system");
+});
+
+test("a theme persistence failure remains visible without restoring routine theme toasts", async ({ page }) => {
+  await gotoFresh(page);
+  await page.evaluate(() => {
+    Storage.prototype.setItem = function syntheticThemeStorageFailure() {
+      throw new DOMException("Synthetic theme quota failure", "QuotaExceededError");
+    };
+  });
+
+  await page.locator("#theme-toggle").click();
+  await expectResolvedTheme(page, "dark", "dark");
+  await expect(page.locator(".toast.error")).toHaveText("Theme changed for this session, but the preference could not be saved.");
+  await expect(page.locator(".toast.ok, .toast.info")).toHaveCount(0);
 });
 
 test("dark select options are opaque and retain readable contrast", async ({ page }) => {
@@ -181,6 +198,99 @@ test("Capture and grouped Workspace tools remain reachable across responsive bre
       await page.getByRole("button", { name: "Close dialog" }).click();
     });
   }
+});
+
+test("tablet navigation stays labeled and exposes the current page while Tools remains visible", async ({ page }) => {
+  await page.setViewportSize({ width: 980, height: 900 });
+  await gotoFresh(page);
+
+  const navigation = page.locator("#lifecycle-navigation");
+  await expect(navigation).toBeVisible();
+  for (const route of ["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]) {
+    await expect.soft(navigation.locator(`.stage-link[data-route="${route}"] .label`), `${route} should remain labeled at 980px`).toBeVisible();
+  }
+
+  const dashboard = navigation.locator('.stage-link[data-route="dashboard"]');
+  await expect(dashboard).toHaveAttribute("aria-current", "page");
+  await navigation.locator('.stage-link[data-route="discover"]').click();
+  await expect(navigation.locator('.stage-link[data-route="discover"]')).toHaveAttribute("aria-current", "page");
+  await expect(navigation.locator('.stage-link[data-route="dashboard"]')).not.toHaveAttribute("aria-current", "page");
+
+  const tools = page.getByRole("button", { name: "Workspace tools", exact: true });
+  await expect(tools).toBeVisible();
+  await expect(tools.locator(".tools-label")).toBeVisible();
+  await expect(tools).toContainText("Tools");
+});
+
+test("representative controls, labels, and long-form fields meet the readable sizing floor", async ({ page }) => {
+  await page.setViewportSize({ width: 1240, height: 900 });
+  await gotoFresh(page, "discover");
+
+  const selectors = [
+    "#solution-select",
+    '[data-solution-field="name"]',
+    '[data-action="quick-capture"]',
+    '[data-action="open-tools"]',
+    '.hot-button-panel .small-button',
+    '.sidebar-actions .text-button',
+    '.delete-record',
+  ];
+  for (const selector of selectors) {
+    const control = page.locator(selector).first();
+    await expect(control).toBeVisible();
+    const height = await control.evaluate(node => node.getBoundingClientRect().height);
+    expect.soft(height, `${selector} should provide a 44px interaction target`).toBeGreaterThanOrEqual(44);
+  }
+
+  const inputFontSize = await page.locator('[data-solution-field="name"]').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  expect(inputFontSize).toBeGreaterThanOrEqual(15);
+
+  const labelFontSize = await page.locator('.field:has([data-solution-field="name"]) > span').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  expect(labelFontSize).toBeGreaterThanOrEqual(13);
+
+  const missionProblem = page.locator('textarea[data-solution-nested="mission.problem"]');
+  await expect(missionProblem).toBeVisible();
+  const textareaHeight = await missionProblem.evaluate(node => node.getBoundingClientRect().height);
+  expect(textareaHeight).toBeGreaterThanOrEqual(112);
+});
+
+test("mobile navigation is labeled, viewport-contained, and closes with Escape", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await gotoFresh(page, "discover");
+
+  const trigger = page.locator('[data-action="toggle-nav"]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-label", "Open workspace navigation");
+  await expect(trigger).toHaveAttribute("aria-controls", "sidebar");
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).toHaveAttribute("aria-label", "Close workspace navigation");
+  await expect(page.locator("#workspace")).toHaveAttribute("inert", "");
+
+  const navigation = page.locator("#lifecycle-navigation");
+  await expect(navigation).toBeVisible();
+  for (const label of ["Command view", "Discover", "Shape", "Assess", "Architect", "Prove", "Propose", "Transition", "Decision package"]) {
+    await expect(navigation.locator(".stage-link .label", { hasText: label }).first()).toBeVisible();
+  }
+  await expect(navigation.locator('.stage-link[data-route="discover"]')).toHaveAttribute("aria-current", "page");
+
+  const box = await navigation.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect.soft(box.y + box.height, "open mobile navigation should remain inside the viewport").toBeLessThanOrEqual(601);
+
+  await page.getByRole("button", { name: "Recovery", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#theme-toggle")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("button", { name: "Recovery", exact: true })).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(navigation).toBeHidden();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveAttribute("aria-label", "Open workspace navigation");
+  await expect(page.locator("#workspace")).not.toHaveAttribute("inert", "");
+  await expect(trigger).toBeFocused();
 });
 
 test("the rendered task guide is semantic, responsive, and shares the theme preference", async ({ page }) => {

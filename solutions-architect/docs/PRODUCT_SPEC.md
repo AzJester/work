@@ -22,10 +22,12 @@ Defense solution architects commonly operate across six connected responsibiliti
 3. **End-to-end architecture** — integrate people, process, hardware, software,
    services, data, networks, facilities, environments, and external systems.
 4. **Technology and business trades** — compare alternatives across performance,
-   maturity, integration, cyber/safety, openness, data rights, supply chain, cost,
-   schedule, and sustainment.
+   maturity, integration, cybersecurity/authorization, system safety, openness, data
+   rights, supply chain, cost, schedule, and sustainment.
 5. **Capture and proposal support** — build a defensible CONOPS, technical approach,
-   discriminators, compliance trace, estimate assumptions, and delivery commitments.
+   discriminators, requirement support trace, estimate assumptions, and delivery
+   commitments while maintaining formal solicitation compliance in its governed
+   proposal system.
 6. **Technical assurance and transition** — prove key claims, manage risks and
    decisions, pass review gates, and hand design intent plus residual risk into
    execution and sustainment.
@@ -80,10 +82,13 @@ A successful workspace lets that user:
 
 ### Lifecycle and command view
 
-- Guide the seven-stage Discover → Shape → Assess → Architect → Prove → Propose →
-  Transition workflow.
+- Guide the seven-lens Discover → Shape → Assess → Architect → Prove → Propose →
+  Transition workflow. Treat the lenses as iterative areas of work, not approval
+  gates, a required sequence, or a calendar; stage records current emphasis only.
 - Calculate an unscheduled obligation list from deterministic workspace checks.
 - Provide direct navigation from each obligation to its owning stage.
+- Describe all percentages as record-coverage indicators, not engineering maturity,
+  approval, certification, authority to operate, or formal readiness-review results.
 
 ### Workspace
 
@@ -93,7 +98,7 @@ A successful workspace lets that user:
 - Export the complete versioned JSON workspace and validate an entire import before
   replacing the active in-memory workspace. Report any final browser-storage failure
   visibly rather than claiming a successful save.
-- Default to Light mode and offer a compact Light/Dark switch in the left navigation.
+- Default to the Light theme and offer a compact theme toggle in the left navigation.
   Provide **Use device theme** under Workspace tools. Theme state must not alter or
   travel with workspace content.
 
@@ -104,7 +109,7 @@ A successful workspace lets that user:
   Integrated Fires; Space Warfighting; Critical Infrastructure Protection; and
   Exploration and Lunar Presence.
 - Require only supported segment values and keep selections solution-scoped.
-- Carry the selections into the mission brief, decision package, readiness checks,
+- Carry the selections into the mission brief, decision package, coverage checks,
   and exact stage-scoped AI payload preview.
 - Treat selection as company mission alignment, not proof of a solution's mission
   contribution, contract scope, or organizational ownership.
@@ -183,12 +188,20 @@ A successful workspace lets that user:
 ### Technology Assessment
 
 - Provide weighted default criteria covering mission fit, performance, maturity,
-  integration, cyber/safety, MOSA/openness, data rights, supply chain, affordability,
-  schedule, and sustainment.
+  integration, cybersecurity/authorization, system safety, MOSA/openness, data
+  rights, supply chain, affordability, schedule, and sustainment. Keep the default
+  weights at 100 percent.
 - Accept scores from 0–5 plus explicit unknown, with rationale, confidence, evidence,
   and optional TRL/MRL/IRL values. Display an in-context key that expands these as
   Technology, Manufacturing, and Integration Readiness Levels and explains the
-  accepted scales.
+  accepted scales: TRL 1–9, MRL 1–10, and IRL 0–9.
+- Store TRL/MRL/IRL as candidate-level summaries. The basis should conservatively
+  reflect the least-mature essential technology, manufacturing path, or integration
+  point; IRL is a limiting integration-maturity summary, not an interface-by-interface
+  assessment. Permit optional `readinessBasis` and `readinessAsOf` candidate metadata
+  without making those fields mandatory for existing v1 workspaces.
+- Label any candidate ordering provisional. A weighted result is calculated only
+  over scored criteria and must be interpreted with assessment and evidence coverage.
 - Never convert an unknown or invalid score to zero.
 
 ### Architecture
@@ -220,6 +233,16 @@ as a reference, not as a certification automatically produced by the app.
   roadmap, evidence gaps, and transition plan.
 - Export Markdown and standalone HTML.
 - Provide a print-ready view for browser PDF generation.
+
+### Requirement support check
+
+- Report whether each current requirement has one direct source-evidence link and an
+  acceptance method.
+- Do not call this lightweight check a solicitation compliance matrix or imply that
+  it parses instructions/evaluation criteria, tracks every shall, assigns proposal
+  response locations and owners, manages exceptions, or determines compliance.
+- Direct teams to maintain the authoritative solicitation matrix in the approved
+  proposal system.
 
 ### Win themes
 
@@ -255,6 +278,10 @@ as a reference, not as a certification automatically produced by the app.
   engineering approval;
 - cost-estimating, pricing, contract, requirements-management, digital-thread, PLM,
   MBSE, or configuration-management system replacement;
+- a many-source requirement-authority model, per-component/per-interface readiness
+  model, or fully structured interface ownership, security-boundary, standards, and
+  verification model;
+- a solicitation compliance matrix or automated compliance determination;
 - complete evaluator-ready proposal-volume or PowerPoint generation;
 - autonomous acceptance of AI output or automatic solution changes.
 
@@ -262,7 +289,7 @@ as a reference, not as a certification automatically produced by the app.
 
 The release is acceptable when the schema and solution isolation are enforced,
 unknowns stay explicit, import validation is all-or-nothing, storage failures stay
-visible, readiness and exports are deterministic, diagrams have keyboard and tabular
+visible, coverage checks and exports are deterministic, diagrams have keyboard and tabular
 alternatives, themes remain separate from content, capture never bypasses review,
 source binaries remain transient, the public data warning remains visible, optional
 AI sends only a reviewed bounded payload, and all static, browser, and production

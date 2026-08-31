@@ -21,9 +21,13 @@ schedule.
 - **Prove** — trades, decisions, risks, external dependencies, review gates, evidence, and
   residual uncertainty.
 - **Propose** — traceable win themes, CONOPS, technical approach, discriminators,
-  compliance trace, estimate assumptions, and delivery commitments.
+  requirement support checks, estimate assumptions, and delivery commitments.
 - **Transition** — roadmap events, ownership, configuration, training, sustainment,
   receiving-team acceptance, and blockers.
+
+These seven areas are iterative work lenses, not approval gates, a required sequence,
+or a calendar. The selected stage records the current emphasis; teams can move among
+the lenses as evidence, trades, and reviews change the solution.
 
 Customer hot buttons can be added individually or ingested from a bounded pasted
 list. Each remains a sourced customer signal with confidence and validation state;
@@ -71,8 +75,9 @@ source, accuracy, authority, classification, or provenance.
 The command view calculates unscheduled obligations such as missing evidence,
 untraced requirements, unsupported assessment scores, incomplete interfaces,
 unowned risks, unresolved decisions, incomplete reviews, and transition blockers.
-These are deterministic checks against the current workspace; they are not a formal
-review or a substitute for engineering judgment.
+Its percentages measure deterministic record coverage against the current workspace;
+they are not engineering-maturity ratings, approval, certification, authority to
+operate, a formal readiness review, or a substitute for engineering judgment.
 
 ## Workspace and exports
 
@@ -83,16 +88,33 @@ export. Each solution's capture inbox is stored separately under the versioned
 `solution-capture-inbox-v1` contract. Save failures stay visible; local storage and
 local recovery points are not durable backups.
 
-The workbench starts in **Light** mode. Its compact **Dark mode** switch is a separate
-browser setting, and **Use device theme** under Workspace tools restores automatic
-system matching. Theme state does not travel with a workspace backup and does not
-alter solution content.
+The workbench starts in **Light** mode. Its compact theme toggle is a separate browser
+setting, and **Use device theme** under Workspace tools restores automatic system
+matching. Theme state does not travel with a workspace backup and does not alter
+solution content.
 
 Decision packages can be downloaded as Markdown or standalone HTML. **Print / Save PDF**
 opens a separate print-ready view and requests the browser print dialog; if the
 dialog does not appear, use the browser's Print command. Choose **Save as PDF**
 where supported. The app does not generate or retain a PDF itself.
 Architecture views can be downloaded separately as SVG or PNG.
+
+## Decision-support limits
+
+Technology candidates use weighted 0–5 criteria plus optional TRL 1–9, MRL 1–10,
+and IRL 0–9 values. The latter are candidate-level summaries; IRL should reflect the
+limiting essential integration point, not imply that every interface has been rated.
+The JSON contract can retain optional readiness-basis and as-of metadata. Candidate
+ordering remains provisional because the weighted mean uses only scored criteria;
+coverage and evidence coverage must be considered with the score.
+
+The Propose view's Requirement support check only identifies whether a current
+requirement has one linked source and an acceptance method. It is not a solicitation
+compliance matrix and does not parse instructions, track every shall, assign response
+locations, manage exceptions, or determine compliance. Likewise, requirements have
+one direct source-evidence field and architecture exchanges do not have separate
+structured owner, security-boundary, standard, or verification-method fields in v1.
+Keep the governed authoritative artifacts in approved systems.
 
 ## Optional AI assistance
 

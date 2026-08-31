@@ -42,7 +42,7 @@ export const ARTIFACT_TYPES = Object.freeze([
   "conops",
   "technical_approach",
   "discriminators",
-  "compliance_trace",
+  "requirement_support_check",
   "estimate_assumptions",
   "delivery_commitments",
   "trade_study",

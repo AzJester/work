@@ -97,8 +97,8 @@ npm run test:browser
 7. Select multiple company mission segments; confirm they persist, export in the
    decision package, appear in reviewed AI payload scope, and stay isolated by
    solution.
-8. Confirm a fresh browser starts in Light mode. Toggle Dark and Light from the left
-   navigation, then use **Use device theme** under Workspace tools. Confirm explicit
+8. Confirm a fresh browser starts in the Light theme. Use the compact toggle in the
+   left navigation, then use **Use device theme** under Workspace tools. Confirm explicit
    preferences persist separately from workspace content, System responds to the
    operating-system preference, and native dropdown options remain readable in Dark.
 9. Use Quick Capture and the Review inbox across two solutions. Confirm no capture

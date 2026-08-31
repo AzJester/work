@@ -20,7 +20,7 @@ function applyPreference(preference) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b1119" : "#eef3f6");
   if (toggle) {
     toggle.setAttribute("aria-checked", String(resolved === "dark"));
-    toggle.title = resolved === "dark" ? "Switch to light mode" : "Switch to dark mode";
+    toggle.title = resolved === "dark" ? "Switch to light theme" : "Switch to dark theme";
   }
 }
 

@@ -57,7 +57,8 @@ export const DEFAULT_CRITERIA = Object.freeze([
   ["performance", "Performance", 10],
   ["maturity", "Maturity", 8],
   ["integration", "Integration", 10],
-  ["cyber-safety", "Cyber and safety", 10],
+  ["cybersecurity-authorization", "Cybersecurity and authorization", 5],
+  ["system-safety", "System safety", 5],
   ["mosa", "MOSA and openness", 10],
   ["data-rights", "Data rights", 8],
   ["supply-chain", "Supply chain", 7],
@@ -156,11 +157,17 @@ const RECORD_FIELD_TYPES = Object.freeze({
 });
 
 const OPTIONAL_RECORD_FIELD_TYPES = Object.freeze({
-  evidence: Object.freeze({ sourceType: "string", meetingDate: "string", participants: "array", missionSegments: "array" })
+  evidence: Object.freeze({ sourceType: "string", meetingDate: "string", participants: "array", missionSegments: "array" }),
+  candidates: Object.freeze({ readinessBasis: "string", readinessAsOf: "string" })
 });
 
 const AI_ACTIONS = Object.freeze(["draft_artifact", "critique_artifact", "find_gaps", "generate_review_questions", "propose_architecture_view"]);
-const AI_ARTIFACT_TYPES = Object.freeze(["mission_brief", "conops", "technical_approach", "discriminators", "compliance_trace", "estimate_assumptions", "delivery_commitments", "trade_study", "decision_brief", "transition_plan", "review_package"]);
+const AI_ARTIFACT_TYPES = Object.freeze([
+  "mission_brief", "conops", "technical_approach", "discriminators", "requirement_support_check",
+  "estimate_assumptions", "delivery_commitments", "trade_study", "decision_brief", "transition_plan", "review_package",
+  // Compatibility-only: preserve previously saved browser-local drafts created under the earlier contract.
+  "compliance_trace"
+]);
 const AI_FINDING_SEVERITIES = Object.freeze(["critical", "high", "medium", "low", "info"]);
 const AI_FINDING_CATEGORIES = Object.freeze(["evidence", "traceability", "requirement", "technology", "score", "interface", "decision", "risk", "review", "transition", "proposal", "other"]);
 const AI_VIEW_TYPES = Object.freeze(["mission_context", "operational_thread", "system_interfaces", "data_flow", "deployment_transition"]);
@@ -353,17 +360,20 @@ function seedSyntheticSolution(workspace) {
       name: "Candidate Alpha mission package",
       category: "Integrated hardware and software",
       vendor: "Synthetic supplier A",
-      description: "Ruggedized sensor, edge compute, and adapter software.",
+      description: "Ruggedized sensor, edge compute, and host-platform adapter software assessed as one integrated mission-package option.",
       trl: 7,
       mrl: 5,
       irl: 5,
+      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence; they are not an approval or authorization determination.",
+      readinessAsOf: "2026-08-31",
       status: "Shortlist",
       scores: [
         score("criterion_mission-fit", 4, "Covers the target mission thread.", ["evidence_mission_need"]),
         score("criterion_performance", 4, "Bench observation shows processing margin.", ["evidence_lab_result"]),
         score("criterion_maturity", 3, "Prototype demonstrated in a relevant environment."),
         score("criterion_integration", 3, "Adapter required for the host platform.", ["evidence_interface_draft"]),
-        score("criterion_cyber-safety", 3, "Boundary defined; control inheritance is unresolved."),
+        score("criterion_cybersecurity-authorization", 3, "Boundary defined; authorization-control inheritance remains unresolved."),
+        score("criterion_system-safety", 3, "Host-platform safety assessment and supporting evidence remain incomplete."),
         score("criterion_mosa", 4, "Documented modular boundary."),
         score("criterion_data-rights", null, "License and interface-data rights are not confirmed."),
         score("criterion_supply-chain", 3, "Key compute component has a single qualified source."),
@@ -378,17 +388,20 @@ function seedSyntheticSolution(workspace) {
       name: "Candidate Bravo open sensor stack",
       category: "Sensor and integration kit",
       vendor: "Synthetic supplier B",
-      description: "Open sensor interface with government-integrated edge software.",
+      description: "Open sensor interface and integration kit with government-integrated edge software assessed as one integrated mission-package option.",
       trl: 6,
       mrl: 4,
       irl: 6,
+      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence; they are not an approval or authorization determination.",
+      readinessAsOf: "2026-08-31",
       status: "Shortlist",
       scores: [
         score("criterion_mission-fit", 4, "Matches required sensing modes.", ["evidence_mission_need"]),
         score("criterion_performance", null, "Representative performance evidence is pending."),
         score("criterion_maturity", 3, "Subsystem prototype demonstrated."),
         score("criterion_integration", 4, "Interface aligns with the draft platform boundary.", ["evidence_interface_draft"]),
-        score("criterion_cyber-safety", 3, "Government software integration reduces opaque components."),
+        score("criterion_cybersecurity-authorization", 3, "Government software integration reduces opaque components; authorization evidence remains incomplete."),
+        score("criterion_system-safety", 3, "The interface approach is defined; host-platform safety evidence remains incomplete."),
         score("criterion_mosa", 5, "Open interface and replaceable modules.", ["evidence_interface_draft"]),
         score("criterion_data-rights", 4, "Interface package offered with government-purpose rights."),
         score("criterion_supply-chain", 3, "Two sensor suppliers; compute path not yet qualified."),
@@ -407,7 +420,7 @@ function seedSyntheticSolution(workspace) {
     proof: "Interface conformance plus a representative sensor-swap mission-thread demonstration.",
     linkedHotButtonIds: ["hot_button_open"],
     sourceEvidenceIds: ["evidence_interface_draft", "evidence_lab_result"],
-    status: "Substantiated"
+    status: "Draft"
   });
 
   const views = [
@@ -576,6 +589,12 @@ function validateEvidenceMetadata(record, path, errors) {
   }
 }
 
+function validateCandidateMetadata(record, path, errors) {
+  if (Object.hasOwn(record, "readinessAsOf") && record.readinessAsOf !== "" && !validCalendarDate(record.readinessAsOf)) {
+    errors.push(`${path}.readinessAsOf must use a valid YYYY-MM-DD date or be empty.`);
+  }
+}
+
 function validateSolutionShape(solution, path, errors) {
   const stringFields = ["name", "customer", "domain", "stage", "status", "decision", "description", "classification", "createdAt", "updatedAt"];
   const allowedKeys = new Set(["id", ...stringFields, "missionSegments", "mission", "proposal"]);
@@ -626,6 +645,7 @@ function validateRecordShape(record, collectionName, path, errors) {
   }
   validateRequiredFields(record, RECORD_FIELD_TYPES[collectionName], path, errors, ["id", "solutionId"], OPTIONAL_RECORD_FIELD_TYPES[collectionName]);
   if (collectionName === "evidence") validateEvidenceMetadata(record, path, errors);
+  if (collectionName === "candidates") validateCandidateMetadata(record, path, errors);
   if (collectionName === "candidates" && Array.isArray(record.scores)) {
     record.scores.forEach((score, index) => validateScoreShape(score, `${path}.scores[${index}]`, errors));
   }
@@ -709,9 +729,9 @@ export function validateWorkspace(candidate, { includeSnapshots = true } = {}) {
   }
   for (const [index, technologyCandidate] of candidate.candidates.entries()) {
     if (!Array.isArray(technologyCandidate.scores)) errors.push(`candidates[${index}].scores must be an array.`);
-    for (const [fieldName, maximum] of [["trl", 9], ["mrl", 10], ["irl", 9]]) {
+    for (const [fieldName, minimum, maximum] of [["trl", 1, 9], ["mrl", 1, 10], ["irl", 0, 9]]) {
       const value = technologyCandidate[fieldName];
-      if (value !== null && (!Number.isInteger(value) || value < 1 || value > maximum)) errors.push(`candidates[${index}].${fieldName} must be 1-${maximum} or null.`);
+      if (value !== null && (!Number.isInteger(value) || value < minimum || value > maximum)) errors.push(`candidates[${index}].${fieldName} must be ${minimum}-${maximum} or null.`);
     }
     const scoredCriteria = new Set();
     for (const [scoreIndex, score] of (Array.isArray(technologyCandidate.scores) ? technologyCandidate.scores : []).entries()) {
@@ -1039,7 +1059,8 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
       const result = assessmentResult(workspace, solutionId, candidate.id);
       return [
         `### ${markdownText(candidate.name)}`,
-        `Weighted score: ${result.score === null ? "Unknown" : result.score.toFixed(2)} / 5 · Assessment coverage: ${Math.round(result.coverage * 100)}% · Evidence coverage: ${Math.round(result.evidenceCoverage * 100)}%`,
+        `Candidate-level readiness summary: TRL ${candidate.trl ?? "Unknown"} · MRL ${candidate.mrl ?? "Unknown"} · IRL ${candidate.irl ?? "Unknown"}${candidate.readinessAsOf ? ` · As of ${markdownText(candidate.readinessAsOf)}` : ""}${candidate.readinessBasis ? `\n\n**Basis.** ${markdownText(candidate.readinessBasis)}` : ""}`,
+        `Provisional weighted score: ${result.score === null ? "Unknown" : result.score.toFixed(2)} / 5 · Assessment coverage: ${Math.round(result.coverage * 100)}% · Evidence coverage: ${Math.round(result.evidenceCoverage * 100)}%`,
         markdownTable(["Criterion", "Weight", "Score", "Rationale", "Evidence"], result.rows.map(row => [row.criterion.name, `${row.criterion.weight}%`, row.value === null ? "Unknown" : row.value, row.rationale, row.evidenceIds?.map(id => evidence.find(item => item.id === id)?.title || id).join("; ") || "None"]))
       ];
     }),
@@ -1059,12 +1080,12 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
     markdownTable(["Stage", "Activity", "Start", "End", "Owner", "Status", "Gate"], roadmap.map(record => [record.stage, record.title, record.start, record.end, record.owner, record.status, record.gate ? "Yes" : "No"])),
     "## Transition plan",
     markdownTable(["Action", "Owner", "Target", "Status", "Blocker"], transitions.map(record => [record.title, record.owner, record.target, record.status, record.blocker])),
-    "## Readiness and evidence gaps",
-    `Overall ${readiness.overall}% · Traceability ${readiness.traceability}% · Evidence ${readiness.evidence}% · Interfaces ${readiness.interfaces}% · Transition ${readiness.transition}%`,
+    "## Coverage and evidence gaps",
+    `Overall coverage ${readiness.overall}% · Traceability ${readiness.traceability}% · Evidence ${readiness.evidence}% · Element connectivity ${readiness.interfaces}% · Transition actions ${readiness.transition}%`,
     obligations.length ? obligations.map(item => `- **${markdownText(item.stage)} · ${markdownText(item.severity.toUpperCase())}:** ${markdownText(item.message)}`).join("\n") : "No deterministic gaps detected.",
     "## Source evidence",
     markdownTable(
-      ["Evidence", "Type", "Meeting date", "Participants", "Mission segments", "Source", "Confidence", "Reference", "Notes"],
+      ["Evidence", "Type", "Source date", "Participants", "Mission segments", "Source", "Confidence", "Reference", "Notes"],
       evidence.map(record => [record.title, record.sourceType || "", record.meetingDate || "", record.participants?.join("; ") || "", record.missionSegments?.join("; ") || "", record.source, record.confidence, safeHttpUrl(record.url), record.notes])
     )
   ];

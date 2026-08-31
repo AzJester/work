@@ -128,6 +128,46 @@ test("schema validation fails closed on unsafe IDs, invalid scores, and cross-so
   assert.match(engine.validateWorkspaceImport(wrongVersion).errors.join("\n"), /unsupported workspace/i);
 });
 
+test("readiness bounds permit IRL 0-9 while retaining the published TRL and MRL ranges", () => {
+  const workspace = engine.createWorkspace();
+
+  const validMinimum = structuredClone(workspace);
+  validMinimum.candidates[0].trl = 1;
+  validMinimum.candidates[0].mrl = 1;
+  validMinimum.candidates[0].irl = 0;
+  assert.equal(engine.validateWorkspace(validMinimum).valid, true);
+
+  for (const [field, value, expected] of [
+    ["trl", 0, /trl must be 1-9 or null/i],
+    ["trl", 10, /trl must be 1-9 or null/i],
+    ["mrl", 0, /mrl must be 1-10 or null/i],
+    ["mrl", 11, /mrl must be 1-10 or null/i],
+    ["irl", -1, /irl must be 0-9 or null/i],
+    ["irl", 10, /irl must be 0-9 or null/i],
+  ]) {
+    const invalid = structuredClone(workspace);
+    invalid.candidates[0][field] = value;
+    assert.match(engine.validateWorkspace(invalid).errors.join("\n"), expected);
+  }
+});
+
+test("default assessments separate cybersecurity from system safety without changing total weight", () => {
+  const workspace = engine.createWorkspace();
+  const criteria = workspace.criteria.filter(record => record.solutionId === workspace.activeSolutionId);
+  const byName = new Map(criteria.map(record => [record.name, record]));
+
+  assert.ok(byName.has("Cybersecurity and authorization"), "Cybersecurity and authorization should be independently assessed");
+  assert.ok(byName.has("System safety"), "System safety should be independently assessed");
+  assert.equal(byName.has("Cyber and safety"), false, "the combined criterion should no longer be seeded");
+  assert.equal(criteria.reduce((total, criterion) => total + criterion.weight, 0), 100);
+
+  for (const candidate of workspace.candidates.filter(record => record.solutionId === workspace.activeSolutionId)) {
+    const scoredCriterionIds = new Set(candidate.scores.map(score => score.criterionId));
+    assert.ok(scoredCriterionIds.has(byName.get("Cybersecurity and authorization").id));
+    assert.ok(scoredCriterionIds.has(byName.get("System safety").id));
+  }
+});
+
 test("schema validation fails closed on malformed nested fields and every required relationship array", () => {
   const workspace = engine.createWorkspace();
   const malformedMission = structuredClone(workspace);
@@ -269,7 +309,7 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
     "Technology Assessment",
     "Trade studies",
     "Architecture views",
-    "Readiness and evidence gaps",
+    "Coverage and evidence gaps",
     "Source evidence"
   ]) {
     assert.match(markdown, new RegExp(`## ${heading}`, "i"));
