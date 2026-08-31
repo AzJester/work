@@ -460,6 +460,26 @@
     .availability[data-access="Account"]::before { background: var(--amber); box-shadow: 0 0 0 4px var(--amber-dim); }
     .availability[data-access="Source"]::before { background: var(--muted); box-shadow: 0 0 0 4px rgba(152, 167, 181, 0.1); }
 
+    .development-stamp {
+      align-self: flex-start;
+      display: inline-flex;
+      margin: 18px 0 -12px;
+      padding: 5px 8px;
+      border: 1px solid rgba(255, 197, 92, 0.38);
+      border-radius: 7px;
+      color: var(--amber);
+      background: var(--amber-dim);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .development-stamp[hidden] { display: none; }
+
     .category {
       margin: 28px 0 9px;
       color: var(--card-accent, var(--cyan));
@@ -899,6 +919,7 @@
         <span class="card-index"></span>
         <span class="availability"></span>
       </div>
+      <p class="development-stamp" hidden></p>
       <p class="category"></p>
       <h3></h3>
       <p class="description"></p>
@@ -961,6 +982,7 @@
           description: "Shape defense solutions from customer priorities and win themes through technology assessment, architecture, evidence, proposals, and transition.",
           category: "Defense",
           access: "Public",
+          status: "Under development",
           liveUrl: "https://azjester.github.io/work/solutions-architect/",
           repoUrl: "https://github.com/AzJester/work/tree/main/solutions-architect",
           repo: "work",
@@ -1244,7 +1266,7 @@
       };
 
       function searchableText(app) {
-        return [app.title, app.description, app.category, app.access, app.repo, ...(app.tags || [])]
+        return [app.title, app.description, app.category, app.access, app.status, app.repo, ...(app.tags || [])]
           .join(" ")
           .toLocaleLowerCase();
       }
@@ -1291,6 +1313,11 @@
           const availability = card.querySelector(".availability");
           availability.dataset.access = app.access;
           availability.textContent = app.access === "Public" ? "Live" : app.access === "Account" ? "Account" : "Source";
+          const developmentStamp = card.querySelector(".development-stamp");
+          if (app.status) {
+            developmentStamp.hidden = false;
+            developmentStamp.textContent = app.status.toLocaleUpperCase();
+          }
           card.querySelector(".category").textContent = app.category;
           card.querySelector("h3").textContent = app.title;
           card.querySelector(".description").textContent = app.description;
