@@ -73,10 +73,10 @@ test("curated catalog contains all 31 identified applications", () => {
   assert.match(hub, /One launch point for every public AzJester application/);
 });
 
-test("Solution Architect Workbench is published and represented honestly", () => {
+test("Solution Architect Workbench is linked and stamped as under development", () => {
   assert.match(
     hub,
-    /title: "Solution Architect Workbench",[\s\S]{0,500}category: "Defense",[\s\S]{0,500}access: "Public"/,
+    /title: "Solution Architect Workbench",[\s\S]{0,500}category: "Defense",[\s\S]{0,500}access: "Public",[\s\S]{0,200}status: "Under development"/,
   );
   assert.match(
     hub,
@@ -86,6 +86,9 @@ test("Solution Architect Workbench is published and represented honestly", () =>
     hub,
     /title: "Solution Architect Workbench",[\s\S]{0,800}repoUrl: "https:\/\/github\.com\/AzJester\/work\/tree\/main\/solutions-architect"/,
   );
+  assert.match(hub, /<p class="development-stamp" hidden><\/p>/);
+  assert.match(hub, /developmentStamp\.textContent = app\.status\.toLocaleUpperCase\(\)/);
+  assert.match(hub, /app\.access, app\.status, app\.repo/);
   assert.match(pagesWorkflow, /cp -R[^\n]*solutions-architect[^\n]*_site\//);
 });
 
