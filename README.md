@@ -1,6 +1,15 @@
 # work
 My Work Repository
 
+## Application Library
+
+A searchable launch point for every public application built across the
+[`AzJester`](https://github.com/AzJester) repositories. The catalog includes live
+products, account-gated tools, and source-only applications that have not been
+published yet. It also checks public GitHub metadata for newly deployed repositories.
+
+### [Open the Application Library](https://azjester.github.io/work/apps.html)
+
 ## Map Builder
 
 A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.2.3**, created by **Dr. Shane Turner**:

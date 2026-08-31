@@ -1,0 +1,105 @@
+import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { Script } from "node:vm";
+
+const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const hub = readFileSync(resolve(root, "apps.html"), "utf8");
+const readme = readFileSync(resolve(root, "README.md"), "utf8");
+const pagesWorkflow = readFileSync(resolve(root, ".github/workflows/pages.yml"), "utf8");
+
+const requiredLiveUrls = [
+  "https://azjester.github.io/work/",
+  "https://azjester.github.io/work/astrion-division/ldawif/",
+  "https://azjester.github.io/work/black-hat-agent/",
+  "https://azjester.github.io/work/dashboard.html",
+  "https://azjester.github.io/work/geopresence/",
+  "https://azjester.github.io/work/radar-signal-chain.html",
+  "https://azjester.github.io/work/roadmap.html",
+  "https://azjester.github.io/work/status.html",
+  "https://azjester.github.io/work/tracker.html",
+  "https://azjester.github.io/work/weekly-task-tracker.html",
+  "https://azjester.github.io/J-C_Replace/",
+  "https://ai-training.st-dba.com/",
+  "https://compliance.insightfuldefense.com/",
+  "https://vault.st-dba.com/",
+  "https://azjester.github.io/usn-ai-tac-sim/",
+  "https://cuas.insightfuldefense.com/",
+  "https://insightfuldefense.com/",
+  "https://infostyles.onrender.com/",
+  "https://resume.st-dba.com/",
+  "https://azjester.github.io/SEG-SCHEDULE/",
+  "https://azjester.github.io/lotus/",
+  "https://azjester.github.io/gun-laws/",
+  "https://azjester.github.io/SIGMA-155/",
+  "https://azjester.github.io/asteroids-/",
+  "https://azjester.github.io/agile-pricer/",
+  "https://azjester.github.io/WarGames-/",
+];
+
+const sourceOnlyRepos = [
+  "https://github.com/AzJester/roadmap-lite/blob/main/RoadmapBuilder.html",
+  "https://github.com/AzJester/legal-app/blob/main/legal-ai-value-tracker.html",
+  "https://github.com/AzJester/ai-metrics",
+];
+
+test("application hub publishes at a stable root HTML route", () => {
+  assert.match(hub, /<link rel="canonical" href="https:\/\/azjester\.github\.io\/work\/apps\.html">/);
+  assert.match(readme, /https:\/\/azjester\.github\.io\/work\/apps\.html/);
+  assert.match(pagesWorkflow, /cp -- \*\.html/,
+    "The existing Pages artifact must continue to include root HTML files without a workflow change");
+});
+
+test("social metadata uses the dedicated published application-library card", () => {
+  const socialCardPath = resolve(root, "apps-og.png");
+  assert.ok(existsSync(socialCardPath));
+  const socialCard = readFileSync(socialCardPath);
+  assert.equal(socialCard.readUInt32BE(16), 1200);
+  assert.equal(socialCard.readUInt32BE(20), 630);
+  assert.match(hub, /property="og:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
+  assert.match(hub, /property="og:image:width" content="1200"/);
+  assert.match(hub, /property="og:image:height" content="630"/);
+  assert.match(hub, /name="twitter:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
+});
+
+test("curated catalog contains all 29 identified applications", () => {
+  const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
+  const appCount = [...catalogBlock.matchAll(/\n\s{10}title: "/g)].length;
+  assert.equal(appCount, 29);
+  assert.match(hub, /One launch point for every public AzJester application/);
+});
+
+test("all verified live applications use their working primary URLs", () => {
+  for (const url of requiredLiveUrls) {
+    assert.ok(hub.includes(`liveUrl: "${url}"`), `Missing verified live URL: ${url}`);
+  }
+  assert.doesNotMatch(hub, /https:\/\/info-styles\.vercel\.app/,
+    "Do not restore the stale InfoStyles Vercel homepage");
+});
+
+test("unpublished applications are represented honestly as source-only", () => {
+  for (const url of sourceOnlyRepos) assert.ok(hub.includes(`repoUrl: "${url}"`), `Missing source-only app: ${url}`);
+  assert.equal((hub.match(/access: "Source"/g) || []).length, 3);
+});
+
+test("search, category filters, and accessible link behavior are present", () => {
+  assert.match(hub, /id="app-search"[^>]*type="search"/);
+  assert.match(hub, /aria-label="Filter applications by category"/);
+  assert.match(hub, /aria-live="polite"/);
+  assert.match(hub, /rel = "noopener noreferrer"/);
+  assert.match(hub, /prefers-reduced-motion/);
+});
+
+test("the inline application module parses without a build step", () => {
+  const scripts = [...hub.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+  assert.ok(scripts.length > 0);
+  assert.doesNotThrow(() => new Script(scripts.at(-1)[1]));
+});
+
+test("GitHub refresh has a curated fallback and discovers future public deployments", () => {
+  assert.match(hub, /api\.github\.com\/users\/\$\{GITHUB_USER\}\/repos/);
+  assert.match(hub, /repo\.has_pages/);
+  assert.match(hub, /The curated catalog remains complete/);
+});
