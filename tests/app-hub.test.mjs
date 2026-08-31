@@ -21,6 +21,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/status.html",
   "https://azjester.github.io/work/tracker.html",
   "https://azjester.github.io/work/weekly-task-tracker.html",
+  "https://shaine-weekly-status.onrender.com/",
   "https://azjester.github.io/J-C_Replace/",
   "https://ai-training.st-dba.com/",
   "https://compliance.insightfuldefense.com/",
@@ -64,10 +65,10 @@ test("social metadata uses the dedicated published application-library card", ()
   assert.match(hub, /name="twitter:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
 });
 
-test("curated catalog contains all 29 identified applications", () => {
+test("curated catalog contains all 30 identified applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const appCount = [...catalogBlock.matchAll(/\n\s{10}title: "/g)].length;
-  assert.equal(appCount, 29);
+  assert.equal(appCount, 30);
   assert.match(hub, /One launch point for every public AzJester application/);
 });
 
