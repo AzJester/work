@@ -86,7 +86,7 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
     })
     .toBe(200);
 
-  for (const asset of ["app.js", "engine.js", "styles.css", "print-package.css", "sw.js", "icon.svg", "og-card.png"]) {
+  for (const asset of ["app.js", "engine.js", "theme-init.js", "styles.css", "print-package.css", "guide.html", "sw.js", "icon.svg", "og-card.png"]) {
     expect((await request.get(`../solutions-architect/${asset}`, { failOnStatusCode: false })).status()).toBe(200);
   }
   expect((await request.get("../assets/vendor/supabase-js-2.110.2.umd.js", { failOnStatusCode: false })).status()).toBe(200);
@@ -98,8 +98,15 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
   await expect(page).toHaveTitle("Solution Architect Workbench");
   await expect(page.locator(".development-banner")).toContainText("Under development");
   await expect(page.getByRole("note")).toContainText("Approved unclassified, non-CUI information only");
-  const lifecycle = page.getByRole("navigation", { name: "Lifecycle stages" });
+  const lifecycle = page.getByRole("navigation", { name: "Solution workspace" });
   await expect(lifecycle).toBeVisible();
+  const themeToggle = page.getByRole("switch", { name: "Dark theme" });
+  await expect(themeToggle).toBeVisible();
+  await expect(page.getByText("Dark mode", { exact: true })).toHaveCount(0);
+  await themeToggle.click();
+  await expect(page.locator("#toast-region")).toBeEmpty();
+  await themeToggle.click();
+  await expect(page.locator("#toast-region")).toBeEmpty();
   await expect(page.getByText("Customer hot buttons", { exact: true })).not.toBeVisible();
   await lifecycle.getByRole("link", { name: /Discover$/ }).click();
   await expect(page.getByText("Customer hot buttons", { exact: true })).toBeVisible();
