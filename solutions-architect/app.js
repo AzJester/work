@@ -455,6 +455,7 @@ function render() {
           <span id="save-state" class="save-state" data-tone="${dirty ? "warn" : "ok"}">${dirty ? "Unsaved changes" : "Saved locally"}</span>
           <div class="top-actions"><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Review capture inbox, ${pendingCaptureCount()} pending"><span>Review</span><strong>${pendingCaptureCount()}</strong></button><button class="icon-button" type="button" data-action="open-tools" aria-label="Workspace tools" title="Workspace tools">•••</button></div>
         </header>
+        <aside class="development-banner" aria-label="Development status"><strong>Under development</strong><span>This workbench is still being actively built and refined.</span></aside>
         <div class="data-boundary" role="note"><strong>Data boundary</strong><span>Approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content. Browser storage is not an authorization boundary. <a href="https://www.acquisition.gov/dfars/204.7302-policy." target="_blank" rel="noopener noreferrer">DFARS safeguarding policy context</a>.</span></div>
         <div class="content">${renderRoute(solution)}</div>
       </main>

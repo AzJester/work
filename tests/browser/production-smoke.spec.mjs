@@ -96,6 +96,7 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
   const response = await page.goto(route, { waitUntil: "domcontentloaded" });
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle("Solution Architect Workbench");
+  await expect(page.locator(".development-banner")).toContainText("Under development");
   await expect(page.getByRole("note")).toContainText("Approved unclassified, non-CUI information only");
   const lifecycle = page.getByRole("navigation", { name: "Lifecycle stages" });
   await expect(lifecycle).toBeVisible();
@@ -111,6 +112,15 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
 
   const hub = await request.get(`../apps.html?deployment-smoke=${Date.now()}`, { failOnStatusCode: false });
   expect(hub.status()).toBe(200);
-  expect(await hub.text()).toContain("https://azjester.github.io/work/solutions-architect/");
+  const hubSource = await hub.text();
+  expect(hubSource).toContain("https://azjester.github.io/work/solutions-architect/");
+  expect(hubSource).toContain('status: "Under development"');
+
+  const hubResponse = await page.goto(`../apps.html?q=Solution+Architect&deployment-smoke=${Date.now()}`, { waitUntil: "domcontentloaded" });
+  expect(hubResponse?.status()).toBe(200);
+  const solutionCard = page.locator(".app-card").filter({
+    has: page.getByRole("heading", { name: "Solution Architect Workbench", exact: true }),
+  });
+  await expect(solutionCard.locator(".development-stamp")).toHaveText("UNDER DEVELOPMENT");
   expect(pageErrors).toEqual([]);
 });
