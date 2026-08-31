@@ -85,6 +85,10 @@ test("unpublished applications are represented honestly as source-only", () => {
   assert.equal((hub.match(/access: "Source"/g) || []).length, 3);
 });
 
+test("The AI Compendium is classified as a graphics application", () => {
+  assert.match(hub, /title: "The AI Compendium",[\s\S]{0,260}category: "Design & Graphics"/);
+});
+
 test("search, category filters, and accessible link behavior are present", () => {
   assert.match(hub, /id="app-search"[^>]*type="search"/);
   assert.match(hub, /aria-label="Filter applications by category"/);

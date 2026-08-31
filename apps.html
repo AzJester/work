@@ -393,6 +393,7 @@
 
     .app-card[data-category="Defense"] { --card-accent: var(--amber); }
     .app-card[data-category="AI & Learning"] { --card-accent: var(--violet); }
+    .app-card[data-category="Design & Graphics"] { --card-accent: var(--violet); }
     .app-card[data-category="Personal"] { --card-accent: var(--green); }
     .app-card[data-category="Games"] { --card-accent: #ff8b84; }
 
@@ -841,7 +842,7 @@
         {
           title: "The AI Compendium",
           description: "Explore more than 1,500 infographic styles, reusable prompts, and an AI skills hub in a searchable visual library.",
-          category: "AI & Learning",
+          category: "Design & Graphics",
           access: "Public",
           liveUrl: "https://infostyles.onrender.com/",
           repoUrl: "https://github.com/AzJester/InfoStyles",
@@ -980,7 +981,7 @@
         }
       ];
 
-      const categoryOrder = ["All", "Operations", "Defense", "Research", "AI & Learning", "Personal", "Games", "More", "Source only"];
+      const categoryOrder = ["All", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "Personal", "Games", "More", "Source only"];
       const state = { query: "", category: "All" };
       const elements = {
         grid: document.getElementById("app-grid"),
