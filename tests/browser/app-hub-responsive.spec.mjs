@@ -122,7 +122,7 @@ test("deep-linked filters and application links resolve visibly and correctly", 
   const solutionWorkbench = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Solution Architect Workbench", exact: true }) });
   await expect(solutionWorkbench).toContainText("Defense");
   await expect(solutionWorkbench.locator(".availability")).toHaveText("Live");
-  await expect(solutionWorkbench.locator(".development-stamp")).toBeHidden();
+  await expect(solutionWorkbench.locator(".development-stamp")).toHaveText("UNDER DEVELOPMENT");
   await expect(solutionWorkbench.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://azjester.github.io/work/solutions-architect/");
   await expect(solutionWorkbench.getByRole("link", { name: /^Source:/ })).toHaveAttribute("href", "https://github.com/AzJester/work/tree/main/solutions-architect");
 

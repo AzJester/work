@@ -73,12 +73,12 @@ test("curated catalog contains all 31 identified applications", () => {
   assert.match(hub, /One launch point for every public AzJester application/);
 });
 
-test("Solution Architect Workbench is published and represented honestly", () => {
+test("Solution Architect Workbench is linked and stamped as under development", () => {
   assert.match(
     hub,
     /title: "Solution Architect Workbench",[\s\S]{0,500}category: "Defense",[\s\S]{0,500}access: "Public"/,
   );
-  assert.doesNotMatch(
+  assert.match(
     hub,
     /title: "Solution Architect Workbench",[\s\S]{0,500}status: "Under development"/,
   );

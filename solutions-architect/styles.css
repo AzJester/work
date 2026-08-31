@@ -141,6 +141,9 @@ button:disabled { opacity: .48; cursor: not-allowed; }
 .title-block { min-width: 0; flex: 1 1 auto; }
 .title-block h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
 .title-block p { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+.development-banner { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 42px; padding: 9px 28px; color: var(--boundary-ink); border-bottom: 1px solid color-mix(in srgb, var(--amber) 34%, var(--line)); background: var(--amber-dim); }
+.development-banner strong { flex: 0 0 auto; color: var(--amber); font: 800 12px/1.2 var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+.development-banner span { color: var(--muted); font-size: 13px; }
 .top-actions { margin-left: 0; display: flex; align-items: center; gap: 7px; }
 .mobile-menu { display: none; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--panel); cursor: pointer; font-size: 14px; font-weight: 700; }
 .save-state { flex: 0 0 auto; color: var(--quiet); font: 750 11px/1 var(--mono); letter-spacing: .04em; }
@@ -528,6 +531,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .top-actions > button, .tools-button { width: 100%; min-width: 0; }
   .tools-icon { display: none; }
   .inbox-button { justify-content: center; }
+  .development-banner { align-items: flex-start; padding-inline: 14px; }
   .data-boundary { min-height: 54px; align-items: flex-start; padding: 10px 14px; font-size: 13px; }
   .boundary-short { display: inline; }
   .boundary-detail { display: none; }
@@ -628,7 +632,7 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 
 @media print {
-  .sidebar, .topbar, .guide-header, .guide-footer, .data-boundary, .stage-rail, .section-toolbar, .toast-region { display: none !important; }
+  .sidebar, .topbar, .guide-header, .guide-footer, .development-banner, .data-boundary, .stage-rail, .section-toolbar, .toast-region { display: none !important; }
   body, .panel, .workbench { color: #111; background: #fff; }
   .guide-page { width: 100%; margin: 0; padding: 0; border: 0; box-shadow: none; }
   .shell { display: block; }

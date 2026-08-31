@@ -46,6 +46,7 @@ test("core lifecycle editing persists locally and architecture exports remain se
   await gotoFresh(page, "dashboard");
 
   await expect(page).toHaveTitle("Solution Architect Workbench");
+  await expect(page.locator(".development-banner")).toContainText("Under development");
   await expect(page.getByRole("note")).toContainText("Approved unclassified, non-CUI information only");
   const navigation = page.getByRole("navigation", { name: "Solution workspace" });
   for (const [route, label] of [
@@ -63,6 +64,7 @@ test("core lifecycle editing persists locally and architecture exports remain se
   }
 
   await openRoute(page, "discover");
+  await expect(page.getByLabel("Development status")).toContainText("Under development");
   const solutionName = page.locator('[data-solution-field="name"]');
   await solutionName.fill("Browser-tested solution");
   await expect(page.locator("#save-state")).toHaveText("Unsaved changes");
@@ -107,6 +109,14 @@ test("core lifecycle editing persists locally and architecture exports remain se
   const png = await readDownload(pngDownload);
   expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
   expect(pageErrors).toEqual([]);
+});
+
+test("development status stays visible on screen and out of printed decision packages", async ({ page }) => {
+  await gotoFresh(page, "dashboard");
+  const banner = page.getByLabel("Development status");
+  await expect(banner).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(banner).toBeHidden();
 });
 
 test("Technology Assessment explains TRL, MRL, and IRL beside the readiness fields", async ({ page }) => {
