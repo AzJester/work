@@ -43,7 +43,8 @@ solution workspace instead of turning the work into a calendar or task schedule.
   deployment/transition views with accessible tables and SVG/PNG export
 - generate a decision package as Markdown, standalone HTML, or a print-ready browser
   view for PDF output
-- use System, Light, or Dark presentation without changing workspace content
+- start in Light mode, switch compactly between Light and Dark, or opt into the
+  device theme without changing workspace content
 - optionally send an exact, user-reviewed subset of approved workspace facts to the
   authenticated `solution-assist` Edge Function; AI responses remain drafts and cannot
   overwrite authored records
@@ -693,7 +694,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
-| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, Light/Dark/System themes, and optional reviewed AI assistance. |
+| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact Light/Dark toggle, and optional reviewed AI assistance. |
 | `black-hat-agent/` | Public, no-sign-in Black Hat Agent competitive-analysis workspace with local persistence, Excel/CSV and JSON import, evidence and competitor tracking, accessible native charts and diagrams, versioned report visuals, multi-format exports, recovery, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |

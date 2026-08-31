@@ -17,6 +17,11 @@ async function openTools(page) {
   return page.getByRole("dialog", { name: "Workspace tools" });
 }
 
+async function openWorkspaceTool(page, name) {
+  const tools = await openTools(page);
+  await tools.getByRole("button", { name, exact: true }).click();
+}
+
 async function readDownload(download) {
   const stream = await download.createReadStream();
   const chunks = [];
@@ -64,7 +69,7 @@ async function installMockAuth(page) {
 }
 
 async function prepareAiRequest(page) {
-  await page.getByRole("button", { name: "AI assist", exact: true }).click();
+  await openWorkspaceTool(page, "AI assist");
   const dialog = page.getByRole("dialog", { name: "AI assistance — review before sending" });
   await dialog.getByRole("button", { name: "Prepare exact payload", exact: true }).click();
   await dialog.getByText("Sign in for AI access", { exact: true }).click();
@@ -182,9 +187,11 @@ test("Prove links assessed candidates to trades and evidence to decisions", asyn
 
 test("modal focus is trapped and restored to the invoking control", async ({ page }) => {
   await gotoFresh(page, "dashboard");
-  const trigger = page.getByRole("button", { name: /New solution$/ });
+  const trigger = page.getByRole("button", { name: "Workspace tools", exact: true });
   await trigger.focus();
   await trigger.press("Enter");
+  const tools = page.getByRole("dialog", { name: "Workspace tools" });
+  await tools.getByRole("button", { name: "Create a new solution", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Create a solution workspace" });
   const name = dialog.getByLabel("Solution name");
   await expect(name).toBeFocused();
@@ -315,7 +322,7 @@ test("AI cancellation sends nothing and 403, quota, timeout, and malformed outpu
   });
 
   await gotoFresh(page, "shape");
-  await page.getByRole("button", { name: "AI assist", exact: true }).click();
+  await openWorkspaceTool(page, "AI assist");
   let dialog = page.getByRole("dialog", { name: "AI assistance — review before sending" });
   await dialog.getByRole("button", { name: "Prepare exact payload", exact: true }).click();
   await dialog.getByRole("button", { name: "Close dialog" }).click();

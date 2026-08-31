@@ -108,21 +108,30 @@ function companionEvidenceTitle(title) {
 function loadThemePreference() {
   try {
     const value = localStorage.getItem(THEME_KEY);
-    return THEME_VALUES.has(value) ? value : "system";
+    return THEME_VALUES.has(value) ? value : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
+function resolveTheme(preference = themePreference) {
+  return preference === "system" ? (systemTheme.matches ? "dark" : "light") : preference;
+}
+
 function applyTheme(preference = themePreference) {
-  const resolved = preference === "system" ? (systemTheme.matches ? "dark" : "light") : preference;
+  const resolved = resolveTheme(preference);
   const root = document.documentElement;
   root.dataset.theme = resolved;
   root.dataset.themePreference = preference;
   root.style.colorScheme = resolved;
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b1119" : "#eef3f6");
-  const select = document.querySelector("#theme-select");
-  if (select) select.value = preference;
+  const toggle = document.querySelector("#theme-toggle");
+  if (toggle) {
+    toggle.setAttribute("aria-checked", String(resolved === "dark"));
+    toggle.title = resolved === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  }
+  const systemThemeAction = document.querySelector('[data-action="use-system-theme"]');
+  if (systemThemeAction) systemThemeAction.setAttribute("aria-pressed", String(preference === "system"));
   return resolved;
 }
 
@@ -420,6 +429,7 @@ function emptyState(title, copy, action = "") {
 function render() {
   const solution = activeSolution();
   if (!solution) return;
+  const resolvedTheme = resolveTheme(themePreference);
   clearTransientModalSessions();
   const navItems = [
     ["dashboard", "00", "Command view"],
@@ -432,16 +442,18 @@ function render() {
         <div class="brand"><span class="brand-mark">SA Workbench</span><h1>Solution Architect</h1></div>
         <label class="solution-switcher"><small>Active solution</small><select id="solution-select" aria-label="Active solution">${workspace.solutions.map(item => option(item.id, item.name, solution.id)).join("")}</select></label>
         <nav class="stage-nav" aria-label="Lifecycle stages">${navItems.map(([value, number, label]) => `<a class="stage-link ${route === value ? "active" : ""}" href="#${value}" data-route="${value}"><span class="number">${number}</span><span class="label">${h(label)}</span>${value === "dashboard" ? `<span class="count">${collectObligations(workspace, solution.id).length}</span>` : ""}</a>`).join("")}</nav>
-        <div class="sidebar-actions"><button class="text-button" type="button" data-action="open-guide">Guide</button><button class="text-button" type="button" data-action="open-recovery">Recovery</button></div>
-        <p class="sidebar-foot">Local workspace · No cloud project storage</p>
+        <div class="sidebar-utilities">
+          <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-label="Dark mode" aria-checked="${resolvedTheme === "dark"}" data-action="toggle-theme" title="${resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}"><span class="theme-toggle-label">Dark mode</span><span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span></button>
+          <div class="sidebar-actions"><button class="text-button" type="button" data-action="open-guide">Guide</button><button class="text-button" type="button" data-action="open-recovery">Recovery</button></div>
+          <p class="sidebar-foot">Local workspace · No cloud project storage</p>
+        </div>
       </aside>
       <main class="workbench" id="workspace" tabindex="-1">
         <header class="topbar">
           <button class="mobile-menu" type="button" data-action="toggle-nav" aria-label="Toggle navigation" aria-controls="sidebar" aria-expanded="false">☰</button>
           <div class="title-block"><h2>${h(routeTitle(route))}</h2><p>${h(solution.name)} · ${h(solution.stage)}</p></div>
           <span id="save-state" class="save-state" data-tone="${dirty ? "warn" : "ok"}">${dirty ? "Unsaved changes" : "Saved locally"}</span>
-          <label class="theme-control" title="Color theme"><span class="theme-control-icon" aria-hidden="true">◐</span><span class="visually-hidden">Color theme</span><select id="theme-select" aria-label="Color theme">${option("system", "System", themePreference)}${option("light", "Light", themePreference)}${option("dark", "Dark", themePreference)}</select></label>
-          <div class="top-actions"><button class="button secondary" type="button" data-action="open-files">Open local files</button><button class="button secondary" type="button" data-action="open-ai">AI assist</button><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Review capture inbox, ${pendingCaptureCount()} pending"><span>Review</span><strong>${pendingCaptureCount()}</strong></button><button class="button secondary" type="button" data-action="new-solution">＋ New solution</button><button class="icon-button" type="button" data-action="open-tools" aria-label="Workspace tools">•••</button></div>
+          <div class="top-actions"><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Review capture inbox, ${pendingCaptureCount()} pending"><span>Review</span><strong>${pendingCaptureCount()}</strong></button><button class="icon-button" type="button" data-action="open-tools" aria-label="Workspace tools" title="Workspace tools">•••</button></div>
         </header>
         <div class="data-boundary" role="note"><strong>Data boundary</strong><span>Approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content. Browser storage is not an authorization boundary. <a href="https://www.acquisition.gov/dfars/204.7302-policy." target="_blank" rel="noopener noreferrer">DFARS safeguarding policy context</a>.</span></div>
         <div class="content">${renderRoute(solution)}</div>
@@ -549,8 +561,9 @@ function renderAssess(solution) {
   const selected = candidates.find(item => item.id === selectedCandidateId);
   const results = candidates.map(item => ({ candidate: item, result: assessmentResult(workspace, solution.id, item.id) })).sort((a, b) => (b.result.score ?? -1) - (a.result.score ?? -1));
   return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><button class="button primary" type="button" data-add="candidates">＋ Candidate</button></div>
+  <section class="readiness-key" aria-labelledby="readiness-key-title"><div class="readiness-key-heading"><p class="section-kicker">Key</p><h4 id="readiness-key-title">Readiness level abbreviations</h4><p>Use these optional fields only when the team has a defensible basis. Leave them blank when readiness is unknown.</p></div><dl><div><dt>TRL</dt><dd><strong>Technology Readiness Level</strong><span>Technology maturity for its intended use · 1–9</span></dd></div><div><dt>MRL</dt><dd><strong>Manufacturing Readiness Level</strong><span>Manufacturing and production maturity · 1–10</span></dd></div><div><dt>IRL</dt><dd><strong>Integration Readiness Level</strong><span>Readiness to integrate with the surrounding system · 1–9</span></dd></div></dl></section>
   <div class="assessment-layout"><section class="panel candidate-rank"><div class="panel-head"><div><h3>Candidate comparison</h3><p>Weighted score uses assessed criteria only; coverage shows what is still unknown.</p></div></div>${results.length ? results.map(({ candidate, result }, index) => `<button class="candidate-row ${candidate.id === selectedCandidateId ? "active" : ""}" type="button" data-candidate="${h(candidate.id)}"><span class="rank">${index + 1}</span><span><strong>${h(candidate.name)}</strong><small>${h(candidate.category)} · TRL ${h(candidate.trl ?? "—")} · IRL ${h(candidate.irl ?? "—")}</small></span><span class="score">${result.score === null ? "—" : result.score.toFixed(2)}<small>${Math.round(result.coverage * 100)}% covered</small></span></button>`).join("") : emptyState("No candidates", "Add hardware, software, tools, vendors, platforms, or integrated mission-package alternatives.")}</section>
-  <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description)}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div><div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label><span>TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span>MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span>IRL</span><input type="number" min="1" max="9" value="${h(selected.irl ?? "")}" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
+  <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description)}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div><div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label><span title="Technology Readiness Level">TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" aria-label="Technology Readiness Level (TRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span title="Manufacturing Readiness Level">MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" aria-label="Manufacturing Readiness Level (MRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span title="Integration Readiness Level">IRL</span><input type="number" min="1" max="9" value="${h(selected.irl ?? "")}" aria-label="Integration Readiness Level (IRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
   <div class="table-scroll"><table class="score-table"><thead><tr><th>Criterion</th><th>Weight</th><th>Score</th><th>Rationale</th><th>Evidence</th></tr></thead><tbody>${criteria.map(criterion => { const score = selected.scores?.find(item => item.criterionId === criterion.id) || { value: null, rationale: "", evidenceIds: [] }; return `<tr><td><strong>${h(criterion.name)}</strong></td><td><input type="number" min="0" max="100" value="${h(criterion.weight)}" data-record-number="criteria" data-record-id="${h(criterion.id)}" data-record-field="weight" aria-label="${h(criterion.name)} weight"></td><td><select data-candidate-score="${h(selected.id)}" data-criterion="${h(criterion.id)}" data-score-field="value"><option value="">Unknown</option>${[0,1,2,3,4,5].map(value => option(String(value), `${value}`, score.value === null ? "" : String(score.value))).join("")}</select></td><td><textarea rows="2" data-candidate-score="${h(selected.id)}" data-criterion="${h(criterion.id)}" data-score-field="rationale">${h(score.rationale)}</textarea></td><td><select multiple size="2" data-score-evidence="${h(selected.id)}" data-criterion="${h(criterion.id)}">${evidence.map(item => `<option value="${h(item.id)}" ${score.evidenceIds?.includes(item.id) ? "selected" : ""}>${h(item.title)}</option>`).join("")}</select></td></tr>`; }).join("")}</tbody></table></div>` : emptyState("Select or add a candidate", "Assess the whole candidate solution, including technical and business constraints.")}</section></div>`;
 }
 
@@ -1062,19 +1075,33 @@ function showNewSolution() {
   openModal("Create a solution workspace", `<form id="new-solution-form"><p class="modal-intro">Start with a clean solution and the default Technology Assessment criteria.</p>${field("Solution name", "", `name="name" required maxlength="180" autofocus`)}<div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">Create solution</button></div></form>`);
 }
 
+function showSolutionSwitcher() {
+  openModal("Switch active solution", `<form id="switch-solution-form"><p class="modal-intro">Choose the independently scoped solution you want to work in.</p>${selectField("Active solution", `name="solutionId" required autofocus`, workspace.solutions.map(item => option(item.id, item.name, workspace.activeSolutionId)).join(""))}<div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">Switch solution</button></div></form>`);
+}
+
 function showTools() {
-  openModal("Workspace tools", `<div class="tool-list">
-    <button class="tool-card" type="button" data-action="new-solution"><strong>Create a new solution</strong><span>Start a clean, independently scoped solution with default assessment criteria.</span></button>
-    <button class="tool-card" type="button" data-action="meeting-capture"><strong>Paste meeting transcript or summary</strong><span>Tag selected excerpts to mission segments and stage them as evidence without retaining the full meeting text.</span></button>
-    <button class="tool-card" type="button" data-action="open-capture-inbox"><strong>Review capture inbox</strong><span>${pendingCaptureCount()} pending proposal${pendingCaptureCount() === 1 ? "" : "s"} for the active solution.</span></button>
-    <button class="tool-card" type="button" data-action="open-guide"><strong>Open the workbench guide</strong><span>Use the fast start, lifecycle playbook, capture guidance, and complete task-oriented user guide.</span></button>
-    <button class="tool-card" type="button" data-action="open-recovery"><strong>Open recovery points</strong><span>Restore a validated local snapshot after preserving the current workspace.</span></button>
-    <button class="tool-card" type="button" data-tool="export-json"><strong>Export JSON backup</strong><span>Download the complete validated workspace, including all solutions.</span></button>
-    <button class="tool-card" type="button" data-tool="import-json"><strong>Import JSON backup</strong><span>Validate the entire file before atomically replacing this browser workspace.</span></button>
-    <button class="tool-card" type="button" data-tool="snapshot"><strong>Create recovery point</strong><span>Save a bounded local snapshot without nesting older snapshots.</span></button>
-    <button class="tool-card" type="button" data-tool="duplicate"><strong>Duplicate active solution</strong><span>Create an independent working copy with new record identifiers.</span></button>
-    <button class="tool-card danger" type="button" data-tool="delete-solution" ${workspace.solutions.length === 1 ? "disabled" : ""}><strong>Delete active solution</strong><span>Remove the solution and every record bound to it.</span></button>
-  </div>`);
+  openModal("Workspace tools", `<div class="tool-sections">
+    <section class="tool-section" aria-labelledby="tool-capture-title"><div class="tool-section-head"><h3 id="tool-capture-title">Capture and intake</h3><p>Bring approved facts into the review queue.</p></div><div class="tool-grid">
+      <button class="tool-card" type="button" data-action="open-files" aria-label="Open local files"><strong>Open local files</strong><span>Extract reviewable text or preview an approved image without retaining the source file.</span></button>
+      <button class="tool-card" type="button" data-action="meeting-capture" aria-label="Paste meeting transcript or summary"><strong>Paste meeting transcript or summary</strong><span>Tag selected excerpts to mission segments without retaining the full meeting text.</span></button>
+      <button class="tool-card" type="button" data-action="open-capture-inbox" aria-label="Review capture inbox"><strong>Review capture inbox</strong><span>${pendingCaptureCount()} pending proposal${pendingCaptureCount() === 1 ? "" : "s"} for the active solution.</span></button>
+      <button class="tool-card" type="button" data-action="open-ai" aria-label="AI assist"><strong>AI assist</strong><span>Prepare a tightly scoped, reviewed payload for optional authenticated assistance.</span></button>
+    </div></section>
+    <section class="tool-section" aria-labelledby="tool-workspace-title"><div class="tool-section-head"><h3 id="tool-workspace-title">Workspace and help</h3><p>Change context, recover work, or learn the workflow.</p></div><div class="tool-grid">
+      <button class="tool-card" type="button" data-action="new-solution" aria-label="Create a new solution"><strong>Create a new solution</strong><span>Start a clean, independently scoped solution with default assessment criteria.</span></button>
+      <button class="tool-card" type="button" data-action="switch-solution" aria-label="Switch active solution"><strong>Switch active solution</strong><span>Choose another isolated solution when the sidebar selector is collapsed.</span></button>
+      <button class="tool-card" type="button" data-action="use-system-theme" aria-label="Use device theme" aria-pressed="${themePreference === "system"}"><strong>Use device theme</strong><span>Follow this browser's operating-system light or dark preference.</span></button>
+      <button class="tool-card" type="button" data-action="open-guide" aria-label="Open the workbench guide"><strong>Open the workbench guide</strong><span>Use the fast start, lifecycle playbook, capture guidance, and task-oriented user guide.</span></button>
+      <button class="tool-card" type="button" data-action="open-recovery" aria-label="Open recovery points"><strong>Open recovery points</strong><span>Restore a validated local snapshot after preserving the current workspace.</span></button>
+    </div></section>
+    <section class="tool-section" aria-labelledby="tool-backup-title"><div class="tool-section-head"><h3 id="tool-backup-title">Backup and manage</h3><p>Protect, transfer, duplicate, or remove solution data.</p></div><div class="tool-grid">
+      <button class="tool-card" type="button" data-tool="export-json" aria-label="Export JSON backup"><strong>Export JSON backup</strong><span>Download the complete validated workspace, including all solutions.</span></button>
+      <button class="tool-card" type="button" data-tool="import-json" aria-label="Import JSON backup"><strong>Import JSON backup</strong><span>Validate the entire file before atomically replacing this browser workspace.</span></button>
+      <button class="tool-card" type="button" data-tool="snapshot" aria-label="Create recovery point"><strong>Create recovery point</strong><span>Save a bounded local snapshot without nesting older snapshots.</span></button>
+      <button class="tool-card" type="button" data-tool="duplicate" aria-label="Duplicate active solution"><strong>Duplicate active solution</strong><span>Create an independent working copy with new record identifiers.</span></button>
+      <button class="tool-card danger" type="button" data-tool="delete-solution" aria-label="Delete active solution" ${workspace.solutions.length === 1 ? "disabled" : ""}><strong>Delete active solution</strong><span>Remove the solution and every record bound to it.</span></button>
+    </div></section>
+  </div>`, { wide: true });
 }
 
 function showHotButtonIngest() {
@@ -1416,6 +1443,9 @@ document.addEventListener("click", event => {
   if (action === "open-guide") showGuide();
   if (action === "open-recovery") showRecovery();
   if (action === "open-ai") showAiDialog();
+  if (action === "switch-solution") showSolutionSwitcher();
+  if (action === "toggle-theme") setThemePreference(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  if (action === "use-system-theme") { setThemePreference("system"); closeModal(); }
   if (action === "ingest-hot-buttons") showHotButtonIngest();
   if (action === "toggle-nav") { const sidebar = document.querySelector("#sidebar"); const open = sidebar.classList.toggle("open"); event.target.setAttribute("aria-expanded", String(open)); }
   if (action === "new-view") newViewDialog();
@@ -1502,6 +1532,17 @@ document.addEventListener("submit", event => {
   if (form.id === "new-solution-form") {
     const result = addBlankSolution(workspace, data.get("name")); workspace = pushSnapshot(result.workspace, "Created solution"); saveNow(); captureInbox = loadCaptureInbox(workspace.activeSolutionId); closeModal(); route = "discover"; location.hash = "discover"; render();
   }
+  if (form.id === "switch-solution-form") {
+    const solutionId = String(data.get("solutionId") || "");
+    if (!workspace.solutions.some(item => item.id === solutionId)) { toast("That solution is no longer available.", "error"); return; }
+    if (dirty && !saveNow()) return;
+    workspace.activeSolutionId = solutionId;
+    selectedCandidateId = selectedViewId = selectedElementId = "";
+    saveNow();
+    captureInbox = loadCaptureInbox(solutionId);
+    closeModal();
+    render();
+  }
   if (form.id === "new-view-form") {
     const view = createArchitectureView(workspace.activeSolutionId, data.get("template")); view.name = String(data.get("name")).trim(); commit(next => next.architectureViews.push(view), { snapshot: "Before creating architecture view" }); selectedViewId = view.id; closeModal(); render();
   }
@@ -1566,7 +1607,6 @@ document.addEventListener("input", event => {
 
 document.addEventListener("change", event => {
   const node = event.target;
-  if (node.id === "theme-select") { setThemePreference(node.value); return; }
   if (node.id === "meeting-ack" && meetingSession) {
     meetingSession.acknowledged = node.checked;
     const textarea = document.querySelector("#meeting-source-text");
@@ -1655,7 +1695,7 @@ document.addEventListener("change", event => {
 window.addEventListener("hashchange", () => { route = readRoute(); document.querySelector("#sidebar")?.classList.remove("open"); render(); document.querySelector("#workspace")?.focus(); });
 window.addEventListener("storage", event => {
   if (event.key === THEME_KEY) {
-    themePreference = THEME_VALUES.has(event.newValue) ? event.newValue : "system";
+    themePreference = THEME_VALUES.has(event.newValue) ? event.newValue : "light";
     applyTheme(themePreference);
   }
   if (event.key === STORAGE_KEY) toast("This workspace changed in another tab. Export your work, then reload before continuing.", "error");

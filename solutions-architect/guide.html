@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#eef3f6">
   <meta name="description" content="Task-oriented user guide for the Solution Architect Workbench.">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
@@ -20,7 +21,7 @@
       <p>Task-oriented guide</p>
     </div>
     <div class="guide-header-actions">
-      <label class="theme-control" for="guide-theme-select"><span aria-hidden="true">◐</span><span class="visually-hidden">Guide theme</span><select id="guide-theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <button class="theme-toggle guide-theme-toggle" id="guide-theme-toggle" type="button" role="switch" aria-label="Dark mode" aria-checked="false" title="Switch to dark mode"><span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span></button>
       <a class="button primary" href="./">Open workbench</a>
     </div>
   </header>
@@ -58,14 +59,16 @@ cyber, safety, systems engineering, test, pricing, contracts, logistics, legal,
 security, export-control, or mission-domain authorities.</p>
 <h2 id="quick-start-build-a-useful-solution-in-ten-minutes">Quick start: build a useful solution in ten minutes</h2>
 <ol>
-<li>Select <strong>New solution</strong> and give the effort a concise name.</li>
+<li>Open <strong>Workspace tools → Create a new solution</strong> and give the effort a concise
+name.</li>
 <li>Open <strong>Discover</strong> and select every applicable <strong>Company mission segment</strong>.</li>
 <li>State the mission problem, operational context, desired effect, decision, and
 decision owner.</li>
 <li>Press <code>Alt+Q</code> or select <strong>Capture</strong>. Record the most important customer concern or
 unknown, name its source, and save it to the inbox.</li>
-<li>Select <strong>Review</strong>, verify the item, classify it as a customer hot button,
-requirement, evidence, win theme, assumption, risk, or decision, and commit it.</li>
+<li>Select <strong>Review</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>,
+verify the item, classify it as a customer hot button, requirement, evidence, win
+theme, assumption, risk, or decision, and commit it.</li>
 <li>Open <strong>Command</strong>. Resolve the highest-value obligation instead of trying to fill
 every screen at once.</li>
 <li>Open <strong>Decision package</strong> to see what the current solution can already explain and
@@ -76,16 +79,16 @@ after a substantial working session. Resolve or commit useful capture-inbox item
 first because the separate inbox is not included in the workspace JSON backup.</p>
 <h2 id="set-up-the-workspace-for-how-you-work">Set up the workspace for how you work</h2>
 <h3 id="choose-a-visual-theme">Choose a visual theme</h3>
-<p>Use the theme selector in the header:</p>
-<ul>
-<li><strong>System</strong> follows the operating-system light/dark preference and responds if that
-preference changes.</li>
-<li><strong>Light</strong> keeps the workbench light.</li>
-<li><strong>Dark</strong> keeps the workbench dark.</li>
-</ul>
-<p>The choice is stored as a separate setting in this browser. It does not change the
-solution, appear in exports, or travel with a JSON backup. If browser storage is
-unavailable, the selection lasts only for the current session.</p>
+<p>Use the compact <strong>Dark mode</strong> switch on the left side of the workbench. The
+standalone guide has the same switch in its header.</p>
+<p>Light is the default when this browser has no saved theme. Switching Dark mode on or
+off saves an explicit Dark or Light choice. A previously stored <strong>System</strong> preference
+is still honored: it follows the operating-system preference until you use the
+switch. To restore automatic operating-system behavior later, open <strong>Workspace
+tools</strong> and choose <strong>Use device theme</strong>.</p>
+<p>The setting does not change the solution, appear in exports, or travel with a JSON
+backup. If browser storage is unavailable, the choice lasts only for the current
+session.</p>
 <h3 id="understand-the-synthetic-example">Understand the synthetic example</h3>
 <p>The first launch contains a clearly synthetic defense-integration example. Use it to
 learn the lifecycle, assessment, architecture, and export workflows. Create a new
@@ -134,7 +137,7 @@ mission connection is not a strategy.</p>
 </tr>
 <tr>
 <td>A permitted document, spreadsheet, or image</td>
-<td><strong>Open local files</strong></td>
+<td><strong>Workspace tools → Open local files</strong></td>
 <td>Only selected excerpts or a manual image caption, plus source metadata</td>
 </tr>
 <tr>
@@ -169,7 +172,8 @@ control.</p>
 <p>Captured items enter the separate <strong>Review</strong> inbox. They do not immediately change
 requirements, evidence, risks, decisions, or proposal claims.</p>
 <h3 id="review-the-inbox">Review the inbox</h3>
-<p>Select <strong>Review</strong> in the header. Work each pending item deliberately:</p>
+<p>Select <strong>Review</strong> in the header or <strong>Workspace tools → Review capture inbox</strong>. Work
+each pending item deliberately:</p>
 <table>
 <thead>
 <tr>
@@ -260,8 +264,7 @@ authority, and makes the final decision and proposal claim auditable.</p>
 <h2 id="ingest-a-meeting-transcript-or-summary">Ingest a meeting transcript or summary</h2>
 <p>Use <strong>Capture → Meeting transcript or summary</strong> when an approved working session,
 review, interview, or customer conversation produced text that may inform the
-solution. This workflow is available from Quick Capture, Open local files, and
-Workspace tools.</p>
+solution. This workflow is available from Quick Capture and Workspace tools.</p>
 <ol>
 <li>Confirm the meeting content is inside the published app's approved-unclassified,
 non-CUI boundary.
@@ -300,10 +303,10 @@ metadata enter the separate Review inbox. Neither the complete meeting text nor 
 audio/video recording is stored, exported, cached, logged, or sent to AI by this
 workflow.</p>
 <h2 id="open-local-files-for-ingestion">Open local files for ingestion</h2>
-<p>Select <strong>Open local files</strong> to extract reviewable content without uploading the source
-to a cloud service. The browser reads the file locally, displays extracted text or an
-image preview, and lets the user choose bounded excerpts or metadata for the active
-solution's capture inbox.</p>
+<p>Open <strong>Workspace tools → Open local files</strong> to extract reviewable content without
+uploading the source to a cloud service. The browser reads the file locally, displays
+extracted text or an image preview, and lets the user choose bounded excerpts or
+metadata for the active solution's capture inbox.</p>
 <h3 id="supported-formats">Supported formats</h3>
 <table>
 <thead>
@@ -365,7 +368,7 @@ classification control.</p>
 <h3 id="safe-ingestion-sequence">Safe ingestion sequence</h3>
 <ol>
 <li>Confirm the source is allowed in this public browser application.</li>
-<li>Select <strong>Open local files</strong> and choose only the needed sources.</li>
+<li>Open <strong>Workspace tools → Open local files</strong> and choose only the needed sources.</li>
 <li>Inspect the reported filename, type, size, hash/locator, warnings, and extraction
 result.</li>
 <li>For an image, write a concise manual caption or transcription. Do not infer text
@@ -404,8 +407,9 @@ mission segments, and the decision owner.</p>
 <p>Use <strong>Ingest</strong> under <strong>Customer hot buttons</strong> when you already have a short approved
 plain-text list: one signal per line, up to 50. Name the actual interaction and review
 confidence and validation status. Bullets and numbered-list prefixes are removed and
-exact duplicates are skipped. Use <strong>Open local files</strong> for supported documents,
-spreadsheets, or images that need source preview and the separate Review step.</p>
+exact duplicates are skipped. Use <strong>Workspace tools → Open local files</strong> for supported
+documents, spreadsheets, or images that need source preview and the separate Review
+step.</p>
 <p>A hot button is a sourced customer signal, not an authoritative requirement. The
 source, confidence, and validation fields record the architect's judgment; the app
 does not independently verify what the customer said.</p>
@@ -434,6 +438,15 @@ supply chain, affordability, schedule, and sustainment.</p>
 <p>Enter a 0–5 score only when it has defensible rationale and evidence confidence. Link
 supporting evidence. Use optional TRL, MRL, and IRL values only when the team has an
 agreed basis. An empty score remains <strong>Unknown</strong> and does not silently become zero.</p>
+<ul>
+<li><strong>TRL — Technology Readiness Level (1–9):</strong> how mature the technology itself is,
+from early research through proven use in an operational environment.</li>
+<li><strong>MRL — Manufacturing Readiness Level (1–10):</strong> how ready the team and
+industrial base are to produce it consistently at the needed quality, rate, and cost.</li>
+<li><strong>IRL — Integration Readiness Level (1–9):</strong> how ready the technology is to
+connect and operate with the other components, interfaces, and processes in the
+complete solution.</li>
+</ul>
 <p><strong>What to do next:</strong> investigate unsupported scores and criteria with high weight but
 low confidence. Carry consequential differences into a trade or decision.</p>
 <h3 id="architect-show-how-the-complete-capability-works">4. Architect — show how the complete capability works</h3>
@@ -556,7 +569,8 @@ JSON file is the durable backup and transfer format for authoritative workspace
 records; it still does not contain original ingested files.</p>
 <h2 id="use-optional-ai-assistance-safely">Use optional AI assistance safely</h2>
 <ol>
-<li>Choose <strong>AI assist</strong>, an allowed action, lifecycle stage, and optional focus.</li>
+<li>Open <strong>Workspace tools → AI assist</strong>, then choose an allowed action, lifecycle
+stage, and optional focus.</li>
 <li>Select <strong>Prepare exact payload</strong>.</li>
 <li>Inspect every fact and record ID in the JSON preview. Selected company mission
 segments appear with the scoped mission facts.</li>
@@ -582,10 +596,11 @@ reviews and acknowledges an AI payload that contains it.</p>
 not the only way to work.</li>
 <li>Move a selected diagram element with an arrow key; hold Shift for 1-pixel movement.</li>
 <li>Use <strong>Accessible architecture data</strong> as a table alternative to the diagram.</li>
-<li>The interface supports System, Light, and Dark themes and respects reduced-motion
-preferences.</li>
-<li>On touch devices, use the same Capture, Review, Open local files, and diagram
-controls; no hover-only action is required.</li>
+<li>The interface starts in Light, supports an explicit Dark choice, honors a legacy
+System preference, and respects reduced-motion preferences.</li>
+<li>On touch devices, use Capture and Review in the header, use Workspace tools for
+Open local files and other grouped actions, and use the visible diagram controls;
+no hover-only action is required.</li>
 </ul>
 <h2 id="common-pitfalls">Common pitfalls</h2>
 <table>

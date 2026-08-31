@@ -93,8 +93,9 @@ A successful workspace lets that user:
 - Export the complete versioned JSON workspace and validate an entire import before
   replacing the active in-memory workspace. Report any final browser-storage failure
   visibly rather than claiming a successful save.
-- Offer System, Light, and Dark themes as a separate per-browser preference that does
-  not alter or travel with workspace content.
+- Default to Light mode and offer a compact Light/Dark switch in the left navigation.
+  Provide **Use device theme** under Workspace tools. Theme state must not alter or
+  travel with workspace content.
 
 ### Company mission segments
 
@@ -185,7 +186,9 @@ A successful workspace lets that user:
   integration, cyber/safety, MOSA/openness, data rights, supply chain, affordability,
   schedule, and sustainment.
 - Accept scores from 0–5 plus explicit unknown, with rationale, confidence, evidence,
-  and optional TRL/MRL/IRL values.
+  and optional TRL/MRL/IRL values. Display an in-context key that expands these as
+  Technology, Manufacturing, and Integration Readiness Levels and explains the
+  accepted scales.
 - Never convert an unknown or invalid score to zero.
 
 ### Architecture

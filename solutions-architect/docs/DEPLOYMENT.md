@@ -11,7 +11,7 @@ frontend needs no build command, cloud project database, or server-rendered runt
 Pinned PDF and spreadsheet parsing assets are repository-owned and published with the
 static site; production source ingestion does not depend on a CDN.
 
-Light/Dark/System themes, Quick Capture, the per-solution Review inbox, company
+the Light-default theme toggle, Quick Capture, the per-solution Review inbox, company
 mission segments, and local source extraction are frontend-only capabilities. They
 add no cloud upload endpoint, Supabase table, storage bucket, migration, or new Edge
 Function. Original selected files remain in the browser intake session and are never
@@ -97,8 +97,10 @@ npm run test:browser
 7. Select multiple company mission segments; confirm they persist, export in the
    decision package, appear in reviewed AI payload scope, and stay isolated by
    solution.
-8. Select System, Light, and Dark themes. Confirm the preference persists separately
-   from workspace content and System responds to operating-system preference changes.
+8. Confirm a fresh browser starts in Light mode. Toggle Dark and Light from the left
+   navigation, then use **Use device theme** under Workspace tools. Confirm explicit
+   preferences persist separately from workspace content, System responds to the
+   operating-system preference, and native dropdown options remain readable in Dark.
 9. Use Quick Capture and the Review inbox across two solutions. Confirm no capture
    crosses solutions, no item changes the workspace before explicit commit, dependent
    records commit atomically, and failed validation/storage leaves current data in

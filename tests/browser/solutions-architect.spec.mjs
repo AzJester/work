@@ -27,6 +27,12 @@ async function openRoute(page, route) {
   await expect(page.locator(`.stage-link[data-route="${route}"]`)).toHaveClass(/active/);
 }
 
+async function openWorkspaceTool(page, name) {
+  await page.getByRole("button", { name: "Workspace tools", exact: true }).click();
+  const tools = page.getByRole("dialog", { name: "Workspace tools" });
+  await tools.getByRole("button", { name, exact: true }).click();
+}
+
 async function readDownload(download) {
   const stream = await download.createReadStream();
   const chunks = [];
@@ -103,6 +109,21 @@ test("core lifecycle editing persists locally and architecture exports remain se
   expect(pageErrors).toEqual([]);
 });
 
+test("Technology Assessment explains TRL, MRL, and IRL beside the readiness fields", async ({ page }) => {
+  await gotoFresh(page, "assess");
+
+  const key = page.getByRole("region", { name: "Readiness level abbreviations" });
+  await expect(key).toContainText("TRL");
+  await expect(key).toContainText("Technology Readiness Level");
+  await expect(key).toContainText("MRL");
+  await expect(key).toContainText("Manufacturing Readiness Level");
+  await expect(key).toContainText("IRL");
+  await expect(key).toContainText("Integration Readiness Level");
+  await expect(page.getByLabel("Technology Readiness Level (TRL)")).toHaveAttribute("max", "9");
+  await expect(page.getByLabel("Manufacturing Readiness Level (MRL)")).toHaveAttribute("max", "10");
+  await expect(page.getByLabel("Integration Readiness Level (IRL)")).toHaveAttribute("max", "9");
+});
+
 test("win themes persist edited customer hot-button and evidence links", async ({ page }) => {
   await gotoFresh(page, "propose");
   const theme = page.locator(".win-theme-card").first();
@@ -170,7 +191,7 @@ test("a new solution starts clean, remains independently scoped, and creates rec
   page.on("pageerror", error => pageErrors.push(error.message));
   await gotoFresh(page);
 
-  await page.getByRole("button", { name: /New solution$/ }).click();
+  await openWorkspaceTool(page, "Create a new solution");
   const dialog = page.getByRole("dialog", { name: "Create a solution workspace" });
   await dialog.getByLabel("Solution name").fill("Independent browser solution");
   await dialog.getByRole("button", { name: "Create solution", exact: true }).click();
@@ -284,7 +305,7 @@ test("AI assistance previews the exact stage-scoped payload and saves only a val
   const pageErrors = [];
   page.on("pageerror", error => pageErrors.push(error.message));
   await gotoFresh(page, "shape");
-  await page.getByRole("button", { name: "AI assist", exact: true }).click();
+  await openWorkspaceTool(page, "AI assist");
   const dialog = page.getByRole("dialog", { name: "AI assistance — review before sending" });
   await dialog.locator("#ai-action").selectOption("find_gaps");
   await dialog.locator("#ai-stage").selectOption("Propose");

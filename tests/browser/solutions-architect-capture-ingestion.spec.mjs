@@ -13,6 +13,12 @@ async function gotoFresh(page, route = "dashboard") {
   await expect(page.locator("#workspace")).toBeVisible();
 }
 
+async function openWorkspaceTool(page, name) {
+  await page.getByRole("button", { name: "Workspace tools", exact: true }).click();
+  const tools = page.getByRole("dialog", { name: "Workspace tools" });
+  await tools.getByRole("button", { name, exact: true }).click();
+}
+
 function minimalPdf(text) {
   const escaped = text.replace(/([\\()])/g, "\\$1");
   const stream = `BT\n/F1 12 Tf\n72 720 Td\n(${escaped}) Tj\nET\n`;
@@ -154,7 +160,7 @@ test("local text extraction creates linked source evidence and requirement only 
   });
   await gotoFresh(page);
 
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles({
@@ -198,7 +204,7 @@ test("local image preview requires a manual caption and discards the object URL 
   });
 
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles({ name: "mission-context.png", mimeType: "image/png", buffer: png });
@@ -232,7 +238,7 @@ test("the pinned local PDF reader extracts page text without an outbound request
 
   const statement = "Synthetic PDF evidence supports the modular interface review.";
   const pdf = minimalPdf(statement);
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles({ name: "synthetic-review.pdf", mimeType: "application/pdf", buffer: pdf });
@@ -260,7 +266,7 @@ test("the isolated browser worker extracts DOCX and PPTX text into reviewed exce
   await gotoFresh(page);
 
   const sources = minimalOfficeSources();
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles([
@@ -286,7 +292,7 @@ test("the isolated browser worker extracts DOCX and PPTX text into reviewed exce
 
 test("file intake stages non-linkable targets with separate evidence and commits them safely", async ({ page }) => {
   await gotoFresh(page);
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles([
@@ -323,7 +329,7 @@ test("file intake stages non-linkable targets with separate evidence and commits
 
 test("remapping a linked proposal clears unsupported evidence links and enforces title limits", async ({ page }) => {
   await gotoFresh(page);
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles({ name: "candidate-need.txt", mimeType: "text/plain", buffer: Buffer.from("Synthetic candidate need") });
@@ -354,7 +360,7 @@ test("replacing a file dialog aborts in-flight work and concurrent drops are ser
     await route.continue();
   });
   await gotoFresh(page);
-  await page.getByRole("button", { name: "Open local files", exact: true }).click();
+  await openWorkspaceTool(page, "Open local files");
   const intake = page.getByRole("dialog", { name: "Open local files" });
   await intake.locator("#intake-ack").check();
   await intake.locator("#source-files").setInputFiles({ name: "slow-source.pdf", mimeType: "application/pdf", buffer: minimalPdf("TRANSIENT_SLOW_SOURCE") });

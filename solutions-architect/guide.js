@@ -1,14 +1,14 @@
 const THEME_KEY = "solution_architect_theme_v1";
 const THEME_VALUES = new Set(["system", "light", "dark"]);
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
-const select = document.querySelector("#guide-theme-select");
+const toggle = document.querySelector("#guide-theme-toggle");
 
 function loadPreference() {
   try {
     const value = localStorage.getItem(THEME_KEY);
-    return THEME_VALUES.has(value) ? value : "system";
+    return THEME_VALUES.has(value) ? value : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
@@ -17,15 +17,19 @@ function applyPreference(preference) {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePreference = preference;
   document.documentElement.style.colorScheme = resolved;
-  if (select) select.value = preference;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#0b1119" : "#eef3f6");
+  if (toggle) {
+    toggle.setAttribute("aria-checked", String(resolved === "dark"));
+    toggle.title = resolved === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  }
 }
 
 let preference = loadPreference();
 applyPreference(preference);
 
-select?.addEventListener("change", () => {
-  if (!THEME_VALUES.has(select.value)) return;
-  preference = select.value;
+toggle?.addEventListener("click", () => {
+  const resolved = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  preference = resolved === "dark" ? "light" : "dark";
   applyPreference(preference);
   try { localStorage.setItem(THEME_KEY, preference); } catch { /* The visual choice remains active for this page. */ }
 });

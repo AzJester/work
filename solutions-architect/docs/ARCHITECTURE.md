@@ -169,8 +169,9 @@ them to another device, or guarantee persistence across browser policies, privat
 browsing, site-data clearing, storage pressure, profile loss, or device loss.
 
 The color preference is stored separately under
-`solution_architect_theme_v1`. `system` resolves through
-`prefers-color-scheme`; `light` and `dark` are explicit overrides. Theme selection is
+`solution_architect_theme_v1`. Missing or invalid state defaults to `light`; the
+compact switch stores `light` or `dark` as an explicit override. **Use device theme**
+stores `system`, which resolves through `prefers-color-scheme`. Theme selection is
 device/profile state, not solution data, so it is excluded from workspace validation,
 snapshots, imports, and exports.
 

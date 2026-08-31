@@ -83,8 +83,10 @@ export. Each solution's capture inbox is stored separately under the versioned
 `solution-capture-inbox-v1` contract. Save failures stay visible; local storage and
 local recovery points are not durable backups.
 
-The **System**, **Light**, and **Dark** theme choice is a separate browser setting. It
-does not travel with a workspace backup and does not alter solution content.
+The workbench starts in **Light** mode. Its compact **Dark mode** switch is a separate
+browser setting, and **Use device theme** under Workspace tools restores automatic
+system matching. Theme state does not travel with a workspace backup and does not
+alter solution content.
 
 Decision packages can be downloaded as Markdown or standalone HTML. **Print / Save PDF**
 opens a separate print-ready view and requests the browser print dialog; if the
