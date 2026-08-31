@@ -14,6 +14,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/",
   "https://azjester.github.io/work/astrion-division/ldawif/",
   "https://azjester.github.io/work/black-hat-agent/",
+  "https://azjester.github.io/work/solutions-architect/",
   "https://azjester.github.io/work/dashboard.html",
   "https://azjester.github.io/work/geopresence/",
   "https://azjester.github.io/work/radar-signal-chain.html",
@@ -65,11 +66,27 @@ test("social metadata uses the dedicated published application-library card", ()
   assert.match(hub, /name="twitter:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
 });
 
-test("curated catalog contains all 30 identified applications", () => {
+test("curated catalog contains all 31 identified applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const appCount = [...catalogBlock.matchAll(/\n\s{10}title: "/g)].length;
-  assert.equal(appCount, 30);
+  assert.equal(appCount, 31);
   assert.match(hub, /One launch point for every public AzJester application/);
+});
+
+test("Solution Architect Workbench is published and represented honestly", () => {
+  assert.match(
+    hub,
+    /title: "Solution Architect Workbench",[\s\S]{0,500}category: "Defense",[\s\S]{0,500}access: "Public"/,
+  );
+  assert.match(
+    hub,
+    /title: "Solution Architect Workbench",[\s\S]{0,700}liveUrl: "https:\/\/azjester\.github\.io\/work\/solutions-architect\/"/,
+  );
+  assert.match(
+    hub,
+    /title: "Solution Architect Workbench",[\s\S]{0,800}repoUrl: "https:\/\/github\.com\/AzJester\/work\/tree\/main\/solutions-architect"/,
+  );
+  assert.match(pagesWorkflow, /cp -R[^\n]*solutions-architect[^\n]*_site\//);
 });
 
 test("all verified live applications use their working primary URLs", () => {

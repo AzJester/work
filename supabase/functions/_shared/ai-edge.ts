@@ -448,8 +448,8 @@ export function anthropicApiKey(requestId: string): string {
   return apiKey;
 }
 
-export function upstreamTimeout(options: EndpointOptions): number {
-  return envInt(`${options.envPrefix}_UPSTREAM_TIMEOUT_MS`, 25_000, 5_000, 60_000);
+export function upstreamTimeout(options: EndpointOptions, fallback = 25_000): number {
+  return envInt(`${options.envPrefix}_UPSTREAM_TIMEOUT_MS`, fallback, 5_000, 60_000);
 }
 
 export async function callAnthropic(

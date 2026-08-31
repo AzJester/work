@@ -158,7 +158,7 @@ jobs:
         if: steps.backend_changes.outputs.required == 'true'
         shell: bash
         run: |
-          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary; do
+          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary solution-assist; do
             supabase functions deploy "$function_name" --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
           done
 
@@ -185,7 +185,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -- *.html *.png *.gif *.webmanifest sw.js _site/
-          cp -R assets astrion-division LDAWIF geopresence black-hat-agent _site/
+          cp -R assets astrion-division LDAWIF geopresence black-hat-agent solutions-architect _site/
           touch _site/.nojekyll
 
       - name: Upload site artifact
@@ -216,7 +216,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Smoke-test deployed GeoPresence
+      - name: Smoke-test deployed applications
         env:
           PAGES_URL: "${{ needs.deploy.outputs.page_url }}"
           PRODUCTION_SMOKE: "1"

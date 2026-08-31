@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-async function openHub(page, baseURL, query = "", expectedCount = 30) {
+async function openHub(page, baseURL, query = "", expectedCount = 31) {
   await page.route("https://api.github.com/**", route => route.fulfill({
     status: 200,
     contentType: "application/json",
@@ -118,6 +118,11 @@ test("deep-linked filters and application links resolve visibly and correctly", 
   const weeklyStatus = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "shAIne Weekly Status", exact: true }) });
   await expect(weeklyStatus.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://shaine-weekly-status.onrender.com/");
   await expect(weeklyStatus.getByRole("link", { name: /^Source:/ })).toHaveAttribute("href", "https://github.com/AzJester/shAIne_Weekly_Status");
+
+  const solutionWorkbench = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Solution Architect Workbench", exact: true }) });
+  await expect(solutionWorkbench).toContainText("Defense");
+  await expect(solutionWorkbench.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://azjester.github.io/work/solutions-architect/");
+  await expect(solutionWorkbench.getByRole("link", { name: /^Source:/ })).toHaveAttribute("href", "https://github.com/AzJester/work/tree/main/solutions-architect");
 
   const skills = page.locator('[data-resource="claude-skills"]');
   await expect(skills.getByRole("link", { name: /Browse Claude and AI Agent Skills/ })).toHaveAttribute("href", "https://github.com/AzJester/skills");

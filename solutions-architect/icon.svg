@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Solution Architect Workbench">
+  <rect width="64" height="64" rx="13" fill="#0b1119"/>
+  <path d="M14 18h15v12H14zm21 16h15v12H35z" fill="#162230" stroke="#67d7e0" stroke-width="3"/>
+  <path d="M29 24h7a7 7 0 0 1 7 7v3M35 40H24a7 7 0 0 1-7-7v-3" fill="none" stroke="#eab96b" stroke-width="3" stroke-linecap="round"/>
+</svg>

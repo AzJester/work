@@ -11,8 +11,9 @@ const tracker = readFileSync(resolve(rootDir, "tracker.html"), "utf8");
 const dashboard = readFileSync(resolve(rootDir, "dashboard.html"), "utf8");
 const serviceWorker = readFileSync(resolve(rootDir, "sw.js"), "utf8");
 const migration = readFileSync(resolve(rootDir, "supabase/migrations/20260711060000_tracker_hardening.sql"), "utf8");
+const quotaMigrations = `${migration}\n${readFileSync(resolve(rootDir, "supabase/migrations/20260831010000_solution_assist_quota.sql"), "utf8")}`;
 const pagesWorkflow = readFileSync(resolve(rootDir, ".github/workflows/pages.yml"), "utf8");
-const edgeNames = ["weekly-summary", "extract-tasks", "task-actions", "plan-day", "build-roadmap", "roadmap-summary"];
+const edgeNames = ["weekly-summary", "extract-tasks", "task-actions", "plan-day", "build-roadmap", "roadmap-summary", "solution-assist"];
 const edgeSources = Object.fromEntries(edgeNames.map((name) => [
   name,
   readFileSync(resolve(rootDir, `supabase/functions/${name}/index.ts`), "utf8"),
@@ -363,8 +364,8 @@ test("all Anthropic Edge Functions enforce auth, bounded requests, quotas, and t
 });
 
 test("quota RPC accepts only known endpoints and canonical windows", () => {
-  for (const name of edgeNames) assert.match(migration, new RegExp(`'${name}'`), `Migration must allow ${name}`);
-  assert.match(migration, /p_window_seconds\s+not\s+in\s*\(\s*60,\s*300,\s*900,\s*3600,\s*21600,\s*86400\s*\)/i);
+  for (const name of edgeNames) assert.match(quotaMigrations, new RegExp(`'${name}'`), `Migrations must allow ${name}`);
+  assert.match(quotaMigrations, /p_window_seconds\s+not\s+in\s*\(\s*60,\s*300,\s*900,\s*3600,\s*21600,\s*86400\s*\)/i);
 });
 
 test("deleting a structured update purges its log and invalidates older snapshots", () => {

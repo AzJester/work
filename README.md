@@ -10,6 +10,47 @@ published yet. It also checks public GitHub metadata for newly deployed reposito
 
 ### [Open the Application Library](https://azjester.github.io/work/apps.html)
 
+## Solution Architect Workbench
+
+A browser-local workbench for practicing defense solution architects. It keeps the
+mission problem, customer hot buttons, requirements, source evidence, technology assessments, architecture,
+technical decisions, proposal inputs, and transition obligations in one validated
+solution workspace instead of turning the work into a calendar or task schedule.
+
+### [Open Solution Architect Workbench](https://azjester.github.io/work/solutions-architect/)
+
+- follow a guided **Discover → Shape → Assess → Architect → Prove → Propose →
+  Transition** lifecycle while the command view surfaces unscheduled obligations
+- manage multiple isolated solutions with automatic local saves, bounded recovery
+  points, duplication, and validated full-workspace JSON import/export
+- ingest customer hot buttons from a bounded pasted list, preserve source and
+  confidence, validate them separately, and trace them into requirements
+- build win themes that connect a customer priority to value, a differentiator, and
+  evidence-backed proof instead of storing disconnected proposal slogans
+- compare hardware, software, tools, vendors, platforms, and integrated options using
+  weighted 0–5 criteria, explicit unknown values, rationale, evidence confidence, and
+  optional TRL/MRL/IRL measures
+- create fit-for-purpose mission, mission-thread, system-interface, data-flow, and
+  deployment/transition views with accessible tables and SVG/PNG export
+- generate a decision package as Markdown, standalone HTML, or a print-ready browser
+  view for PDF output
+- optionally send an exact, user-reviewed subset of approved workspace facts to the
+  authenticated `solution-assist` Edge Function; AI responses remain drafts and cannot
+  overwrite authored records
+
+Workspace content stays in the current browser unless the user downloads an export or
+explicitly approves an AI payload. The public site and browser storage are not an
+authorization boundary: use only approved unclassified, non-CUI information and do not
+enter classified, export-controlled, proprietary, or customer-restricted content unless
+the organization has separately authorized that handling.
+
+Start locally from the repository root with `python -m http.server 8000`, then open
+`http://localhost:8000/solutions-architect/`. See the app's
+[README](solutions-architect/README.md), [user guide](solutions-architect/docs/USER_GUIDE.md),
+[architecture](solutions-architect/docs/ARCHITECTURE.md),
+[deployment guide](solutions-architect/docs/DEPLOYMENT.md), and
+[security guide](solutions-architect/docs/SECURITY.md).
+
 ## Map Builder
 
 A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.2.3**, created by **Dr. Shane Turner**:
@@ -641,6 +682,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
+| `solutions-architect/` | Browser-local **Solution Architect Workbench** for mission discovery, traceable requirements, Technology Assessment, architecture views, technical assurance, proposal inputs, transition planning, and decision-package export, with optional reviewed AI assistance. |
 | `black-hat-agent/` | Public, no-sign-in Black Hat Agent competitive-analysis workspace with local persistence, Excel/CSV and JSON import, evidence and competitor tracking, accessible native charts and diagrams, versioned report visuals, multi-format exports, recovery, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |

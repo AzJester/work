@@ -1,0 +1,30 @@
+:root { color-scheme: light; }
+body {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 42px;
+  color: #18212a;
+  background: #fff;
+  font: 15px/1.55 "Segoe UI", Arial, sans-serif;
+}
+pre {
+  white-space: pre-wrap;
+  font: 14px/1.55 "Segoe UI", Arial, sans-serif;
+}
+.marking {
+  padding: 10px 14px;
+  border: 1px solid #b8893d;
+  background: #fff8e8;
+  font-weight: 700;
+}
+.diagram { page-break-before: always; }
+.diagram svg {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ccd5dd;
+  background: #0f1822;
+}
+@media print {
+  body { padding: 0; }
+  .diagram { break-before: page; }
+}
