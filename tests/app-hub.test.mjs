@@ -97,6 +97,21 @@ test("Weekly Status links to its live app and real source repository", () => {
   assert.match(hub, /if \(typeof url !== "string" \|\| !url\.trim\(\)\) return null/);
 });
 
+test("Claude Skills and Thought Circuit live in a separate resources section", () => {
+  assert.match(hub, /<section class="resources" id="resources" aria-labelledby="resources-title">/);
+  assert.equal((hub.match(/<article class="resource-card"/g) || []).length, 2);
+
+  const skillsCard = hub.match(/<article class="resource-card" data-resource="claude-skills">([\s\S]*?)<\/article>/)?.[1] || "";
+  assert.match(skillsCard, /<h3>Claude &amp; AI Agent Skills<\/h3>/);
+  assert.match(skillsCard, /href="https:\/\/github\.com\/AzJester\/skills"/);
+
+  const thoughtCircuitCard = hub.match(/<article class="resource-card" data-resource="thought-circuit">([\s\S]*?)<\/article>/)?.[1] || "";
+  assert.match(thoughtCircuitCard, /<h3>Thought Circuit<\/h3>/);
+  assert.match(thoughtCircuitCard, /href="https:\/\/st-dba\.com\/"/);
+  assert.doesNotMatch(thoughtCircuitCard, /\bsource\b|github\.com/i,
+    "Thought Circuit must link only to the public site and never show a source link");
+});
+
 test("search, category filters, and accessible link behavior are present", () => {
   assert.match(hub, /id="app-search"[^>]*type="search"/);
   assert.match(hub, /id="filters" role="group" aria-label="Filter applications"/);

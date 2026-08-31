@@ -45,7 +45,17 @@ for (const width of [280, 320, 390, 640, 641, 980, 981, 1440]) {
         }
         return issues.map(issue => `${card.querySelector("h3").textContent}: ${issue}`);
       });
-      const controls = [".hero", ".catalog-heading", ".controls", ".search-wrap", ".filters", ".app-grid"]
+      const resourceIssues = [...document.querySelectorAll(".resource-card")].flatMap(card => {
+        const cardRect = rect(card);
+        const link = card.querySelector(".resource-link");
+        const linkRect = rect(link);
+        const issues = [];
+        if (cardRect.left < -1 || cardRect.right > innerWidth + 1) issues.push("card leaves viewport");
+        if (card.scrollWidth > card.clientWidth + 1 || card.scrollHeight > card.clientHeight + 1) issues.push("card content clips");
+        if (linkRect.left < cardRect.left - 1 || linkRect.right > cardRect.right + 1 || linkRect.bottom > cardRect.bottom + 1) issues.push("link leaves card");
+        return issues.map(issue => `${card.querySelector("h3").textContent}: ${issue}`);
+      });
+      const controls = [".hero", ".catalog-heading", ".controls", ".search-wrap", ".filters", ".app-grid", ".resources", ".resources-heading", ".resource-grid"]
         .map(selector => ({ selector, ...rect(document.querySelector(selector)) }));
       return {
         viewport: innerWidth,
@@ -54,6 +64,7 @@ for (const width of [280, 320, 390, 640, 641, 980, 981, 1440]) {
         titleLines,
         controls,
         cardIssues,
+        resourceIssues,
       };
     });
 
@@ -68,13 +79,24 @@ for (const width of [280, 320, 390, 640, 641, 980, 981, 1440]) {
       expect(control.right, `${control.selector} ends inside the viewport`).toBeLessThanOrEqual(layout.viewport + 1);
     }
     expect(layout.cardIssues).toEqual([]);
+    expect(layout.resourceIssues).toEqual([]);
 
     const filters = page.locator("#filters");
-    const all = filters.getByRole("button", { name: "All", exact: true });
-    const sourceOnly = filters.getByRole("button", { name: "Source only", exact: true });
-    await expect(all).toBeInViewport();
-    await filters.evaluate(element => { element.scrollLeft = element.scrollWidth; });
-    await expect(sourceOnly).toBeInViewport();
+    const filterEdges = await filters.evaluate(element => {
+      const visibleInsideRail = button => {
+        const rail = element.getBoundingClientRect();
+        const item = button.getBoundingClientRect();
+        return item.left >= rail.left - 1 && item.right <= rail.right + 1;
+      };
+      const all = element.querySelector('[data-category="All"]');
+      const sourceOnly = element.querySelector('[data-category="Source only"]');
+      element.scrollLeft = 0;
+      const allVisibleAtStart = visibleInsideRail(all);
+      element.scrollLeft = element.scrollWidth;
+      const sourceVisibleAtEnd = visibleInsideRail(sourceOnly);
+      return { allVisibleAtStart, sourceVisibleAtEnd };
+    });
+    expect(filterEdges).toEqual({ allVisibleAtStart: true, sourceVisibleAtEnd: true });
   });
 }
 
@@ -84,12 +106,26 @@ test("deep-linked filters and application links resolve visibly and correctly", 
 
   const active = page.locator('#filters [aria-pressed="true"]');
   await expect(active).toHaveText("Source only");
-  await expect(active).toBeInViewport();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
+  const activeVisible = await page.locator("#filters").evaluate(element => {
+    const rail = element.getBoundingClientRect();
+    const item = element.querySelector('[aria-pressed="true"]').getBoundingClientRect();
+    return item.left >= rail.left - 1 && item.right <= rail.right + 1;
+  });
+  expect(activeVisible).toBe(true);
 
   await openHub(page, baseURL);
   const weeklyStatus = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "shAIne Weekly Status", exact: true }) });
   await expect(weeklyStatus.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://shaine-weekly-status.onrender.com/");
   await expect(weeklyStatus.getByRole("link", { name: /^Source:/ })).toHaveAttribute("href", "https://github.com/AzJester/shAIne_Weekly_Status");
+
+  const skills = page.locator('[data-resource="claude-skills"]');
+  await expect(skills.getByRole("link", { name: /Browse Claude and AI Agent Skills/ })).toHaveAttribute("href", "https://github.com/AzJester/skills");
+
+  const thoughtCircuit = page.locator('[data-resource="thought-circuit"]');
+  await expect(thoughtCircuit.getByRole("link", { name: /Visit Thought Circuit/ })).toHaveAttribute("href", "https://st-dba.com/");
+  await expect(thoughtCircuit.getByRole("link")).toHaveCount(1);
+  await expect(thoughtCircuit).not.toContainText(/source/i);
 
   const localLoops = await page.locator(".app-card .app-link").evaluateAll((links, pathname) => links
     .filter(link => new URL(link.href).pathname === pathname)

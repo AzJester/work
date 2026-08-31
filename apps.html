@@ -540,6 +540,158 @@
 
     .external-icon { font-size: 0.9em; }
 
+    .resources {
+      scroll-margin-top: 90px;
+      padding: 0 0 90px;
+    }
+
+    .resources-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.58fr);
+      gap: 32px;
+      align-items: end;
+      margin-bottom: 20px;
+      padding-top: 42px;
+      border-top: 1px solid var(--line);
+    }
+
+    .resources-eyebrow {
+      margin: 0 0 10px;
+      color: var(--cyan);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.71rem;
+      font-weight: 760;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .resources-heading h2 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2.35rem);
+      letter-spacing: -0.04em;
+    }
+
+    .resources-intro {
+      max-width: 42rem;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .resource-card {
+      --card-accent: var(--violet);
+      position: relative;
+      min-height: 292px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 27px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(18, 34, 52, 0.96), rgba(9, 23, 35, 0.92));
+      box-shadow: 0 1px rgba(255, 255, 255, 0.025);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .resource-card[data-resource="thought-circuit"] { --card-accent: var(--amber); }
+
+    .resource-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 2px;
+      background: var(--card-accent);
+      opacity: 0.78;
+    }
+
+    .resource-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .resource-kind {
+      margin: 0;
+      color: var(--card-accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      font-weight: 760;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .resource-mark {
+      min-width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--card-accent) 36%, transparent);
+      border-radius: 50%;
+      color: var(--card-accent);
+      background: color-mix(in srgb, var(--card-accent) 9%, transparent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.66rem;
+      font-weight: 760;
+      letter-spacing: 0.04em;
+    }
+
+    .resource-card h3 {
+      margin: 0;
+      font-size: clamp(1.38rem, 2.3vw, 1.78rem);
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+    }
+
+    .resource-description {
+      margin: 13px 0 20px;
+      color: var(--muted-bright);
+      font-size: 0.9rem;
+    }
+
+    .resource-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 22px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .resource-tag {
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+    }
+
+    .resource-link {
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    .resource-card:focus-within {
+      border-color: var(--line-strong);
+      box-shadow: var(--shadow);
+    }
+
+    @media (hover: hover) {
+      .resource-card:hover {
+        border-color: var(--line-strong);
+        box-shadow: var(--shadow);
+        transform: translateY(-3px);
+      }
+    }
+
     .empty-state {
       display: none;
       padding: 68px 24px;
@@ -588,6 +740,7 @@
       .controls { grid-template-columns: 1fr; }
       .filters { justify-content: flex-start; }
       .app-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .resources-heading { grid-template-columns: 1fr; gap: 14px; }
     }
 
     @media (max-width: 640px) {
@@ -608,6 +761,10 @@
       .controls { margin-bottom: 20px; }
       .app-grid { grid-template-columns: 1fr; }
       .app-card { min-height: 288px; padding: 21px; }
+      .resources { padding-bottom: 64px; }
+      .resources-heading { padding-top: 32px; }
+      .resource-grid { grid-template-columns: 1fr; }
+      .resource-card { min-height: 276px; padding: 21px; }
       .footer-inner { min-height: 122px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 8px; }
     }
 
@@ -620,7 +777,8 @@
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
-      .app-card:hover { transform: none; }
+      .app-card:hover,
+      .resource-card:hover { transform: none; }
     }
   </style>
 </head>
@@ -635,6 +793,7 @@
       </a>
       <nav class="header-links" aria-label="Utility navigation">
         <a class="header-link" href="#catalog">Browse</a>
+        <a class="header-link" href="#resources">Resources</a>
         <a class="header-link github-link" href="https://github.com/AzJester" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </nav>
     </div>
@@ -682,6 +841,48 @@
       <noscript>
         <p>This page uses a small script for searching and filtering. Browse the applications directly from the <a href="https://github.com/AzJester">AzJester GitHub profile</a>.</p>
       </noscript>
+    </section>
+
+    <section class="resources" id="resources" aria-labelledby="resources-title">
+      <div class="resources-heading">
+        <div>
+          <p class="resources-eyebrow">Beyond the applications</p>
+          <h2 id="resources-title">Skills &amp; resources</h2>
+        </div>
+        <p class="resources-intro">Reusable agent tools and published analysis that extend the work.</p>
+      </div>
+
+      <div class="resource-grid">
+        <article class="resource-card" data-resource="claude-skills">
+          <div class="resource-top">
+            <p class="resource-kind">AI agent library</p>
+            <span class="resource-mark" aria-hidden="true">SK</span>
+          </div>
+          <h3>Claude &amp; AI Agent Skills</h3>
+          <p class="resource-description">A personal collection of reusable skills for Claude and other AI agents, organized as documented skill packages with Claude Code and Codex support where available.</p>
+          <ul class="resource-tags" aria-label="Claude and AI Agent Skills topics">
+            <li class="resource-tag">Claude Code</li>
+            <li class="resource-tag">Agent skills</li>
+            <li class="resource-tag">Reusable workflows</li>
+          </ul>
+          <a class="app-link primary resource-link" href="https://github.com/AzJester/skills" target="_blank" rel="noopener noreferrer" aria-label="Browse Claude and AI Agent Skills on GitHub (opens in a new tab)">Browse skills <span class="external-icon" aria-hidden="true">↗</span></a>
+        </article>
+
+        <article class="resource-card" data-resource="thought-circuit">
+          <div class="resource-top">
+            <p class="resource-kind">Published analysis</p>
+            <span class="resource-mark" aria-hidden="true">TC</span>
+          </div>
+          <h3>Thought Circuit</h3>
+          <p class="resource-description">Defense technology and practical leadership—decision-grade analysis on digital engineering, test and evaluation, counter-UAS, and applied AI in national security.</p>
+          <ul class="resource-tags" aria-label="Thought Circuit topics">
+            <li class="resource-tag">Defense technology</li>
+            <li class="resource-tag">Practical AI</li>
+            <li class="resource-tag">Leadership</li>
+          </ul>
+          <a class="app-link primary resource-link" href="https://st-dba.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Thought Circuit (opens in a new tab)">Visit site <span class="external-icon" aria-hidden="true">↗</span></a>
+        </article>
+      </div>
     </section>
   </main>
 
