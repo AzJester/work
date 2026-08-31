@@ -561,11 +561,11 @@ test("Timeline is the focal view and Fit avoids label collisions before detailed
   await page.setViewportSize({ width: 1440, height: 1050 });
   await page.locator("#zoomIn").click();
   await expect(page.locator("#zoomFit")).toHaveAttribute("aria-pressed", "false");
-  const detail = await page.locator("#gantt svg").evaluate(svg => ({
-    timeline: svg.getBoundingClientRect().width,
-    viewport: document.querySelector(".tl-scroll").clientWidth,
-  }));
-  expect(detail.timeline).toBeGreaterThan(detail.viewport);
+  await expect.poll(async () => page.locator("#gantt svg").evaluate(svg => (
+    svg.getBoundingClientRect().width > document.querySelector(".tl-scroll").clientWidth
+  )), {
+    message: "detailed zoom expands the timeline beyond its viewport",
+  }).toBe(true);
 });
 
 test("print presentation includes the roadmap header, executive band, and timeline from every view", async ({ page }) => {
