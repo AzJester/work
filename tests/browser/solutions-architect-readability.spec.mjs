@@ -10,6 +10,7 @@ const ROUTES = [
   "prove",
   "propose",
   "transition",
+  "knowledge-base",
   "decision-package",
 ];
 

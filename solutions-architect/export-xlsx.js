@@ -1,12 +1,13 @@
 import {
   VIEW_TEMPLATES,
   assessmentResult,
+  buildAnalysisOfAlternativesModels,
   buildReadiness,
   collectObligations,
   formatLocalDate,
   safeHttpUrl,
   scoped
-} from "./engine.js?v=7";
+} from "./engine.js?v=8";
 
 export const DECISION_WORKBOOK_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -18,6 +19,7 @@ export const DECISION_WORKBOOK_SHEET_NAMES = Object.freeze([
   "Technology Assessment",
   "Architecture & Interfaces",
   "Decisions & Risk",
+  "Analysis of Alternatives",
   "Delivery & Transition",
   "Gaps & Readiness"
 ]);
@@ -145,7 +147,7 @@ function estimatedRowHeight(row, widths) {
     const wrappedLines = Math.ceil(content.length / Math.max(12, (widths[index] || 18) * 1.25));
     lines = Math.max(lines, explicitLines, wrappedLines);
   });
-  return Math.min(66, 17 + (Math.min(lines, 4) - 1) * 12);
+  return Math.min(174, 17 + (Math.min(lines, 14) - 1) * 12);
 }
 
 function createReportSheet(XLSX, { title, subtitle, widths, sections }) {
@@ -521,7 +523,8 @@ export function buildDecisionWorkbook(
   const views = scoped(workspace, "architectureViews", solutionId);
   const elements = scoped(workspace, "elements", solutionId);
   const connections = scoped(workspace, "connections", solutionId);
-  const trades = scoped(workspace, "trades", solutionId);
+  const trades = scoped(workspace, "trades", solutionId).filter(record => record.analysisType !== "Analysis of Alternatives");
+  const alternativesAnalyses = buildAnalysisOfAlternativesModels(workspace, solutionId);
   const decisions = scoped(workspace, "decisions", solutionId);
   const risks = scoped(workspace, "risks", solutionId);
   const dependencies = scoped(workspace, "dependencies", solutionId);
@@ -691,7 +694,7 @@ export function buildDecisionWorkbook(
   const decisionsSheet = createReportSheet(XLSX, {
     title: "Decisions & Risk",
     subtitle,
-    widths: [38, 48, 40, 48, 18, 24, 24],
+    widths: [38, 48, 40, 48, 30, 36, 44],
     sections: [
       section("Trade studies", ["Trade study", "Decision question", "Options", "Recommendation", "Status"], trades.map(record => [
         text(record.title), text(record.question), joinNames(record.optionIds, candidateById, "name"), text(record.recommendation), text(record.status)
@@ -708,6 +711,27 @@ export function buildDecisionWorkbook(
       section("Assumptions", ["Assumption", "Owner", "Validation plan", "Status"], assumptions.map(record => [
         text(record.statement), text(record.owner), text(record.validationPlan), text(record.status)
       ]))
+    ]
+  });
+
+  const alternativesSheet = createReportSheet(XLSX, {
+    title: "Analysis of Alternatives",
+    subtitle,
+    widths: [34, 32, 54, 18, 18, 18, 18, 14, 14, 14],
+    sections: [
+      section("Analysis of Alternatives (AoA)", ["Analysis", "Field", "Value"], alternativesAnalyses.flatMap(record => [
+        [text(record.title), "Decision objective", text(record.question)],
+        [text(record.title), "Baseline alternative", text(record.baselineName)],
+        [text(record.title), "Scope and ground rules", text(record.scopeAndGroundRules)],
+        [text(record.title), "Evaluation approach", text(record.evaluationApproach)],
+        [text(record.title), "Sensitivity and uncertainty", text(record.sensitivityAnalysis)],
+        [text(record.title), "Supporting evidence", record.evidenceNames.map(value => text(value)).join("; ") || "None linked"],
+        [text(record.title), "Recommendation", text(record.recommendation)],
+        [text(record.title), "Owner / date / status", [record.owner, record.date, record.status].map(value => text(value)).filter(Boolean).join("; ")]
+      ]), "No Analysis of Alternatives recorded"),
+      section("Alternative comparison", ["Analysis", "Alternative", "Baseline", "Status", "Weighted score", "Assessed", "Evidenced", "TRL", "MRL", "IRL"], alternativesAnalyses.flatMap(record => record.alternatives.map(candidate => [
+        text(record.title), text(candidate.name), candidate.baseline ? "Yes" : "No", text(candidate.status), candidate.weightedScore === null ? "Unknown" : decimalCell(candidate.weightedScore), percentCell(candidate.assessmentCoverage), percentCell(candidate.evidenceCoverage), candidate.trl ?? "Unknown", candidate.mrl ?? "Unknown", candidate.irl ?? "Unknown"
+      ])), "No alternatives selected")
     ]
   });
 
@@ -745,7 +769,7 @@ export function buildDecisionWorkbook(
   });
 
   const workbook = XLSX.utils.book_new();
-  const sheets = [summarySheet, missionSheet, customerSheet, requirementsSheet, assessmentSheet, architectureSheet, decisionsSheet, deliverySheet, gapsSheet];
+  const sheets = [summarySheet, missionSheet, customerSheet, requirementsSheet, assessmentSheet, architectureSheet, decisionsSheet, alternativesSheet, deliverySheet, gapsSheet];
   DECISION_WORKBOOK_SHEET_NAMES.forEach((name, index) => XLSX.utils.book_append_sheet(workbook, sheets[index], name));
   workbook.Props = {
     Title: `${text(solution.name, "Solution")} — Decision Workbook`,

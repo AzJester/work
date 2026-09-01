@@ -254,6 +254,125 @@ test("assessment and readiness models preserve unknowns instead of treating them
   assert.ok(obligations.every((item, index) => index === 0 || severityRank[obligations[index - 1].severity] <= severityRank[item.severity]));
 });
 
+test("Analysis of Alternatives fields are optional for legacy trades and fail closed when supplied", () => {
+  const workspace = engine.createWorkspace();
+  assert.equal(engine.validateWorkspace(workspace).valid, true);
+
+  const legacy = structuredClone(workspace);
+  for (const field of ["analysisType", "baselineOptionId", "scopeAndGroundRules", "evaluationApproach", "sensitivityAnalysis", "evidenceIds", "owner", "date"]) {
+    delete legacy.trades[0][field];
+  }
+  assert.equal(engine.validateWorkspace(legacy).valid, true, "v1 trade studies without AoA metadata must remain valid");
+
+  for (const [mutate, pattern] of [
+    [trade => { trade.analysisType = "AoA"; }, /analysisType is unsupported/i],
+    [trade => { trade.date = "2026-02-31"; }, /date must use a valid YYYY-MM-DD/i],
+    [trade => { trade.baselineOptionId = "candidate_missing"; }, /baselineOptionId references a missing record/i],
+    [trade => { trade.baselineOptionId = "candidate_bravo"; trade.optionIds = ["candidate_alpha"]; }, /baselineOptionId must also appear in optionIds/i],
+    [trade => { trade.optionIds = ["candidate_alpha", "candidate_alpha"]; }, /optionIds must not contain duplicate alternatives/i],
+    [trade => { trade.scopeAndGroundRules = ["not", "text"]; }, /scopeAndGroundRules must be a string/i],
+    [trade => { trade.evidenceIds = "evidence_interface_draft"; }, /evidenceIds must be an array/i]
+  ]) {
+    const invalid = structuredClone(workspace);
+    mutate(invalid.trades[0]);
+    assert.match(engine.validateWorkspace(invalid).errors.join("\n"), pattern);
+  }
+
+  const added = engine.addBlankSolution(workspace, "AoA boundary test");
+  added.workspace.evidence.push({
+    id: "evidence_other_aoa",
+    solutionId: added.solution.id,
+    title: "Other solution AoA evidence",
+    source: "Synthetic source",
+    url: "",
+    notes: "",
+    confidence: "Medium"
+  });
+  added.workspace.trades.find(record => record.solutionId === workspace.activeSolutionId).evidenceIds = ["evidence_other_aoa"];
+  assert.match(engine.validateWorkspace(added.workspace).errors.join("\n"), /trades\[0\]\.evidenceIds crosses solution boundaries/i);
+
+  const duplicateAlternatives = structuredClone(workspace);
+  duplicateAlternatives.trades[0].optionIds = ["candidate_alpha", "candidate_alpha"];
+  assert.ok(engine.collectObligations(duplicateAlternatives, workspace.activeSolutionId).some(record => record.kind === "aoa-alternatives-gap"));
+  assert.equal(engine.buildAnalysisOfAlternativesModels(duplicateAlternatives, workspace.activeSolutionId)[0].alternatives.length, 1);
+});
+
+test("Analysis of Alternatives models compute comparisons from current assessments without duplicating stored scores", () => {
+  const workspace = engine.createWorkspace();
+  const solutionId = workspace.activeSolutionId;
+  const before = structuredClone(workspace);
+  const models = engine.buildAnalysisOfAlternativesModels(workspace, solutionId);
+
+  assert.equal(models.length, 1);
+  const analysis = models[0];
+  assert.equal(analysis.title, "Mission package technology selection");
+  assert.equal(analysis.baselineName, "Candidate Alpha mission package");
+  assert.deepEqual(analysis.evidenceNames, ["Draft interface control description", "Bench throughput observation"]);
+  assert.deepEqual(analysis.alternatives.map(record => record.name), ["Candidate Alpha mission package", "Candidate Bravo open sensor stack"]);
+  assert.deepEqual(analysis.alternatives.map(record => record.baseline), [true, false]);
+
+  for (const alternative of analysis.alternatives) {
+    const expected = engine.assessmentResult(workspace, solutionId, alternative.id);
+    assert.equal(alternative.weightedScore, expected.score);
+    assert.equal(alternative.assessmentCoverage, expected.coverage);
+    assert.equal(alternative.evidenceCoverage, expected.evidenceCoverage);
+    assert.equal(Object.hasOwn(alternative, "scores"), false, "computed exports must not duplicate authored score records");
+  }
+  assert.deepEqual(workspace, before, "building an AoA comparison must not mutate stored workspace records");
+
+  const legacy = structuredClone(workspace);
+  delete legacy.trades[0].analysisType;
+  assert.deepEqual(engine.buildAnalysisOfAlternativesModels(legacy, solutionId), []);
+
+  const added = engine.addBlankSolution(workspace, "Other analysis workspace");
+  assert.deepEqual(engine.buildAnalysisOfAlternativesModels(added.workspace, added.solution.id), [], "AoA models must stay scoped to the selected solution");
+});
+
+test("Markdown and standalone HTML include expanded AoA details only when a trade opts in", () => {
+  const workspace = engine.createWorkspace();
+  const solutionId = workspace.activeSolutionId;
+  Object.assign(workspace.trades[0], {
+    scopeAndGroundRules: "AOA-SCOPE-MARKER",
+    evaluationApproach: "AOA-EVALUATION-MARKER",
+    sensitivityAnalysis: "AOA-SENSITIVITY-MARKER",
+    recommendation: "AOA-RECOMMENDATION-MARKER"
+  });
+
+  const markdown = engine.buildDecisionPackageMarkdown(workspace, solutionId);
+  const html = engine.buildDecisionPackageHtml(workspace, solutionId);
+  assert.match(markdown, /## Analysis of Alternatives/);
+  assert.match(markdown, /\| Alternative \| Baseline \| Weighted score \| Assessed \| Evidenced \| Readiness levels \| Status \|/);
+  assert.match(html, /Analysis of Alternatives \(AoA\)/);
+  assert.match(html, /alternative comparison/i);
+  for (const marker of [
+    "AOA-SCOPE-MARKER",
+    "AOA-EVALUATION-MARKER",
+    "AOA-SENSITIVITY-MARKER",
+    "AOA-RECOMMENDATION-MARKER",
+    "Candidate Alpha mission package",
+    "Candidate Bravo open sensor stack",
+    "Draft interface control description"
+  ]) {
+    assert.match(markdown, new RegExp(marker));
+    assert.match(html, new RegExp(marker));
+  }
+  assert.match(markdown, /\| AoA \| Analysis of Alternatives \|/);
+  assert.match(html, /data-label="Acronym">AoA<\/td><td data-label="Meaning">Analysis of Alternatives<\/td>/);
+  assert.doesNotMatch(markdown.split("## Trade studies")[1]?.split("## Analysis of Alternatives")[0] || "", /Mission package technology selection/, "the AoA must not also appear in the generic trade table");
+  assert.doesNotMatch(html.split("Analysis of Alternatives (AoA)")[0], /Mission package technology selection/, "the AoA must not also appear as a generic trade card");
+
+  const legacy = structuredClone(workspace);
+  for (const field of ["analysisType", "baselineOptionId", "scopeAndGroundRules", "evaluationApproach", "sensitivityAnalysis", "evidenceIds", "owner", "date"]) {
+    delete legacy.trades[0][field];
+  }
+  const legacyMarkdown = engine.buildDecisionPackageMarkdown(legacy, solutionId);
+  const legacyHtml = engine.buildDecisionPackageHtml(legacy, solutionId);
+  assert.doesNotMatch(legacyMarkdown, /## Analysis of Alternatives/);
+  assert.doesNotMatch(legacyMarkdown, /\| AoA \| Analysis of Alternatives \|/);
+  assert.doesNotMatch(legacyHtml, /Analysis of Alternatives \(AoA\)/);
+  assert.match(legacyMarkdown, /Mission package technology selection/, "the original trade study must still export");
+});
+
 test("architecture layout is non-mutating and diagram markup escapes authored content", () => {
   const workspace = engine.createWorkspace();
   const viewId = "view_interface";
@@ -332,7 +451,7 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
     assert.match(markdown, new RegExp(`## ${heading}`, "i"));
   }
   assert.doesNotMatch(markdown, /javascript:alert/i);
-  assert.match(markdown, /Mission package technology selection[^\n]+Candidate Alpha mission package; Candidate Bravo open sensor stack/);
+  assert.match(markdown, /Representative demonstration delivery path[^\n]+Candidate Alpha mission package; Candidate Bravo open sensor stack/);
   assert.match(markdown, /Establish the sensor-to-edge boundary[^\n]+Draft interface control description/);
 
   const html = engine.buildDecisionPackageHtml(workspace, solution.id);

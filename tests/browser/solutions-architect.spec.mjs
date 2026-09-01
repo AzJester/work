@@ -58,6 +58,7 @@ test("core lifecycle editing persists locally and architecture exports remain se
     ["prove", "Prove"],
     ["propose", "Propose"],
     ["transition", "Transition"],
+    ["knowledge-base", "Knowledge base"],
     ["decision-package", "Decision package"]
   ]) {
     await expect(navigation.locator(`[data-route="${route}"] .label`)).toHaveText(label);
@@ -122,7 +123,7 @@ test("development status stays visible on screen and out of printed decision pac
 test("Technology Assessment explains TRL, MRL, and IRL beside the readiness fields", async ({ page }) => {
   await gotoFresh(page, "assess");
 
-  const key = page.getByRole("region", { name: "Readiness level abbreviations" });
+  const key = page.getByRole("region", { name: "Readiness levels" });
   await expect(key).toContainText("TRL");
   await expect(key).toContainText("Technology Readiness Level");
   await expect(key).toContainText("MRL");

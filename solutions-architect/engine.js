@@ -158,7 +158,8 @@ const RECORD_FIELD_TYPES = Object.freeze({
 
 const OPTIONAL_RECORD_FIELD_TYPES = Object.freeze({
   evidence: Object.freeze({ sourceType: "string", meetingDate: "string", participants: "array", missionSegments: "array" }),
-  candidates: Object.freeze({ readinessBasis: "string", readinessAsOf: "string" })
+  candidates: Object.freeze({ readinessBasis: "string", readinessAsOf: "string", catalogSource: "object" }),
+  trades: Object.freeze({ analysisType: "string", baselineOptionId: "optional-id", scopeAndGroundRules: "string", evaluationApproach: "string", sensitivityAnalysis: "string", evidenceIds: "id-array", owner: "string", date: "string" })
 });
 
 const AI_ACTIONS = Object.freeze(["draft_artifact", "critique_artifact", "find_gaps", "generate_review_questions", "propose_architecture_view"]);
@@ -450,7 +451,10 @@ function seedSyntheticSolution(workspace) {
     { id: "connection_lab_demo", solutionId, viewId: "view_transition", sourceElementId: "element_lab", targetElementId: "element_demo", type: "Human / process", label: "Verified baseline", protocol: "", description: "" },
     { id: "connection_demo_handoff", solutionId, viewId: "view_transition", sourceElementId: "element_demo", targetElementId: "element_handoff", type: "Human / process", label: "Evidence and residual risk", protocol: "", description: "" }
   );
-  workspace.trades.push({ id: "trade_sensor_package", solutionId, title: "Mission package technology selection", question: "Which candidate best balances mission effect, open integration, delivery risk, and sustainment?", optionIds: ["candidate_alpha", "candidate_bravo"], recommendation: "Retain both candidates until the representative performance event closes the current evidence gap.", status: "In analysis" });
+  workspace.trades.push(
+    { id: "trade_sensor_package", solutionId, title: "Mission package technology selection", question: "Which candidate best balances mission effect, open integration, delivery risk, and sustainment?", optionIds: ["candidate_alpha", "candidate_bravo"], recommendation: "Retain both candidates until the representative performance event closes the current evidence gap.", status: "In analysis", analysisType: "Analysis of Alternatives", baselineOptionId: "candidate_alpha", scopeAndGroundRules: "Compare the two integrated mission-package candidates against the approved Technology Assessment criteria using current unclassified interface, performance, data-rights, schedule, and sustainment evidence.", evaluationApproach: "Use the weighted Technology Assessment result as the common comparison, then examine assessment coverage, evidence coverage, readiness, interface openness, and delivery risk before recommending a down-select.", sensitivityAnalysis: "Revisit the recommendation if degraded-link performance, host-platform access, interface data rights, or representative demonstration evidence changes materially.", evidenceIds: ["evidence_interface_draft", "evidence_lab_result"], owner: "Solution architect", date: createdAt.slice(0, 10) },
+    { id: "trade_delivery_path", solutionId, title: "Representative demonstration delivery path", question: "Which integration sequence best closes the highest-risk interface and degraded-link evidence gaps before transition?", optionIds: ["candidate_alpha", "candidate_bravo"], recommendation: "Use the lab integration baseline first, then carry the verified configuration into the representative mission-thread demonstration.", status: "In analysis" }
+  );
   workspace.decisions.push(
     { id: "decision_mosa_boundary", solutionId, title: "Establish the sensor-to-edge boundary as a controlled modular interface", status: "Approved", rationale: "Enables sensor competition and technology refresh without host-platform redesign.", evidenceIds: ["evidence_interface_draft"], owner: "Solution architect", date: createdAt.slice(0, 10) },
     { id: "decision_transport", solutionId, title: "Select the transport adaptation approach", status: "Proposed", rationale: "Pending degraded-link evidence and platform network constraints.", evidenceIds: [], owner: "", date: "" }
@@ -593,6 +597,34 @@ function validateCandidateMetadata(record, path, errors) {
   if (Object.hasOwn(record, "readinessAsOf") && record.readinessAsOf !== "" && !validCalendarDate(record.readinessAsOf)) {
     errors.push(`${path}.readinessAsOf must use a valid YYYY-MM-DD date or be empty.`);
   }
+  if (Object.hasOwn(record, "catalogSource")) {
+    const sourcePath = `${path}.catalogSource`;
+    const source = record.catalogSource;
+    if (isObject(source)) {
+      validateRequiredFields(source, { itemId: "id", revision: "number", itemName: "string", importedAt: "string", reviewedAt: "string", sourceUrl: "string" }, sourcePath, errors);
+      if (!Number.isSafeInteger(source.revision) || source.revision < 1) errors.push(`${sourcePath}.revision must be a positive integer within the safe range.`);
+      const imported = new Date(source.importedAt);
+      if (!Number.isFinite(imported.valueOf()) || imported.toISOString() !== source.importedAt) errors.push(`${sourcePath}.importedAt must be an ISO timestamp.`);
+      if (source.reviewedAt !== "" && !validCalendarDate(source.reviewedAt)) errors.push(`${sourcePath}.reviewedAt must use a valid YYYY-MM-DD date or be empty.`);
+      if (source.sourceUrl) {
+        const normalized = safeHttpUrl(source.sourceUrl);
+        if (!normalized) errors.push(`${sourcePath}.sourceUrl must use HTTP or HTTPS.`);
+        else {
+          const parsed = new URL(normalized);
+          if (parsed.username || parsed.password) errors.push(`${sourcePath}.sourceUrl must not contain credentials.`);
+        }
+      }
+    }
+  }
+}
+
+function validateTradeMetadata(record, path, errors) {
+  if (Object.hasOwn(record, "analysisType") && !["Trade study", "Analysis of Alternatives"].includes(record.analysisType)) {
+    errors.push(`${path}.analysisType is unsupported.`);
+  }
+  if (Object.hasOwn(record, "date") && record.date !== "" && !validCalendarDate(record.date)) {
+    errors.push(`${path}.date must use a valid YYYY-MM-DD date or be empty.`);
+  }
 }
 
 function validateSolutionShape(solution, path, errors) {
@@ -646,6 +678,7 @@ function validateRecordShape(record, collectionName, path, errors) {
   validateRequiredFields(record, RECORD_FIELD_TYPES[collectionName], path, errors, ["id", "solutionId"], OPTIONAL_RECORD_FIELD_TYPES[collectionName]);
   if (collectionName === "evidence") validateEvidenceMetadata(record, path, errors);
   if (collectionName === "candidates") validateCandidateMetadata(record, path, errors);
+  if (collectionName === "trades") validateTradeMetadata(record, path, errors);
   if (collectionName === "candidates" && Array.isArray(record.scores)) {
     record.scores.forEach((score, index) => validateScoreShape(score, `${path}.scores[${index}]`, errors));
   }
@@ -727,7 +760,13 @@ export function validateWorkspace(candidate, { includeSnapshots = true } = {}) {
   for (const [index, criterion] of candidate.criteria.entries()) {
     if (!Number.isFinite(criterion.weight) || criterion.weight < 0 || criterion.weight > 100) errors.push(`criteria[${index}].weight must be between 0 and 100.`);
   }
+  const catalogCopies = new Set();
   for (const [index, technologyCandidate] of candidate.candidates.entries()) {
+    if (isObject(technologyCandidate.catalogSource) && validId(technologyCandidate.catalogSource.itemId)) {
+      const catalogKey = `${technologyCandidate.solutionId}:${technologyCandidate.catalogSource.itemId}`;
+      if (catalogCopies.has(catalogKey)) errors.push(`candidates[${index}].catalogSource.itemId duplicates another Knowledge Base copy in this solution.`);
+      catalogCopies.add(catalogKey);
+    }
     if (!Array.isArray(technologyCandidate.scores)) errors.push(`candidates[${index}].scores must be an array.`);
     for (const [fieldName, minimum, maximum] of [["trl", 1, 9], ["mrl", 1, 10], ["irl", 0, 9]]) {
       const value = technologyCandidate[fieldName];
@@ -773,7 +812,14 @@ export function validateWorkspace(candidate, { includeSnapshots = true } = {}) {
     for (const evidenceId of Array.isArray(decision.evidenceIds) ? decision.evidenceIds : []) sameSolution(decision, maps.evidence.get(evidenceId), `decisions[${index}].evidenceIds`);
   }
   for (const [index, trade] of candidate.trades.entries()) {
-    for (const optionId of Array.isArray(trade.optionIds) ? trade.optionIds : []) sameSolution(trade, maps.candidates.get(optionId), `trades[${index}].optionIds`);
+    const optionIds = Array.isArray(trade.optionIds) ? trade.optionIds : [];
+    if (new Set(optionIds).size !== optionIds.length) errors.push(`trades[${index}].optionIds must not contain duplicate alternatives.`);
+    for (const optionId of optionIds) sameSolution(trade, maps.candidates.get(optionId), `trades[${index}].optionIds`);
+    if (trade.baselineOptionId) {
+      sameSolution(trade, maps.candidates.get(trade.baselineOptionId), `trades[${index}].baselineOptionId`);
+      if (!trade.optionIds.includes(trade.baselineOptionId)) errors.push(`trades[${index}].baselineOptionId must also appear in optionIds.`);
+    }
+    for (const evidenceId of Array.isArray(trade.evidenceIds) ? trade.evidenceIds : []) sameSolution(trade, maps.evidence.get(evidenceId), `trades[${index}].evidenceIds`);
   }
   for (const [index, draft] of candidate.aiDrafts.entries()) {
     if (!AI_ACTIONS.includes(draft.action)) errors.push(`aiDrafts[${index}].action is unsupported.`);
@@ -860,6 +906,37 @@ export function assessmentResult(workspace, solutionId, candidateId) {
   };
 }
 
+export function buildAnalysisOfAlternativesModels(workspace, solutionId = workspace.activeSolutionId) {
+  const candidates = scoped(workspace, "candidates", solutionId);
+  const evidence = scoped(workspace, "evidence", solutionId);
+  const candidatesById = new Map(candidates.map(record => [record.id, record]));
+  const evidenceById = new Map(evidence.map(record => [record.id, record]));
+  return scoped(workspace, "trades", solutionId)
+    .filter(record => record.analysisType === "Analysis of Alternatives")
+    .map(record => ({
+      ...record,
+      baselineName: candidatesById.get(record.baselineOptionId)?.name || "Not selected",
+      evidenceNames: (record.evidenceIds || []).map(id => evidenceById.get(id)?.title || id),
+      alternatives: [...new Set(record.optionIds || [])].map(id => {
+        const candidate = candidatesById.get(id);
+        const result = assessmentResult(workspace, solutionId, id);
+        return {
+          id,
+          name: candidate?.name || id,
+          category: candidate?.category || "",
+          baseline: id === record.baselineOptionId,
+          status: candidate?.status || "Unknown",
+          weightedScore: result.score,
+          assessmentCoverage: result.coverage,
+          evidenceCoverage: result.evidenceCoverage,
+          trl: candidate?.trl ?? null,
+          mrl: candidate?.mrl ?? null,
+          irl: candidate?.irl ?? null
+        };
+      })
+    }));
+}
+
 export function collectObligations(workspace, solutionId = workspace.activeSolutionId) {
   const obligations = [];
   const add = (severity, stage, kind, message, recordId) => obligations.push({ id: `${kind}_${recordId}`, severity, stage, kind, message, recordId });
@@ -903,6 +980,15 @@ export function collectObligations(workspace, solutionId = workspace.activeSolut
   for (const decision of scoped(workspace, "decisions", solutionId)) {
     if (decision.status !== "Approved") add("medium", "Prove", "open-decision", `Decision is unresolved: ${decision.title}`, decision.id);
     if (!decision.evidenceIds?.length) add("low", "Prove", "decision-evidence-gap", `Decision has no evidence link: ${decision.title}`, decision.id);
+  }
+  for (const analysis of scoped(workspace, "trades", solutionId).filter(record => record.analysisType === "Analysis of Alternatives")) {
+    if (new Set(analysis.optionIds || []).size < 2) add("high", "Prove", "aoa-alternatives-gap", `Analysis of Alternatives needs at least two alternatives: ${analysis.title}`, analysis.id);
+    if (!analysis.baselineOptionId) add("medium", "Prove", "aoa-baseline-gap", `Analysis of Alternatives has no baseline: ${analysis.title}`, analysis.id);
+    if (!analysis.scopeAndGroundRules?.trim()) add("medium", "Prove", "aoa-scope-gap", `Analysis of Alternatives lacks scope and ground rules: ${analysis.title}`, analysis.id);
+    if (!analysis.evaluationApproach?.trim()) add("medium", "Prove", "aoa-method-gap", `Analysis of Alternatives lacks an evaluation approach: ${analysis.title}`, analysis.id);
+    if (!analysis.sensitivityAnalysis?.trim()) add("low", "Prove", "aoa-sensitivity-gap", `Analysis of Alternatives lacks sensitivity analysis: ${analysis.title}`, analysis.id);
+    if (!analysis.evidenceIds?.length) add("medium", "Prove", "aoa-evidence-gap", `Analysis of Alternatives has no supporting evidence: ${analysis.title}`, analysis.id);
+    if (!analysis.recommendation?.trim()) add("medium", "Prove", "aoa-recommendation-gap", `Analysis of Alternatives has no recommendation: ${analysis.title}`, analysis.id);
   }
   for (const risk of scoped(workspace, "risks", solutionId)) {
     if (risk.status !== "Closed" && !risk.owner?.trim()) add("high", "Prove", "unowned-risk", `Risk has no owner: ${risk.title}`, risk.id);
@@ -1057,7 +1143,8 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
   const requirements = scoped(workspace, "requirements", solutionId);
   const evidence = scoped(workspace, "evidence", solutionId);
   const candidates = scoped(workspace, "candidates", solutionId);
-  const trades = scoped(workspace, "trades", solutionId);
+  const trades = scoped(workspace, "trades", solutionId).filter(record => record.analysisType !== "Analysis of Alternatives");
+  const alternativesAnalyses = buildAnalysisOfAlternativesModels(workspace, solutionId);
   const views = scoped(workspace, "architectureViews", solutionId);
   const elements = scoped(workspace, "elements", solutionId);
   const connections = scoped(workspace, "connections", solutionId);
@@ -1109,6 +1196,17 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
     `**Concept of operations.** ${markdownText(proposal.conops) || "Not yet defined."}\n\n**Technical approach.** ${markdownText(proposal.technicalApproach) || "Not yet defined."}\n\n**Discriminators.** ${markdownText(proposal.discriminators) || "Not yet defined."}\n\n**Estimate assumptions.** ${markdownText(proposal.estimateAssumptions) || "Not yet defined."}\n\n**Delivery commitments.** ${markdownText(proposal.deliveryCommitments) || "Not yet defined."}`,
     "## Trade studies",
     markdownTable(["Trade study", "Decision question", "Options", "Recommendation", "Status"], trades.map(record => [record.title, record.question, record.optionIds.map(id => candidates.find(item => item.id === id)?.name || id).join("; ") || "None", record.recommendation, record.status])),
+    ...(alternativesAnalyses.length ? [
+      "## Analysis of Alternatives",
+      ...alternativesAnalyses.flatMap(record => {
+        const comparison = record.alternatives.map(candidate => [candidate.name, candidate.baseline ? "Yes" : "No", candidate.weightedScore === null ? "Unknown" : `${candidate.weightedScore.toFixed(2)} / 5`, `${Math.round(candidate.assessmentCoverage * 100)}%`, `${Math.round(candidate.evidenceCoverage * 100)}%`, `TRL ${candidate.trl ?? "Unknown"}; MRL ${candidate.mrl ?? "Unknown"}; IRL ${candidate.irl ?? "Unknown"}`, candidate.status]);
+        return [
+          `### ${markdownText(record.title)}`,
+          `**Decision objective.** ${markdownText(record.question) || "Not recorded."}\n\n**Baseline alternative.** ${markdownText(record.baselineName)}\n\n**Scope and ground rules.** ${markdownText(record.scopeAndGroundRules) || "Not recorded."}\n\n**Evaluation approach.** ${markdownText(record.evaluationApproach) || "Not recorded."}\n\n**Sensitivity and uncertainty.** ${markdownText(record.sensitivityAnalysis) || "Not recorded."}\n\n**Supporting evidence.** ${record.evidenceNames.map(markdownText).join("; ") || "None linked."}\n\n**Recommendation.** ${markdownText(record.recommendation) || "Not recorded."}\n\n**Owner / date / status.** ${[record.owner, record.date, record.status].filter(Boolean).map(markdownText).join(" · ") || "Not recorded."}`,
+          markdownTable(["Alternative", "Baseline", "Weighted score", "Assessed", "Evidenced", "Readiness levels", "Status"], comparison)
+        ];
+      })
+    ] : []),
     "## Architecture views",
     ...views.flatMap(view => {
       const viewElements = elements.filter(record => record.viewId === view.id);
@@ -1145,7 +1243,7 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
       evidence.map(record => [record.title, record.sourceType || "", record.meetingDate || "", record.participants?.join("; ") || "", record.missionSegments?.join("; ") || "", record.source, record.confidence, safeHttpUrl(record.url), record.notes])
     ),
     "## Acronym key",
-    markdownTable(["Acronym", "Meaning"], [["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]])
+    markdownTable(["Acronym", "Meaning"], [...(alternativesAnalyses.length ? [["AoA", "Analysis of Alternatives"]] : []), ["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]])
   ];
   return `${sections.filter(value => value !== "").join("\n\n")}\n`;
 }
@@ -1315,6 +1413,12 @@ tbody tr:nth-child(even) td { background: var(--panel); }
 .theme-card h4 + p { margin-top: 0; }
 .trade-options { margin-top: 12px; }
 .trade-options > strong { display: block; margin-bottom: 7px; color: var(--quiet); font: 800 10px/1.3 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.aoa-card { grid-column: 1 / -1; }
+.aoa-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 15px 0; }
+.aoa-detail-grid > div { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.aoa-detail-grid > div > strong { color: var(--quiet); font: 800 10px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.aoa-detail-grid .span-2 { grid-column: 1 / -1; }
+.aoa-owner { margin-bottom: 14px !important; }
 .trace-list { display: grid; gap: 14px; }
 .trace-card { padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); break-inside: avoid; }
 .trace-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -1357,6 +1461,7 @@ tbody tr:nth-child(even) td { background: var(--panel); }
   .hero-meta div:nth-child(-n+2) { border-bottom: 1px solid rgba(205, 227, 237, .18); }
   .metric:last-child { grid-column: 1 / -1; }
   .overview-grid, .narrative-grid, .priority-grid, .theme-grid, .decision-grid { grid-template-columns: 1fr; }
+  .aoa-card { grid-column: auto; }
   .overview-card.span-2, .narrative-card.span-2 { grid-column: auto; }
   .candidate-card > header { display: grid; }
   .candidate-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1366,6 +1471,8 @@ tbody tr:nth-child(even) td { background: var(--panel); }
 }
 @media (max-width: 560px) {
   .hero-meta, .metric-grid, .candidate-summary { grid-template-columns: 1fr; }
+  .aoa-detail-grid { grid-template-columns: 1fr; }
+  .aoa-detail-grid .span-2 { grid-column: auto; }
   .hero-meta div { border-right: 0; border-bottom: 1px solid rgba(205, 227, 237, .18); }
   .hero-meta div:last-child { border-bottom: 0; }
   .metric:last-child { grid-column: auto; }
@@ -1445,7 +1552,8 @@ export function buildDecisionPackageContentHtml(workspace, solutionId = workspac
   const requirements = scoped(workspace, "requirements", solutionId);
   const evidence = scoped(workspace, "evidence", solutionId);
   const candidates = scoped(workspace, "candidates", solutionId);
-  const trades = scoped(workspace, "trades", solutionId);
+  const trades = scoped(workspace, "trades", solutionId).filter(record => record.analysisType !== "Analysis of Alternatives");
+  const alternativesAnalyses = buildAnalysisOfAlternativesModels(workspace, solutionId);
   const views = scoped(workspace, "architectureViews", solutionId);
   const elements = scoped(workspace, "elements", solutionId);
   const connections = scoped(workspace, "connections", solutionId);
@@ -1501,6 +1609,10 @@ export function buildDecisionPackageContentHtml(workspace, solutionId = workspac
   }).join("") : `<p class="section-empty">No architecture views recorded.</p>`;
 
   const tradeCards = trades.length ? trades.map(record => `<article class="trade-card"><header><h3>${decisionPackageText(record.title, "Untitled trade study")}</h3>${decisionPackageStatus(record.status)}</header><p><strong>Decision question:</strong> ${decisionPackageText(record.question)}</p><div class="trade-options"><strong>Options</strong>${decisionPackagePills(relationshipLabels(record.optionIds, candidatesById, "name"), "No options recorded")}</div><p><strong>Recommendation:</strong> ${decisionPackageText(record.recommendation)}</p></article>`).join("") : `<p class="section-empty">No trade studies recorded.</p>`;
+  const aoaCards = alternativesAnalyses.map(record => {
+    const comparisonRows = record.alternatives.map(candidate => [decisionPackageText(candidate.name), decisionPackageText(candidate.baseline ? "Yes" : "No"), decisionPackageText(candidate.weightedScore === null ? "Unknown" : `${candidate.weightedScore.toFixed(2)} / 5`), decisionPackageText(`${Math.round(candidate.assessmentCoverage * 100)}%`), decisionPackageText(`${Math.round(candidate.evidenceCoverage * 100)}%`), decisionPackageText(`TRL ${candidate.trl ?? "Unknown"} · MRL ${candidate.mrl ?? "Unknown"} · IRL ${candidate.irl ?? "Unknown"}`), decisionPackageStatus(candidate.status)]);
+    return `<article class="trade-card aoa-card"><header><div><p class="doc-kicker">Analysis of Alternatives</p><h3>${decisionPackageText(record.title, "Untitled analysis")}</h3></div>${decisionPackageStatus(record.status)}</header><div class="aoa-detail-grid"><div><strong>Decision objective</strong><p>${decisionPackageText(record.question)}</p></div><div><strong>Baseline alternative</strong><p>${decisionPackageText(record.baselineName)}</p></div><div><strong>Scope and ground rules</strong><p>${decisionPackageText(record.scopeAndGroundRules)}</p></div><div><strong>Evaluation approach</strong><p>${decisionPackageText(record.evaluationApproach)}</p></div><div><strong>Sensitivity and uncertainty</strong><p>${decisionPackageText(record.sensitivityAnalysis)}</p></div><div><strong>Supporting evidence</strong>${decisionPackagePills(record.evidenceNames, "None linked")}</div><div class="span-2"><strong>Recommendation</strong><p>${decisionPackageText(record.recommendation)}</p></div></div><p class="aoa-owner"><strong>Owner / date:</strong> ${decisionPackageText([record.owner, record.date].filter(Boolean).join(" · "))}</p>${decisionPackageTable(["Alternative", "Baseline", "Weighted score", "Assessed", "Evidenced", "Readiness levels", "Status"], comparisonRows, `${record.title} alternative comparison`)}</article>`;
+  }).join("");
 
   const evidenceRows = evidence.map(record => {
     const reference = safeHttpUrl(record.url);
@@ -1539,10 +1651,10 @@ export function buildDecisionPackageContentHtml(workspace, solutionId = workspac
       <section class="doc-section" id="assessment">${sectionHeading("05", "Technology Assessment", "Weighted criteria, evidence coverage, readiness, and rationale for each solution candidate.")}<div class="candidate-grid">${candidateCards}</div></section>
       <section class="doc-section" id="approach">${sectionHeading("06", "Solution and proposal approach", "The operational concept, technical approach, discriminators, estimate assumptions, and delivery commitments.")}<div class="narrative-grid">${decisionPackageNarrative("Concept of operations", proposal.conops)}${decisionPackageNarrative("Technical approach", proposal.technicalApproach)}${decisionPackageNarrative("Discriminators", proposal.discriminators)}${decisionPackageNarrative("Estimate assumptions", proposal.estimateAssumptions)}<div class="narrative-card span-2"><h3>Delivery commitments</h3><p>${decisionPackageText(proposal.deliveryCommitments)}</p></div></div>${proposalFields.every(value => !String(value || "").trim()) ? `<p class="section-empty subsection">The proposal narrative has not yet been developed.</p>` : ""}</section>
       <section class="doc-section" id="architecture">${sectionHeading("07", "Architecture views", "Decision-useful views show solution elements, boundaries, interfaces, exchanges, deployment, and transition context.")}${architectureFigures}<div class="subsection"><h3>Interface register</h3>${decisionPackageTable(["View", "Source", "Exchange", "Type / protocol", "Target", "Description"], connections.map(record => [decisionPackageText(views.find(view => view.id === record.viewId)?.name), decisionPackageText(elementsById.get(record.sourceElementId)?.name), decisionPackageText(record.label), decisionPackageText([record.type, record.protocol].filter(Boolean).join(" · ")), decisionPackageText(elementsById.get(record.targetElementId)?.name), decisionPackageText(record.description)]), "Architecture interfaces and exchanges")}</div></section>
-      <section class="doc-section" id="decisions">${sectionHeading("08", "Trades and decisions", "The evaluated alternatives, recommendations, decision status, rationale, ownership, and supporting evidence.")}<div class="decision-grid">${tradeCards}</div><div class="subsection"><h3>Decision record</h3>${decisionPackageTable(["Decision", "Status", "Owner / date", "Rationale", "Evidence"], decisions.map(record => [decisionPackageText(record.title), decisionPackageStatus(record.status), decisionPackageText([record.owner, record.date].filter(Boolean).join(" · ")), decisionPackageText(record.rationale), decisionPackagePills(relationshipLabels(record.evidenceIds, evidenceById, "title"), "None linked")]), "Decisions")}</div></section>
+      <section class="doc-section" id="decisions">${sectionHeading("08", "Trades and decisions", "The evaluated alternatives, recommendations, decision status, rationale, ownership, and supporting evidence.")}<div class="decision-grid">${tradeCards}</div>${aoaCards ? `<div class="subsection"><h3>Analysis of Alternatives (AoA)</h3><div class="decision-grid">${aoaCards}</div></div>` : ""}<div class="subsection"><h3>Decision record</h3>${decisionPackageTable(["Decision", "Status", "Owner / date", "Rationale", "Evidence"], decisions.map(record => [decisionPackageText(record.title), decisionPackageStatus(record.status), decisionPackageText([record.owner, record.date].filter(Boolean).join(" · ")), decisionPackageText(record.rationale), decisionPackagePills(relationshipLabels(record.evidenceIds, evidenceById, "title"), "None linked")]), "Decisions")}</div></section>
       <section class="doc-section" id="risk">${sectionHeading("09", "Risk, dependencies, and assumptions", "Conditions that could affect performance, integration, schedule, delivery, or sustainment.")}${decisionPackageTable(["Risk", "Likelihood", "Impact", "Owner", "Mitigation", "Status"], risks.map(record => [decisionPackageText(record.title), decisionPackageStatus(record.likelihood), decisionPackageStatus(record.impact), decisionPackageText(record.owner), decisionPackageText(record.mitigation), decisionPackageStatus(record.status)]), "Risks")}<div class="subsection">${decisionPackageTable(["Dependency", "Type", "Provider", "Owner", "Needed by", "Status", "Impact"], dependencies.map(record => [decisionPackageText(record.title), decisionPackageText(record.type), decisionPackageText(record.provider), decisionPackageText(record.owner), decisionPackageText(record.neededBy), decisionPackageStatus(record.status), decisionPackageText(record.impact)]), "Dependencies")}</div><div class="subsection">${decisionPackageTable(["Assumption", "Owner", "Validation plan", "Status"], assumptions.map(record => [decisionPackageText(record.statement), decisionPackageText(record.owner), decisionPackageText(record.validationPlan), decisionPackageStatus(record.status)]), "Assumptions")}</div></section>
       <section class="doc-section" id="delivery">${sectionHeading("10", "Roadmap, reviews, and transition", "The sequence, ownership, gates, review criteria, receiving-team actions, and delivery blockers.")}${decisionPackageTable(["Stage", "Activity", "Start", "End", "Owner", "Status", "Gate"], roadmap.map(record => [decisionPackageText(record.stage), decisionPackageText(record.title), decisionPackageText(record.start), decisionPackageText(record.end), decisionPackageText(record.owner), decisionPackageStatus(record.status), decisionPackageText(record.gate ? "Yes" : "No")]), "Roadmap and gates")}<div class="subsection">${decisionPackageTable(["Review", "Type", "Due", "Owner", "Status", "Entry criteria"], reviews.map(record => [decisionPackageText(record.name), decisionPackageText(record.type), decisionPackageText(record.due), decisionPackageText(record.owner), decisionPackageStatus(record.status), decisionPackageText(record.entryCriteria)]), "Reviews")}</div><div class="subsection">${decisionPackageTable(["Transition action", "Owner", "Target / gate", "Status", "Blocker"], transitions.map(record => [decisionPackageText(record.title), decisionPackageText(record.owner), decisionPackageText(record.target), decisionPackageStatus(record.status), decisionPackageText(record.blocker, "No blocker recorded")]), "Transition actions")}</div></section>
-      <section class="doc-section" id="evidence">${sectionHeading("11", "Evidence and open obligations", "The evidence register and deterministic gaps that still need action before the decision can be fully supported.")}<div class="subsection"><h3>Open obligations</h3>${obligations.length ? `<ul class="obligation-list">${obligations.map(record => `<li>${decisionPackageStatus(`${record.stage} · ${record.severity}`)}<p>${decisionPackageText(record.message)}</p></li>`).join("")}</ul>` : `<p class="section-empty">No deterministic gaps detected.</p>`}</div><div class="subsection"><h3>Evidence register</h3>${decisionPackageTable(["Evidence", "Type", "Source", "Meeting context", "Confidence", "Reference", "Notes"], evidenceRows, "Source evidence")}</div><div class="subsection"><h3>Acronym key</h3>${decisionPackageTable(["Acronym", "Meaning"], [["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]].map(([acronym, meaning]) => [decisionPackageText(acronym), decisionPackageText(meaning)]), "Acronyms and abbreviations")}</div></section>
+      <section class="doc-section" id="evidence">${sectionHeading("11", "Evidence and open obligations", "The evidence register and deterministic gaps that still need action before the decision can be fully supported.")}<div class="subsection"><h3>Open obligations</h3>${obligations.length ? `<ul class="obligation-list">${obligations.map(record => `<li>${decisionPackageStatus(`${record.stage} · ${record.severity}`)}<p>${decisionPackageText(record.message)}</p></li>`).join("")}</ul>` : `<p class="section-empty">No deterministic gaps detected.</p>`}</div><div class="subsection"><h3>Evidence register</h3>${decisionPackageTable(["Evidence", "Type", "Source", "Meeting context", "Confidence", "Reference", "Notes"], evidenceRows, "Source evidence")}</div><div class="subsection"><h3>Acronym key</h3>${decisionPackageTable(["Acronym", "Meaning"], [...(alternativesAnalyses.length ? [["AoA", "Analysis of Alternatives"]] : []), ["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]].map(([acronym, meaning]) => [decisionPackageText(acronym), decisionPackageText(meaning)]), "Acronyms and abbreviations")}</div></section>
       <footer class="document-footer"><span>${decisionPackageText(solution.name, "Solution decision package")}</span><span>Solution Architect Workbench · Prepared ${escapeHtml(prepared)}</span></footer>
     </div>
   </article>`;

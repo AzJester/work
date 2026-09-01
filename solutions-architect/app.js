@@ -8,6 +8,7 @@ import {
   INTERFACE_TYPES,
   VIEW_TEMPLATES,
   escapeHtml,
+  safeHttpUrl,
   formatLocalDate,
   makeId,
   createWorkspace,
@@ -27,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=7";
+} from "./engine.js?v=8";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -36,25 +37,37 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=7";
+} from "./capture.js?v=8";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=7";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=7";
+} from "./ingestion.js?v=8";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=8";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=7";
+} from "./export-docx.js?v=8";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=7";
+} from "./export-xlsx.js?v=8";
+import {
+  KNOWLEDGE_BASE_STORAGE_KEY,
+  KNOWLEDGE_LIFECYCLE_STATUSES,
+  KNOWLEDGE_OFFERING_TYPES,
+  MAX_KNOWLEDGE_IMPORT_BYTES,
+  createKnowledgeBase,
+  createKnowledgeItem,
+  materializeKnowledgeItem,
+  refreshCandidateFromKnowledge,
+  updateKnowledgeItem,
+  validateKnowledgeBase
+} from "./knowledge-base.js?v=8";
 
-const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]);
+const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const THEME_KEY = "solution_architect_theme_v1";
@@ -80,7 +93,10 @@ const app = document.querySelector("#app");
 let themePreference = loadThemePreference();
 applyTheme(themePreference);
 let initialWorkspaceNeedsSave = false;
+let initialKnowledgeBaseNeedsSave = false;
+let knowledgeBaseLoadError = "";
 let workspace = loadWorkspace();
+let knowledgeBase = loadKnowledgeBase();
 let captureInbox = loadCaptureInbox(workspace.activeSolutionId);
 let route = readRoute();
 let selectedCandidateId = "";
@@ -99,6 +115,7 @@ let ingestionGeneration = 0;
 let ingestionProcessing = false;
 let ingestionAbortController = null;
 let meetingSession = null;
+let knowledgeFilters = { search: "", type: "", status: "", segment: "" };
 
 function h(value) { return escapeHtml(value); }
 function activeSolution() { return workspace.solutions.find(item => item.id === workspace.activeSolutionId) || workspace.solutions[0]; }
@@ -523,9 +540,10 @@ function render() {
   ];
   const renderNavItem = ([value, number, label]) => `<a class="stage-link ${route === value ? "active" : ""}" href="#${value}" data-route="${value}" ${route === value ? 'aria-current="page"' : ""}><span class="number">${number}</span><span class="label">${h(label)}</span>${value === "dashboard" ? `<span class="count" aria-label="${collectObligations(workspace, solution.id).length} open obligations">${collectObligations(workspace, solution.id).length}</span>` : ""}</a>`;
   const navGroups = [
-    ["Overview", navItems.slice(0, 1)],
+    ["Overview", [navItems[0]]],
     ["Lifecycle", navItems.slice(1, -1)],
-    ["Output", navItems.slice(-1)]
+    ["Reference", [["knowledge-base", "KB", "Knowledge base"]]],
+    ["Output", [navItems.at(-1)]]
   ];
   app.innerHTML = `
     <div class="shell">
@@ -540,7 +558,7 @@ function render() {
       </aside>
       <main class="workbench" id="workspace" tabindex="-1">
         <header class="topbar">
-          <div class="title-block"><h2>${h(routeTitle(route))}</h2><p>${h(solution.name)} · Solution status: ${h(solution.stage)}</p></div>
+          <div class="title-block"><h2>${h(routeTitle(route))}</h2><p>${h(routeSubtitle(route, solution))}</p></div>
           <span id="save-state" class="save-state" data-tone="${dirty ? "warn" : "ok"}">${dirty ? "Unsaved changes" : "Saved locally"}</span>
           <div class="top-actions"><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Open capture inbox, ${pendingCaptureCount()} pending"><span>Inbox</span><strong>${pendingCaptureCount()}</strong></button><button class="button tools-button" type="button" data-action="open-tools" aria-label="Workspace tools" title="Workspace tools"><span class="tools-icon" aria-hidden="true">•••</span><span class="tools-label">Tools</span></button></div>
         </header>
@@ -549,13 +567,18 @@ function render() {
         <div class="content">${renderRoute(solution)}</div>
       </main>
     </div>
-    <div id="modal-root"></div><div id="toast-region" class="toast-region" aria-live="polite"></div><input id="workspace-import" type="file" accept="application/json,.json" hidden>`;
+    <div id="modal-root"></div><div id="toast-region" class="toast-region" aria-live="polite"></div><input id="workspace-import" type="file" accept="application/json,.json" hidden><input id="knowledge-import" type="file" accept="application/json,.json" hidden>`;
   bindDiagramInteractions();
   fitAutoGrowTextareas(app);
 }
 
 function routeTitle(value) {
-  return ({ dashboard: "Command view", discover: "Discover the mission", shape: "Shape the need", assess: "Technology Assessment", architect: "Architect the solution", prove: "Prove and govern", propose: "Propose the approach", transition: "Transition to delivery", "decision-package": "Decision package" })[value] || "Solution Architect Workbench";
+  return ({ dashboard: "Command view", discover: "Discover the mission", shape: "Shape the need", assess: "Technology Assessment", architect: "Architect the solution", prove: "Prove and govern", propose: "Propose the approach", transition: "Transition to delivery", "knowledge-base": "Knowledge base", "decision-package": "Decision package" })[value] || "Solution Architect Workbench";
+}
+
+function routeSubtitle(value, solution) {
+  if (value === "knowledge-base") return `Reusable local catalog · Add items to ${solution.name}`;
+  return `${solution.name} · Solution status: ${solution.stage}`;
 }
 
 function renderRoute(solution) {
@@ -568,6 +591,7 @@ function renderRoute(solution) {
     prove: renderProve,
     propose: renderPropose,
     transition: renderTransition,
+    "knowledge-base": renderKnowledgeBase,
     "decision-package": renderDecisionPackage
   })[route](solution);
 }
@@ -612,7 +636,7 @@ function renderDiscover(solution) {
     ${field("Desired state", solution.mission.desiredState, `data-solution-nested="mission.desiredState" maxlength="4000"`, { multiline: true })}
     <div class="span-2">${field("Constraints and non-negotiables", solution.mission.constraints, `data-solution-nested="mission.constraints" maxlength="5000"`, { multiline: true, rows: 6 })}</div>
   </div></section>
-  <aside class="stack"><section class="panel compact hot-button-panel"><div class="panel-head"><div><h3>Customer hot buttons</h3><p>Capture customer signals without silently turning them into requirements.</p></div><div class="panel-head-actions"><button class="small-button" type="button" data-action="ingest-hot-buttons">Ingest</button><button class="small-button" type="button" data-add="hotButtons">＋ Add</button></div></div>${hotButtons.length ? hotButtons.map(item => hotButtonCard(item)).join("") : emptyState("No customer hot buttons", "Paste or add priorities, concerns, sensitivities, and decision drivers with their source and confidence.")}</section>
+  <aside class="stack"><section class="panel compact hot-button-panel"><div class="panel-head"><div><h3>Customer hot buttons</h3><p>Capture customer signals without silently turning them into requirements.</p></div><div class="panel-head-actions hot-button-actions"><button class="small-button" type="button" data-action="ingest-hot-buttons">Ingest list</button><button class="small-button" type="button" data-add="hotButtons">Add signal</button></div></div>${hotButtons.length ? hotButtons.map(item => hotButtonCard(item)).join("") : emptyState("No customer hot buttons", "Paste or add priorities, concerns, sensitivities, and decision drivers with their source and confidence.")}</section>
   <section class="panel compact"><div class="panel-head"><div><h3>Stakeholders</h3><p>Mission users, authorities, delivery owners, and affected partners.</p></div><button class="small-button" type="button" data-add="stakeholders">＋ Add</button></div>${stakeholders.length ? stakeholders.map(item => recordCard("stakeholders", item, ["name", "role", "concern"])).join("") : emptyState("No stakeholders", "Add the people who define, build, authorize, operate, or sustain the solution.")}</section>
   <section class="panel compact"><div class="panel-head"><div><h3>Operational outcomes</h3><p>Observable mission effects with verification methods.</p></div><button class="small-button" type="button" data-add="outcomes">＋ Add</button></div>${outcomes.length ? outcomes.map(item => recordCard("outcomes", item, ["title", "verificationMethod"])).join("") : emptyState("No outcomes", "Define what changes for the mission and how it will be demonstrated.")}</section>
   <section class="panel compact"><div class="panel-head"><div><h3>Measures</h3><p>Decision-relevant measures of effectiveness and performance.</p></div><button class="small-button" type="button" data-add="measures">＋ Add</button></div>${measures.length ? measures.map(item => recordCard("measures", item, ["name", "target", "method"])).join("") : emptyState("No measures", "Add the measures that will distinguish an acceptable solution.")}</section></aside></div>`;
@@ -624,7 +648,7 @@ function recordCard(collection, item, fields) {
 }
 
 function hotButtonCard(item) {
-  return `<article class="record-card hot-button-card"><button class="delete-record" type="button" data-delete="hotButtons" data-id="${h(item.id)}" aria-label="Delete customer hot button">×</button><label class="hot-button-title"><span>Customer signal</span><textarea rows="2" maxlength="280" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="title">${h(item.title)}</textarea></label><label><span>Source</span><input value="${h(item.source)}" maxlength="300" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Confidence</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="confidence">${["Unverified", "Low", "Medium", "High"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Validation</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="status">${["Captured", "Validated", "Retired"].map(value => option(value, value, item.status)).join("")}</select></label><label class="hot-button-detail"><span>Why it matters / exact context</span><textarea rows="3" maxlength="2000" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="detail">${h(item.detail)}</textarea></label></article>`;
+  return `<article class="record-card hot-button-card"><div class="hot-button-card-heading"><label class="hot-button-title"><span>Customer signal</span><textarea rows="2" maxlength="280" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="title">${h(item.title)}</textarea></label><button class="delete-record" type="button" data-delete="hotButtons" data-id="${h(item.id)}" aria-label="Delete customer hot button">×</button></div><label class="hot-button-source"><span>Source</span><input value="${h(item.source)}" maxlength="300" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Confidence</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="confidence">${["Unverified", "Low", "Medium", "High"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Validation</span><select data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="status">${["Captured", "Validated", "Retired"].map(value => option(value, value, item.status)).join("")}</select></label><label class="hot-button-detail"><span>Why it matters / exact context</span><textarea rows="3" maxlength="2000" data-record-collection="hotButtons" data-record-id="${h(item.id)}" data-record-field="detail">${h(item.detail)}</textarea></label></article>`;
 }
 
 function evidenceCard(item) {
@@ -691,17 +715,36 @@ function renderShape(solution) {
   <section class="panel evidence-panel"><div class="panel-head"><div><h3>Evidence library</h3><p>References and approved excerpts only; v1 does not store binary attachments or full meeting transcripts.</p></div></div><div class="card-grid">${evidence.map(evidenceCard).join("")}</div>${!evidence.length ? emptyState("No evidence", "Record authoritative sources, test observations, customer statements, and documented constraints.") : ""}</section>`;
 }
 
+function catalogCandidateNotice(candidate) {
+  const source = candidate.catalogSource;
+  if (!source) return "";
+  const catalogItem = knowledgeBase.items.find(item => item.id === source.itemId);
+  const updateAvailable = catalogItem && catalogItem.revision > source.revision;
+  const message = updateAvailable
+    ? `Update available · Solution copy revision ${source.revision} · Catalog revision ${catalogItem.revision}`
+    : catalogItem
+      ? `Knowledge Base copy · Catalog revision ${source.revision}`
+      : `Knowledge Base copy · Source item is not present in this browser`;
+  const detail = updateAvailable
+    ? "Review the newer offering facts in the Knowledge Base. Refresh is explicit and preserves this solution’s status, scores, rationales, and evidence links."
+    : catalogItem
+      ? "This candidate is an independent solution copy. Manage offering facts and future revisions in the Knowledge Base."
+      : "This portable candidate remains usable; import the separate Knowledge Base backup to restore catalog management here.";
+  return `<div class="candidate-provenance ${updateAvailable ? "update-available" : ""}"><div><strong>${h(message)}</strong><p>${h(detail)}</p></div><button class="button secondary" type="button" data-route-button="knowledge-base">${updateAvailable ? "Review update" : "Open Knowledge Base"}</button></div>`;
+}
+
 function renderAssess(solution) {
   const candidates = scoped(workspace, "candidates", solution.id);
   const criteria = scoped(workspace, "criteria", solution.id);
   const evidence = scoped(workspace, "evidence", solution.id);
   if (!selectedCandidateId || !candidates.some(item => item.id === selectedCandidateId)) selectedCandidateId = candidates[0]?.id || "";
   const selected = candidates.find(item => item.id === selectedCandidateId);
+  const catalogNotice = selected ? catalogCandidateNotice(selected) : "";
   const results = candidates.map(item => ({ candidate: item, result: assessmentResult(workspace, solution.id, item.id) })).sort((a, b) => (b.result.score ?? -1) - (a.result.score ?? -1));
-  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><button class="button primary" type="button" data-add="candidates">＋ Candidate</button></div>
-  <section class="readiness-key" aria-labelledby="readiness-key-title"><div class="readiness-key-heading"><p class="section-kicker">Key</p><h4 id="readiness-key-title">Readiness level abbreviations</h4><p>Use these optional fields only when the team has a defensible, dated basis. Leave them blank when readiness is unknown.</p></div><dl><div><dt>TRL</dt><dd><strong>Technology Readiness Level</strong><span>Technology maturity for its intended use · 1–9</span></dd></div><div><dt>MRL</dt><dd><strong>Manufacturing Readiness Level</strong><span>Manufacturing and production maturity · 1–10</span></dd></div><div><dt>IRL</dt><dd><strong>Integration Readiness Level</strong><span>Integration maturity between specified components · 0–9</span></dd></div></dl></section>
+  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><div><button class="button secondary" type="button" data-route-button="knowledge-base">Browse Knowledge Base</button><button class="button primary" type="button" data-add="candidates">＋ Candidate</button></div></div>
+  <section class="readiness-key" aria-labelledby="readiness-key-title"><div class="readiness-key-heading"><p class="section-kicker">Key</p><h4 id="readiness-key-title">Readiness levels</h4><p>Use these optional fields only when the team has a defensible, dated basis. Leave them blank when readiness is unknown.</p></div><dl><div><dt>TRL</dt><dd><strong>Technology Readiness Level</strong><span>Technology maturity for its intended use · 1–9</span></dd></div><div><dt>MRL</dt><dd><strong>Manufacturing Readiness Level</strong><span>Manufacturing and production maturity · 1–10</span></dd></div><div><dt>IRL</dt><dd><strong>Integration Readiness Level</strong><span>Integration maturity between specified components · 0–9</span></dd></div></dl></section>
   <div class="assessment-layout"><section class="panel candidate-rank"><div class="panel-head"><div><h3>Provisional candidate comparison</h3><p>Order reflects entered scores only. Coverage and evidence support determine how much confidence to place in it.</p></div></div>${results.length ? results.map(({ candidate, result }, index) => { const unsupported = result.rows.filter(row => row.value !== null && (!row.rationale?.trim() || !row.evidenceIds?.length)).length; return `<button class="candidate-row ${candidate.id === selectedCandidateId ? "active" : ""}" type="button" data-candidate="${h(candidate.id)}" aria-pressed="${candidate.id === selectedCandidateId}"><span class="rank">${index + 1}</span><span><strong>${h(candidate.name)}</strong><small>${h(candidate.category)} · TRL ${h(candidate.trl ?? "—")} · summary IRL ${h(candidate.irl ?? "—")}</small></span><span class="score">${result.score === null ? "—" : result.score.toFixed(2)}<small>${Math.round(result.coverage * 100)}% assessed · ${Math.round(result.evidenceCoverage * 100)}% evidenced · ${unsupported} unsupported</small></span></button>`; }).join("") : emptyState("No candidates", "Add hardware, software, tools, vendors, platforms, or integrated mission-package alternatives.")}</section>
-  <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description || "No candidate description recorded.")}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div><div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Status</span><select data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="status">${["Considering", "Shortlist", "Preferred", "Rejected", "Retired"].map(value => option(value, value, selected.status)).join("")}</select></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label class="candidate-description"><span>Description</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="description">${h(selected.description)}</textarea></label><label class="candidate-readiness-basis"><span>Readiness basis / scope</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessBasis">${h(selected.readinessBasis || "")}</textarea></label><label><span>Readiness as-of date</span><input type="date" value="${h(selected.readinessAsOf || "")}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessAsOf"></label><label><span title="Technology Readiness Level">TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" aria-label="Technology Readiness Level (TRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span title="Manufacturing Readiness Level">MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" aria-label="Manufacturing Readiness Level (MRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span title="Integration Readiness Level">Summary / limiting IRL</span><input type="number" min="0" max="9" value="${h(selected.irl ?? "")}" aria-label="Summary or limiting Integration Readiness Level (IRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
+  <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description || "No candidate description recorded.")}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div>${catalogNotice}<div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Status</span><select data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="status">${["Considering", "Shortlist", "Preferred", "Rejected", "Retired"].map(value => option(value, value, selected.status)).join("")}</select></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label class="candidate-description"><span>Description</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="description">${h(selected.description)}</textarea></label><label class="candidate-readiness-basis"><span>Readiness basis / scope</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessBasis">${h(selected.readinessBasis || "")}</textarea></label><label><span>Readiness as-of date</span><input type="date" value="${h(selected.readinessAsOf || "")}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessAsOf"></label><label><span title="Technology Readiness Level">TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" aria-label="Technology Readiness Level (TRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span title="Manufacturing Readiness Level">MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" aria-label="Manufacturing Readiness Level (MRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span title="Integration Readiness Level">Summary / limiting IRL</span><input type="number" min="0" max="9" value="${h(selected.irl ?? "")}" aria-label="Summary or limiting Integration Readiness Level (IRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
   <div class="table-scroll"><table class="score-table editable-table"><thead><tr><th>Criterion</th><th>Weight</th><th>Score</th><th>Rationale</th><th>Evidence</th></tr></thead><tbody>${criteria.map(criterion => { const score = selected.scores?.find(item => item.criterionId === criterion.id) || { value: null, rationale: "", evidenceIds: [] }; return `<tr><td data-label="Criterion"><strong>${h(criterion.name)}</strong></td><td data-label="Weight"><input type="number" min="0" max="100" value="${h(criterion.weight)}" data-record-number="criteria" data-record-id="${h(criterion.id)}" data-record-field="weight" aria-label="${h(criterion.name)} weight"></td><td data-label="Score"><select aria-label="${h(criterion.name)} score" data-candidate-score="${h(selected.id)}" data-criterion="${h(criterion.id)}" data-score-field="value"><option value="">Unknown</option>${[0,1,2,3,4,5].map(value => option(String(value), `${value}`, score.value === null ? "" : String(score.value))).join("")}</select></td><td data-label="Rationale"><textarea rows="2" aria-label="${h(criterion.name)} rationale" data-candidate-score="${h(selected.id)}" data-criterion="${h(criterion.id)}" data-score-field="rationale">${h(score.rationale)}</textarea></td><td data-label="Evidence"><select multiple size="2" aria-label="${h(criterion.name)} evidence" data-score-evidence="${h(selected.id)}" data-criterion="${h(criterion.id)}">${evidence.map(item => `<option value="${h(item.id)}" ${score.evidenceIds?.includes(item.id) ? "selected" : ""}>${h(item.title)}</option>`).join("")}</select></td></tr>`; }).join("")}</tbody></table></div>` : emptyState("Select or add a candidate", "Assess the whole candidate solution, including technical and business constraints.")}</section></div>`;
 }
 
@@ -735,8 +778,72 @@ function governanceSection(title, copy, collection, items, columns) {
   return `<section class="panel governance-section"><div class="panel-head"><div><h3>${h(title)}</h3><p>${h(copy)}</p></div><button class="small-button" type="button" data-add="${h(collection)}">＋ Add</button></div><div class="table-scroll"><table class="editable-table"><thead><tr>${columns.map(column => `<th>${h(column.label)}</th>`).join("")}<th></th></tr></thead><tbody>${items.map(item => `<tr>${columns.map(column => `<td data-label="${h(column.label)}">${control(item, column)}</td>`).join("")}<td data-label="Remove"><button class="icon-button" type="button" data-delete="${h(collection)}" data-id="${h(item.id)}" aria-label="Delete ${h(title)} record">×</button></td></tr>`).join("")}</tbody></table></div>${!items.length ? emptyState(`No ${title.toLowerCase()}`, `Add the first ${title.toLowerCase()} record.`) : ""}</section>`;
 }
 
+function loadKnowledgeBase() {
+  try {
+    const raw = localStorage.getItem(KNOWLEDGE_BASE_STORAGE_KEY);
+    if (raw === null) {
+      initialKnowledgeBaseNeedsSave = true;
+      return createKnowledgeBase();
+    }
+    const candidate = JSON.parse(raw);
+    const result = validateKnowledgeBase(candidate);
+    if (!result.valid) throw new Error(result.errors[0]);
+    return candidate;
+  } catch (error) {
+    console.warn("Could not load the saved Solution Architect Knowledge Base.", error);
+    knowledgeBaseLoadError = error instanceof Error ? error.message : "The saved catalog could not be read.";
+    return createKnowledgeBase();
+  }
+}
+
+function persistKnowledgeBase(candidate, { quiet = false, renderAfter = false, replaceInvalidStore = false } = {}) {
+  if (knowledgeBaseLoadError && !replaceInvalidStore) {
+    if (!quiet) toast("Knowledge Base editing is paused to protect the unreadable saved catalog. Import a valid catalog backup to recover.", "error");
+    return false;
+  }
+  const result = validateKnowledgeBase(candidate);
+  if (!result.valid) {
+    if (!quiet) toast(`Knowledge Base was not saved: ${result.errors[0]}`, "error");
+    return false;
+  }
+  try {
+    localStorage.setItem(KNOWLEDGE_BASE_STORAGE_KEY, JSON.stringify(candidate));
+    knowledgeBase = candidate;
+    if (replaceInvalidStore) knowledgeBaseLoadError = "";
+    if (renderAfter) render();
+    return true;
+  } catch {
+    if (!quiet) toast("Knowledge Base could not be saved. Browser storage may be unavailable or full; export a catalog backup.", "error");
+    return false;
+  }
+}
+
+function commitKnowledgeBase(mutator, { renderAfter = true } = {}) {
+  const next = structuredClone(knowledgeBase);
+  mutator(next);
+  next.savedAt = new Date().toISOString();
+  return persistKnowledgeBase(next, { renderAfter });
+}
+
+function analysisOfAlternativesSection(items, candidates, evidence, solutionId) {
+  return `<section class="panel aoa-section"><div class="panel-head"><div><p class="section-kicker">Optional decision depth</p><h3>Analysis of Alternatives</h3><p>Use this when a decision needs a documented comparison of multiple assessed candidates. The matrix below reuses Technology Assessment scores and evidence; it does not create a second scoring source.</p></div><button class="small-button" type="button" data-action="add-aoa">Add analysis</button></div>${items.length ? `<div class="aoa-list">${items.map(item => analysisOfAlternativesCard(item, candidates, evidence, solutionId)).join("")}</div>` : emptyState("No Analysis of Alternatives", "Add one only when the decision warrants baseline, ground-rule, sensitivity, and evidence documentation.")}</section>`;
+}
+
+function analysisOfAlternativesCard(item, candidates, evidence, solutionId) {
+  const selectedIds = item.optionIds || [];
+  const selectedCandidates = candidates.filter(candidate => selectedIds.includes(candidate.id));
+  const baselineOptions = selectedCandidates.length ? `<option value="">Select a baseline</option>${selectedCandidates.map(candidate => option(candidate.id, candidate.name, item.baselineOptionId || "")).join("")}` : `<option value="">Select alternatives first</option>`;
+  const comparisonRows = selectedCandidates.map(candidate => {
+    const result = assessmentResult(workspace, solutionId, candidate.id);
+    return `<tr><td data-label="Alternative"><strong>${h(candidate.name)}</strong><small>${h(candidate.category || "Category not recorded")}</small></td><td data-label="Baseline">${candidate.id === item.baselineOptionId ? `<span class="aoa-baseline">Baseline</span>` : "—"}</td><td data-label="Weighted score"><strong>${result.score === null ? "Unknown" : `${result.score.toFixed(2)} / 5`}</strong></td><td data-label="Assessed">${Math.round(result.coverage * 100)}%</td><td data-label="Evidenced">${Math.round(result.evidenceCoverage * 100)}%</td><td data-label="Readiness levels">TRL ${h(candidate.trl ?? "—")} · MRL ${h(candidate.mrl ?? "—")} · IRL ${h(candidate.irl ?? "—")}</td><td data-label="Status">${h(candidate.status)}</td></tr>`;
+  }).join("");
+  return `<article class="aoa-editor-card"><header class="aoa-card-header"><div><span class="aoa-optional">Optional</span><h4>${h(item.title || "Untitled analysis")}</h4><p>${selectedIds.length} alternative${selectedIds.length === 1 ? "" : "s"} selected · ${h(item.status)}</p></div><button class="icon-button" type="button" data-delete="trades" data-id="${h(item.id)}" aria-label="Delete Analysis of Alternatives">×</button></header><div class="aoa-form-grid"><label class="aoa-title"><span>Analysis title</span><input value="${h(item.title)}" maxlength="280" data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="title"></label><label><span>Status</span><select data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="status">${["In analysis", "Ready for decision", "Closed"].map(value => option(value, value, item.status)).join("")}</select></label><label class="span-2"><span>Decision objective</span><textarea rows="3" maxlength="3000" data-auto-grow data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="question">${h(item.question)}</textarea></label><label class="span-2"><span>Alternatives</span><select multiple size="${Math.min(6, Math.max(3, candidates.length))}" data-record-links-collection="trades" data-record-id="${h(item.id)}" data-record-links-field="optionIds" ${candidates.length ? "" : "disabled"}>${candidates.length ? candidates.map(candidate => `<option value="${h(candidate.id)}" ${selectedIds.includes(candidate.id) ? "selected" : ""}>${h(candidate.name)}</option>`).join("") : `<option>Add candidates in Technology Assessment</option>`}</select><small>Select at least two candidates. Hold Ctrl or Command to select more than one.</small></label><label><span>Baseline alternative</span><select data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="baselineOptionId" ${selectedCandidates.length ? "" : "disabled"}>${baselineOptions}</select></label><label><span>Owner</span><input value="${h(item.owner || "")}" maxlength="300" data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="owner"></label><label><span>Analysis date</span><input type="date" value="${h(item.date || "")}" data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="date"></label><label><span>Supporting evidence</span><select multiple size="3" data-record-links-collection="trades" data-record-id="${h(item.id)}" data-record-links-field="evidenceIds" ${evidence.length ? "" : "disabled"}>${evidence.length ? evidence.map(record => `<option value="${h(record.id)}" ${(item.evidenceIds || []).includes(record.id) ? "selected" : ""}>${h(record.title)}</option>`).join("") : `<option>Add evidence in Shape</option>`}</select></label><label class="span-2"><span>Scope and ground rules</span><textarea rows="4" maxlength="5000" data-auto-grow data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="scopeAndGroundRules">${h(item.scopeAndGroundRules || "")}</textarea></label><label class="span-2"><span>Evaluation approach</span><textarea rows="4" maxlength="5000" data-auto-grow data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="evaluationApproach">${h(item.evaluationApproach || "")}</textarea></label><label class="span-2"><span>Sensitivity and uncertainty</span><textarea rows="4" maxlength="5000" data-auto-grow data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="sensitivityAnalysis">${h(item.sensitivityAnalysis || "")}</textarea></label><label class="span-2"><span>Recommendation</span><textarea rows="4" maxlength="5000" data-auto-grow data-record-collection="trades" data-record-id="${h(item.id)}" data-record-field="recommendation">${h(item.recommendation)}</textarea></label></div><section class="aoa-comparison" aria-label="${h(item.title || "Analysis of Alternatives")} comparison"><div><h5>Derived alternative comparison</h5><p>Weighted scores and coverage update from Technology Assessment. Unknown values remain unknown.</p></div>${comparisonRows ? `<div class="table-scroll"><table><thead><tr><th>Alternative</th><th>Baseline</th><th>Weighted score</th><th>Assessed</th><th>Evidenced</th><th>Readiness levels</th><th>Status</th></tr></thead><tbody>${comparisonRows}</tbody></table></div>` : `<p class="aoa-comparison-empty">Select two or more assessed candidates to compare them here.</p>`}</section></article>`;
+}
+
 function renderProve(solution) {
   const trades = scoped(workspace, "trades", solution.id);
+  const tradeStudies = trades.filter(record => record.analysisType !== "Analysis of Alternatives");
+  const alternativesAnalyses = trades.filter(record => record.analysisType === "Analysis of Alternatives");
   const decisions = scoped(workspace, "decisions", solution.id);
   const risks = scoped(workspace, "risks", solution.id);
   const dependencies = scoped(workspace, "dependencies", solution.id);
@@ -745,7 +852,8 @@ function renderProve(solution) {
   const candidates = scoped(workspace, "candidates", solution.id);
   const evidence = scoped(workspace, "evidence", solution.id);
   return `${renderStageRail("Prove")}<div class="section-toolbar"><div><p class="section-kicker">Technical assurance</p><h3>Make trade-offs, evidence, and residual risk explicit</h3><p>Govern the solution without replacing domain specialists or formal authorities.</p></div></div><div class="governance-stack">
-  ${governanceSection("Trade studies", "Frame the question, compare assessed candidates, and record the current recommendation.", "trades", trades, [{ label: "Trade / question", field: "title" }, { label: "Decision question", field: "question", multiline: true }, { label: "Candidates", field: "optionIds", multipleOptions: candidates, emptyLabel: "Add candidates in Assess" }, { label: "Recommendation", field: "recommendation", multiline: true }, { label: "Status", field: "status", options: ["In analysis", "Ready for decision", "Closed"] }])}
+  ${governanceSection("Trade studies", "Frame the question, compare assessed candidates, and record the current recommendation.", "trades", tradeStudies, [{ label: "Trade / question", field: "title" }, { label: "Decision question", field: "question", multiline: true }, { label: "Candidates", field: "optionIds", multipleOptions: candidates, emptyLabel: "Add candidates in Assess" }, { label: "Recommendation", field: "recommendation", multiline: true }, { label: "Status", field: "status", options: ["In analysis", "Ready for decision", "Closed"] }])}
+  ${analysisOfAlternativesSection(alternativesAnalyses, candidates, evidence, solution.id)}
   ${governanceSection("Decision records", "Preserve design intent, ownership, rationale, supporting evidence, and approval state.", "decisions", decisions, [{ label: "Decision", field: "title" }, { label: "Rationale", field: "rationale", multiline: true }, { label: "Evidence", field: "evidenceIds", multipleOptions: evidence, emptyLabel: "Add evidence in Shape" }, { label: "Owner", field: "owner" }, { label: "Status", field: "status", options: ["Proposed", "Approved", "Superseded"] }])}
   ${governanceSection("Risks", "Track technical, integration, delivery, cyber, safety, supply, and transition exposure. Keep new captures Unknown until reviewed.", "risks", risks, [{ label: "Risk", field: "title" }, { label: "Likelihood", field: "likelihood", options: ["Unknown", "Low", "Medium", "High"] }, { label: "Impact", field: "impact", options: ["Unknown", "Low", "Medium", "High"] }, { label: "Owner", field: "owner" }, { label: "Mitigation", field: "mitigation", multiline: true }, { label: "Status", field: "status", options: ["Open", "Watching", "Mitigated", "Closed"] }])}
   ${governanceSection("Dependencies", "Make external inputs, access, decisions, facilities, data, and schedule commitments visible.", "dependencies", dependencies, [{ label: "Dependency", field: "title" }, { label: "Type", field: "type" }, { label: "Provider", field: "provider" }, { label: "Owner", field: "owner" }, { label: "Needed by", field: "neededBy", type: "date" }, { label: "Status", field: "status", options: ["Open", "At risk", "Blocked", "Satisfied"] }, { label: "Impact", field: "impact", multiline: true }])}
@@ -797,7 +905,7 @@ const ADD_DEFAULTS = {
   requirements: () => ({ id: makeId("requirement"), title: "New requirement", type: "Functional", priority: "Must", sourceEvidenceId: "", acceptanceMethod: "", status: "Draft", linkedElementIds: [], linkedHotButtonIds: [] }),
   candidates: () => ({ id: makeId("candidate"), name: "New candidate", category: "Integrated solution", vendor: "", description: "", readinessBasis: "", readinessAsOf: "", trl: null, mrl: null, irl: null, status: "Considering", scores: [] }),
   winThemes: () => ({ id: makeId("win_theme"), title: "New win theme", customerValue: "", discriminator: "", proof: "", linkedHotButtonIds: [], sourceEvidenceIds: [], status: "Draft" }),
-  trades: () => ({ id: makeId("trade"), title: "New trade study", question: "", optionIds: [], recommendation: "", status: "In analysis" }),
+  trades: () => ({ id: makeId("trade"), title: "New trade study", question: "", optionIds: [], recommendation: "", status: "In analysis", analysisType: "Trade study", baselineOptionId: "", scopeAndGroundRules: "", evaluationApproach: "", sensitivityAnalysis: "", evidenceIds: [], owner: "", date: "" }),
   decisions: () => ({ id: makeId("decision"), title: "New decision", status: "Proposed", rationale: "", evidenceIds: [], owner: "", date: "" }),
   risks: () => ({ id: makeId("risk"), title: "New risk", likelihood: "Unknown", impact: "Unknown", owner: "", mitigation: "", status: "Open" }),
   dependencies: () => ({ id: makeId("dependency"), title: "New dependency", type: "External input", provider: "", owner: "", neededBy: "", status: "Open", impact: "" }),
@@ -814,6 +922,114 @@ function addRecord(collection) {
   created.solutionId = workspace.activeSolutionId;
   commit(next => next[collection].push(created), { snapshot: `Before adding ${collection}` });
   if (collection === "candidates") selectedCandidateId = created.id;
+}
+
+function knowledgeItemMatches(item, filters = knowledgeFilters) {
+  const query = filters.search.trim().toLowerCase();
+  const searchable = [item.name, item.provider, item.version, item.summary, item.capabilities?.join(" "), item.tags?.join(" "), item.missionSegments?.join(" ")].join(" ").toLowerCase();
+  return (!query || searchable.includes(query))
+    && (!filters.type || item.offeringType === filters.type)
+    && (!filters.status || item.lifecycleStatus === filters.status)
+    && (!filters.segment || item.missionSegments?.includes(filters.segment));
+}
+
+function knowledgeCard(item, solution) {
+  const existing = scoped(workspace, "candidates", solution.id).find(candidate => candidate.catalogSource?.itemId === item.id);
+  const stale = existing && Number(existing.catalogSource?.revision || 0) < item.revision;
+  const sourceUrl = safeHttpUrl(item.sourceUrl);
+  const primaryAction = existing
+    ? stale
+      ? `<button class="button primary" type="button" data-knowledge-refresh="${h(item.id)}">Refresh solution copy</button>`
+      : `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open assessment</button>`
+    : `<button class="button primary" type="button" data-knowledge-use="${h(item.id)}" ${item.lifecycleStatus === "Retired" ? "disabled" : ""}>Use in active solution</button>`;
+  const statusNote = stale ? `<p class="knowledge-update-note"><strong>Update available</strong> Solution copy uses revision ${h(existing.catalogSource.revision)}; catalog is revision ${h(item.revision)}.</p>` : existing ? `<p class="knowledge-copy-note">Revision ${h(item.revision)} is already copied into ${h(solution.name)}.</p>` : "";
+  return `<article class="knowledge-card" data-knowledge-card data-knowledge-search="${h([item.name, item.provider, item.version, item.summary, ...(item.capabilities || []), ...(item.tags || []), ...(item.missionSegments || [])].join(" ").toLowerCase())}" data-knowledge-type="${h(item.offeringType)}" data-knowledge-status="${h(item.lifecycleStatus)}" data-knowledge-segments="${h((item.missionSegments || []).join("|"))}" ${knowledgeItemMatches(item) ? "" : "hidden"}><div class="knowledge-card-head"><div class="knowledge-badges"><span class="knowledge-type">${h(item.offeringType)}</span><span class="knowledge-status status-${h(item.lifecycleStatus.toLowerCase())}">${h(item.lifecycleStatus)}</span></div><span class="knowledge-revision">Revision ${h(item.revision)}</span></div><h3>${h(item.name)}</h3><p class="knowledge-provider">${h([item.provider, item.version].filter(Boolean).join(" · ") || "Provider and version not recorded")}</p><p class="knowledge-summary">${h(item.summary || "Summary not recorded.")}</p>${item.capabilities.length ? `<div class="knowledge-tags" aria-label="Capabilities">${item.capabilities.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}${item.missionSegments.length ? `<div class="knowledge-segments" aria-label="Company mission segments">${item.missionSegments.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}<dl class="knowledge-meta"><div><dt>Readiness levels</dt><dd>TRL ${h(item.trl ?? "—")} · MRL ${h(item.mrl ?? "—")} · IRL ${h(item.irl ?? "—")}</dd></div><div><dt>Last reviewed</dt><dd>${h(item.reviewedAt || "Not recorded")}</dd></div><div><dt>Last change</dt><dd>${h(item.changeSummary || "No change summary")}</dd></div></dl><details class="knowledge-details"><summary>Offering details</summary><div><h4>Deployment and environment</h4><p>${h(item.deploymentAndEnvironment || "Not recorded")}</p><h4>Interfaces</h4><p>${h(item.interfaces || "Not recorded")}</p><h4>Integration considerations</h4><p>${h(item.integrationConsiderations || "Not recorded")}</p><h4>Cyber and safety considerations</h4><p>${h(item.cyberSafetyConsiderations || "Not recorded")}</p><h4>MOSA and data rights</h4><p>${h(item.mosaDataRights || "Not recorded")}</p><h4>Source</h4><p>${h(item.sourceTitle || "Not recorded")}${sourceUrl ? ` · <a href="${h(sourceUrl)}" target="_blank" rel="noopener noreferrer">Open reference</a>` : ""}</p></div></details>${statusNote}<footer class="knowledge-card-actions"><button class="button secondary" type="button" data-knowledge-edit="${h(item.id)}">Edit</button>${primaryAction}<button class="icon-button" type="button" data-knowledge-delete="${h(item.id)}" aria-label="Delete ${h(item.name)} from Knowledge Base">×</button></footer></article>`;
+}
+
+function renderKnowledgeBase(solution) {
+  const visible = knowledgeBase.items.filter(item => knowledgeItemMatches(item)).length;
+  const recovery = knowledgeBaseLoadError ? `<div class="panel knowledge-recovery" role="alert"><strong>Saved catalog needs recovery</strong><p>The stored Knowledge Base could not be opened and was left unchanged. Editing is paused to protect it. Import a valid catalog backup to replace it intentionally.</p></div>` : "";
+  return `<div class="section-toolbar knowledge-toolbar"><div><p class="section-kicker">Reusable reference</p><h3>Knowledge base</h3><p>Maintain approved unclassified, non-CUI products, applications, software, platforms, solutions, and offerings. Using an item creates an independent Technology Assessment candidate for <strong>${h(solution.name)}</strong>.</p></div><div class="knowledge-toolbar-actions"><button class="button secondary" type="button" data-knowledge-export ${knowledgeBaseLoadError ? "disabled" : ""}>Export catalog</button><button class="button secondary" type="button" data-knowledge-import>Import catalog</button><button class="button primary" type="button" data-knowledge-add ${knowledgeBaseLoadError ? "disabled" : ""}>Add item</button></div></div>${recovery}<section class="panel knowledge-search-panel" aria-label="Knowledge Base filters"><div class="knowledge-filter-grid"><label class="knowledge-search"><span>Search</span><input type="search" value="${h(knowledgeFilters.search)}" data-knowledge-filter="search" placeholder="Name, provider, capability, tag, or version"></label><label><span>Offering type</span><select data-knowledge-filter="type"><option value="">All types</option>${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, knowledgeFilters.type)).join("")}</select></label><label><span>Lifecycle status</span><select data-knowledge-filter="status"><option value="">All statuses</option>${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, value, knowledgeFilters.status)).join("")}</select></label><label><span>Mission segment</span><select data-knowledge-filter="segment"><option value="">All mission segments</option>${MISSION_SEGMENTS.map(record => option(record.name, record.name, knowledgeFilters.segment)).join("")}</select></label></div><div class="knowledge-results-meta"><strong data-knowledge-count role="status" aria-live="polite" aria-atomic="true">${visible} of ${knowledgeBase.items.length} items</strong><button class="text-button" type="button" data-knowledge-clear>Clear filters</button></div></section><p class="knowledge-boundary-note"><strong>Copy-on-use:</strong> catalog updates never silently alter solution assessments, scores, decisions, or evidence. Refresh a solution copy explicitly when you want the latest offering facts.</p><div class="knowledge-grid" data-knowledge-grid>${knowledgeBase.items.map(item => knowledgeCard(item, solution)).join("")}</div><div class="panel knowledge-empty" data-knowledge-empty ${visible ? "hidden" : ""}>${emptyState("No Knowledge Base items match", "Clear the filters or add a reusable solution offering.")}</div>`;
+}
+
+function applyKnowledgeFilters() {
+  let visible = 0;
+  document.querySelectorAll("[data-knowledge-card]").forEach(card => {
+    const query = knowledgeFilters.search.trim().toLowerCase();
+    const matches = (!query || card.dataset.knowledgeSearch.includes(query))
+      && (!knowledgeFilters.type || card.dataset.knowledgeType === knowledgeFilters.type)
+      && (!knowledgeFilters.status || card.dataset.knowledgeStatus === knowledgeFilters.status)
+      && (!knowledgeFilters.segment || card.dataset.knowledgeSegments.split("|").includes(knowledgeFilters.segment));
+    card.hidden = !matches;
+    if (matches) visible += 1;
+  });
+  const count = document.querySelector("[data-knowledge-count]");
+  if (count) count.textContent = `${visible} of ${knowledgeBase.items.length} items`;
+  const empty = document.querySelector("[data-knowledge-empty]");
+  if (empty) empty.hidden = visible > 0;
+}
+
+function showKnowledgeEditor(itemId = "") {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before editing the Knowledge Base.", "error"); return; }
+  const existing = knowledgeBase.items.find(item => item.id === itemId);
+  const item = existing || createKnowledgeItem({ name: "" });
+  if (!existing) item.name = "";
+  openModal(existing ? "Update solution offering" : "Add solution offering", `<form id="knowledge-item-form" data-knowledge-id="${h(existing?.id || "")}"><p class="modal-intro">Catalog facts are reusable reference material. Saving an update creates revision ${h(existing ? existing.revision + 1 : 1)}; existing solution copies remain unchanged until explicitly refreshed.</p><div class="knowledge-editor-grid"><label class="span-2"><span>Name</span><input name="name" value="${h(item.name)}" required maxlength="280" autofocus></label><label><span>Offering type</span><select name="offeringType">${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, item.offeringType)).join("")}</select></label><label><span>Lifecycle status</span><select name="lifecycleStatus">${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, value, item.lifecycleStatus)).join("")}</select></label><label><span>Provider / owner</span><input name="provider" value="${h(item.provider)}" maxlength="300"></label><label><span>Version / release</span><input name="version" value="${h(item.version)}" maxlength="160"></label><label class="span-2"><span>Summary</span><textarea name="summary" rows="4" maxlength="5000" data-auto-grow>${h(item.summary)}</textarea></label><fieldset class="knowledge-segment-picker span-2"><legend>Applicable company mission segments</legend><div>${MISSION_SEGMENTS.map(record => `<label><input type="checkbox" name="missionSegments" value="${h(record.name)}" ${item.missionSegments.includes(record.name) ? "checked" : ""}><span>${h(record.name)}</span></label>`).join("")}</div></fieldset><label class="span-2"><span>Capabilities — one per line</span><textarea name="capabilities" rows="4" maxlength="12000" data-auto-grow>${h(item.capabilities.join("\n"))}</textarea></label><label class="span-2"><span>Tags — comma separated</span><input name="tags" value="${h(item.tags.join(", "))}" maxlength="6000"></label><label><span>Last reviewed</span><input type="date" name="reviewedAt" value="${h(item.reviewedAt)}"></label><label><span>Change summary</span><input name="changeSummary" value="${h(item.changeSummary)}" maxlength="3000" placeholder="What changed in this revision?"></label></div><details class="knowledge-more" open><summary>Architecture, readiness, and source details</summary><div class="knowledge-editor-grid"><label class="span-2"><span>Deployment and environment</span><textarea name="deploymentAndEnvironment" rows="3" maxlength="5000" data-auto-grow>${h(item.deploymentAndEnvironment)}</textarea></label><label class="span-2"><span>Interfaces</span><textarea name="interfaces" rows="3" maxlength="5000" data-auto-grow>${h(item.interfaces)}</textarea></label><label class="span-2"><span>Integration considerations</span><textarea name="integrationConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.integrationConsiderations)}</textarea></label><label class="span-2"><span>Cyber and safety considerations</span><textarea name="cyberSafetyConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.cyberSafetyConsiderations)}</textarea></label><label class="span-2"><span>MOSA and data rights</span><textarea name="mosaDataRights" rows="3" maxlength="5000" data-auto-grow>${h(item.mosaDataRights)}</textarea></label><label><span>TRL</span><input type="number" name="trl" min="1" max="9" value="${h(item.trl ?? "")}"></label><label><span>MRL</span><input type="number" name="mrl" min="1" max="10" value="${h(item.mrl ?? "")}"></label><label><span>IRL</span><input type="number" name="irl" min="0" max="9" value="${h(item.irl ?? "")}"></label><label><span>Readiness as-of</span><input type="date" name="readinessAsOf" value="${h(item.readinessAsOf)}"></label><label class="span-2"><span>Readiness basis</span><textarea name="readinessBasis" rows="3" maxlength="5000" data-auto-grow>${h(item.readinessBasis)}</textarea></label><label><span>Source title</span><input name="sourceTitle" value="${h(item.sourceTitle)}" maxlength="500"></label><label><span>Source URL</span><input type="url" name="sourceUrl" value="${h(item.sourceUrl)}" maxlength="2000" placeholder="https://"></label><label class="span-2"><span>Source notes</span><textarea name="sourceNotes" rows="3" maxlength="5000" data-auto-grow>${h(item.sourceNotes)}</textarea></label></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">${existing ? "Save new revision" : "Add to Knowledge Base"}</button></div></form>`, { wide: true });
+}
+
+function knowledgeFormValues(data) {
+  const lines = value => String(value || "").split(/\r?\n/).map(item => item.replace(/^\s*[-*•]\s*/, "").trim()).filter(Boolean);
+  const tags = String(data.get("tags") || "").split(/[\n,]/).map(item => item.trim()).filter(Boolean);
+  const nullableNumber = name => String(data.get(name) || "") === "" ? null : Number(data.get(name));
+  return { name: String(data.get("name") || "").trim(), offeringType: String(data.get("offeringType") || "Integrated solution"), provider: String(data.get("provider") || "").trim(), version: String(data.get("version") || "").trim(), lifecycleStatus: String(data.get("lifecycleStatus") || "Current"), summary: String(data.get("summary") || "").trim(), capabilities: lines(data.get("capabilities")), missionSegments: data.getAll("missionSegments").map(String), deploymentAndEnvironment: String(data.get("deploymentAndEnvironment") || "").trim(), interfaces: String(data.get("interfaces") || "").trim(), integrationConsiderations: String(data.get("integrationConsiderations") || "").trim(), cyberSafetyConsiderations: String(data.get("cyberSafetyConsiderations") || "").trim(), mosaDataRights: String(data.get("mosaDataRights") || "").trim(), trl: nullableNumber("trl"), mrl: nullableNumber("mrl"), irl: nullableNumber("irl"), readinessBasis: String(data.get("readinessBasis") || "").trim(), readinessAsOf: String(data.get("readinessAsOf") || ""), sourceTitle: String(data.get("sourceTitle") || "").trim(), sourceUrl: String(data.get("sourceUrl") || "").trim(), sourceNotes: String(data.get("sourceNotes") || "").trim(), tags, reviewedAt: String(data.get("reviewedAt") || ""), changeSummary: String(data.get("changeSummary") || "").trim() };
+}
+
+function useKnowledgeItem(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item || item.lifecycleStatus === "Retired") return;
+  const existing = scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id);
+  if (existing) { selectedCandidateId = existing.id; location.hash = "assess"; return; }
+  const created = materializeKnowledgeItem(item, workspace.activeSolutionId);
+  if (commit(next => next.candidates.push(created), { snapshot: `Before using Knowledge Base item ${item.name}` })) {
+    selectedCandidateId = created.id;
+    toast(`${item.name} was copied into ${activeSolution().name} for solution-specific assessment.`, "ok");
+  }
+}
+
+function refreshKnowledgeCandidate(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before refreshing a solution copy.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  const candidate = scoped(workspace, "candidates").find(record => record.catalogSource?.itemId === itemId);
+  if (!item || !candidate) return;
+  if (commit(next => { const index = next.candidates.findIndex(record => record.id === candidate.id); next.candidates[index] = refreshCandidateFromKnowledge(next.candidates[index], item); }, { snapshot: `Before refreshing ${candidate.name} from Knowledge Base` })) toast(`${item.name} was refreshed. Assessment scores and solution-specific status were preserved.`, "ok");
+}
+
+function exportKnowledgeBaseJson() {
+  if (knowledgeBaseLoadError) { toast("The unreadable catalog was left unchanged and cannot be exported from this view. Import a valid backup to recover.", "error"); return; }
+  download(`solution-knowledge-base-${formatLocalDate()}.json`, JSON.stringify(knowledgeBase, null, 2), "application/json;charset=utf-8");
+}
+
+async function importKnowledgeBaseFile(file) {
+  if (!file) return;
+  try {
+    if (file.size > MAX_KNOWLEDGE_IMPORT_BYTES) throw new Error("Knowledge Base import exceeds 5 MB.");
+    const candidate = JSON.parse(await file.text());
+    const result = validateKnowledgeBase(candidate);
+    if (!result.valid) throw new Error(result.errors[0]);
+    if (!persistKnowledgeBase(candidate, { renderAfter: true, replaceInvalidStore: true })) return;
+    toast(`${candidate.items.length} Knowledge Base item${candidate.items.length === 1 ? "" : "s"} imported.`, "ok");
+  } catch (error) {
+    toast(`Knowledge Base import rejected: ${error.message}`, "error");
+  } finally {
+    const input = document.querySelector("#knowledge-import");
+    if (input) input.value = "";
+  }
+}
+
+function addAnalysisOfAlternatives() {
+  const created = { ...ADD_DEFAULTS.trades(), id: makeId("aoa"), title: "New Analysis of Alternatives", analysisType: "Analysis of Alternatives", solutionId: workspace.activeSolutionId };
+  commit(next => next.trades.push(created), { snapshot: "Before adding Analysis of Alternatives" });
 }
 
 function deleteRecord(collection, id) {
@@ -836,13 +1052,17 @@ function deleteRecord(collection, id) {
       for (const candidate of next.candidates) for (const score of candidate.scores || []) score.evidenceIds = (score.evidenceIds || []).filter(evidenceId => evidenceId !== id);
       for (const decision of next.decisions) decision.evidenceIds = (decision.evidenceIds || []).filter(evidenceId => evidenceId !== id);
       for (const winTheme of next.winThemes) winTheme.sourceEvidenceIds = (winTheme.sourceEvidenceIds || []).filter(evidenceId => evidenceId !== id);
+      for (const trade of next.trades) trade.evidenceIds = (trade.evidenceIds || []).filter(evidenceId => evidenceId !== id);
     }
     if (collection === "hotButtons") {
       for (const requirement of next.requirements) requirement.linkedHotButtonIds = (requirement.linkedHotButtonIds || []).filter(hotButtonId => hotButtonId !== id);
       for (const winTheme of next.winThemes) winTheme.linkedHotButtonIds = (winTheme.linkedHotButtonIds || []).filter(hotButtonId => hotButtonId !== id);
     }
     if (collection === "criteria") for (const candidate of next.candidates) candidate.scores = (candidate.scores || []).filter(score => score.criterionId !== id);
-    if (collection === "candidates") for (const trade of next.trades) trade.optionIds = (trade.optionIds || []).filter(optionId => optionId !== id);
+    if (collection === "candidates") for (const trade of next.trades) {
+      trade.optionIds = (trade.optionIds || []).filter(optionId => optionId !== id);
+      if (trade.baselineOptionId === id) trade.baselineOptionId = "";
+    }
     if (collection === "requirements") for (const outcome of next.outcomes) outcome.linkedRequirementIds = (outcome.linkedRequirementIds || []).filter(requirementId => requirementId !== id);
     remove(collection, item => item.id === id);
   }, { snapshot: `Before deleting ${collection}` });
@@ -1332,6 +1552,7 @@ function duplicateActiveSolution() {
         if (copy.evidenceIds) copy.evidenceIds = copy.evidenceIds.map(remap);
         if (copy.sourceEvidenceIds) copy.sourceEvidenceIds = copy.sourceEvidenceIds.map(remap);
         if (copy.optionIds) copy.optionIds = copy.optionIds.map(remap);
+        if (copy.baselineOptionId) copy.baselineOptionId = remap(copy.baselineOptionId);
         if (copy.citationIds) copy.citationIds = copy.citationIds.map(remap);
         if (copy.scores) copy.scores = copy.scores.map(score => ({ ...score, criterionId: remap(score.criterionId), evidenceIds: score.evidenceIds.map(remap) }));
         return copy;
@@ -1577,6 +1798,20 @@ document.addEventListener("click", event => {
   if (action === "toggle-theme") setThemePreference(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   if (action === "use-system-theme") { setThemePreference("system"); closeModal(); }
   if (action === "ingest-hot-buttons") showHotButtonIngest();
+  if (action === "add-aoa") addAnalysisOfAlternatives();
+  if (event.target.closest("[data-knowledge-add]")) showKnowledgeEditor();
+  const knowledgeEdit = event.target.closest("[data-knowledge-edit]")?.dataset.knowledgeEdit; if (knowledgeEdit) showKnowledgeEditor(knowledgeEdit);
+  const knowledgeUse = event.target.closest("[data-knowledge-use]")?.dataset.knowledgeUse; if (knowledgeUse) useKnowledgeItem(knowledgeUse);
+  const knowledgeRefresh = event.target.closest("[data-knowledge-refresh]")?.dataset.knowledgeRefresh; if (knowledgeRefresh) refreshKnowledgeCandidate(knowledgeRefresh);
+  const knowledgeOpen = event.target.closest("[data-knowledge-open]")?.dataset.knowledgeOpen; if (knowledgeOpen) { selectedCandidateId = knowledgeOpen; location.hash = "assess"; }
+  const knowledgeDelete = event.target.closest("[data-knowledge-delete]")?.dataset.knowledgeDelete;
+  if (knowledgeDelete) {
+    const item = knowledgeBase.items.find(record => record.id === knowledgeDelete);
+    if (item && confirm(`Delete “${item.name}” from the Knowledge Base? Existing solution copies will remain unchanged.`)) commitKnowledgeBase(next => { next.items = next.items.filter(record => record.id !== knowledgeDelete); });
+  }
+  if (event.target.closest("[data-knowledge-export]")) exportKnowledgeBaseJson();
+  if (event.target.closest("[data-knowledge-import]")) document.querySelector("#knowledge-import")?.click();
+  if (event.target.closest("[data-knowledge-clear]")) { knowledgeFilters = { search: "", type: "", status: "", segment: "" }; render(); }
   if (action === "toggle-nav") setSidebarOpen(!document.querySelector("#sidebar")?.classList.contains("open"));
   if (action === "new-view") newViewDialog();
   if (action === "add-element") addElementDialog();
@@ -1635,6 +1870,26 @@ document.addEventListener("submit", event => {
   event.preventDefault();
   const form = event.target;
   const data = new FormData(form);
+  if (form.id === "knowledge-item-form") {
+    const values = knowledgeFormValues(data);
+    try {
+      const itemId = form.dataset.knowledgeId || "";
+      let next;
+      if (itemId) next = updateKnowledgeItem(knowledgeBase, itemId, values);
+      else {
+        next = structuredClone(knowledgeBase);
+        next.items.push(createKnowledgeItem(values));
+        next.savedAt = new Date().toISOString();
+      }
+      if (!persistKnowledgeBase(next)) return;
+      closeModal();
+      render();
+      toast(itemId ? "Knowledge Base revision saved. Existing solution copies were not changed." : "Solution offering added to the Knowledge Base.", "ok");
+    } catch (error) {
+      toast(`Knowledge Base item was not saved: ${error.message}`, "error");
+    }
+    return;
+  }
   if (form.id === "quick-capture-form") {
     const target = String(data.get("target") || "evidence");
     const title = String(data.get("title") || "").trim();
@@ -1701,6 +1956,7 @@ document.addEventListener("input", event => {
   const node = event.target;
   const solution = activeSolution();
   if (node.matches("textarea[data-auto-grow]")) fitAutoGrowTextarea(node);
+  if (node.matches('[data-knowledge-filter="search"]')) { knowledgeFilters.search = node.value; applyKnowledgeFilters(); return; }
   if (node.matches("[data-meeting-field]") && meetingSession) {
     const meetingField = node.dataset.meetingField;
     const changed = meetingSession[meetingField] !== node.value;
@@ -1746,6 +2002,8 @@ document.addEventListener("input", event => {
 
 document.addEventListener("change", event => {
   const node = event.target;
+  if (node.matches("[data-knowledge-filter]")) { knowledgeFilters[node.dataset.knowledgeFilter] = node.value; applyKnowledgeFilters(); return; }
+  if (node.id === "knowledge-import") { importKnowledgeBaseFile(node.files?.[0]); return; }
   if (node.id === "meeting-ack" && meetingSession) {
     meetingSession.acknowledged = node.checked;
     const textarea = document.querySelector("#meeting-source-text");
@@ -1822,7 +2080,7 @@ document.addEventListener("change", event => {
   if (node.id === "workspace-import") importWorkspaceFile(node.files?.[0]);
   if (node.dataset.solutionField) { const solution = activeSolution(); solution[node.dataset.solutionField] = node.value; scheduleSave(); if (node.tagName === "SELECT") render(); }
   if (node.dataset.recordCollection && node.dataset.recordField && node.tagName === "SELECT" && !node.multiple) { const item = record(node.dataset.recordCollection, node.dataset.recordId); if (item) { item[node.dataset.recordField] = node.value; scheduleSave(); render(); } }
-  if (node.dataset.recordLinksCollection && node.dataset.recordLinksField) { const item = record(node.dataset.recordLinksCollection, node.dataset.recordId); if (item) { item[node.dataset.recordLinksField] = [...node.selectedOptions].map(option => option.value); scheduleSave(); } }
+  if (node.dataset.recordLinksCollection && node.dataset.recordLinksField) { const item = record(node.dataset.recordLinksCollection, node.dataset.recordId); if (item) { item[node.dataset.recordLinksField] = [...node.selectedOptions].map(option => option.value); if (node.dataset.recordLinksCollection === "trades" && node.dataset.recordLinksField === "optionIds" && item.baselineOptionId && !item.optionIds.includes(item.baselineOptionId)) item.baselineOptionId = ""; scheduleSave(); if (node.dataset.recordLinksCollection === "trades" && item.analysisType === "Analysis of Alternatives") render(); } }
   if (node.dataset.requirementDriver) {
     const item = record("requirements", node.dataset.requirementDriver);
     const field = node.closest("[data-relationship-field]");
@@ -1862,6 +2120,7 @@ window.addEventListener("storage", event => {
   }
   if (event.key === STORAGE_KEY) toast("This workspace changed in another tab. Export your work, then reload before continuing.", "error");
   if (event.key === captureStorageKey(workspace.activeSolutionId)) toast("This solution's capture inbox changed in another tab. Reload before reviewing or committing it.", "error");
+  if (event.key === KNOWLEDGE_BASE_STORAGE_KEY) toast("The Knowledge Base changed in another tab. Reload before editing or importing the catalog.", "error");
 });
 window.addEventListener("beforeunload", event => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
 document.addEventListener("keydown", event => {
@@ -1890,9 +2149,11 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=7", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=8", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }
 render();
 if (initialWorkspaceNeedsSave) saveNow();
+if (initialKnowledgeBaseNeedsSave) persistKnowledgeBase(knowledgeBase, { quiet: true });
+if (knowledgeBaseLoadError) toast("Saved Knowledge Base could not be opened and was left unchanged. Import a valid catalog backup to recover.", "error");

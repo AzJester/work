@@ -5,6 +5,8 @@ and transitioning defense solutions. The workbench organizes the architect's ong
 obligations around the solution rather than treating the job as a calendar or task
 schedule.
 
+**Status: UNDER DEVELOPMENT.**
+
 **Live path:** `https://azjester.github.io/work/solutions-architect/`
 
 ## What the workbench covers
@@ -14,12 +16,13 @@ schedule.
   measures of effectiveness.
 - **Shape** — requirements, nonfunctional requirements, authoritative evidence,
   acceptance methods, and traceability into architecture elements.
-- **Assess** — weighted Technology Assessment for hardware, software, tools, vendors,
+- **Assess** — reusable approved-unclassified offerings from a separate Knowledge
+  Base plus weighted Technology Assessment for hardware, software, tools, vendors,
   platforms, and complete solution candidates. Unknown scores remain unknown.
 - **Architect** — mission/context, operational-thread, system/interface, data-flow,
   and deployment/transition views using native SVG and accessible tables.
-- **Prove** — trades, decisions, risks, external dependencies, review gates, evidence, and
-  residual uncertainty.
+- **Prove** — trades, an optional Analysis of Alternatives, decisions, risks, external
+  dependencies, review gates, evidence, and residual uncertainty.
 - **Propose** — traceable win themes, CONOPS, technical approach, discriminators,
   requirement support checks, estimate assumptions, and delivery commitments.
 - **Transition** — roadmap events, ownership, configuration, training, sustainment,
@@ -116,13 +119,42 @@ Decision packages can be downloaded in five formats:
   print dialog or Markdown rendering step;
 - Microsoft Word (`.docx`) for an editable document with real headings, tables,
   header/footer content, and page numbering; and
-- Microsoft Excel (`.xlsx`) for nine formatted sheets covering executive context,
+- Microsoft Excel (`.xlsx`) for ten formatted sheets covering executive context,
   mission, customer and win themes, requirements and evidence, assessments,
-  architecture and interfaces, decisions and risk, delivery and transition, and
-  gaps and readiness.
+  architecture and interfaces, decisions and risk, Analysis of Alternatives,
+  delivery and transition, and gaps and readiness.
 
 All five formats use the same validated active-solution facts and are generated
 locally. Architecture views can also be downloaded separately as SVG or PNG.
+
+### Reusable Knowledge Base
+
+The **Knowledge base** is a separate browser-local catalog for approved unclassified,
+non-CUI products, applications, software, services, platforms, integrated solutions,
+and other offerings. Catalog items can record provider and release, lifecycle status,
+capabilities, mission-segment fit, deployment and interface notes, integration,
+cyber/safety, MOSA and data-rights considerations, optional readiness levels and
+basis, source information, review date, tags, and a change summary.
+
+Selecting **Use in active solution** copies the current catalog revision into that
+solution as a new, solution-scoped Technology Assessment candidate. The copy receives
+its own ID and can be scored, evidenced, and given a solution-specific status without
+changing the reusable catalog item or any other solution. Saving a catalog edit
+increments its revision; it never silently changes an existing solution copy.
+
+When a newer catalog revision exists, **Refresh solution copy** explicitly updates the
+copied name, category, provider, description, readiness summaries and basis, and
+catalog provenance. Refresh preserves the candidate's solution-specific status and
+its separate assessment scores, rationales, and evidence links. Deleting or retiring
+a catalog item also leaves existing solution copies intact; retired items cannot be
+copied into another solution.
+
+The catalog uses the separate `solution-knowledge-base-v1` contract and
+`solution_architect_knowledge_base_v1` storage key. **Export catalog** and **Import
+catalog** use a separate validated JSON backup; a workspace JSON export, workspace
+snapshot, solution duplication, and decision package do not contain the catalog.
+Catalog import replaces the catalog only after complete validation. Keep dated
+catalog and workspace backups together when moving work to another browser profile.
 
 ## Decision-support limits
 
@@ -132,6 +164,17 @@ limiting essential integration point, not imply that every interface has been ra
 The JSON contract can retain optional readiness-basis and as-of metadata. Candidate
 ordering remains provisional because the weighted mean uses only scored criteria;
 coverage and evidence coverage must be considered with the score.
+
+An **Analysis of Alternatives (AoA)** is optional. Adding one extends an existing
+solution-scoped trade record with a decision objective, at least two selected
+candidates, a baseline, scope and ground rules, evaluation approach, sensitivity and
+uncertainty, supporting evidence, owner/date/status, and recommendation. Its comparison
+matrix reuses the current Technology Assessment scores, coverage, evidence coverage,
+readiness summaries, and candidate status; it does not create a second scoring source.
+If no AoA is created, AoA fields do not affect obligations or readiness. Once an AoA
+is created, missing alternatives, baseline, scope, method, sensitivity, evidence, or
+recommendation appear as Prove obligations. Completed AoA content is included in all
+five decision-package formats.
 
 The Propose view's Requirement support check only identifies whether a current
 requirement has one linked source and an acceptance method. It is not a solicitation
@@ -176,7 +219,8 @@ optional authentication client behave differently on `file:` URLs.
 
 The published release is approved-unclassified/non-CUI only. Use only synthetic,
 public, or otherwise approved unclassified, non-CUI information,
-including in Quick Capture, source files, image captions, and extracted excerpts.
+including in the Knowledge Base, Quick Capture, source files, image captions, and
+extracted excerpts.
 That boundary also applies to meeting transcripts, summaries, participant names, and
 selected meeting excerpts.
 Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted

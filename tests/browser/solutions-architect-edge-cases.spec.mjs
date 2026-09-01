@@ -288,7 +288,7 @@ test("narrow touch layout, reduced motion, and every lifecycle route avoid page 
   await page.getByRole("button", { name: "Open workspace navigation", exact: true }).click();
   await expect(page.locator("#sidebar")).toHaveClass(/open/);
 
-  for (const route of ["discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]) {
+  for (const route of ["discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]) {
     await page.goto(`${APP_PATH}#${route}`, { waitUntil: "domcontentloaded" });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   }

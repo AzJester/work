@@ -1,5 +1,7 @@
 # Solution Architect Workbench User Guide
 
+**Status: UNDER DEVELOPMENT.**
+
 This guide is a working playbook: start a solution, capture information without
 breaking concentration, turn source material into reviewed records, build a
 traceable solution, and produce a decision package.
@@ -11,7 +13,9 @@ traceable solution, and produce a decision package.
 - [Ingest a meeting transcript or summary](#ingest-a-meeting-transcript-or-summary)
 - [Open permitted local files](#open-local-files-for-ingestion)
 - [Use the readable work-area layout](#use-the-readable-work-area-layout)
+- [Build and reuse the Knowledge Base](#build-and-reuse-the-knowledge-base)
 - [Work the iterative solution lifecycle](#work-the-solution-lifecycle)
+- [Run an optional Analysis of Alternatives](#run-an-optional-analysis-of-alternatives)
 - [Produce the decision package](#produce-and-review-the-decision-package)
 - [Back up, recover, or move work](#back-up-recover-and-move-work)
 - [Use optional AI safely](#use-optional-ai-assistance-safely)
@@ -22,7 +26,8 @@ traceable solution, and produce a decision package.
 1. **Use only approved unclassified, non-CUI information.** The published release is
    not authorized for classified, CUI, export-controlled, proprietary,
    competition-sensitive, or customer-restricted content. An account, local file
-   picker, browser storage, or AI acknowledgment does not change that boundary.
+   picker, Knowledge Base, browser storage, or AI acknowledgment does not change that
+   boundary.
 2. **Capture is not acceptance.** A note, extracted passage, score, or AI suggestion
    is a lead to review. It becomes part of the solution only after a person verifies
    the source, meaning, provenance, and correct record type.
@@ -51,6 +56,7 @@ security, export-control, or mission-domain authorities.
 **What to do next:** create a downloaded JSON backup before an important review or
 after a substantial working session. Resolve or commit useful capture-inbox items
 first because the separate inbox is not included in the workspace JSON backup.
+If you also maintain the Knowledge Base, export its separate catalog JSON.
 
 ## Set up the workspace for how you work
 
@@ -341,6 +347,88 @@ architecture links, and the decision that uses the requirement. The PDF itself i
 discarded from the intake session and must remain in the organization's approved
 record system.
 
+## Build and reuse the Knowledge Base
+
+Open **Knowledge base** in the left navigation, or select **Browse Knowledge Base**
+from Assess. This is a separate browser-local catalog for reusable approved
+unclassified, non-CUI products, applications, software, services, platforms,
+integrated solutions, and other offerings. It is shared across solutions in this
+browser profile, but it is not a cloud library or an enterprise system of record.
+
+### Add or revise an offering
+
+1. Select **Add item**.
+2. Record the reusable facts: name, offering type, provider, product version/release,
+   lifecycle status, summary, capabilities, mission segments, deployment and
+   environment, interfaces, integration considerations, cyber and safety,
+   MOSA/data-rights considerations, optional TRL/MRL/IRL and basis, source, tags, and
+   review date.
+3. Add a concise **Change summary** and save.
+4. For a later update, select **Edit**, change the reusable facts, update the product
+   version/release if appropriate, describe the change, and select **Save new
+   revision**.
+
+The product **Version / release** is a fact supplied by the provider or catalog
+maintainer. The Knowledge Base **Revision** is the workbench's integer history marker;
+it increases every time an item is edited, even when the provider's product version
+did not change. A revision number records change order, not approval, configuration
+control, or technical maturity.
+
+Use **Current**, **Emerging**, **Legacy**, and **Retired** as catalog lifecycle labels.
+A retired item remains available as historical reference but cannot be newly copied
+into a solution. Retiring or deleting it never deletes an existing solution copy.
+
+### Copy an offering into a solution
+
+1. Confirm the correct active solution in the left-side selector.
+2. Search or filter the Knowledge Base by offering type, lifecycle status, or company
+   mission segment.
+3. Review the source, review date, readiness basis, interfaces, and integration
+   limitations. Catalog content is reusable input, not proof that the offering fits
+   this mission.
+4. Select **Use in active solution**.
+5. Open Assess and add solution-specific status, scores, rationales, and supporting
+   evidence to the new candidate.
+
+Copy-on-use creates a new candidate ID bound only to the active solution. The
+candidate records the source catalog item and revision, but it is not live-linked.
+Editing, retiring, deleting, or importing the catalog does not silently change that
+candidate or any assessment in another solution. If the same catalog item is already
+present in the active solution, the control opens the existing assessment rather
+than creating a duplicate.
+
+### Refresh an existing solution copy
+
+When an item has a newer catalog revision, its card shows **Update available** and
+**Refresh solution copy**.
+
+1. Review the catalog change summary and the candidate's current solution-specific
+   assessment.
+2. Select **Refresh solution copy** only when you want the newer reusable facts.
+3. Recheck the refreshed candidate before using it in a trade, AoA, decision, or
+   export.
+
+Refresh creates a recovery point and updates catalog-derived name, category,
+provider, description, readiness levels/basis/as-of date, and catalog provenance. It
+preserves the candidate's solution-specific status and its assessment scores,
+rationales, and evidence links. Any manual edits to the copied name, description, or
+readiness fields are catalog-derived and will be replaced, so move truly
+solution-specific reasoning into score rationales, evidence, trades, decisions, or
+risks before refreshing.
+
+### Back up the catalog separately
+
+- **Export catalog** downloads a validated `solution-knowledge-base-v1` JSON file.
+- **Import catalog** validates the whole file and then replaces the current catalog;
+  it does not merge items. Export the current catalog first when you may need to
+  reverse the replacement.
+- A workspace JSON backup, recovery point, solution duplicate, capture-inbox export,
+  decision package, and AI payload do not include the Knowledge Base.
+
+To move the full browser-local setup, download both the workspace JSON and the
+Knowledge Base JSON, then import each into the destination browser. Original source
+documents and images are not included in either backup.
+
 ## Work the solution lifecycle
 
 Treat Discover, Shape, Assess, Architect, Prove, Propose, and Transition as iterative
@@ -355,7 +443,7 @@ Define the mission problem, current and desired operational states, stakeholders
 outcomes, measures of effectiveness, constraints, customer hot buttons, company
 mission segments, and the decision owner.
 
-Use **Ingest** under **Customer hot buttons** when you already have a short approved
+Use **Ingest list** under **Customer hot buttons** when you already have a short approved
 plain-text list: one signal per line, up to 50. Name the actual interaction and review
 confidence and validation status. Bullets and numbered-list prefixes are removed and
 exact duplicates are skipped. Use **Workspace tools → Open local files** for supported
@@ -464,6 +552,42 @@ assumptions, reviews, demonstrations, and residual uncertainty. Give material ri
 and reviews accountable owners. Distinguish a planned review from one that is truly
 ready or complete.
 
+#### Run an optional Analysis of Alternatives
+
+Use a normal trade study for a lightweight comparison. Select **Add analysis** in the
+optional **Analysis of Alternatives** panel only when the decision needs a more
+deliberate, reviewable comparison. An AoA is not required for every solution: when
+you do not create one, it adds no obligation and does not change readiness or coverage.
+
+1. Build and assess at least two complete candidates in Assess. Unknown values can
+   remain unknown; document why they matter instead of inventing scores.
+2. In Prove, select **Add analysis** and state the analysis title and decision
+   objective.
+3. Select the alternatives and identify the baseline. The baseline must be one of the
+   selected candidates.
+4. Record scope and ground rules so reviewers know what is inside the comparison,
+   the scenario and time horizon, the constraints, and which assumptions are held
+   constant.
+5. Explain the evaluation approach. The matrix automatically reuses current weighted
+   Technology Assessment score, assessed coverage, evidence coverage, readiness
+   summaries, and candidate status; do not create a separate set of scores.
+6. Link supporting evidence, name the owner and analysis date, and document
+   sensitivity and uncertainty—especially whether a changed weight, assumption,
+   performance result, cost/schedule input, or interface constraint could change the
+   recommendation.
+7. Record the recommendation and move the status from **In analysis** to **Ready for
+   decision** or **Closed** only when the accountable review supports that state.
+
+Once an AoA exists, Command surfaces missing alternatives, baseline, scope, method,
+sensitivity, evidence, or recommendation as Prove obligations. Deleting the AoA
+removes those AoA-specific obligations; it does not delete the underlying candidates,
+assessment records, evidence, or ordinary trade studies.
+
+All decision-package formats include a used AoA's objective, baseline, ground rules,
+method, sensitivity, evidence, owner/date/status, recommendation, and derived
+alternative comparison. The acronym key adds **AoA — Analysis of Alternatives** only
+when one is present.
+
 **What to do next:** confirm each decision cites evidence and each risk has an owner,
 mitigation, and transition disposition.
 
@@ -551,8 +675,9 @@ design certification. A formal review can identify issues no automated rule sees
 Open **Decision package** to assemble the selected company mission segments, mission
 brief, stakeholders, outcomes and measures, customer signals, requirements trace,
 assessments, proposal approach, architecture elements and interfaces, trades,
-decisions, risks, dependencies, assumptions, reviews, roadmap, transition actions,
-meeting-evidence context, coverage indicators, and evidence gaps.
+optional Analyses of Alternatives, decisions, risks, dependencies, assumptions,
+reviews, roadmap, transition actions, meeting-evidence context, coverage indicators,
+and evidence gaps.
 
 - **Download Markdown** creates an editable narrative.
 - **Standalone HTML** creates a self-contained, themed executive report with a cover,
@@ -561,10 +686,10 @@ meeting-evidence context, coverage indicators, and evidence gaps.
 - **Word** downloads a real Microsoft Word `.docx` document with an editable cover,
   heading hierarchy, page header and footer, page numbers, formatted tables, and the
   complete architecture and interface register.
-- **Excel** downloads a formatted `.xlsx` workbook with nine purpose-built sheets:
+- **Excel** downloads a formatted `.xlsx` workbook with ten purpose-built sheets:
   Executive Summary; Mission & Outcomes; Customer & Win Themes; Requirements &
   Evidence; Technology Assessment; Architecture & Interfaces; Decisions & Risk;
-  Delivery & Transition; and Gaps & Readiness. The sheets use wrapped text, frozen
+  Analysis of Alternatives; Delivery & Transition; and Gaps & Readiness. The sheets use wrapped text, frozen
   headings, useful column widths, and no formulas or macros.
 - **PDF** downloads a native, professionally formatted PDF directly. It uses a
   designed cover, Letter-size pages, repeated report headers, page numbers, wrapping
@@ -575,10 +700,11 @@ meeting-evidence context, coverage indicators, and evidence gaps.
 Every decision-package format is generated locally from the same validated,
 selected-solution records. Pending inbox items, original source files, full meeting
 text, snapshots, and unaccepted AI drafts are not included. The exported decision
-package does not add a data marking, browser-storage language, or authorization or
-conformance disclaimers. Add any organization-required cover, handling, approval, or
-distribution content through the governed publishing process that applies to the
-final artifact.
+package also excludes the reusable Knowledge Base itself; only candidates copied into
+the active solution can appear. It does not add a data marking, browser-storage
+language, or authorization or conformance disclaimers. Add any organization-required
+cover, handling, approval, or distribution content through the governed publishing
+process that applies to the final artifact.
 
 Review the complete export before sharing it. A downloaded artifact can outlive the
 browser workspace and may have additional distribution, records, and destruction
@@ -611,16 +737,23 @@ Open **Workspace tools**:
 - **Create recovery point** keeps a bounded local snapshot.
 - **Recovery** restores a selected snapshot after first preserving the current state.
 
+The Knowledge Base is a second local data store. In **Knowledge base**, use **Export
+catalog** to download its separate `solution-knowledge-base-v1` JSON and **Import
+catalog** to validate and replace the catalog. The workspace backup does not contain
+the catalog, and the catalog backup does not contain solutions, assessments, or
+recovery points. Keep both dated files when you need the full setup on another
+browser or device.
+
 The per-solution review inbox is stored separately and is not part of the workspace
 JSON export or recovery snapshots. **Download inbox JSON** can preserve a separate
 reference copy, but the current UI does not import it. Commit useful items before a
 workspace backup or transfer, and do not treat the inbox as a durable source
 repository.
 
-Working data, inboxes, theme preference, and automatic snapshots all depend on the
-current browser profile. Clearing site data removes them. A downloaded workspace
-JSON file is the durable backup and transfer format for authoritative workspace
-records; it still does not contain original ingested files.
+Working data, Knowledge Base items, inboxes, theme preference, and automatic snapshots
+all depend on the current browser profile. Clearing site data removes them. Downloaded
+workspace and catalog JSON files are the durable backup and transfer formats for their
+respective records; neither contains original ingested files.
 
 ## Use optional AI assistance safely
 
@@ -670,7 +803,11 @@ reviews and acknowledges an AI payload that contains it.
 | Writing a generic win-theme slogan | Trace customer value, discriminator, proof, and evidence |
 | Selecting a mission segment without showing contribution | Connect the segment to outcomes, measures, architecture, and transition |
 | Keeping the only copy in browser storage | Download dated JSON backups |
-| Expecting JSON backup to include pending inbox items or source files | Commit reviewed records and retain authorized originals elsewhere |
+| Expecting one JSON backup to include the workspace, Knowledge Base, pending inbox, and source files | Export workspace and catalog separately, commit reviewed inbox items, and retain authorized originals elsewhere |
+| Assuming a catalog item is live-linked to a solution | Treat copy-on-use as a revisioned snapshot; refresh explicitly after reviewing changes |
+| Refreshing after customizing catalog-derived candidate text | Move solution-specific reasoning into assessments, evidence, trades, decisions, and risks before refresh |
+| Creating an AoA for every effort | Use it only when the decision warrants the additional comparison and governance |
+| Copying Technology Assessment scores into an AoA | Use the derived matrix so the assessment remains the single scoring source |
 | Pasting an entire transcript and assuming it is saved | Select and stage the needed excerpts; the complete meeting text is discarded on close |
 | Treating a meeting statement as contractual direction | Preserve it as evidence, then validate authority before creating a requirement or commitment |
 | Assuming login makes restricted data safe | Apply the data-handling boundary before capture, ingestion, export, or AI use |
@@ -686,6 +823,12 @@ reviews and acknowledges an AI payload that contains it.
 - **Review commit failed:** correct the cited field or dependency and retry. The
   authoritative workspace should remain unchanged.
 - **Save failed:** stop adding content and export the current in-memory JSON backup.
+- **A Knowledge Base import was rejected:** correct the first validation error or use
+  the last exported catalog JSON. A rejected import leaves the current catalog in
+  place; import replaces rather than merges after validation.
+- **A solution copy says Update available:** review the catalog change summary, then
+  refresh explicitly if the new generic facts apply. Scores and solution status are
+  retained, but catalog-derived name, description, and readiness fields are replaced.
 - **A file may contain restricted information:** cancel intake and follow the
   organization's approved handling process. Do not “test” it in the app.
 - **An export did not download:** retry from Decision package, confirm the browser is

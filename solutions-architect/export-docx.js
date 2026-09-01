@@ -1,6 +1,7 @@
 import {
   VIEW_TEMPLATES,
   assessmentResult,
+  buildAnalysisOfAlternativesModels,
   buildReadiness,
   cleanDecisionPackageValue,
   collectObligations,
@@ -8,7 +9,7 @@ import {
   safeHttpUrl,
   scoped,
   validateWorkspace
-} from "./engine.js?v=7";
+} from "./engine.js?v=8";
 
 export const DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -131,10 +132,11 @@ export function buildDecisionPackageDocxModel(workspace, solutionId = workspace?
         targetName: elementById.get(connection.targetElementId)?.name || connection.targetElementId
       }))
     })),
-    trades: collections.trades.map(record => ({
+    trades: collections.trades.filter(record => record.analysisType !== "Analysis of Alternatives").map(record => ({
       ...record,
       optionNames: labels(record.optionIds, candidateById, "name")
     })),
+    analysesOfAlternatives: buildAnalysisOfAlternativesModels(workspace, solutionId),
     decisions: collections.decisions.map(record => ({
       ...record,
       evidenceNames: labels(record.evidenceIds, evidenceById, "title")
@@ -396,6 +398,21 @@ function buildDocumentBody(model) {
       parts.push(labeledParagraph("Status", record.status));
     }
   } else parts.push(emptyState("No trade studies recorded."));
+  if (model.analysesOfAlternatives.length) {
+    parts.push(paragraph("Analysis of Alternatives (AoA)", "Heading2"));
+    for (const analysis of model.analysesOfAlternatives) {
+      parts.push(paragraph(analysis.title, "Heading3"));
+      parts.push(labeledParagraph("Decision objective", analysis.question));
+      parts.push(labeledParagraph("Baseline alternative", analysis.baselineName));
+      parts.push(labeledParagraph("Scope and ground rules", analysis.scopeAndGroundRules));
+      parts.push(labeledParagraph("Evaluation approach", analysis.evaluationApproach));
+      parts.push(labeledParagraph("Sensitivity and uncertainty", analysis.sensitivityAnalysis));
+      parts.push(labeledParagraph("Supporting evidence", joined(analysis.evidenceNames)));
+      parts.push(labeledParagraph("Recommendation", analysis.recommendation));
+      parts.push(labeledParagraph("Owner / date / status", joined([analysis.owner, analysis.date, analysis.status])));
+      addTableOrEmpty(parts, ["Alternative", "Baseline", "Weighted score", "Assessed", "Evidenced", "Readiness levels", "Status"], analysis.alternatives.map(candidate => [candidate.name, candidate.baseline ? "Yes" : "No", candidate.weightedScore === null ? "Unknown" : `${candidate.weightedScore.toFixed(2)} / 5`, `${Math.round(candidate.assessmentCoverage * 100)}%`, `${Math.round(candidate.evidenceCoverage * 100)}%`, `TRL ${candidate.trl ?? "Unknown"}; MRL ${candidate.mrl ?? "Unknown"}; IRL ${candidate.irl ?? "Unknown"}`, candidate.status]), [1800, 900, 1200, 900, 900, 2200, 1460], `No alternatives recorded for ${analysis.title}.`);
+    }
+  }
   parts.push(paragraph("Decision record", "Heading2"));
   addTableOrEmpty(parts, ["Decision", "Status", "Owner / date", "Rationale", "Evidence"], model.decisions.map(record => [record.title, record.status, joined([record.owner, record.date]), record.rationale, joined(record.evidenceNames)]), [2000, 1200, 1600, 2800, 1760], "No decisions recorded.");
 
@@ -432,6 +449,7 @@ function buildDocumentBody(model) {
   ]), [1500, 950, 1500, 1200, 1350, 900, 1960], "No source evidence recorded.");
   parts.push(paragraph("Acronym key", "Heading2"));
   parts.push(table(["Acronym", "Meaning"], [
+    ...(model.analysesOfAlternatives.length ? [["AoA", "Analysis of Alternatives"]] : []),
     ["TRL", "Technology Readiness Level"],
     ["MRL", "Manufacturing Readiness Level"],
     ["IRL", "Integration Readiness Level"],

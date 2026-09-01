@@ -1,5 +1,7 @@
 # Product Requirements and Role Model
 
+**Status: UNDER DEVELOPMENT.**
+
 ## Product intent
 
 Solution Architect Workbench helps a practicing defense-contractor solution
@@ -70,8 +72,12 @@ A successful workspace lets that user:
   and images without retaining the original binary;
 - distinguish sourced customer signals from validated requirements and trace the
   signals that materially shape the solution;
+- maintain a reusable browser-local catalog of approved unclassified offerings and
+  copy a chosen catalog revision into a solution without coupling later changes;
 - trace material requirements to sources, acceptance methods, and architecture;
 - compare solution candidates without hiding unknowns;
+- document a full Analysis of Alternatives when the decision warrants one, without
+  making that artifact mandatory for every solution;
 - communicate the complete capability and its interfaces through decision-useful
   views;
 - show why key trades and decisions were made and what evidence supports them;
@@ -108,6 +114,42 @@ A successful workspace lets that user:
   panels.
 - Keep lifecycle navigation grouped and legible, with a sufficiently wide solution
   selector and touch-sized navigation targets.
+
+### Knowledge Base
+
+- Provide a separate browser-local catalog under the versioned
+  `solution-knowledge-base-v1` contract for approved unclassified, non-CUI products,
+  applications, software, services, platforms, integrated solutions, and other
+  offerings. The catalog is reusable across solutions in the same browser profile;
+  it is not embedded in `solution-workspace-v1`.
+- Let users search and filter by name or catalog text, offering type, lifecycle
+  status, and company mission segment. Catalog records must support provider,
+  version/release, lifecycle status, summary, capabilities, mission segments,
+  deployment/environment, interfaces, integration, cyber/safety, MOSA/data-rights,
+  optional TRL/MRL/IRL with basis and as-of date, source information, tags, review
+  date, and change summary.
+- Increment an item's catalog revision whenever it is edited. Show the revision used
+  by an existing solution copy and identify when a newer revision is available.
+- Implement copy-on-use: **Use in active solution** creates a new candidate ID bound
+  only to the active solution and records catalog item ID, revision, item name,
+  import time, review date, and safe source URL as provenance. Catalog edits,
+  retirement, or deletion must never silently mutate or delete existing solution
+  copies.
+- Require an explicit **Refresh solution copy** action before applying a newer
+  catalog revision. Refresh reusable identity, description, readiness, and provenance
+  fields while preserving the candidate's solution-specific status and its separate
+  assessment scores, rationales, and evidence links. Create a recovery point before
+  copy or refresh.
+- Prevent a retired catalog item from being newly copied while leaving prior solution
+  copies usable. Prevent a second copy of the same item in one solution; open the
+  existing assessment instead.
+- Export and import the catalog through a separate validated JSON file. Validate the
+  complete import before replacing catalog storage, reject unsupported versions and
+  malformed or duplicate items, bound imports to 5 MB and 1,000 records, and leave
+  the current catalog unchanged on rejection or storage failure.
+- Keep the Knowledge Base out of workspace snapshots, workspace JSON backups,
+  decision-package exports, capture inboxes, and AI payloads. Make clear that moving
+  work between browsers requires both a workspace backup and a catalog backup.
 
 ### Company mission segments
 
@@ -211,6 +253,27 @@ A successful workspace lets that user:
   over scored criteria and must be interpreted with assessment and evidence coverage.
 - Never convert an unknown or invalid score to zero.
 
+### Optional Analysis of Alternatives
+
+- Provide **Analysis of Alternatives (AoA)** as an optional enhanced trade record in
+  Prove rather than a required lifecycle gate or a second assessment collection.
+- Let an architect record an analysis title, decision objective, at least two
+  solution-scoped candidate alternatives, a baseline alternative, scope and ground
+  rules, evaluation approach, sensitivity and uncertainty, supporting evidence,
+  owner, analysis date, status, and recommendation.
+- Derive the comparison matrix from the existing Technology Assessment candidate
+  status, weighted score, assessment coverage, evidence coverage, and TRL/MRL/IRL
+  summaries. Do not copy scores into the AoA or create another scoring source.
+- Keep all AoA references in the same solution and reject a baseline that is not one
+  of the selected alternatives.
+- When no AoA exists, create no AoA obligation and do not change readiness or
+  coverage. Once an AoA is created, surface missing alternatives, baseline, scope,
+  evaluation approach, sensitivity, evidence, or recommendation as deterministic
+  Prove obligations.
+- Include every used AoA and its derived comparison in Markdown, standalone HTML,
+  native PDF, Microsoft Word, and Microsoft Excel decision-package exports. Include
+  the AoA acronym in the package key only when an AoA is present.
+
 ### Architecture
 
 - Model all required element and interface types.
@@ -236,7 +299,8 @@ as a reference, not as a certification automatically produced by the app.
 
 - Assemble selected company mission segments, the mission brief, customer hot
   buttons, requirements traceability,
-  assessments, architecture, trades, decisions, risks, dependencies, win themes,
+  assessments, architecture, trades, optional Analyses of Alternatives, decisions,
+  risks, dependencies, win themes,
   roadmap, evidence gaps, and transition plan.
 - Export Markdown and self-contained themed HTML.
 - Generate and directly download a native, Letter-size PDF with a designed cover,
@@ -290,6 +354,7 @@ as a reference, not as a certification automatically produced by the app.
 ## Non-goals for v1
 
 - shared real-time editing or cloud project storage;
+- a cloud-synchronized, centrally governed, or live-linked enterprise product catalog;
 - classified/CUI authorization or enterprise records management;
 - arbitrary or unsupported document ingestion, OCR, source-document retention, or
   binary attachment storage;
@@ -302,7 +367,9 @@ as a reference, not as a certification automatically produced by the app.
   verification model;
 - a solicitation compliance matrix or automated compliance determination;
 - complete evaluator-ready proposal-volume or PowerPoint generation;
-- autonomous acceptance of AI output or automatic solution changes.
+- autonomous acceptance of AI output or automatic solution changes; and
+- automatic propagation of Knowledge Base edits into active solutions or automatic
+  replacement of solution-specific assessment judgments.
 
 ## Acceptance boundary
 
@@ -310,6 +377,8 @@ The release is acceptable when the schema and solution isolation are enforced,
 unknowns stay explicit, import validation is all-or-nothing, storage failures stay
 visible, coverage checks and exports are deterministic, diagrams have keyboard and tabular
 alternatives, themes remain separate from content, capture never bypasses review,
-source binaries remain transient, the public data warning remains visible, optional
-AI sends only a reviewed bounded payload, and all static, browser, and production
-smoke checks pass.
+source binaries remain transient, Knowledge Base copy and refresh preserve solution
+isolation, separate workspace and catalog backups validate before replacement, an
+unused AoA creates no readiness requirement, the public data warning remains visible,
+optional AI sends only a reviewed bounded payload, and all static, browser, and
+production smoke checks pass.

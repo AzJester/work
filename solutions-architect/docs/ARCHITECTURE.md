@@ -13,6 +13,8 @@ index.html
   |-- export-pdf.js    native PDF decision-package renderer
   |-- export-docx.js   dependency-free Word Open XML package renderer
   |-- export-xlsx.js   formatted decision workbook renderer
+  |-- knowledge-base.js
+  |                     separate catalog contract, validation, copy, and refresh
   |-- capture.js       isolated capture-inbox contract and materialization
   |-- ingestion.js     bounded local source detection, extraction, and metadata
   |-- ingestion-worker.js
@@ -71,12 +73,79 @@ evidence uses the optional fields so decision packages can show which source and
 company mission segments support an excerpt without changing the workspace schema
 version.
 
-Candidate records may carry backward-compatible optional `readinessBasis` and
-`readinessAsOf` metadata. Existing v1 candidates without those fields remain valid;
+Candidate records may carry backward-compatible optional `readinessBasis`,
+`readinessAsOf`, and `catalogSource` metadata. Existing v1 candidates without those
+fields remain valid;
 when present, `readinessAsOf` must be empty or a valid `YYYY-MM-DD` calendar date.
 TRL and MRL remain nullable integer summaries on their established 1–9 and 1–10
 scales. IRL is a nullable integer on the 0–9 scale and should summarize the limiting
 essential integration maturity, not imply a rating for every interface.
+
+When a candidate is copied from the Knowledge Base, `catalogSource` records the
+catalog item ID, revision, item name, import timestamp, review date, and safe source
+URL. This is provenance for a point-in-time copy, not a live relationship.
+
+The established `trades` collection also accepts backward-compatible optional AoA
+metadata: `analysisType`, `baselineOptionId`, `scopeAndGroundRules`,
+`evaluationApproach`, `sensitivityAnalysis`, `evidenceIds`, `owner`, and `date`.
+Existing v1 trades without these fields remain normal trade studies. An AoA baseline
+must reference one of its selected solution-scoped candidate options, and supporting
+evidence must belong to the same solution.
+
+## Knowledge Base contract
+
+The reusable catalog is intentionally separate from the workspace and capture inbox:
+
+- schema: `solution-knowledge-base-v1`;
+- schema version: `1`;
+- storage key: `solution_architect_knowledge_base_v1`; and
+- portable shape: `schema`, `schemaVersion`, `savedAt`, and `items`.
+
+Separation is an isolation and lifecycle design, not an authorization boundary. The
+Knowledge Base has the same approved-unclassified/non-CUI limit as the workspace and
+must not contain classified, CUI, export-controlled, proprietary, or
+customer-restricted information.
+
+Each item has a stable catalog ID and positive revision plus reusable facts for name,
+offering type, provider, version, lifecycle status, summary, capabilities, company
+mission segments, deployment/environment, interfaces, integration, cyber/safety,
+MOSA/data rights, optional readiness levels and basis, source, tags, review date,
+change summary, and creation/update timestamps. Allowed offering types are Product,
+Application, Software, Service, Platform, Integrated solution, and Other offering;
+lifecycle states are Current, Emerging, Legacy, and Retired.
+
+The catalog is shared by all solutions within one browser profile and origin, but its
+items never carry `solutionId`. Strict solution isolation starts at copy-on-use:
+
+```text
+Knowledge Base item revision N
+  -> explicit Use in active solution
+  -> new solution-scoped candidate ID + catalogSource provenance
+  -> independent status, scores, rationales, and evidence links
+```
+
+Editing a catalog item increments `revision`; it does not traverse candidate
+provenance or write to a workspace. Deleting or retiring an item also leaves copied
+candidates intact. A retired item cannot be newly materialized.
+
+If the current catalog revision exceeds a candidate's recorded revision, the UI
+offers **Refresh solution copy**. Refresh creates a workspace recovery point, then
+updates the candidate's catalog-derived name, category, vendor, description,
+readiness basis/date/levels, and provenance. The candidate ID, solution ID, status,
+and separately stored assessment scores, rationales, and evidence links are
+preserved. There is no automatic refresh or background synchronization.
+
+Catalog validation rejects unsupported schemas and fields, malformed IDs, duplicate
+item IDs, unsupported types or lifecycle states, invalid readiness/date/URL values,
+credential-bearing URLs, unsupported mission segments, oversized fields, more than
+1,000 items, or an import over 5 MB. Import validates the entire document and writes
+it once before replacing the in-memory catalog. A rejected file or storage failure
+leaves the current catalog in place.
+
+**Export catalog** produces the Knowledge Base's own JSON backup. Workspace JSON,
+workspace snapshots, solution duplication, capture-inbox export, decision packages,
+and AI payloads exclude the catalog. Moving reusable and active work therefore
+requires two artifacts: a workspace backup and a catalog backup.
 
 ## Capture-inbox contract
 
@@ -167,6 +236,12 @@ place and remains visible; browser storage still does not provide transactional
 durability. Duplicating a solution remaps all
 solution-scoped IDs and relationships so the copy is independent.
 
+Knowledge Base reuse does not weaken this boundary. Materialization always assigns a
+new candidate ID and the current active `solutionId`. Refresh locates only that
+solution copy; its catalog provenance cannot be used as a cross-solution reference.
+AoA alternatives, baseline, and evidence also pass the existing same-solution
+relationship checks.
+
 ## Persistence and recovery
 
 The current workspace is serialized under `solution_architect_workspace_v1` in
@@ -177,6 +252,13 @@ Snapshots contain bounded point-in-time workspace copies without recursively nes
 older snapshots. Restoring a snapshot validates it and first creates a
 **Before recovery restore** point. Snapshots are convenient local recovery, while a
 downloaded JSON workspace is the durable backup and transfer mechanism.
+
+The Knowledge Base is serialized independently under
+`solution_architect_knowledge_base_v1`. It is not included in workspace recovery
+points or workspace JSON. Its **Export catalog** JSON is the only portable catalog
+backup in v1; catalog import replaces only the catalog after complete validation and
+does not create a workspace snapshot. Back up both stores before clearing site data
+or moving to another browser profile.
 
 The application does not encrypt workspace values inside `localStorage`, synchronize
 them to another device, or guarantee persistence across browser policies, private
@@ -202,6 +284,13 @@ These calculations are transparent completeness and comparison aids. They do not
 represent engineering maturity, formal readiness review, certification, authority to
 operate, or predict mission success, technical approval, acquisition outcome, or
 contract award.
+
+AoA is opt-in. With no trade marked `Analysis of Alternatives`, it adds no obligation
+and changes no readiness or coverage result. Once present, deterministic checks flag
+fewer than two alternatives and missing baseline, scope/ground rules, evaluation
+approach, sensitivity analysis, evidence, or recommendation. The AoA comparison is
+derived at render/export time from current Technology Assessment results; no scores
+are persisted twice.
 
 ## Architecture views
 
@@ -246,7 +335,12 @@ and no formulas or macros. Neither Office export requires a cloud conversion
 service.
 
 Pending inbox records, original source files, full meeting text, snapshots, and
-unaccepted AI drafts are excluded from every decision-package format.
+unaccepted AI drafts are excluded from every decision-package format. The reusable
+Knowledge Base is also excluded; only candidates already copied into the selected
+solution can appear. When an AoA exists, its objective, selected alternatives,
+baseline, ground rules, method, sensitivity, evidence, owner/date/status,
+recommendation, and derived candidate comparison appear in Markdown, HTML, PDF,
+Word, and Excel output.
 
 Decision outputs do not add the workspace's data-handling banner, solution
 classification field, browser-storage language, or authorization or conformance
@@ -256,7 +350,8 @@ disclaimers.
 
 `buildAiPayload` selects only the collections permitted for the chosen lifecycle
 stage and emits stable workspace record IDs for citations. The user sees the exact
-payload before transmission.
+payload before transmission. It selects from the active workspace only; the separate
+Knowledge Base is never searched or transmitted automatically.
 
 The browser sends the approved payload and Supabase access token only to the exact
 `solution-assist` endpoint. The Edge Function must independently enforce origin,

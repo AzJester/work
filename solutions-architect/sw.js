@@ -1,4 +1,4 @@
-const CACHE_NAME = "solution-architect-workbench-v7";
+const CACHE_NAME = "solution-architect-workbench-v8";
 const SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const SHELL = [
   "./export-docx.js",
   "./export-pdf.js",
   "./export-xlsx.js",
+  "./knowledge-base.js",
   "./app.js",
   "./icon.svg",
   "./og-card.png",

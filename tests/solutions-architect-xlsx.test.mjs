@@ -49,6 +49,11 @@ test("native decision workbook is polished, active-solution scoped, formula-free
   workspace.evidence[0].participants = ["PARTICIPANT-MARKER", "Platform integration lead"];
   workspace.evidence[0].missionSegments = ["Layered Defense, Autonomous Warfare & Integrated Fires"];
   workspace.evidence[0].notes = "=HYPERLINK(\"https://invalid.example\",\"FORMULA-INJECTION-MARKER\")";
+  Object.assign(workspace.trades[0], {
+    scopeAndGroundRules: "XLSX-AOA-SCOPE-MARKER",
+    evaluationApproach: "XLSX-AOA-EVALUATION-MARKER",
+    sensitivityAnalysis: "XLSX-AOA-SENSITIVITY-MARKER"
+  });
 
   const other = engine.addBlankSolution(workspace, "OTHER-SOLUTION-SECRET-MARKER");
   workspace = other.workspace;
@@ -70,7 +75,7 @@ test("native decision workbook is polished, active-solution scoped, formula-free
   });
 
   assert.deepEqual(Array.from(workbook.SheetNames), Array.from(exporter.DECISION_WORKBOOK_SHEET_NAMES));
-  assert.equal(workbook.SheetNames.length, 9);
+  assert.equal(workbook.SheetNames.length, 10);
   for (const name of workbook.SheetNames) {
     const sheet = workbook.Sheets[name];
     assert.ok(sheet["!ref"], `${name} must contain a used range`);
@@ -91,6 +96,31 @@ test("native decision workbook is polished, active-solution scoped, formula-free
   assert.match(text, /Publish a quality-tagged track within two seconds of detection/);
   assert.match(text, /Deploys and operates the mission package/);
   assert.match(text, /Cybersecurity and authorization/, "substantive assessment content must not be over-redacted");
+  for (const marker of [
+    "Analysis of Alternatives (AoA)",
+    "Alternative comparison",
+    "XLSX-AOA-SCOPE-MARKER",
+    "XLSX-AOA-EVALUATION-MARKER",
+    "XLSX-AOA-SENSITIVITY-MARKER",
+    "Candidate Alpha mission package",
+    "Candidate Bravo open sensor stack",
+    "Draft interface control description"
+  ]) assert.match(text, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  const decisionsText = Array.from(XLSX.utils.sheet_to_json(workbook.Sheets["Decisions & Risk"], { header: 1, raw: false, defval: "" }))
+    .flatMap(row => Array.from(row).map(value => String(value ?? "")))
+    .join("\n");
+  assert.match(decisionsText, /Representative demonstration delivery path/);
+  assert.doesNotMatch(decisionsText, /Mission package technology selection|Analysis of Alternatives \(AoA\)/, "the AoA must not be duplicated in the generic trade register");
+  assert.ok(workbook.Sheets["Decisions & Risk"]["!cols"][3].wch >= 48, "long recommendations must retain a readable column width");
+  const alternativesText = Array.from(XLSX.utils.sheet_to_json(workbook.Sheets["Analysis of Alternatives"], { header: 1, raw: false, defval: "" }))
+    .flatMap(row => Array.from(row).map(value => String(value ?? "")))
+    .join("\n");
+  assert.match(alternativesText, /Analysis of Alternatives \(AoA\)/);
+  assert.match(alternativesText, /Alternative comparison/);
+  assert.match(alternativesText, /Weighted score/);
+  assert.match(alternativesText, /Assessed/);
+  assert.match(alternativesText, /Evidenced/);
+  assert.ok(workbook.Sheets["Analysis of Alternatives"]["!cols"][2].wch >= 50, "AoA narrative values must use a readable column width");
   assert.match(text, /=HYPERLINK\("https:\/\/invalid\.example"/, "formula-looking authored text must be preserved as text");
   assert.doesNotMatch(text, /OTHER-SOLUTION-(?:SECRET|CONTENT|EVIDENCE)-MARKER/);
   assert.doesNotMatch(text, /Data marking|NO CUI|CLASSIFIED DATA|approved unclassified|non-CUI/i);
@@ -110,6 +140,8 @@ test("native decision workbook is polished, active-solution scoped, formula-free
   const roundTripText = workbookText(XLSX, roundTripped);
   assert.match(roundTripText, /PARTICIPANT-MARKER/);
   assert.match(roundTripText, /CRITERION-DESCRIPTION-MARKER/);
+  assert.match(roundTripText, /XLSX-AOA-SCOPE-MARKER/);
+  assert.match(roundTripText, /Alternative comparison/);
   assert.doesNotMatch(roundTripText, /OTHER-SOLUTION-(?:SECRET|CONTENT|EVIDENCE)-MARKER/);
   assert.doesNotMatch(roundTripText, /approval or authorization determination|browser-local|Data marking/i);
   assert.deepEqual(formulaCells(roundTripped), []);

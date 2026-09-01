@@ -75,11 +75,23 @@ test("native DOCX export creates a complete, styled WordprocessingML package wit
   workspace.evidence[0].missionSegments = [...solution.missionSegments];
   workspace.evidence[0].notes = 'HOSTILE-SENTINEL <script data-x="1">alert & test</script>';
   workspace.outcomes[0].title = "OUTCOME-TRACE-SENTINEL";
+  Object.assign(workspace.trades[0], {
+    scopeAndGroundRules: "DOCX-AOA-SCOPE-SENTINEL",
+    evaluationApproach: "DOCX-AOA-EVALUATION-SENTINEL",
+    sensitivityAnalysis: "DOCX-AOA-SENSITIVITY-SENTINEL"
+  });
 
   const model = buildDecisionPackageDocxModel(workspace, solution.id, { generatedAt });
   assert.equal(model.prepared, "2026-08-31");
   assert.equal(Object.hasOwn(model.solution, "classification"), false);
   assert.equal(model.requirements.find(record => record.id === "req_latency").outcomeNames[0], "OUTCOME-TRACE-SENTINEL");
+  assert.equal(model.trades.length, 1);
+  assert.equal(model.trades[0].title, "Representative demonstration delivery path", "the AoA must not also appear as a generic trade study");
+  assert.equal(model.analysesOfAlternatives.length, 1);
+  assert.equal(model.analysesOfAlternatives[0].baselineName, "Candidate Alpha mission package");
+  assert.deepEqual(model.analysesOfAlternatives[0].evidenceNames, ["Draft interface control description", "Bench throughput observation"]);
+  assert.equal(model.analysesOfAlternatives[0].alternatives.length, 2);
+  assert.equal(typeof model.analysesOfAlternatives[0].alternatives[0].weightedScore, "number");
 
   const bytes = buildDecisionPackageDocxBytes(workspace, solution.id, { generatedAt });
   assert.deepEqual([...bytes.slice(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
@@ -137,9 +149,17 @@ test("native DOCX export creates a complete, styled WordprocessingML package wit
     "PARTICIPANT-SENTINEL",
     solution.missionSegments[0].replace("&", "&amp;"),
     "OUTCOME-TRACE-SENTINEL",
+    "Analysis of Alternatives (AoA)",
+    "DOCX-AOA-SCOPE-SENTINEL",
+    "DOCX-AOA-EVALUATION-SENTINEL",
+    "DOCX-AOA-SENSITIVITY-SENTINEL",
+    "Candidate Alpha mission package",
+    "Candidate Bravo open sensor stack",
+    "Draft interface control description",
     "Technology Readiness Level",
     "Architecture interfaces and exchanges"
   ]) assert.match(document, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(document, />AoA<\/w:t>/);
 
   assert.doesNotMatch(packageText, /DATA-MARKING-SENTINEL/);
   assert.doesNotMatch(packageText, /browser/i);

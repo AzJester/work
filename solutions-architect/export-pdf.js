@@ -1,13 +1,14 @@
 import {
   VIEW_TEMPLATES,
   assessmentResult,
+  buildAnalysisOfAlternativesModels,
   buildDiagramSvg,
   buildReadiness,
   cleanDecisionPackageValue,
   collectObligations,
   formatLocalDate,
   scoped
-} from "./engine.js?v=7";
+} from "./engine.js?v=8";
 
 const LETTER = Object.freeze({ width: 612, height: 792 });
 const MARGIN = 48;
@@ -499,7 +500,8 @@ export async function buildDecisionPackagePdf(workspace, solutionId = workspace.
   const requirements = scoped(workspace, "requirements", solutionId);
   const evidence = scoped(workspace, "evidence", solutionId);
   const candidates = scoped(workspace, "candidates", solutionId);
-  const trades = scoped(workspace, "trades", solutionId);
+  const trades = scoped(workspace, "trades", solutionId).filter(record => record.analysisType !== "Analysis of Alternatives");
+  const alternativesAnalyses = buildAnalysisOfAlternativesModels(workspace, solutionId);
   const views = scoped(workspace, "architectureViews", solutionId);
   const elements = scoped(workspace, "elements", solutionId);
   const connections = scoped(workspace, "connections", solutionId);
@@ -601,6 +603,20 @@ export async function buildDecisionPackagePdf(workspace, solutionId = workspace.
 
   report.section("08", "Trades and decisions", "Evaluated alternatives, recommendations, decision status, rationale, ownership, and supporting evidence.");
   report.drawTable(["Trade study", "Decision question", "Options", "Recommendation", "Status"], trades.map(record => [record.title, record.question, joined(names(record.optionIds, candidatesById, "name"), "None"), record.recommendation, record.status]), { widths: [1.1, 1.5, 1, 1.6, .7], caption: "Trade studies", fontSize: 7.4 });
+  for (const analysis of alternativesAnalyses) {
+    const objectiveHeight = 37 + wrapText(valueText(analysis.question), report.fonts.regular, 9.5, CONTENT_WIDTH - 28).length * 13;
+    report.ensure(34 + (objectiveHeight <= 225 ? objectiveHeight + 8 : 52));
+    report.subheading(`Analysis of Alternatives: ${analysis.title}`);
+    report.drawNarrative("Decision objective", analysis.question);
+    report.drawNarrative("Baseline alternative", analysis.baselineName);
+    report.drawNarrative("Scope and ground rules", analysis.scopeAndGroundRules);
+    report.drawNarrative("Evaluation approach", analysis.evaluationApproach);
+    report.drawNarrative("Sensitivity and uncertainty", analysis.sensitivityAnalysis);
+    report.drawNarrative("Supporting evidence", joined(analysis.evidenceNames, "None linked"));
+    report.drawNarrative("Recommendation", analysis.recommendation);
+    report.drawNarrative("Owner / date / status", [analysis.owner, analysis.date, analysis.status].filter(Boolean).join(" | "));
+    report.drawTable(["Alternative", "Baseline", "Score", "Assessed", "Evidenced", "Readiness", "Status"], analysis.alternatives.map(candidate => [candidate.name, candidate.baseline ? "Yes" : "No", candidate.weightedScore === null ? "Unknown" : `${candidate.weightedScore.toFixed(2)} / 5`, `${Math.round(candidate.assessmentCoverage * 100)}%`, `${Math.round(candidate.evidenceCoverage * 100)}%`, `TRL ${candidate.trl ?? "Unknown"}; MRL ${candidate.mrl ?? "Unknown"}; IRL ${candidate.irl ?? "Unknown"}`, candidate.status]), { widths: [1.2, .55, .7, .65, .65, 1.35, .7], caption: `${analysis.title} alternative comparison`, fontSize: 6.8 });
+  }
   report.drawTable(["Decision", "Status", "Owner / date", "Rationale", "Evidence"], decisions.map(record => [record.title, record.status, [record.owner, record.date].filter(Boolean).join(" | "), record.rationale, joined(names(record.evidenceIds, evidenceById, "title"), "None")]), { widths: [1.2, .7, 1, 1.8, 1.2], caption: "Decision record", fontSize: 7.4 });
 
   report.section("09", "Risk, dependencies, and assumptions", "Conditions that could affect performance, integration, schedule, delivery, or sustainment.");
@@ -620,7 +636,7 @@ export async function buildDecisionPackagePdf(workspace, solutionId = workspace.
   report.subheading("Evidence register");
   report.drawTable(["Evidence", "Type / date", "Source / participants", "Mission segments", "Confidence", "Reference / notes"], evidence.map(record => [record.title, [record.sourceType, record.meetingDate].filter(Boolean).join(" | "), [record.source, joined(record.participants, "")].filter(Boolean).join(" | "), joined(record.missionSegments, "None"), record.confidence, [record.url, record.notes].filter(Boolean).join(" | ")]), { widths: [1.1, .8, 1.35, 1, .65, 1.6], caption: "Source evidence", fontSize: 6.9 });
   report.subheading("Acronym key");
-  report.drawTable(["Acronym", "Meaning"], [["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]], { widths: [.8, 3.6], caption: "Acronyms and abbreviations", fontSize: 8.4 });
+  report.drawTable(["Acronym", "Meaning"], [...(alternativesAnalyses.length ? [["AoA", "Analysis of Alternatives"]] : []), ["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]], { widths: [.8, 3.6], caption: "Acronyms and abbreviations", fontSize: 8.4 });
 
   report.finalizeFooters();
   const bytes = await pdfDoc.save({ useObjectStreams: true });

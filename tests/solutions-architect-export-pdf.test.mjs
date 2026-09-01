@@ -20,7 +20,7 @@ async function extractPdfText(bytes) {
     const content = await page.getTextContent();
     pages.push(content.items.map(item => item.str).join(" "));
   }
-  return { pageCount: document.numPages, text: pages.join("\n") };
+  return { pageCount: document.numPages, pages, text: pages.join("\n") };
 }
 
 test("native PDF export creates a paginated, solution-scoped decision document", async () => {
@@ -28,6 +28,11 @@ test("native PDF export creates a paginated, solution-scoped decision document",
   const originalSolutionId = workspace.activeSolutionId;
   workspace = addBlankSolution(workspace, "SECOND SOLUTION PRIVATE SENTINEL").workspace;
   workspace.activeSolutionId = originalSolutionId;
+  Object.assign(workspace.trades.find(record => record.solutionId === originalSolutionId), {
+    scopeAndGroundRules: "PDF AOA SCOPE MARKER",
+    evaluationApproach: "PDF AOA EVALUATION MARKER",
+    sensitivityAnalysis: "PDF AOA SENSITIVITY MARKER"
+  });
 
   const summary = buildDecisionPackageExportSummary(workspace, originalSolutionId);
   assert.equal(summary.solutionId, originalSolutionId);
@@ -44,7 +49,19 @@ test("native PDF export creates a paginated, solution-scoped decision document",
   assert.match(extracted.text, /SOLUTION DECISION PACKAGE/);
   assert.match(extracted.text, /Technology Assessment/);
   assert.match(extracted.text, /Requirements traceability matrix/);
+  assert.match(extracted.text, /Analysis of Alternatives: Mission package technology selection/);
+  assert.match(extracted.text, /PDF AOA SCOPE MARKER/);
+  assert.match(extracted.text, /PDF AOA EVALUATION MARKER/);
+  assert.match(extracted.text, /PDF AOA SENSITIVITY MARKER/);
+  assert.match(extracted.text, /Candidate Alpha mission package/);
+  assert.match(extracted.text, /Candidate Bravo open sensor stack/);
+  assert.match(extracted.text, /Draft interface control description/);
   assert.match(extracted.text, /Acronym key/);
+  assert.match(extracted.text, /AoA\s+Analysis of Alternatives/);
+  const genericTradeBlock = extracted.text.split("Trade studies")[1]?.split("Analysis of Alternatives:")[0] || "";
+  assert.doesNotMatch(genericTradeBlock, /Mission package technology selection/, "the AoA must not also appear in the generic trade table");
+  const aoaPage = extracted.pages.find(page => page.includes("Analysis of Alternatives: Mission package technology selection"));
+  assert.match(aoaPage || "", /DECISION OBJECTIVE/, "an AoA heading must stay with its first detail block");
   assert.doesNotMatch(extracted.text, /SECOND SOLUTION PRIVATE SENTINEL/);
   assert.doesNotMatch(extracted.text, /browser storage|authorization boundary|DoDAF-conformance determination|data marking/i);
 });

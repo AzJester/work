@@ -206,7 +206,7 @@ test("tablet navigation stays labeled and exposes the current page while Tools r
 
   const navigation = page.locator("#lifecycle-navigation");
   await expect(navigation).toBeVisible();
-  for (const route of ["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]) {
+  for (const route of ["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]) {
     await expect.soft(navigation.locator(`.stage-link[data-route="${route}"] .label`), `${route} should remain labeled at 980px`).toBeVisible();
   }
 
@@ -269,7 +269,7 @@ test("mobile navigation is labeled, viewport-contained, and closes with Escape",
 
   const navigation = page.locator("#lifecycle-navigation");
   await expect(navigation).toBeVisible();
-  for (const label of ["Command view", "Discover", "Shape", "Assess", "Architect", "Prove", "Propose", "Transition", "Decision package"]) {
+  for (const label of ["Command view", "Discover", "Shape", "Assess", "Architect", "Prove", "Propose", "Transition", "Knowledge base", "Decision package"]) {
     await expect(navigation.locator(".stage-link .label", { hasText: label }).first()).toBeVisible();
   }
   await expect(navigation.locator('.stage-link[data-route="discover"]')).toHaveAttribute("aria-current", "page");
