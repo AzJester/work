@@ -8,10 +8,13 @@ import {
   KNOWLEDGE_LIFECYCLE_STATUSES,
   KNOWLEDGE_OFFERING_TYPES,
   MAX_KNOWLEDGE_IMPORT_BYTES,
+  archiveKnowledgeItem,
   createKnowledgeBase,
   createKnowledgeItem,
+  deleteArchivedKnowledgeItem,
   materializeKnowledgeItem,
   refreshCandidateFromKnowledge,
+  restoreKnowledgeItem,
   updateKnowledgeItem,
   validateKnowledgeBase
 } from "../solutions-architect/knowledge-base.js";
@@ -237,4 +240,52 @@ test("catalog revisions refresh copied facts without overwriting solution-specif
   const exhausted = structuredClone(catalog);
   exhausted.items[0].revision = Number.MAX_SAFE_INTEGER;
   assert.throws(() => updateKnowledgeItem(exhausted, exhausted.items[0].id, {}, { generatedAt: updatedAt }), /revision cannot be advanced safely/i);
+});
+
+test("archive, restore, and permanent delete enforce the Knowledge Base lifecycle without changing solution copies", () => {
+  const catalog = createKnowledgeBase({ generatedAt: createdAt });
+  const item = catalog.items[0];
+  const candidate = materializeKnowledgeItem(item, "solution_archive_test", {
+    generatedAt: createdAt,
+    idFactory: () => "candidate_archive_test"
+  });
+  const originalCatalog = structuredClone(catalog);
+  const originalCandidate = structuredClone(candidate);
+
+  const archived = archiveKnowledgeItem(catalog, item.id, { generatedAt: updatedAt });
+  assert.deepEqual(catalog, originalCatalog, "archiving must not mutate the previous catalog value");
+  assert.equal(archived.items[0].lifecycleStatus, "Retired");
+  assert.equal(archived.items[0].revision, item.revision + 1);
+  assert.equal(archived.items[0].updatedAt, updatedAt.toISOString());
+  assert.equal(archived.savedAt, updatedAt.toISOString());
+  assert.equal(validateKnowledgeBase(archived).valid, true);
+  assert.deepEqual(candidate, originalCandidate, "archiving the catalog source must not change an existing solution copy");
+  assert.throws(() => materializeKnowledgeItem(archived.items[0], "solution_archive_test"), /Archived .* cannot be copied/i);
+  assert.throws(() => refreshCandidateFromKnowledge(candidate, archived.items[0]), /Archived .* cannot refresh/i);
+  assert.throws(() => archiveKnowledgeItem(archived, item.id), /already archived/i);
+  assert.throws(() => archiveKnowledgeItem(catalog, "offering_missing"), /not found/i);
+
+  const multilineName = structuredClone(catalog);
+  multilineName.items[0].name = "Offering name\nwith a second line";
+  assert.match(validateKnowledgeBase(multilineName).errors.join(" "), /name must be a single line/i);
+
+  const restoredAt = new Date("2026-09-02T12:15:00.000Z");
+  const restored = restoreKnowledgeItem(archived, item.id, "Emerging", { generatedAt: restoredAt });
+  assert.equal(restored.items[0].lifecycleStatus, "Emerging");
+  assert.equal(restored.items[0].revision, archived.items[0].revision + 1);
+  assert.equal(restored.items[0].updatedAt, restoredAt.toISOString());
+  assert.equal(validateKnowledgeBase(restored).valid, true);
+  assert.deepEqual(archived.items[0], archiveKnowledgeItem(catalog, item.id, { generatedAt: updatedAt }).items[0], "restoring must not mutate the archived catalog value");
+  assert.throws(() => restoreKnowledgeItem(catalog, item.id), /only archived/i);
+  assert.throws(() => restoreKnowledgeItem(archived, item.id, "Retired"), /Current, Emerging, or Legacy/i);
+
+  assert.throws(() => deleteArchivedKnowledgeItem(catalog, item.id), /Archive .* before deleting/i);
+  const deletedAt = new Date("2026-09-03T09:00:00.000Z");
+  const deleted = deleteArchivedKnowledgeItem(archived, item.id, { generatedAt: deletedAt });
+  assert.equal(deleted.items.some(record => record.id === item.id), false);
+  assert.equal(deleted.savedAt, deletedAt.toISOString());
+  assert.equal(validateKnowledgeBase(deleted).valid, true);
+  assert.deepEqual(candidate, originalCandidate, "permanent catalog deletion must leave the independent solution copy intact");
+  assert.equal(candidate.catalogSource.itemId, item.id);
+  assert.throws(() => deleteArchivedKnowledgeItem(archived, "offering_missing"), /not found/i);
 });

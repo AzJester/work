@@ -1,4 +1,4 @@
-import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=12";
+import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=13";
 
 export const KNOWLEDGE_BASE_SCHEMA = "solution-knowledge-base-v1";
 export const KNOWLEDGE_BASE_SCHEMA_VERSION = 1;
@@ -141,6 +141,7 @@ export function validateKnowledgeBase(candidate) {
     seen.add(item.id);
     if (!Number.isSafeInteger(item.revision) || item.revision < 1) errors.push(`${path}.revision must be a positive integer within the safe range.`);
     boundedString(item.name, `${path}.name`, errors, 280, { required: true });
+    if (typeof item.name === "string" && /[\r\n]/.test(item.name)) errors.push(`${path}.name must be a single line.`);
     boundedString(item.offeringType, `${path}.offeringType`, errors, 80);
     if (!KNOWLEDGE_OFFERING_TYPES.includes(item.offeringType)) errors.push(`${path}.offeringType is unsupported.`);
     boundedString(item.provider, `${path}.provider`, errors, 300);
@@ -181,6 +182,7 @@ function snapshotDescription(item) {
 }
 
 export function materializeKnowledgeItem(item, solutionId, { generatedAt = new Date(), idFactory = makeId } = {}) {
+  if (item?.lifecycleStatus === "Retired") throw new Error("Archived Knowledge Base items cannot be copied into a solution.");
   const timestamp = generatedAt instanceof Date ? generatedAt.toISOString() : new Date(generatedAt).toISOString();
   return {
     id: idFactory("candidate"),
@@ -201,6 +203,7 @@ export function materializeKnowledgeItem(item, solutionId, { generatedAt = new D
 }
 
 export function refreshCandidateFromKnowledge(candidate, item, { generatedAt = new Date() } = {}) {
+  if (item?.lifecycleStatus === "Retired") throw new Error("Archived Knowledge Base items cannot refresh a solution copy.");
   const refreshed = materializeKnowledgeItem(item, candidate.solutionId, { generatedAt, idFactory: () => candidate.id });
   return { ...candidate, name: refreshed.name, category: refreshed.category, vendor: refreshed.vendor, description: refreshed.description, readinessBasis: refreshed.readinessBasis, readinessAsOf: refreshed.readinessAsOf, trl: refreshed.trl, mrl: refreshed.mrl, irl: refreshed.irl, catalogSource: refreshed.catalogSource };
 }
@@ -214,5 +217,39 @@ export function updateKnowledgeItem(knowledgeBase, itemId, values, { generatedAt
   if (!Number.isSafeInteger(existing.revision) || existing.revision < 1 || existing.revision >= Number.MAX_SAFE_INTEGER) throw new Error("Knowledge Base revision cannot be advanced safely.");
   next.items[index] = createKnowledgeItem({ ...existing, ...values, id: existing.id, revision: existing.revision + 1, createdAt: existing.createdAt, updatedAt: timestamp }, generatedAt);
   next.savedAt = timestamp;
+  return next;
+}
+
+export function archiveKnowledgeItem(knowledgeBase, itemId, { changeSummary = "Archived from active solution use.", generatedAt = new Date() } = {}) {
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item) throw new Error("Knowledge Base item was not found.");
+  if (item.lifecycleStatus === "Retired") throw new Error("Knowledge Base item is already archived.");
+  return updateKnowledgeItem(knowledgeBase, itemId, {
+    lifecycleStatus: "Retired",
+    changeSummary: String(changeSummary || "").trim() || "Archived from active solution use."
+  }, { generatedAt });
+}
+
+export function restoreKnowledgeItem(knowledgeBase, itemId, lifecycleStatus = "Current", { changeSummary = "Restored to active solution use.", generatedAt = new Date() } = {}) {
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item) throw new Error("Knowledge Base item was not found.");
+  if (item.lifecycleStatus !== "Retired") throw new Error("Only archived Knowledge Base items can be restored.");
+  if (!["Current", "Emerging", "Legacy"].includes(lifecycleStatus)) throw new Error("Restored lifecycle status must be Current, Emerging, or Legacy.");
+  return updateKnowledgeItem(knowledgeBase, itemId, {
+    lifecycleStatus,
+    changeSummary: String(changeSummary || "").trim() || "Restored to active solution use."
+  }, { generatedAt });
+}
+
+export function deleteArchivedKnowledgeItem(knowledgeBase, itemId, { generatedAt = new Date() } = {}) {
+  const timestamp = (generatedAt instanceof Date ? generatedAt : new Date(generatedAt)).toISOString();
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item) throw new Error("Knowledge Base item was not found.");
+  if (item.lifecycleStatus !== "Retired") throw new Error("Archive the Knowledge Base item before deleting it permanently.");
+  const next = structuredClone(knowledgeBase);
+  next.items = next.items.filter(record => record.id !== itemId);
+  next.savedAt = timestamp;
+  const result = validateKnowledgeBase(next);
+  if (!result.valid) throw new Error(result.errors[0]);
   return next;
 }

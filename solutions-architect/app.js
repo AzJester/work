@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=12";
+} from "./engine.js?v=13";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,23 +37,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=12";
+} from "./capture.js?v=13";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=12";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=12";
+} from "./ingestion.js?v=13";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=13";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=12";
+} from "./export-docx.js?v=13";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=12";
+} from "./export-xlsx.js?v=13";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
   KNOWLEDGE_LIFECYCLE_STATUSES,
@@ -61,11 +61,14 @@ import {
   MAX_KNOWLEDGE_IMPORT_BYTES,
   createKnowledgeBase,
   createKnowledgeItem,
+  archiveKnowledgeItem,
+  restoreKnowledgeItem,
+  deleteArchivedKnowledgeItem,
   materializeKnowledgeItem,
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=12";
+} from "./knowledge-base.js?v=13";
 import {
   KNOWLEDGE_IMPORT_COLUMNS,
   KNOWLEDGE_IMPORT_FILE_ACCEPT,
@@ -74,7 +77,7 @@ import {
   normalizeKnowledgeImportRows,
   parseKnowledgeCsv,
   parseKnowledgeWorkbook
-} from "./knowledge-import.js?v=12";
+} from "./knowledge-import.js?v=13";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const DECISION_EXPORT_ACTIONS = new Set(["export-markdown", "export-html", "export-docx", "export-xlsx", "export-pdf"]);
@@ -125,7 +128,7 @@ let ingestionGeneration = 0;
 let ingestionProcessing = false;
 let ingestionAbortController = null;
 let meetingSession = null;
-let knowledgeFilters = { search: "", type: "", status: "", segment: "" };
+let knowledgeFilters = { search: "", type: "", status: "active", segment: "" };
 let knowledgeImportSession = null;
 let knowledgeImportGeneration = 0;
 
@@ -743,18 +746,23 @@ function catalogCandidateNotice(candidate) {
   const source = candidate.catalogSource;
   if (!source) return "";
   const catalogItem = knowledgeBase.items.find(item => item.id === source.itemId);
-  const updateAvailable = catalogItem && catalogItem.revision > source.revision;
-  const message = updateAvailable
+  const archived = catalogItem?.lifecycleStatus === "Retired";
+  const updateAvailable = catalogItem && !archived && catalogItem.revision > source.revision;
+  const message = archived
+    ? `Knowledge Base copy · Source offering is archived`
+    : updateAvailable
     ? `Update available · Solution copy revision ${source.revision} · Catalog revision ${catalogItem.revision}`
     : catalogItem
       ? `Knowledge Base copy · Catalog revision ${source.revision}`
       : `Knowledge Base copy · Source item is not present in this browser`;
-  const detail = updateAvailable
+  const detail = archived
+    ? "This independent solution copy remains usable, but the catalog offering cannot be copied or refreshed until it is restored."
+    : updateAvailable
     ? "Review the newer offering facts in the Knowledge Base. Refresh is explicit and preserves this solution’s status, scores, rationales, and evidence links."
     : catalogItem
       ? "This candidate is an independent solution copy. Manage offering facts and future revisions in the Knowledge Base."
       : "This portable candidate remains usable; import the separate Knowledge Base backup to restore catalog management here.";
-  return `<div class="candidate-provenance ${updateAvailable ? "update-available" : ""}"><div><strong>${h(message)}</strong><p>${h(detail)}</p></div><button class="button secondary" type="button" data-route-button="knowledge-base">${updateAvailable ? "Review update" : "Open Knowledge Base"}</button></div>`;
+  return `<div class="candidate-provenance ${updateAvailable ? "update-available" : ""} ${archived ? "source-archived" : ""}"><div><strong>${h(message)}</strong><p>${h(detail)}</p></div><button class="button secondary" type="button" data-route-button="knowledge-base">${updateAvailable ? "Review update" : "Open Knowledge Base"}</button></div>`;
 }
 
 function renderAssess(solution) {
@@ -968,26 +976,59 @@ function addRecord(collection) {
   if (collection === "candidates") selectedCandidateId = created.id;
 }
 
+function knowledgeLifecycleLabel(status) {
+  return status === "Retired" ? "Archived" : status;
+}
+
+function knowledgeStatusMatches(item, statusFilter = knowledgeFilters.status) {
+  if (statusFilter === "active") return item.lifecycleStatus !== "Retired";
+  if (statusFilter === "archived") return item.lifecycleStatus === "Retired";
+  if (!statusFilter || statusFilter === "all") return true;
+  return item.lifecycleStatus === statusFilter;
+}
+
 function knowledgeItemMatches(item, filters = knowledgeFilters) {
   const query = filters.search.trim().toLowerCase();
   const searchable = [item.name, item.provider, item.version, item.summary, item.capabilities?.join(" "), item.tags?.join(" "), item.missionSegments?.join(" ")].join(" ").toLowerCase();
   return (!query || searchable.includes(query))
     && (!filters.type || item.offeringType === filters.type)
-    && (!filters.status || item.lifecycleStatus === filters.status)
+    && knowledgeStatusMatches(item, filters.status)
     && (!filters.segment || item.missionSegments?.includes(filters.segment));
 }
 
 function knowledgeCard(item, solution) {
   const existing = scoped(workspace, "candidates", solution.id).find(candidate => candidate.catalogSource?.itemId === item.id);
-  const stale = existing && Number(existing.catalogSource?.revision || 0) < item.revision;
+  const archived = item.lifecycleStatus === "Retired";
+  const stale = !archived && existing && Number(existing.catalogSource?.revision || 0) < item.revision;
   const sourceUrl = safeHttpUrl(item.sourceUrl);
-  const primaryAction = existing
+  const primaryAction = archived
+    ? existing
+      ? `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open assessment</button>`
+      : ""
+    : existing
     ? stale
       ? `<button class="button primary" type="button" data-knowledge-refresh="${h(item.id)}">Refresh solution copy</button>`
       : `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open assessment</button>`
-    : `<button class="button primary" type="button" data-knowledge-use="${h(item.id)}" ${item.lifecycleStatus === "Retired" ? "disabled" : ""}>Use in active solution</button>`;
-  const statusNote = stale ? `<p class="knowledge-update-note"><strong>Update available</strong> Solution copy uses revision ${h(existing.catalogSource.revision)}; catalog is revision ${h(item.revision)}.</p>` : existing ? `<p class="knowledge-copy-note">Revision ${h(item.revision)} is already copied into ${h(solution.name)}.</p>` : "";
-  return `<article class="knowledge-card" data-knowledge-card data-knowledge-search="${h([item.name, item.provider, item.version, item.summary, ...(item.capabilities || []), ...(item.tags || []), ...(item.missionSegments || [])].join(" ").toLowerCase())}" data-knowledge-type="${h(item.offeringType)}" data-knowledge-status="${h(item.lifecycleStatus)}" data-knowledge-segments="${h((item.missionSegments || []).join("|"))}" ${knowledgeItemMatches(item) ? "" : "hidden"}><div class="knowledge-card-head"><div class="knowledge-badges"><span class="knowledge-type">${h(item.offeringType)}</span><span class="knowledge-status status-${h(item.lifecycleStatus.toLowerCase())}">${h(item.lifecycleStatus)}</span></div><span class="knowledge-revision">Revision ${h(item.revision)}</span></div><h3>${h(item.name)}</h3><p class="knowledge-provider">${h([item.provider, item.version].filter(Boolean).join(" · ") || "Provider and version not recorded")}</p><p class="knowledge-summary">${h(item.summary || "Summary not recorded.")}</p>${item.capabilities.length ? `<div class="knowledge-tags" aria-label="Capabilities">${item.capabilities.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}${item.missionSegments.length ? `<div class="knowledge-segments" aria-label="Company mission segments">${item.missionSegments.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}<dl class="knowledge-meta"><div><dt>Readiness levels</dt><dd>TRL ${h(item.trl ?? "—")} · MRL ${h(item.mrl ?? "—")} · IRL ${h(item.irl ?? "—")}</dd></div><div><dt>Last reviewed</dt><dd>${h(item.reviewedAt || "Not recorded")}</dd></div><div><dt>Last change</dt><dd>${h(item.changeSummary || "No change summary")}</dd></div></dl><details class="knowledge-details"><summary>Offering details</summary><div><h4>Deployment and environment</h4><p>${h(item.deploymentAndEnvironment || "Not recorded")}</p><h4>Interfaces</h4><p>${h(item.interfaces || "Not recorded")}</p><h4>Integration considerations</h4><p>${h(item.integrationConsiderations || "Not recorded")}</p><h4>Cyber and safety considerations</h4><p>${h(item.cyberSafetyConsiderations || "Not recorded")}</p><h4>MOSA and data rights</h4><p>${h(item.mosaDataRights || "Not recorded")}</p><h4>Source</h4><p>${h(item.sourceTitle || "Not recorded")}${sourceUrl ? ` · <a href="${h(sourceUrl)}" target="_blank" rel="noopener noreferrer">Open reference</a>` : ""}</p></div></details>${statusNote}<footer class="knowledge-card-actions"><button class="button secondary" type="button" data-knowledge-edit="${h(item.id)}">Edit</button>${primaryAction}<button class="icon-button" type="button" data-knowledge-delete="${h(item.id)}" aria-label="Delete ${h(item.name)} from Knowledge Base">×</button></footer></article>`;
+    : `<button class="button primary" type="button" data-knowledge-use="${h(item.id)}">Use in active solution</button>`;
+  const statusNote = archived
+    ? `<p class="knowledge-archive-note"><strong>Archived</strong> Hidden from active results and unavailable for new solution use or refresh.${existing ? ` The independent copy in ${h(solution.name)} remains available.` : ""}</p>`
+    : stale
+      ? `<p class="knowledge-update-note"><strong>Update available</strong> Solution copy uses revision ${h(existing.catalogSource.revision)}; catalog is revision ${h(item.revision)}.</p>`
+      : existing
+        ? `<p class="knowledge-copy-note">Revision ${h(item.revision)} is already copied into ${h(solution.name)}.</p>`
+        : "";
+  const managementActions = archived
+    ? `<button class="button primary" type="button" data-knowledge-restore="${h(item.id)}">Restore offering</button><button class="button danger" type="button" data-knowledge-delete="${h(item.id)}">Delete permanently</button>`
+    : `<button class="button secondary" type="button" data-knowledge-archive="${h(item.id)}">Archive offering</button>`;
+  return `<article class="knowledge-card ${archived ? "is-archived" : ""}" data-knowledge-card data-knowledge-search="${h([item.name, item.provider, item.version, item.summary, ...(item.capabilities || []), ...(item.tags || []), ...(item.missionSegments || [])].join(" ").toLowerCase())}" data-knowledge-type="${h(item.offeringType)}" data-knowledge-status="${h(item.lifecycleStatus)}" data-knowledge-archived="${archived}" data-knowledge-segments="${h((item.missionSegments || []).join("|"))}" ${knowledgeItemMatches(item) ? "" : "hidden"}>
+    <div class="knowledge-card-head"><div class="knowledge-badges"><span class="knowledge-type">${h(item.offeringType)}</span><span class="knowledge-status status-${h(item.lifecycleStatus.toLowerCase())}">${h(knowledgeLifecycleLabel(item.lifecycleStatus))}</span></div><span class="knowledge-revision">Revision ${h(item.revision)}</span></div>
+    <h3>${h(item.name)}</h3><p class="knowledge-provider">${h([item.provider, item.version].filter(Boolean).join(" · ") || "Provider and version not recorded")}</p><p class="knowledge-summary">${h(item.summary || "Summary not recorded.")}</p>
+    ${item.capabilities.length ? `<div class="knowledge-tags" aria-label="Capabilities">${item.capabilities.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}
+    ${item.missionSegments.length ? `<div class="knowledge-segments" aria-label="Company mission segments">${item.missionSegments.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}
+    <dl class="knowledge-meta"><div><dt>Readiness levels</dt><dd>TRL ${h(item.trl ?? "—")} · MRL ${h(item.mrl ?? "—")} · IRL ${h(item.irl ?? "—")}</dd></div><div><dt>Last reviewed</dt><dd>${h(item.reviewedAt || "Not recorded")}</dd></div><div><dt>Last change</dt><dd>${h(item.changeSummary || "No change summary")}</dd></div></dl>
+    <details class="knowledge-details"><summary>Offering details</summary><div><h4>Deployment and environment</h4><p>${h(item.deploymentAndEnvironment || "Not recorded")}</p><h4>Interfaces</h4><p>${h(item.interfaces || "Not recorded")}</p><h4>Integration considerations</h4><p>${h(item.integrationConsiderations || "Not recorded")}</p><h4>Cyber and safety considerations</h4><p>${h(item.cyberSafetyConsiderations || "Not recorded")}</p><h4>MOSA and data rights</h4><p>${h(item.mosaDataRights || "Not recorded")}</p><h4>Source</h4><p>${h(item.sourceTitle || "Not recorded")}${sourceUrl ? ` · <a href="${h(sourceUrl)}" target="_blank" rel="noopener noreferrer">Open reference</a>` : ""}</p></div></details>
+    ${statusNote}<footer class="knowledge-card-actions"><button class="button secondary" type="button" data-knowledge-edit="${h(item.id)}">Edit</button>${primaryAction}${managementActions}</footer>
+  </article>`;
 }
 
 function renderKnowledgeBase(solution) {
@@ -1002,11 +1043,11 @@ function renderKnowledgeBase(solution) {
     <div class="knowledge-filter-grid">
       <label class="knowledge-search"><span>Search</span><input type="search" value="${h(knowledgeFilters.search)}" data-knowledge-filter="search" placeholder="Name, provider, capability, tag, or version" ${filterAttributes}></label>
       <label><span>Offering type</span><select data-knowledge-filter="type" ${filterAttributes}><option value="">All types</option>${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, knowledgeFilters.type)).join("")}</select></label>
-      <label><span>Lifecycle status</span><select data-knowledge-filter="status" ${filterAttributes}><option value="">All statuses</option>${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, value, knowledgeFilters.status)).join("")}</select></label>
+      <label><span>Availability</span><select data-knowledge-filter="status" ${filterAttributes}>${option("active", "Active offerings", knowledgeFilters.status)}${["Current", "Emerging", "Legacy"].map(value => option(value, value, knowledgeFilters.status)).join("")}${option("archived", "Archived offerings", knowledgeFilters.status)}${option("all", "All offerings", knowledgeFilters.status)}</select></label>
       <label><span>Mission segment</span><select data-knowledge-filter="segment" ${filterAttributes}><option value="">All mission segments</option>${MISSION_SEGMENTS.map(record => option(record.name, record.name, knowledgeFilters.segment)).join("")}</select></label>
     </div>
     <div class="knowledge-results-meta"><strong data-knowledge-count>${visible} of ${knowledgeBase.items.length} items</strong><span class="visually-hidden" id="knowledge-filter-status" data-knowledge-filter-status role="status" aria-live="polite" aria-atomic="true">${h(resultAnnouncement)}</span><button class="text-button" type="button" data-knowledge-clear aria-controls="knowledge-results-grid">Clear filters</button></div>
-  </section><p class="knowledge-boundary-note"><strong>Copy-on-use:</strong> catalog updates never silently alter solution assessments, scores, decisions, or evidence. Refresh a solution copy explicitly when you want the latest offering facts.</p><div class="knowledge-grid" id="knowledge-results-grid" data-knowledge-grid>${knowledgeBase.items.map(item => knowledgeCard(item, solution)).join("")}</div><div class="panel knowledge-empty" data-knowledge-empty ${visible ? "hidden" : ""}>${emptyState("No Knowledge Base items match", "Clear the filters or add a reusable solution offering.")}</div>`;
+  </section><p class="knowledge-boundary-note"><strong>Copy-on-use:</strong> catalog updates never silently alter solution assessments, scores, decisions, or evidence. Archived offerings are hidden by default and cannot be copied or refreshed until restored; existing solution copies remain independent.</p><div class="knowledge-grid" id="knowledge-results-grid" data-knowledge-grid>${knowledgeBase.items.map(item => knowledgeCard(item, solution)).join("")}</div><div class="panel knowledge-empty" data-knowledge-empty ${visible ? "hidden" : ""}>${emptyState("No Knowledge Base items match", "Reset the filters or add a reusable solution offering.")}</div>`;
 }
 
 function applyKnowledgeFilters() {
@@ -1015,7 +1056,7 @@ function applyKnowledgeFilters() {
     const query = knowledgeFilters.search.trim().toLowerCase();
     const matches = (!query || card.dataset.knowledgeSearch.includes(query))
       && (!knowledgeFilters.type || card.dataset.knowledgeType === knowledgeFilters.type)
-      && (!knowledgeFilters.status || card.dataset.knowledgeStatus === knowledgeFilters.status)
+      && knowledgeStatusMatches({ lifecycleStatus: card.dataset.knowledgeStatus }, knowledgeFilters.status)
       && (!knowledgeFilters.segment || card.dataset.knowledgeSegments.split("|").includes(knowledgeFilters.segment));
     card.hidden = !matches;
     if (matches) visible += 1;
@@ -1033,7 +1074,27 @@ function showKnowledgeEditor(itemId = "") {
   const existing = knowledgeBase.items.find(item => item.id === itemId);
   const item = existing || createKnowledgeItem({ name: "" });
   if (!existing) item.name = "";
-  openModal(existing ? "Update solution offering" : "Add solution offering", `<form id="knowledge-item-form" data-knowledge-id="${h(existing?.id || "")}"><p class="modal-intro">Catalog facts are reusable reference material. Saving an update creates revision ${h(existing ? existing.revision + 1 : 1)}; existing solution copies remain unchanged until explicitly refreshed.</p><div class="knowledge-editor-grid"><label class="span-2"><span>Name</span><input name="name" value="${h(item.name)}" required maxlength="280" autofocus></label><label><span>Offering type</span><select name="offeringType">${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, item.offeringType)).join("")}</select></label><label><span>Lifecycle status</span><select name="lifecycleStatus">${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, value, item.lifecycleStatus)).join("")}</select></label><label><span>Provider / owner</span><input name="provider" value="${h(item.provider)}" maxlength="300"></label><label><span>Version / release</span><input name="version" value="${h(item.version)}" maxlength="160"></label><label class="span-2"><span>Summary</span><textarea name="summary" rows="4" maxlength="5000" data-auto-grow>${h(item.summary)}</textarea></label><fieldset class="knowledge-segment-picker span-2"><legend>Applicable company mission segments</legend><div>${MISSION_SEGMENTS.map(record => `<label><input type="checkbox" name="missionSegments" value="${h(record.name)}" ${item.missionSegments.includes(record.name) ? "checked" : ""}><span>${h(record.name)}</span></label>`).join("")}</div></fieldset><label class="span-2"><span>Capabilities — one per line</span><textarea name="capabilities" rows="4" maxlength="12000" data-auto-grow>${h(item.capabilities.join("\n"))}</textarea></label><label class="span-2"><span>Tags — comma separated</span><input name="tags" value="${h(item.tags.join(", "))}" maxlength="6000"></label><label><span>Last reviewed</span><input type="date" name="reviewedAt" value="${h(item.reviewedAt)}"></label><label><span>Change summary</span><input name="changeSummary" value="${h(item.changeSummary)}" maxlength="3000" placeholder="What changed in this revision?"></label></div><details class="knowledge-more" open><summary>Architecture, readiness, and source details</summary><div class="knowledge-editor-grid"><label class="span-2"><span>Deployment and environment</span><textarea name="deploymentAndEnvironment" rows="3" maxlength="5000" data-auto-grow>${h(item.deploymentAndEnvironment)}</textarea></label><label class="span-2"><span>Interfaces</span><textarea name="interfaces" rows="3" maxlength="5000" data-auto-grow>${h(item.interfaces)}</textarea></label><label class="span-2"><span>Integration considerations</span><textarea name="integrationConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.integrationConsiderations)}</textarea></label><label class="span-2"><span>Cyber and safety considerations</span><textarea name="cyberSafetyConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.cyberSafetyConsiderations)}</textarea></label><label class="span-2"><span>MOSA and data rights</span><textarea name="mosaDataRights" rows="3" maxlength="5000" data-auto-grow>${h(item.mosaDataRights)}</textarea></label><label><span>TRL</span><input type="number" name="trl" min="1" max="9" value="${h(item.trl ?? "")}"></label><label><span>MRL</span><input type="number" name="mrl" min="1" max="10" value="${h(item.mrl ?? "")}"></label><label><span>IRL</span><input type="number" name="irl" min="0" max="9" value="${h(item.irl ?? "")}"></label><label><span>Readiness as-of</span><input type="date" name="readinessAsOf" value="${h(item.readinessAsOf)}"></label><label class="span-2"><span>Readiness basis</span><textarea name="readinessBasis" rows="3" maxlength="5000" data-auto-grow>${h(item.readinessBasis)}</textarea></label><label><span>Source title</span><input name="sourceTitle" value="${h(item.sourceTitle)}" maxlength="500"></label><label><span>Source URL</span><input type="url" name="sourceUrl" value="${h(item.sourceUrl)}" maxlength="2000" placeholder="https://"></label><label class="span-2"><span>Source notes</span><textarea name="sourceNotes" rows="3" maxlength="5000" data-auto-grow>${h(item.sourceNotes)}</textarea></label></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">${existing ? "Save new revision" : "Add to Knowledge Base"}</button></div></form>`, { wide: true });
+  openModal(existing ? "Update solution offering" : "Add solution offering", `<form id="knowledge-item-form" data-knowledge-id="${h(existing?.id || "")}"><p class="modal-intro">Catalog facts are reusable reference material. Saving an update creates revision ${h(existing ? existing.revision + 1 : 1)}; existing solution copies remain unchanged until explicitly refreshed.</p><div class="knowledge-editor-grid"><label class="span-2"><span>Name</span><input name="name" value="${h(item.name)}" required maxlength="280" autofocus></label><label><span>Offering type</span><select name="offeringType">${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, item.offeringType)).join("")}</select></label><label><span>Lifecycle status</span><select name="lifecycleStatus">${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, knowledgeLifecycleLabel(value), item.lifecycleStatus)).join("")}</select></label><label><span>Provider / owner</span><input name="provider" value="${h(item.provider)}" maxlength="300"></label><label><span>Version / release</span><input name="version" value="${h(item.version)}" maxlength="160"></label><label class="span-2"><span>Summary</span><textarea name="summary" rows="4" maxlength="5000" data-auto-grow>${h(item.summary)}</textarea></label><fieldset class="knowledge-segment-picker span-2"><legend>Applicable company mission segments</legend><div>${MISSION_SEGMENTS.map(record => `<label><input type="checkbox" name="missionSegments" value="${h(record.name)}" ${item.missionSegments.includes(record.name) ? "checked" : ""}><span>${h(record.name)}</span></label>`).join("")}</div></fieldset><label class="span-2"><span>Capabilities — one per line</span><textarea name="capabilities" rows="4" maxlength="12000" data-auto-grow>${h(item.capabilities.join("\n"))}</textarea></label><label class="span-2"><span>Tags — comma separated</span><input name="tags" value="${h(item.tags.join(", "))}" maxlength="6000"></label><label><span>Last reviewed</span><input type="date" name="reviewedAt" value="${h(item.reviewedAt)}"></label><label><span>Change summary</span><input name="changeSummary" value="${h(item.changeSummary)}" maxlength="3000" placeholder="What changed in this revision?"></label></div><details class="knowledge-more" open><summary>Architecture, readiness, and source details</summary><div class="knowledge-editor-grid"><label class="span-2"><span>Deployment and environment</span><textarea name="deploymentAndEnvironment" rows="3" maxlength="5000" data-auto-grow>${h(item.deploymentAndEnvironment)}</textarea></label><label class="span-2"><span>Interfaces</span><textarea name="interfaces" rows="3" maxlength="5000" data-auto-grow>${h(item.interfaces)}</textarea></label><label class="span-2"><span>Integration considerations</span><textarea name="integrationConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.integrationConsiderations)}</textarea></label><label class="span-2"><span>Cyber and safety considerations</span><textarea name="cyberSafetyConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.cyberSafetyConsiderations)}</textarea></label><label class="span-2"><span>MOSA and data rights</span><textarea name="mosaDataRights" rows="3" maxlength="5000" data-auto-grow>${h(item.mosaDataRights)}</textarea></label><label><span>TRL</span><input type="number" name="trl" min="1" max="9" value="${h(item.trl ?? "")}"></label><label><span>MRL</span><input type="number" name="mrl" min="1" max="10" value="${h(item.mrl ?? "")}"></label><label><span>IRL</span><input type="number" name="irl" min="0" max="9" value="${h(item.irl ?? "")}"></label><label><span>Readiness as-of</span><input type="date" name="readinessAsOf" value="${h(item.readinessAsOf)}"></label><label class="span-2"><span>Readiness basis</span><textarea name="readinessBasis" rows="3" maxlength="5000" data-auto-grow>${h(item.readinessBasis)}</textarea></label><label><span>Source title</span><input name="sourceTitle" value="${h(item.sourceTitle)}" maxlength="500"></label><label><span>Source URL</span><input type="url" name="sourceUrl" value="${h(item.sourceUrl)}" maxlength="2000" placeholder="https://"></label><label class="span-2"><span>Source notes</span><textarea name="sourceNotes" rows="3" maxlength="5000" data-auto-grow>${h(item.sourceNotes)}</textarea></label></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">${existing ? "Save new revision" : "Add to Knowledge Base"}</button></div></form>`, { wide: true });
+  const lifecycleSelect = document.querySelector('#knowledge-item-form [name="lifecycleStatus"]');
+  if (lifecycleSelect) {
+    const archivedOption = lifecycleSelect.querySelector('option[value="Retired"]');
+    const hint = document.createElement("small");
+    hint.id = "knowledge-lifecycle-hint";
+    lifecycleSelect.setAttribute("aria-describedby", hint.id);
+    if (item.lifecycleStatus === "Retired") {
+      lifecycleSelect.disabled = true;
+      hint.textContent = "Use Restore offering to return this item to active use.";
+      const hidden = document.createElement("input");
+      hidden.type = "hidden";
+      hidden.name = "lifecycleStatus";
+      hidden.value = "Retired";
+      lifecycleSelect.after(hidden, hint);
+    } else {
+      archivedOption?.remove();
+      hint.textContent = "Use Archive offering when this item should no longer be available.";
+      lifecycleSelect.after(hint);
+    }
+  }
 }
 
 function knowledgeFormValues(data) {
@@ -1041,6 +1102,28 @@ function knowledgeFormValues(data) {
   const tags = String(data.get("tags") || "").split(/[\n,]/).map(item => item.trim()).filter(Boolean);
   const nullableNumber = name => String(data.get(name) || "") === "" ? null : Number(data.get(name));
   return { name: String(data.get("name") || "").trim(), offeringType: String(data.get("offeringType") || "Integrated solution"), provider: String(data.get("provider") || "").trim(), version: String(data.get("version") || "").trim(), lifecycleStatus: String(data.get("lifecycleStatus") || "Current"), summary: String(data.get("summary") || "").trim(), capabilities: lines(data.get("capabilities")), missionSegments: data.getAll("missionSegments").map(String), deploymentAndEnvironment: String(data.get("deploymentAndEnvironment") || "").trim(), interfaces: String(data.get("interfaces") || "").trim(), integrationConsiderations: String(data.get("integrationConsiderations") || "").trim(), cyberSafetyConsiderations: String(data.get("cyberSafetyConsiderations") || "").trim(), mosaDataRights: String(data.get("mosaDataRights") || "").trim(), trl: nullableNumber("trl"), mrl: nullableNumber("mrl"), irl: nullableNumber("irl"), readinessBasis: String(data.get("readinessBasis") || "").trim(), readinessAsOf: String(data.get("readinessAsOf") || ""), sourceTitle: String(data.get("sourceTitle") || "").trim(), sourceUrl: String(data.get("sourceUrl") || "").trim(), sourceNotes: String(data.get("sourceNotes") || "").trim(), tags, reviewedAt: String(data.get("reviewedAt") || ""), changeSummary: String(data.get("changeSummary") || "").trim() };
+}
+
+function showKnowledgeArchiveDialog(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before archiving Knowledge Base items.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item || item.lifecycleStatus === "Retired") return;
+  openModal("Archive solution offering", `<form id="knowledge-archive-form" data-knowledge-id="${h(item.id)}"><p class="modal-intro">Archive <strong>${h(item.name)}</strong>? It will be hidden from active results and cannot be copied into or refreshed within a solution until restored.</p><div class="guide-note"><strong>Existing solution copies stay intact</strong><p>Any independent Technology Assessment candidate already created from this offering remains available in its solution.</p></div>${field("Archive note", `Archived ${item.name} from active solution use.`, `name="changeSummary" maxlength="3000" autofocus`, { multiline: true, rows: 3 })}<div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button danger" type="submit">Archive offering</button></div></form>`);
+}
+
+function showKnowledgeRestoreDialog(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before restoring Knowledge Base items.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item || item.lifecycleStatus !== "Retired") return;
+  openModal("Restore solution offering", `<form id="knowledge-restore-form" data-knowledge-id="${h(item.id)}"><p class="modal-intro">Restore <strong>${h(item.name)}</strong> to the active catalog so solution architects can use it again.</p>${selectField("Restore as", `name="lifecycleStatus" autofocus`, ["Current", "Emerging", "Legacy"].map(value => option(value, value, "Current")).join(""))}${field("Restore note", `Restored ${item.name} to active solution use.`, `name="changeSummary" maxlength="3000"`, { multiline: true, rows: 3 })}<div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">Restore offering</button></div></form>`);
+}
+
+function showKnowledgeDeleteDialog(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before deleting Knowledge Base items.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item || item.lifecycleStatus !== "Retired") return;
+  const copies = workspace.candidates.filter(candidate => candidate.catalogSource?.itemId === item.id).length;
+  openModal("Delete solution offering permanently", `<form id="knowledge-delete-form" data-knowledge-id="${h(item.id)}" data-knowledge-name="${h(item.name)}"><p class="modal-intro">Permanently delete <strong>${h(item.name)}</strong> from this browser's Knowledge Base?</p><div class="guide-note warning"><strong>This cannot be undone without a JSON backup</strong><p>${copies ? `${copies} existing solution cop${copies === 1 ? "y" : "ies"} will remain independent and usable, but catalog management and refresh will no longer be available.` : "No existing solution copies were found."}</p></div><label><span>Type the offering name to confirm</span><input name="confirmation" data-knowledge-delete-confirm-input data-knowledge-name="${h(item.name)}" autocomplete="off" required autofocus></label><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button danger" type="submit" data-knowledge-delete-confirm disabled>Delete permanently</button></div></form>`);
 }
 
 function useKnowledgeItem(itemId) {
@@ -1060,7 +1143,7 @@ function refreshKnowledgeCandidate(itemId) {
   if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before refreshing a solution copy.", "error"); return; }
   const item = knowledgeBase.items.find(record => record.id === itemId);
   const candidate = scoped(workspace, "candidates").find(record => record.catalogSource?.itemId === itemId);
-  if (!item || !candidate) return;
+  if (!item || !candidate || item.lifecycleStatus === "Retired") return;
   if (commit(next => { const index = next.candidates.findIndex(record => record.id === candidate.id); next.candidates[index] = refreshCandidateFromKnowledge(next.candidates[index], item); }, { snapshot: `Before refreshing ${candidate.name} from Knowledge Base` })) toast(`${item.name} was refreshed. Assessment scores and solution-specific status were preserved.`, "ok");
 }
 
@@ -2037,11 +2120,12 @@ document.addEventListener("click", event => {
   const knowledgeUse = event.target.closest("[data-knowledge-use]")?.dataset.knowledgeUse; if (knowledgeUse) useKnowledgeItem(knowledgeUse);
   const knowledgeRefresh = event.target.closest("[data-knowledge-refresh]")?.dataset.knowledgeRefresh; if (knowledgeRefresh) refreshKnowledgeCandidate(knowledgeRefresh);
   const knowledgeOpen = event.target.closest("[data-knowledge-open]")?.dataset.knowledgeOpen; if (knowledgeOpen) { selectedCandidateId = knowledgeOpen; location.hash = "assess"; }
+  const knowledgeArchive = event.target.closest("[data-knowledge-archive]")?.dataset.knowledgeArchive;
+  if (knowledgeArchive) showKnowledgeArchiveDialog(knowledgeArchive);
+  const knowledgeRestore = event.target.closest("[data-knowledge-restore]")?.dataset.knowledgeRestore;
+  if (knowledgeRestore) showKnowledgeRestoreDialog(knowledgeRestore);
   const knowledgeDelete = event.target.closest("[data-knowledge-delete]")?.dataset.knowledgeDelete;
-  if (knowledgeDelete) {
-    const item = knowledgeBase.items.find(record => record.id === knowledgeDelete);
-    if (item && confirm(`Delete “${item.name}” from the Knowledge Base? Existing solution copies will remain unchanged.`)) commitKnowledgeBase(next => { next.items = next.items.filter(record => record.id !== knowledgeDelete); });
-  }
+  if (knowledgeDelete) showKnowledgeDeleteDialog(knowledgeDelete);
   if (event.target.closest("[data-knowledge-template]")) showKnowledgeTemplateDialog();
   if (event.target.closest("[data-knowledge-backup]")) showKnowledgeBackupDialog();
   if (event.target.closest("[data-knowledge-download-csv]")) download("solution-knowledge-base-import-template.csv", buildKnowledgeCsvTemplate(), "text/csv;charset=utf-8");
@@ -2049,7 +2133,7 @@ document.addEventListener("click", event => {
   if (event.target.closest("[data-knowledge-list-apply]")) applyKnowledgeListImport();
   if (event.target.closest("[data-knowledge-export]")) exportKnowledgeBaseJson();
   if (event.target.closest("[data-knowledge-import]")) document.querySelector("#knowledge-import")?.click();
-  if (event.target.closest("[data-knowledge-clear]")) { knowledgeFilters = { search: "", type: "", status: "", segment: "" }; render(); }
+  if (event.target.closest("[data-knowledge-clear]")) { knowledgeFilters = { search: "", type: "", status: "active", segment: "" }; render(); }
   if (action === "toggle-nav") setSidebarOpen(!document.querySelector("#sidebar")?.classList.contains("open"));
   if (action === "new-view") newViewDialog();
   if (action === "add-element") addElementDialog();
@@ -2108,12 +2192,70 @@ document.addEventListener("submit", event => {
   event.preventDefault();
   const form = event.target;
   const data = new FormData(form);
+  if (form.id === "knowledge-archive-form") {
+    try {
+      const item = knowledgeBase.items.find(record => record.id === form.dataset.knowledgeId);
+      if (!item) throw new Error("The offering no longer exists.");
+      const next = archiveKnowledgeItem(knowledgeBase, item.id, {
+        changeSummary: String(data.get("changeSummary") || "").trim()
+      });
+      if (!persistKnowledgeBase(next)) return;
+      closeModal();
+      render();
+      document.querySelector('[data-knowledge-filter="status"]')?.focus();
+      toast(`${item.name} was archived. Existing solution copies were not changed.`, "ok");
+    } catch (error) {
+      toast(`Offering was not archived: ${error.message}`, "error");
+    }
+    return;
+  }
+  if (form.id === "knowledge-restore-form") {
+    try {
+      const item = knowledgeBase.items.find(record => record.id === form.dataset.knowledgeId);
+      if (!item) throw new Error("The offering no longer exists.");
+      const lifecycleStatus = String(data.get("lifecycleStatus") || "Current");
+      const next = restoreKnowledgeItem(knowledgeBase, item.id, lifecycleStatus, {
+        changeSummary: String(data.get("changeSummary") || "").trim()
+      });
+      if (!persistKnowledgeBase(next)) return;
+      closeModal();
+      render();
+      document.querySelector('[data-knowledge-filter="status"]')?.focus();
+      toast(`${item.name} was restored as ${lifecycleStatus}.`, "ok");
+    } catch (error) {
+      toast(`Offering was not restored: ${error.message}`, "error");
+    }
+    return;
+  }
+  if (form.id === "knowledge-delete-form") {
+    try {
+      const item = knowledgeBase.items.find(record => record.id === form.dataset.knowledgeId);
+      if (!item) throw new Error("The offering no longer exists.");
+      const confirmation = String(data.get("confirmation") || "");
+      if (confirmation !== item.name) throw new Error("Type the offering name exactly as shown.");
+      const next = deleteArchivedKnowledgeItem(knowledgeBase, item.id);
+      if (!persistKnowledgeBase(next)) return;
+      closeModal();
+      render();
+      document.querySelector('[data-knowledge-filter="status"]')?.focus();
+      toast(`${item.name} was permanently deleted from the Knowledge Base. Existing solution copies remain usable.`, "ok");
+    } catch (error) {
+      toast(`Offering was not deleted: ${error.message}`, "error");
+    }
+    return;
+  }
   if (form.id === "knowledge-item-form") {
     const values = knowledgeFormValues(data);
     try {
       const itemId = form.dataset.knowledgeId || "";
       let next;
-      if (itemId) next = updateKnowledgeItem(knowledgeBase, itemId, values);
+      if (itemId) {
+        const existing = knowledgeBase.items.find(record => record.id === itemId);
+        if (!existing) throw new Error("The offering no longer exists.");
+        if (existing.lifecycleStatus === "Retired" && values.lifecycleStatus !== "Retired") throw new Error("Use Restore offering to return an archived item to active use.");
+        if (existing.lifecycleStatus !== "Retired" && values.lifecycleStatus === "Retired") throw new Error("Use Archive offering to remove an item from active use.");
+        next = updateKnowledgeItem(knowledgeBase, itemId, values);
+      }
       else {
         next = structuredClone(knowledgeBase);
         next.items.push(createKnowledgeItem(values));
@@ -2194,6 +2336,12 @@ document.addEventListener("input", event => {
   const node = event.target;
   const solution = activeSolution();
   if (node.matches("textarea[data-auto-grow]")) fitAutoGrowTextarea(node);
+  if (node.matches("[data-knowledge-delete-confirm-input]")) {
+    const form = node.closest("#knowledge-delete-form");
+    const button = form?.querySelector("[data-knowledge-delete-confirm]");
+    if (button) button.disabled = node.value !== form.dataset.knowledgeName;
+    return;
+  }
   if (node.matches('[data-knowledge-filter="search"]')) { knowledgeFilters.search = node.value; applyKnowledgeFilters(); return; }
   if (node.matches("[data-meeting-field]") && meetingSession) {
     const meetingField = node.dataset.meetingField;
@@ -2393,7 +2541,7 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=12", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=13", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }

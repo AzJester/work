@@ -14,6 +14,7 @@ traceable solution, and produce a decision package.
 - [Open permitted local files](#open-local-files-for-ingestion)
 - [Use the readable work-area layout](#use-the-readable-work-area-layout)
 - [Build and reuse the Knowledge Base](#build-and-reuse-the-knowledge-base)
+- [Archive, restore, or permanently delete an offering](#archive-restore-or-permanently-delete-an-offering)
 - [Import Knowledge Base offerings from Excel or CSV](#import-a-list-from-excel-or-csv)
 - [Work the iterative solution lifecycle](#work-the-solution-lifecycle)
 - [Run an optional Analysis of Alternatives](#run-an-optional-analysis-of-alternatives)
@@ -376,9 +377,29 @@ it increases every time an item is edited, even when the provider's product vers
 did not change. A revision number records change order, not approval, configuration
 control, or technical maturity.
 
-Use **Current**, **Emerging**, **Legacy**, and **Retired** as catalog lifecycle labels.
-A retired item remains available as historical reference but cannot be newly copied
-into a solution. Retiring or deleting it never deletes an existing solution copy.
+Use **Current**, **Emerging**, **Legacy**, and **Retired** as catalog lifecycle values.
+The interface labels Retired offerings as **Archived**. The Knowledge Base opens with
+**Active offerings** selected, so Current, Emerging, and Legacy offerings are shown
+while archived offerings stay out of normal selection. Use the **Availability** filter
+to show **Archived offerings** only or **All offerings** together.
+
+### Archive, restore, or permanently delete an offering
+
+1. Select **Archive offering** to remove an obsolete offering from active results.
+   Archiving creates a new revision; the offering cannot be copied into a solution or
+   used to refresh a solution copy while it is archived.
+2. To return it to use, choose **Archived offerings** in the Availability filter,
+   select **Restore offering**, and restore it as Current, Emerging, or Legacy.
+   Restoring also creates a new revision.
+3. To remove it from the catalog entirely, archive it first and then select
+   **Delete permanently**. Type the offering's exact name when prompted. Permanent
+   deletion cannot be undone unless you restore a Knowledge Base JSON backup.
+
+Archiving, restoring, or permanently deleting a catalog item never deletes an
+existing solution copy. That candidate remains independent and usable in its
+solution. An archived copy cannot receive catalog refreshes until the offering is
+restored; after permanent deletion, its catalog management and refresh link is gone.
+Download a Knowledge Base JSON backup before permanently deleting an offering.
 
 ### Import a list from Excel or CSV
 
@@ -450,8 +471,8 @@ when the changed reusable facts apply to that solution.
 ### Copy an offering into a solution
 
 1. Confirm the correct active solution in the left-side selector.
-2. Search or filter the Knowledge Base by offering type, lifecycle status, or company
-   mission segment.
+2. Search or filter the Knowledge Base by offering type, availability, or company
+   mission segment. Active offerings are shown by default.
 3. Review the source, review date, readiness basis, interfaces, and integration
    limitations. Catalog content is reusable input, not proof that the offering fits
    this mission.
@@ -468,8 +489,8 @@ than creating a duplicate.
 
 ### Refresh an existing solution copy
 
-When an item has a newer catalog revision, its card shows **Update available** and
-**Refresh solution copy**.
+When an active item has a newer catalog revision, its card shows **Update available**
+and **Refresh solution copy**. Archived offerings cannot refresh solution copies.
 
 1. Review the catalog change summary and the candidate's current solution-specific
    assessment.
@@ -494,6 +515,8 @@ risks before refreshing.
   and merges its validated additions or explicit updates into the catalog.
 - Download a catalog JSON backup before a large spreadsheet Apply when you may need
   to reverse the change.
+- Download a catalog JSON backup before permanent deletion; it is the only recovery
+  path after the exact-name confirmation is accepted.
 - A workspace JSON backup, recovery point, solution duplicate, capture-inbox export,
   decision package, and AI payload do not include the Knowledge Base.
 

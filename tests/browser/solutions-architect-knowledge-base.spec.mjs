@@ -336,6 +336,135 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
 });
 
+test("Knowledge Base archive and restore are confirmed, persisted, and unavailable offerings stay out of active work", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
+  await gotoFresh(page);
+
+  const statusFilter = page.locator('[data-knowledge-filter="status"]');
+  const card = page.locator("[data-knowledge-card]");
+  await expect(statusFilter).toHaveValue("active");
+  await expect(card).toBeVisible();
+  await expect(card.getByRole("button", { name: "Archive offering", exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Delete permanently", exact: true })).toHaveCount(0);
+
+  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+  const before = await page.evaluate(([workspaceKey, catalogKey]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    return {
+      item: catalog.items[0],
+      candidate: workspace.candidates.find(record => record.catalogSource?.itemId === catalog.items[0].id)
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY]);
+  expect(before.candidate).toBeTruthy();
+
+  await card.getByRole("button", { name: "Archive offering", exact: true }).click();
+  let dialog = page.getByRole("dialog", { name: "Archive solution offering" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Existing solution copies");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect((await page.evaluate(key => JSON.parse(localStorage.getItem(key)).items[0].lifecycleStatus, KNOWLEDGE_BASE_KEY))).toBe("Current");
+
+  await card.getByRole("button", { name: "Archive offering", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Archive solution offering" });
+  await dialog.getByRole("button", { name: "Archive offering", exact: true }).click();
+  await expect(card).toBeHidden();
+  await expect(statusFilter).toBeFocused();
+  await expect(page.locator("[data-knowledge-count]")).toContainText("0 of 1");
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator('[data-knowledge-filter="status"]')).toHaveValue("active");
+  await expect(page.locator("[data-knowledge-card]")).toBeHidden();
+  await page.locator('[data-knowledge-filter="status"]').selectOption("archived");
+  const archivedCard = page.locator("[data-knowledge-card]");
+  await expect(archivedCard).toBeVisible();
+  await expect(archivedCard).toContainText("Archived");
+  await expect(archivedCard.getByRole("button", { name: "Restore offering", exact: true })).toBeVisible();
+  await expect(archivedCard.getByRole("button", { name: "Delete permanently", exact: true })).toBeVisible();
+  await expect(archivedCard.getByRole("button", { name: "Use in active solution", exact: true })).toHaveCount(0);
+  await expect(archivedCard.getByRole("button", { name: "Refresh solution copy", exact: true })).toHaveCount(0);
+
+  await archivedCard.getByRole("button", { name: "Restore offering", exact: true }).click();
+  dialog = page.getByRole("dialog", { name: "Restore solution offering" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Restore as").selectOption("Emerging");
+  await dialog.getByRole("button", { name: "Restore offering", exact: true }).click();
+  await expect(archivedCard).toBeHidden();
+  await expect(page.locator('[data-knowledge-filter="status"]')).toBeFocused();
+  await page.locator('[data-knowledge-filter="status"]').selectOption("active");
+  await expect(page.locator("[data-knowledge-card]")).toBeVisible();
+
+  const after = await page.evaluate(([workspaceKey, catalogKey, itemId, candidateId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    return {
+      item: catalog.items.find(record => record.id === itemId),
+      candidate: workspace.candidates.find(record => record.id === candidateId)
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY, before.item.id, before.candidate.id]);
+  expect(after.item.lifecycleStatus).toBe("Emerging");
+  expect(after.item.revision).toBe(before.item.revision + 2);
+  expect(after.candidate).toEqual(before.candidate);
+});
+
+test("permanent offering deletion requires archival and the exact offering name while preserving solution copies", async ({ page }) => {
+  await gotoFresh(page);
+  let card = page.locator("[data-knowledge-card]");
+  const offeringName = (await card.getByRole("heading", { level: 3 }).textContent()).trim();
+  await expect(card.getByRole("button", { name: "Delete permanently", exact: true })).toHaveCount(0);
+
+  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+  const ids = await page.evaluate(([workspaceKey, catalogKey]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    const itemId = catalog.items[0].id;
+    return {
+      itemId,
+      candidateId: workspace.candidates.find(record => record.catalogSource?.itemId === itemId).id
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY]);
+
+  await card.getByRole("button", { name: "Archive offering", exact: true }).click();
+  await page.getByRole("dialog", { name: "Archive solution offering" }).getByRole("button", { name: "Archive offering", exact: true }).click();
+  await page.locator('[data-knowledge-filter="status"]').selectOption("archived");
+  card = page.locator("[data-knowledge-card]");
+  await expect(card).toBeVisible();
+  await expect(card.getByRole("button", { name: "Use in active solution", exact: true })).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "Refresh solution copy", exact: true })).toHaveCount(0);
+
+  await card.getByRole("button", { name: "Delete permanently", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete solution offering permanently" });
+  const confirmation = dialog.getByLabel("Type the offering name to confirm");
+  const deleteButton = dialog.getByRole("button", { name: "Delete permanently", exact: true });
+  await expect(dialog).toContainText(/existing solution cop/i);
+  await expect(deleteButton).toBeDisabled();
+  await confirmation.fill(`${offeringName} `);
+  await expect(deleteButton).toBeDisabled();
+  await confirmation.fill(offeringName);
+  await expect(deleteButton).toBeEnabled();
+  await deleteButton.click();
+  await expect(page.locator("[data-knowledge-card]")).toHaveCount(0);
+  await expect(page.locator('[data-knowledge-filter="status"]')).toBeFocused();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+
+  const persisted = await page.evaluate(([workspaceKey, catalogKey, itemId, candidateId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    return {
+      catalogHasItem: catalog.items.some(record => record.id === itemId),
+      candidate: workspace.candidates.find(record => record.id === candidateId)
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY, ids.itemId, ids.candidateId]);
+  expect(persisted.catalogHasItem).toBe(false);
+  expect(persisted.candidate.catalogSource.itemId).toBe(ids.itemId);
+
+  await openRoute(page, "assess");
+  await expect(page.locator(".candidate-provenance")).toContainText("Source item is not present in this browser");
+});
+
 test("an unreadable saved catalog is preserved until a valid backup is explicitly imported", async ({ page }) => {
   await gotoFresh(page);
   const validBackup = await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY);

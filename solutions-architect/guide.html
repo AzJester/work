@@ -11,8 +11,8 @@
   <title>Solution Architect Workbench User Guide</title>
   <link rel="canonical" href="https://azjester.github.io/work/solutions-architect/guide.html">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <script src="theme-init.js?v=12"></script>
-  <link rel="stylesheet" href="styles.css?v=12">
+  <script src="theme-init.js?v=13"></script>
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body class="guide-document">
   <a class="skip-link" href="#guide-content">Skip to guide</a>
@@ -42,6 +42,7 @@ traceable solution, and produce a decision package.</p>
 <li><a href="#open-local-files-for-ingestion">Open permitted local files</a></li>
 <li><a href="#use-the-readable-work-area-layout">Use the readable work-area layout</a></li>
 <li><a href="#build-and-reuse-the-knowledge-base">Build and reuse the Knowledge Base</a></li>
+<li><a href="#archive-restore-or-permanently-delete-an-offering">Archive, restore, or permanently delete an offering</a></li>
 <li><a href="#import-a-list-from-excel-or-csv">Import Knowledge Base offerings from Excel or CSV</a></li>
 <li><a href="#work-the-solution-lifecycle">Work the iterative solution lifecycle</a></li>
 <li><a href="#run-an-optional-analysis-of-alternatives">Run an optional Analysis of Alternatives</a></li>
@@ -457,9 +458,28 @@ maintainer. The Knowledge Base <strong>Revision</strong> is the workbench's inte
 it increases every time an item is edited, even when the provider's product version
 did not change. A revision number records change order, not approval, configuration
 control, or technical maturity.</p>
-<p>Use <strong>Current</strong>, <strong>Emerging</strong>, <strong>Legacy</strong>, and <strong>Retired</strong> as catalog lifecycle labels.
-A retired item remains available as historical reference but cannot be newly copied
-into a solution. Retiring or deleting it never deletes an existing solution copy.</p>
+<p>Use <strong>Current</strong>, <strong>Emerging</strong>, <strong>Legacy</strong>, and <strong>Retired</strong> as catalog lifecycle values.
+The interface labels Retired offerings as <strong>Archived</strong>. The Knowledge Base opens with
+<strong>Active offerings</strong> selected, so Current, Emerging, and Legacy offerings are shown
+while archived offerings stay out of normal selection. Use the <strong>Availability</strong> filter
+to show <strong>Archived offerings</strong> only or <strong>All offerings</strong> together.</p>
+<h3 id="archive-restore-or-permanently-delete-an-offering">Archive, restore, or permanently delete an offering</h3>
+<ol>
+<li>Select <strong>Archive offering</strong> to remove an obsolete offering from active results.
+Archiving creates a new revision; the offering cannot be copied into a solution or
+used to refresh a solution copy while it is archived.</li>
+<li>To return it to use, choose <strong>Archived offerings</strong> in the Availability filter,
+select <strong>Restore offering</strong>, and restore it as Current, Emerging, or Legacy.
+Restoring also creates a new revision.</li>
+<li>To remove it from the catalog entirely, archive it first and then select
+<strong>Delete permanently</strong>. Type the offering's exact name when prompted. Permanent
+deletion cannot be undone unless you restore a Knowledge Base JSON backup.</li>
+</ol>
+<p>Archiving, restoring, or permanently deleting a catalog item never deletes an
+existing solution copy. That candidate remains independent and usable in its
+solution. An archived copy cannot receive catalog refreshes until the offering is
+restored; after permanent deletion, its catalog management and refresh link is gone.
+Download a Knowledge Base JSON backup before permanently deleting an offering.</p>
 <h3 id="import-a-list-from-excel-or-csv">Import a list from Excel or CSV</h3>
 <p>Use the Knowledge Base <strong>Templates</strong> control before preparing a large list. The
 <a href="./assets/solution-knowledge-base-import-template.xlsx" download>Excel import template</a> is also available directly. Microsoft
@@ -524,8 +544,8 @@ when the changed reusable facts apply to that solution.</p>
 <h3 id="copy-an-offering-into-a-solution">Copy an offering into a solution</h3>
 <ol>
 <li>Confirm the correct active solution in the left-side selector.</li>
-<li>Search or filter the Knowledge Base by offering type, lifecycle status, or company
-mission segment.</li>
+<li>Search or filter the Knowledge Base by offering type, availability, or company
+mission segment. Active offerings are shown by default.</li>
 <li>Review the source, review date, readiness basis, interfaces, and integration
 limitations. Catalog content is reusable input, not proof that the offering fits
 this mission.</li>
@@ -540,8 +560,8 @@ candidate or any assessment in another solution. If the same catalog item is alr
 present in the active solution, the control opens the existing assessment rather
 than creating a duplicate.</p>
 <h3 id="refresh-an-existing-solution-copy">Refresh an existing solution copy</h3>
-<p>When an item has a newer catalog revision, its card shows <strong>Update available</strong> and
-<strong>Refresh solution copy</strong>.</p>
+<p>When an active item has a newer catalog revision, its card shows <strong>Update available</strong>
+and <strong>Refresh solution copy</strong>. Archived offerings cannot refresh solution copies.</p>
 <ol>
 <li>Review the catalog change summary and the candidate's current solution-specific
 assessment.</li>
@@ -565,6 +585,8 @@ replaces the current catalog; it does not merge items.</li>
 and merges its validated additions or explicit updates into the catalog.</li>
 <li>Download a catalog JSON backup before a large spreadsheet Apply when you may need
 to reverse the change.</li>
+<li>Download a catalog JSON backup before permanent deletion; it is the only recovery
+path after the exact-name confirmation is accepted.</li>
 <li>A workspace JSON backup, recovery point, solution duplicate, capture-inbox export,
 decision package, and AI payload do not include the Knowledge Base.</li>
 </ul>
@@ -992,6 +1014,6 @@ Local recovery points and capture inboxes cannot survive cleared site data.</li>
 
   </main>
   <footer class="guide-footer"><a href="./">Return to the workbench</a><span>Use separate downloaded workspace and catalog JSON backups for durable recovery.</span></footer>
-  <script src="guide.js?v=12" type="module"></script>
+  <script src="guide.js?v=13" type="module"></script>
 </body>
 </html>
