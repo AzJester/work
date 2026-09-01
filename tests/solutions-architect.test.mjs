@@ -299,7 +299,16 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
   const solution = workspace.solutions[0];
   solution.name = "Mission <script>alert(1)</script> [test]";
   solution.classification = `<img src=x onerror="alert(1)">`;
+  solution.description = "Executive summary marker. Browser storage and GitHub Pages are not an authorization boundary.";
   workspace.evidence[0].url = "javascript:alert(1)";
+  workspace.evidence[0].participants = ["Participant marker"];
+  workspace.evidence[0].missionSegments = ["Evidence mission segment marker"];
+  workspace.candidates[0].description = "Candidate description marker";
+  workspace.candidates[0].readinessBasis = "Legacy readiness basis; they are not an approval or authorization determination.";
+  workspace.criteria[0].description = "Criterion definition marker";
+  workspace.elements[0].description = "Architecture element description marker";
+  workspace.outcomes[0].linkedRequirementIds = [workspace.requirements[0].id];
+  workspace.assumptions[0].status = "Invalidated";
 
   const markdown = engine.buildDecisionPackageMarkdown(workspace, solution.id);
   for (const heading of [
@@ -310,8 +319,15 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
     "Technology Assessment",
     "Trade studies",
     "Architecture views",
+    "Interface register",
+    "Solution and proposal approach",
+    "Stakeholders",
+    "Measures",
+    "Assumptions",
+    "Reviews",
     "Coverage and evidence gaps",
-    "Source evidence"
+    "Source evidence",
+    "Acronym key"
   ]) {
     assert.match(markdown, new RegExp(`## ${heading}`, "i"));
   }
@@ -323,10 +339,46 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
   assert.match(html, /^<!doctype html>/i);
   assert.doesNotMatch(html, /<script\b|<img\b/i);
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-  assert.match(html, /NO CUI \/ CLASSIFIED DATA/);
-  assert.match(html, /Trade studies/);
-  assert.match(html, /Mission package technology selection[^\n]+Candidate Alpha mission package; Candidate Bravo open sensor stack/);
-  assert.match(html, /Establish the sensor-to-edge boundary[^\n]+Draft interface control description/);
+  for (const output of [markdown, html]) {
+    assert.doesNotMatch(output, /data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
+    assert.doesNotMatch(output, /onerror=/i, "the solution classification field must not flow into a decision package");
+  }
+  assert.match(html, /<article class="decision-document">/);
+  assert.match(html, /<header class="decision-hero"/);
+  assert.match(html, /<section class="doc-section" id="requirements">/);
+  assert.match(html, /<figure class="architecture-figure">/);
+  assert.match(html, /<table>/);
+  assert.match(html, /@page\s*\{\s*size:\s*Letter portrait/i);
+  assert.match(html, /Technology Readiness Level/);
+  assert.match(html, /Architecture interfaces and exchanges/);
+  assert.doesNotMatch(html, /<pre\b/i);
+  assert.doesNotMatch(html, /role="button"|tabindex=/i, "standalone diagrams must not expose inert editor controls");
+  assert.match(html, /max-height:\s*6\.15in/i);
+  assert.match(html, /status status-negative">Invalidated</);
+  assert.match(html, /Trades and decisions/);
+  assert.match(html, /Mission package technology selection/);
+  assert.match(html, /Candidate Alpha mission package/);
+  assert.match(html, /Candidate Bravo open sensor stack/);
+  assert.match(html, /Establish the sensor-to-edge boundary/);
+  assert.match(html, /Draft interface control description/);
+  for (const marker of [
+    "Executive summary marker",
+    "Participant marker",
+    "Evidence mission segment marker",
+    "Candidate description marker",
+    "Criterion definition marker",
+    "Architecture element description marker"
+  ]) {
+    assert.match(markdown, new RegExp(marker));
+    assert.match(html, new RegExp(marker));
+  }
+  assert.match(html, /Legacy readiness basis/);
+});
+
+test("local report dates follow the user's calendar day instead of UTC rollover", () => {
+  const localEvening = new Date(2026, 7, 31, 23, 45, 0);
+  assert.equal(engine.formatLocalDate(localEvening), "2026-08-31");
+  assert.equal(engine.formatLocalDate("not-a-date"), "");
 });
 
 test("recovery snapshots are bounded, non-nesting, and validated before restore", () => {

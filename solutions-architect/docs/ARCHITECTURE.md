@@ -221,13 +221,23 @@ diagrams—the workbench does not claim conformance.
 ## Decision-package pipeline
 
 Markdown generation reads only records scoped to the selected solution and assembles
-the selected company mission segments, mission brief, customer signals,
-traceability, assessments, architecture
-inventory, trades, decisions, risks, dependencies, win themes, roadmap, transition,
-coverage indicators, and evidence gaps. Standalone HTML escapes the Markdown and embeds locally
-generated SVG diagrams. **Print / Save PDF** opens this HTML in a separate browser view
-and requests the browser print dialog; the user can invoke Print manually if the
-dialog does not appear. JavaScript does not create or store a PDF binary.
+an editable narrative. The standalone HTML path renders those committed records
+independently as semantic HTML: an executive cover, section navigation, mission and
+customer context, requirement cards, assessment tables, proposal narrative,
+architecture figures and interface register, decisions, governance, transition,
+evidence, obligations, and an acronym key. It embeds locally generated SVG diagrams,
+bundles all report styles, uses no external resources or scripts, and resolves record
+relationships to readable names instead of exposing raw IDs.
+
+**Print / Save PDF** opens the same structured HTML and requests the print dialog.
+Print CSS forces a light Letter-size layout with a cover page, repeated table headers,
+and controlled section and diagram page breaks. The standalone HTML retains the
+light or dark theme active when it was exported. JavaScript does not create or store
+a PDF binary; the browser's print system performs Save as PDF.
+
+Decision outputs do not add the workspace's data-handling banner, solution
+classification field, browser-storage language, or authorization or conformance
+disclaimers.
 
 ## AI request boundary
 

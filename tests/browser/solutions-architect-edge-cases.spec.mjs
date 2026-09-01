@@ -243,7 +243,13 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
   await page.getByRole("button", { name: "Standalone HTML", exact: true }).click();
   const html = (await readDownload(await htmlPromise)).toString("utf8");
   expect(html).toMatch(/^<!doctype html>/i);
-  expect(html).toContain("NO CUI / CLASSIFIED DATA");
+  expect(html).toContain('<article class="decision-document">');
+  expect(html).toContain('<header class="decision-hero"');
+  expect(html).toContain('<section class="doc-section" id="requirements">');
+  expect(html).toContain("Architecture interfaces and exchanges");
+  expect(html).toContain("Technology Readiness Level");
+  expect(html).not.toMatch(/<pre\b/i);
+  expect(html).not.toMatch(/data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
   expect(html).toContain("<svg");
 
   await page.context().addInitScript(() => {
@@ -256,9 +262,11 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
   await page.getByRole("button", { name: "Print / Save PDF", exact: true }).click();
   const printPage = await popupPromise;
   await printPage.waitForLoadState("domcontentloaded");
-  await expect(printPage.locator(".marking")).toContainText("NO CUI / CLASSIFIED DATA");
-  await expect.poll(() => printPage.locator("body").evaluate(node => getComputedStyle(node).maxWidth)).toBe("980px");
-  await expect.poll(() => printPage.locator(".marking").evaluate(node => getComputedStyle(node).fontWeight)).toBe("700");
+  await expect(printPage.locator(".decision-hero")).toBeVisible();
+  await expect(printPage.getByRole("heading", { name: "Executive overview", exact: true })).toBeVisible();
+  await expect(printPage.locator(".architecture-figure")).toHaveCount(3);
+  await expect(printPage.locator("body")).not.toContainText(/data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
+  await expect.poll(() => printPage.locator("style").textContent()).toContain("size: Letter portrait");
   await expect.poll(() => printPage.evaluate(() => globalThis.__printCalled === true)).toBe(true);
   await printPage.close();
 });
@@ -283,11 +291,62 @@ test("narrow touch layout, reduced motion, and every lifecycle route avoid page 
   await context.close();
 });
 
+test("requirements use readable cards with auto-growing text and wrapping relationship controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await gotoFresh(page, "shape");
+
+  const card = page.locator(".requirement-card").first();
+  const statement = card.locator('textarea[data-record-field="title"]');
+  const acceptance = card.locator('textarea[data-record-field="acceptanceMethod"]');
+  await expect(card).toBeVisible();
+  const selectedSource = await card.locator('.requirement-source select option:checked').textContent();
+  await expect(card.locator(".selected-source-preview")).toContainText(selectedSource.trim());
+
+  const beforeHeight = await acceptance.evaluate(node => node.clientHeight);
+  await acceptance.fill([
+    "Demonstrate the complete representative mission thread.",
+    "Verify the controlled interface under nominal transport.",
+    "Repeat the run under degraded transport.",
+    "Record latency, data loss, recovery time, and operator outcome.",
+    "Pass when every stated threshold is met without manual reconfiguration."
+  ].join("\n"));
+  await expect.poll(() => acceptance.evaluate(node => node.clientHeight)).toBeGreaterThan(beforeHeight);
+  const textMetrics = await acceptance.evaluate(node => ({
+    clientHeight: node.clientHeight,
+    scrollHeight: node.scrollHeight,
+    resize: getComputedStyle(node).resize,
+  }));
+  expect(textMetrics.scrollHeight).toBeLessThanOrEqual(textMetrics.clientHeight + 2);
+  expect(textMetrics.resize).toBe("none");
+  await expect(statement).toHaveAttribute("aria-label", /Requirement 1:/);
+
+  const architecture = card.locator(".relationship-field").nth(1);
+  await expect(architecture).toHaveAttribute("aria-label", /Architecture trace for .+/i);
+  await architecture.locator("summary").click();
+  const option = architecture.locator("[data-requirement-element]:not(:checked)").first();
+  const optionLabel = await option.getAttribute("data-relationship-label");
+  const optionId = await option.getAttribute("value");
+  await option.check();
+  await expect(architecture.locator("[data-relationship-selection]")).toContainText(optionLabel);
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const persisted = page.locator(".requirement-card").first();
+  await expect(persisted.locator(`[data-requirement-element][value="${optionId}"]`)).toBeChecked();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileMetrics = await persisted.evaluate(node => ({
+    cardOverflow: node.scrollWidth - node.clientWidth,
+    pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  }));
+  expect(mobileMetrics.cardOverflow).toBeLessThanOrEqual(1);
+  expect(mobileMetrics.pageOverflow).toBeLessThanOrEqual(1);
+});
+
 test("mobile editable tables stack into labeled cards instead of requiring a wide horizontal pan", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
   for (const { route, tableSelector, reveal } of [
-    { route: "shape", tableSelector: ".table-panel table" },
     { route: "assess", tableSelector: ".score-table" },
     { route: "architect", tableSelector: ".accessible-model .editable-table", reveal: ".accessible-model" },
     { route: "prove", tableSelector: ".governance-section .editable-table" },

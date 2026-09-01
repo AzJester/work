@@ -364,7 +364,7 @@ function seedSyntheticSolution(workspace) {
       trl: 7,
       mrl: 5,
       irl: 5,
-      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence; they are not an approval or authorization determination.",
+      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence.",
       readinessAsOf: "2026-08-31",
       status: "Shortlist",
       scores: [
@@ -392,7 +392,7 @@ function seedSyntheticSolution(workspace) {
       trl: 6,
       mrl: 4,
       irl: 6,
-      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence; they are not an approval or authorization determination.",
+      readinessBasis: "Candidate-level summary values reflect the least-mature essential technology, manufacturing path, and integration point supported by the current synthetic evidence.",
       readinessAsOf: "2026-08-31",
       status: "Shortlist",
       scores: [
@@ -979,7 +979,7 @@ function elementColor(type) {
   })[type] || "#8c9cab";
 }
 
-export function buildDiagramSvg(workspace, viewId, { standalone = false } = {}) {
+export function buildDiagramSvg(workspace, viewId, { standalone = false, interactive = true } = {}) {
   const view = workspace.architectureViews.find(record => record.id === viewId);
   if (!view) return "";
   const idSuffix = String(view.id || viewId).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 128) || "view";
@@ -1007,15 +1007,33 @@ export function buildDiagramSvg(workspace, viewId, { standalone = false } = {}) 
     const color = elementColor(element.type);
     const label = escapeHtml(element.name).slice(0, 80);
     const type = escapeHtml(element.type).slice(0, 40);
-    return `<g data-element-id="${escapeHtml(element.id)}" tabindex="0" role="button" aria-label="${label}, ${type}" transform="translate(${element.x} ${element.y})"><rect width="${element.width}" height="${element.height}" rx="10" fill="#162230" stroke="${color}" stroke-width="2" filter="url(#${shadowId})"/><rect width="5" height="${element.height}" rx="3" fill="${color}"/><text x="16" y="25" fill="${color}" font-size="10" font-weight="700" letter-spacing="1">${type.toUpperCase()}</text><text x="16" y="52" fill="#e7edf3" font-size="14" font-weight="700">${label}</text></g>`;
+    const interaction = interactive ? ` tabindex="0" role="button" aria-label="${label}, ${type}"` : "";
+    return `<g data-element-id="${escapeHtml(element.id)}"${interaction} transform="translate(${element.x} ${element.y})"><rect width="${element.width}" height="${element.height}" rx="10" fill="#162230" stroke="${color}" stroke-width="2" filter="url(#${shadowId})"/><rect width="5" height="${element.height}" rx="3" fill="${color}"/><text x="16" y="25" fill="${color}" font-size="10" font-weight="700" letter-spacing="1">${type.toUpperCase()}</text><text x="16" y="52" fill="#e7edf3" font-size="14" font-weight="700">${label}</text></g>`;
   }).join("");
   const content = `${defs}<rect width="100%" height="100%" fill="#0f1822"/><g>${lineMarkup}${elementMarkup}</g>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view.width} ${view.height}" width="${view.width}" height="${view.height}" role="img" aria-labelledby="${titleId} ${descriptionId}"><title id="${titleId}">${escapeHtml(view.name)}</title><desc id="${descriptionId}">${escapeHtml(view.description || "Architecture elements and their exchanges.")}</desc>${content}</svg>`;
   return standalone ? `<?xml version="1.0" encoding="UTF-8"?>\n${svg}` : svg;
 }
 
+function cleanDecisionPackageValue(value) {
+  return String(value ?? "")
+    .replace(/;\s*they are not an approval or authorization determination\.?/gi, ".")
+    .replace(/\s*this package is not an authorization or DoDAF-conformance determination\.?/gi, "")
+    .replace(/\s*browser storage and GitHub Pages are not an authorization boundary\.?/gi, "")
+    .trim();
+}
+
+export function formatLocalDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.valueOf())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function markdownText(value) {
-  return String(value ?? "").replace(/([\\`*_{}\[\]<>#+.!|])/g, "\\$1").trim();
+  return cleanDecisionPackageValue(value).replace(/([\\`*_{}\[\]<>#+.!|])/g, "\\$1").trim();
 }
 
 function markdownTable(headers, rows) {
@@ -1026,58 +1044,91 @@ function markdownTable(headers, rows) {
 export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.activeSolutionId) {
   const solution = workspace.solutions.find(record => record.id === solutionId);
   if (!solution) return "";
+  const stakeholders = scoped(workspace, "stakeholders", solutionId);
   const outcomes = scoped(workspace, "outcomes", solutionId);
-  const hotButtons = scoped(workspace, "hotButtons", solutionId);
+  const measures = scoped(workspace, "measures", solutionId);
+  const allHotButtons = scoped(workspace, "hotButtons", solutionId);
+  const hotButtons = allHotButtons.filter(record => record.status !== "Retired");
   const requirements = scoped(workspace, "requirements", solutionId);
   const evidence = scoped(workspace, "evidence", solutionId);
   const candidates = scoped(workspace, "candidates", solutionId);
   const trades = scoped(workspace, "trades", solutionId);
   const views = scoped(workspace, "architectureViews", solutionId);
+  const elements = scoped(workspace, "elements", solutionId);
+  const connections = scoped(workspace, "connections", solutionId);
   const risks = scoped(workspace, "risks", solutionId);
   const dependencies = scoped(workspace, "dependencies", solutionId);
-  const winThemes = scoped(workspace, "winThemes", solutionId);
+  const assumptions = scoped(workspace, "assumptions", solutionId);
+  const winThemes = scoped(workspace, "winThemes", solutionId).filter(record => record.status !== "Retired");
   const decisions = scoped(workspace, "decisions", solutionId);
   const roadmap = scoped(workspace, "roadmapItems", solutionId);
+  const reviews = scoped(workspace, "reviews", solutionId);
   const transitions = scoped(workspace, "transitionActions", solutionId);
   const obligations = collectObligations(workspace, solutionId);
   const readiness = buildReadiness(workspace, solutionId);
+  const requirementsById = new Map(requirements.map(record => [record.id, record]));
+  const elementsById = new Map(elements.map(record => [record.id, record]));
+  const allHotButtonsById = new Map(allHotButtons.map(record => [record.id, record]));
+  const proposal = solution.proposal || {};
   const sections = [
     `# ${markdownText(solution.name)} — Decision Package`,
-    `> **Data marking:** ${markdownText(solution.classification)}  \n> Generated ${new Date().toLocaleString()} from a browser-local workspace. This package is not an authorization or DoDAF-conformance determination.`,
+    `_Prepared ${formatLocalDate()}_`,
+    "## Executive summary",
+    markdownText(solution.description || solution.mission?.desiredState || solution.mission?.problem) || "Not yet defined.",
     "## Decision",
     markdownText(solution.decision) || "Not yet defined.",
     "## Mission brief",
     `**Company mission segments.** ${(solution.missionSegments || []).map(markdownText).join("; ") || "Not yet selected."}\n\n**Problem.** ${markdownText(solution.mission.problem) || "Not yet defined."}\n\n**Operational context.** ${markdownText(solution.mission.operationalContext) || "Not yet defined."}\n\n**Current state.** ${markdownText(solution.mission.currentState) || "Not yet defined."}\n\n**Desired state.** ${markdownText(solution.mission.desiredState) || "Not yet defined."}\n\n**Constraints.** ${markdownText(solution.mission.constraints) || "Not yet defined."}`,
+    "## Stakeholders",
+    markdownTable(["Stakeholder", "Role", "Primary concern"], stakeholders.map(record => [record.name, record.role, record.concern])),
     "## Outcomes and verification",
-    markdownTable(["Outcome", "Verification method"], outcomes.map(record => [record.title, record.verificationMethod])),
+    markdownTable(["Outcome", "Verification method", "Linked requirements"], outcomes.map(record => [record.title, record.verificationMethod, record.linkedRequirementIds?.map(id => requirementsById.get(id)?.title || id).join("; ") || "None"])),
+    "## Measures",
+    markdownTable(["Measure", "Target", "Method"], measures.map(record => [record.name, record.target, record.method])),
     "## Customer hot buttons and decision drivers",
     markdownTable(["Customer signal", "Source", "Confidence", "Validation", "Traced requirements"], hotButtons.map(record => [record.title, record.source, record.confidence, record.status, requirements.filter(requirement => requirement.linkedHotButtonIds?.includes(record.id)).map(requirement => requirement.title).join("; ") || "None"])),
     "## Requirements trace",
-    markdownTable(["Requirement", "Type", "Priority", "Source", "Acceptance", "Architecture links"], requirements.map(record => [record.title, record.type, record.priority, evidence.find(item => item.id === record.sourceEvidenceId)?.title || "Untraced", record.acceptanceMethod, record.linkedElementIds?.join(", ") || "None"])),
+    markdownTable(["Requirement", "Type", "Priority", "Source", "Acceptance", "Customer drivers", "Architecture links"], requirements.map(record => [record.title, record.type, record.priority, evidence.find(item => item.id === record.sourceEvidenceId)?.title || "Untraced", record.acceptanceMethod, record.linkedHotButtonIds?.map(id => allHotButtonsById.get(id)?.title || id).join("; ") || "None", record.linkedElementIds?.map(id => elementsById.get(id)?.name || id).join("; ") || "None"])),
     "## Technology Assessment",
     ...candidates.flatMap(candidate => {
       const result = assessmentResult(workspace, solutionId, candidate.id);
       return [
         `### ${markdownText(candidate.name)}`,
+        `**Candidate.** ${markdownText(candidate.description) || "Description not recorded."}\n\n**Category / vendor.** ${[candidate.category, candidate.vendor].filter(Boolean).map(markdownText).join(" · ") || "Not recorded."}`,
         `Candidate-level readiness summary: TRL ${candidate.trl ?? "Unknown"} · MRL ${candidate.mrl ?? "Unknown"} · IRL ${candidate.irl ?? "Unknown"}${candidate.readinessAsOf ? ` · As of ${markdownText(candidate.readinessAsOf)}` : ""}${candidate.readinessBasis ? `\n\n**Basis.** ${markdownText(candidate.readinessBasis)}` : ""}`,
         `Provisional weighted score: ${result.score === null ? "Unknown" : result.score.toFixed(2)} / 5 · Assessment coverage: ${Math.round(result.coverage * 100)}% · Evidence coverage: ${Math.round(result.evidenceCoverage * 100)}%`,
-        markdownTable(["Criterion", "Weight", "Score", "Rationale", "Evidence"], result.rows.map(row => [row.criterion.name, `${row.criterion.weight}%`, row.value === null ? "Unknown" : row.value, row.rationale, row.evidenceIds?.map(id => evidence.find(item => item.id === id)?.title || id).join("; ") || "None"]))
+        markdownTable(["Criterion", "Definition", "Weight", "Score", "Rationale", "Evidence"], result.rows.map(row => [row.criterion.name, row.criterion.description, `${row.criterion.weight}%`, row.value === null ? "Unknown" : row.value, row.rationale, row.evidenceIds?.map(id => evidence.find(item => item.id === id)?.title || id).join("; ") || "None"]))
       ];
     }),
+    "## Solution and proposal approach",
+    `**Concept of operations.** ${markdownText(proposal.conops) || "Not yet defined."}\n\n**Technical approach.** ${markdownText(proposal.technicalApproach) || "Not yet defined."}\n\n**Discriminators.** ${markdownText(proposal.discriminators) || "Not yet defined."}\n\n**Estimate assumptions.** ${markdownText(proposal.estimateAssumptions) || "Not yet defined."}\n\n**Delivery commitments.** ${markdownText(proposal.deliveryCommitments) || "Not yet defined."}`,
     "## Trade studies",
     markdownTable(["Trade study", "Decision question", "Options", "Recommendation", "Status"], trades.map(record => [record.title, record.question, record.optionIds.map(id => candidates.find(item => item.id === id)?.name || id).join("; ") || "None", record.recommendation, record.status])),
     "## Architecture views",
-    ...views.map(view => `### ${markdownText(view.name)}\n\n${markdownText(view.description) || "No description."}\n\n- Template: ${markdownText(VIEW_TEMPLATES.find(([value]) => value === view.template)?.[1] || view.template)}\n- Elements: ${workspace.elements.filter(record => record.viewId === view.id).length}\n- Exchanges: ${workspace.connections.filter(record => record.viewId === view.id).length}`),
+    ...views.flatMap(view => {
+      const viewElements = elements.filter(record => record.viewId === view.id);
+      const viewConnections = connections.filter(record => record.viewId === view.id);
+      return [
+        `### ${markdownText(view.name)}\n\n${markdownText(view.description) || "No description."}\n\n- Template: ${markdownText(VIEW_TEMPLATES.find(([value]) => value === view.template)?.[1] || view.template)}\n- Elements: ${viewElements.length}\n- Exchanges: ${viewConnections.length}`,
+        markdownTable(["Element", "Type", "Description"], viewElements.map(record => [record.name, record.type, record.description]))
+      ];
+    }),
+    "## Interface register",
+    markdownTable(["View", "Source", "Exchange", "Type / protocol", "Target", "Description"], connections.map(record => [views.find(view => view.id === record.viewId)?.name || record.viewId, elementsById.get(record.sourceElementId)?.name || record.sourceElementId, record.label, [record.type, record.protocol].filter(Boolean).join(" · "), elementsById.get(record.targetElementId)?.name || record.targetElementId, record.description])),
     "## Decisions",
     markdownTable(["Decision", "Status", "Owner", "Rationale", "Supporting evidence"], decisions.map(record => [record.title, record.status, record.owner, record.rationale, record.evidenceIds.map(id => evidence.find(item => item.id === id)?.title || id).join("; ") || "None"])),
     "## Risks",
     markdownTable(["Risk", "Likelihood", "Impact", "Owner", "Mitigation", "Status"], risks.map(record => [record.title, record.likelihood, record.impact, record.owner, record.mitigation, record.status])),
     "## Dependencies",
     markdownTable(["Dependency", "Type", "Provider", "Owner", "Needed by", "Status", "Impact"], dependencies.map(record => [record.title, record.type, record.provider, record.owner, record.neededBy, record.status, record.impact])),
+    "## Assumptions",
+    markdownTable(["Assumption", "Owner", "Validation plan", "Status"], assumptions.map(record => [record.statement, record.owner, record.validationPlan, record.status])),
     "## Win themes",
     markdownTable(["Win theme", "Customer value", "Discriminator", "Proof", "Customer signals", "Evidence", "Status"], winThemes.map(record => [record.title, record.customerValue, record.discriminator, record.proof, record.linkedHotButtonIds?.map(id => hotButtons.find(item => item.id === id)?.title || id).join("; ") || "None", record.sourceEvidenceIds?.map(id => evidence.find(item => item.id === id)?.title || id).join("; ") || "None", record.status])),
     "## Roadmap and gates",
     markdownTable(["Stage", "Activity", "Start", "End", "Owner", "Status", "Gate"], roadmap.map(record => [record.stage, record.title, record.start, record.end, record.owner, record.status, record.gate ? "Yes" : "No"])),
+    "## Reviews",
+    markdownTable(["Review", "Type", "Due", "Owner", "Status", "Entry criteria"], reviews.map(record => [record.name, record.type, record.due, record.owner, record.status, record.entryCriteria])),
     "## Transition plan",
     markdownTable(["Action", "Owner", "Target", "Status", "Blocker"], transitions.map(record => [record.title, record.owner, record.target, record.status, record.blocker])),
     "## Coverage and evidence gaps",
@@ -1087,18 +1138,415 @@ export function buildDecisionPackageMarkdown(workspace, solutionId = workspace.a
     markdownTable(
       ["Evidence", "Type", "Source date", "Participants", "Mission segments", "Source", "Confidence", "Reference", "Notes"],
       evidence.map(record => [record.title, record.sourceType || "", record.meetingDate || "", record.participants?.join("; ") || "", record.missionSegments?.join("; ") || "", record.source, record.confidence, safeHttpUrl(record.url), record.notes])
-    )
+    ),
+    "## Acronym key",
+    markdownTable(["Acronym", "Meaning"], [["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]])
   ];
   return `${sections.filter(value => value !== "").join("\n\n")}\n`;
 }
 
-export function buildDecisionPackageHtml(workspace, solutionId = workspace.activeSolutionId) {
+function decisionPackageText(value, fallback = "Not recorded") {
+  const text = cleanDecisionPackageValue(value);
+  return text ? escapeHtml(text).replace(/\r?\n/g, "<br>") : `<span class="not-recorded">${escapeHtml(fallback)}</span>`;
+}
+
+function decisionPackageStatus(value) {
+  const text = String(value || "Not recorded").trim() || "Not recorded";
+  const normalized = text.toLowerCase();
+  const tone = /\b(blocked|rejected|invalidated|high|critical)\b/.test(normalized)
+    ? "negative"
+    : /\b(approved|complete|validated|baselined|satisfied|substantiated|preferred|closed)\b/.test(normalized)
+      ? "positive"
+      : /\b(draft|unknown|unverified|open|planned|proposed|considering|in progress|in analysis|at risk)\b/.test(normalized)
+        ? "attention"
+        : "neutral";
+  return `<span class="status status-${tone}">${escapeHtml(text)}</span>`;
+}
+
+function decisionPackageConfidence(value) {
+  const text = String(value || "Unknown").trim() || "Unknown";
+  const tone = text === "High" ? "positive" : ["Low", "Conflicting"].includes(text) ? "negative" : "attention";
+  return `<span class="status status-${tone}">${escapeHtml(text)}</span>`;
+}
+
+function decisionPackagePills(values, fallback = "None recorded") {
+  const items = (values || []).map(value => String(value || "").trim()).filter(Boolean);
+  return items.length
+    ? `<div class="pill-list">${items.map(value => `<span>${escapeHtml(value)}</span>`).join("")}</div>`
+    : `<span class="not-recorded">${escapeHtml(fallback)}</span>`;
+}
+
+function decisionPackageTable(headers, rows, caption = "") {
+  if (!rows.length) return `<p class="section-empty">No ${escapeHtml(caption || "records").toLowerCase()} recorded.</p>`;
+  return `<div class="table-shell"><table>${caption ? `<caption>${escapeHtml(caption)}</caption>` : ""}<thead><tr>${headers.map(header => `<th scope="col">${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows.map(row => `<tr>${row.map((cell, index) => `<td data-label="${escapeHtml(headers[index] || "Value")}">${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+
+function decisionPackageNarrative(label, value) {
+  return `<article class="narrative-card"><h3>${escapeHtml(label)}</h3><p>${decisionPackageText(value)}</p></article>`;
+}
+
+const DECISION_PACKAGE_CSS = `
+:root {
+  color-scheme: light;
+  --page: #eef3f6;
+  --paper: #ffffff;
+  --panel: #f7fafb;
+  --panel-strong: #edf5f7;
+  --ink: #17232f;
+  --muted: #586a78;
+  --quiet: #4c606d;
+  --line: #ccd8df;
+  --line-strong: #9cb0bd;
+  --accent: #007b86;
+  --accent-strong: #005d66;
+  --accent-soft: #e3f5f6;
+  --amber: #9a6416;
+  --amber-soft: #fff4de;
+  --red: #a33b3b;
+  --red-soft: #fdecec;
+  --green: #176f4b;
+  --green-soft: #e7f6ee;
+  --hero: #0d1a26;
+  --hero-2: #142c3b;
+  --hero-ink: #f4f8fa;
+  --hero-muted: #b9c9d2;
+  --shadow: rgba(21, 42, 56, .14);
+  --font: "Segoe UI", Arial, sans-serif;
+  --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #08111a;
+  --paper: #0e1924;
+  --panel: #13212d;
+  --panel-strong: #172936;
+  --ink: #edf4f7;
+  --muted: #b4c2ca;
+  --quiet: #91a3ad;
+  --line: #2a3d4a;
+  --line-strong: #466171;
+  --accent: #67d7e0;
+  --accent-strong: #8ce4ea;
+  --accent-soft: #15343c;
+  --amber: #eab96b;
+  --amber-soft: #332918;
+  --red: #ef9b9b;
+  --red-soft: #351f24;
+  --green: #82d6aa;
+  --green-soft: #173329;
+  --hero: #07111a;
+  --hero-2: #112a39;
+  --shadow: rgba(0, 0, 0, .34);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; color: var(--ink); background: var(--page); font: 15px/1.6 var(--font); }
+a { color: var(--accent-strong); text-underline-offset: 3px; }
+.decision-document { width: min(1180px, calc(100% - 32px)); margin: 24px auto 54px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 20px 60px var(--shadow); }
+.decision-hero { position: relative; min-height: 640px; display: grid; align-content: center; gap: 24px; padding: clamp(42px, 8vw, 92px); color: var(--hero-ink); background: linear-gradient(138deg, var(--hero) 0%, var(--hero-2) 74%, #0e4d58 130%); overflow: hidden; }
+.decision-hero::before { content: ""; position: absolute; width: 420px; height: 420px; right: -190px; top: -180px; border: 1px solid rgba(103, 215, 224, .3); border-radius: 50%; box-shadow: 0 0 0 70px rgba(103, 215, 224, .035), 0 0 0 140px rgba(103, 215, 224, .025); }
+.decision-hero::after { content: ""; position: absolute; inset: 0 0 auto; height: 6px; background: linear-gradient(90deg, #67d7e0, #eab96b 74%, transparent); }
+.hero-copy, .hero-meta, .decision-callout, .hero-segments { position: relative; z-index: 1; }
+.doc-kicker { margin: 0; color: #67d7e0; font: 800 12px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.decision-hero h1 { max-width: 900px; margin: 0; font-size: clamp(38px, 6vw, 68px); line-height: 1.04; letter-spacing: -.045em; }
+.hero-lede { max-width: 820px; margin: 18px 0 0; color: var(--hero-muted); font-size: clamp(17px, 2vw, 21px); line-height: 1.55; }
+.hero-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid rgba(205, 227, 237, .22); border-radius: 12px; background: rgba(4, 12, 19, .28); backdrop-filter: blur(8px); }
+.hero-meta div { min-width: 0; padding: 15px 17px; border-right: 1px solid rgba(205, 227, 237, .18); }
+.hero-meta div:last-child { border-right: 0; }
+.hero-meta dt { color: #8fb1bf; font: 800 10px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.hero-meta dd { margin: 7px 0 0; color: var(--hero-ink); font-weight: 700; overflow-wrap: anywhere; }
+.decision-callout { max-width: 930px; padding: 18px 20px; border-left: 4px solid #eab96b; border-radius: 0 10px 10px 0; background: rgba(234, 185, 107, .1); }
+.decision-callout span { color: #eab96b; font: 800 11px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.decision-callout p { margin: 8px 0 0; color: var(--hero-ink); font-size: 18px; font-weight: 650; line-height: 1.5; }
+.hero-segments { display: flex; flex-wrap: wrap; gap: 7px; }
+.hero-segments span { padding: 6px 9px; border: 1px solid rgba(103, 215, 224, .35); border-radius: 999px; color: #d6f5f7; background: rgba(103, 215, 224, .09); font-size: 12px; font-weight: 700; }
+.document-nav { position: sticky; top: 0; z-index: 10; display: flex; gap: 4px; padding: 10px 16px; overflow-x: auto; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(14px); }
+.document-nav a { flex: 0 0 auto; min-height: 38px; display: inline-flex; align-items: center; padding: 7px 10px; color: var(--muted); border-radius: 8px; font-size: 12px; font-weight: 750; text-decoration: none; }
+.document-nav a:hover { color: var(--accent-strong); background: var(--accent-soft); }
+.document-body { padding: 0 clamp(22px, 5vw, 64px) 60px; }
+.doc-section { padding: 58px 0 14px; }
+.section-heading { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 24px; padding-bottom: 17px; border-bottom: 1px solid var(--line); }
+.section-number { width: 42px; height: 42px; display: grid; place-items: center; color: var(--accent); border: 1px solid var(--line-strong); border-radius: 11px; background: var(--accent-soft); font: 800 12px/1 var(--mono); }
+.section-heading h2 { margin: 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.16; letter-spacing: -.035em; }
+.section-heading p { max-width: 760px; margin: 7px 0 0; color: var(--muted); }
+.metric-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.metric { padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
+.metric span, .metric strong { display: block; }
+.metric span { min-height: 30px; color: var(--quiet); font: 800 10px/1.35 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.metric strong { margin-top: 8px; color: var(--accent); font: 800 25px/1 var(--mono); }
+.overview-grid, .narrative-grid, .priority-grid, .theme-grid, .candidate-grid, .decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.overview-card, .narrative-card, .priority-card, .theme-card, .candidate-card, .trade-card, .diagram-copy { min-width: 0; padding: 19px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); break-inside: avoid; }
+.overview-card.span-2, .narrative-card.span-2 { grid-column: 1 / -1; }
+.overview-card h3, .narrative-card h3, .priority-card h3, .theme-card h3, .candidate-card h3, .trade-card h3, .diagram-copy h3 { margin: 0; color: var(--ink); font-size: 16px; }
+.overview-card p, .narrative-card p, .priority-card p, .theme-card p, .candidate-card p, .trade-card p, .diagram-copy p { margin: 9px 0 0; color: var(--muted); overflow-wrap: anywhere; }
+.subsection { margin-top: 30px; }
+.subsection > h3 { margin: 0 0 12px; font-size: 19px; letter-spacing: -.02em; }
+.pill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill-list > span { padding: 5px 8px; color: var(--accent-strong); border: 1px solid var(--line-strong); border-radius: 999px; background: var(--accent-soft); font-size: 11px; font-weight: 750; line-height: 1.35; }
+.status { display: inline-block; padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
+.status-positive { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.status-negative { color: var(--red); border-color: var(--red); background: var(--red-soft); }
+.status-attention { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
+.status-neutral { color: var(--muted); background: var(--panel-strong); }
+.not-recorded { color: var(--quiet); font-style: italic; }
+.cell-note { display: block; margin-top: 5px; color: var(--muted); font-size: .92em; font-weight: 400; line-height: 1.45; }
+.evidence-context { display: grid; gap: 7px; }
+.evidence-context > strong { color: var(--ink); }
+.section-empty { margin: 0; padding: 20px; color: var(--quiet); border: 1px dashed var(--line-strong); border-radius: 10px; background: var(--panel); }
+.table-shell { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.48; }
+caption { padding: 12px 14px; color: var(--muted); border-bottom: 1px solid var(--line); background: var(--panel); font-weight: 750; text-align: left; }
+th, td { min-width: 118px; padding: 12px 13px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: break-word; word-break: normal; }
+th:last-child, td:last-child { border-right: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+th { color: var(--quiet); background: var(--panel-strong); font: 800 10px/1.35 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+tbody tr:nth-child(even) td { background: var(--panel); }
+.priority-card header, .theme-card header, .candidate-card header, .trade-card header { display: flex; align-items: start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.priority-card dl, .candidate-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+.priority-card dl div, .candidate-summary div { padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.priority-card dt, .candidate-summary span { color: var(--quiet); font: 800 9px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.priority-card dd, .candidate-summary strong { display: block; margin: 5px 0 0; color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+.theme-card h4 { margin: 15px 0 4px; color: var(--quiet); font: 800 10px/1.3 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.theme-card h4 + p { margin-top: 0; }
+.trade-options { margin-top: 12px; }
+.trade-options > strong { display: block; margin-bottom: 7px; color: var(--quiet); font: 800 10px/1.3 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.trace-list { display: grid; gap: 14px; }
+.trace-card { padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); break-inside: avoid; }
+.trace-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.trace-number { color: var(--accent); font: 800 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.trace-card > h3 { margin: 14px 0 0; font-size: 17px; line-height: 1.48; }
+.trace-card dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 15px 0 0; }
+.trace-card dl div { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.trace-card dt, .trace-card h4 { color: var(--quiet); font: 800 9px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.trace-card dd { margin: 5px 0 0; color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+.trace-detail { margin-top: 14px; padding: 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.trace-card h4 { margin: 0; }
+.trace-detail p { margin: 6px 0 0; color: var(--muted); }
+.trace-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.trace-links > div { min-width: 0; }
+.trace-links .pill-list, .trace-links .not-recorded { margin-top: 7px; }
+.candidate-grid { grid-template-columns: 1fr; }
+.candidate-card { padding: 0; overflow: hidden; background: var(--paper); }
+.candidate-card > header { padding: 19px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.candidate-card > header p { margin: 6px 0 0; }
+.candidate-summary { min-width: min(100%, 460px); margin: 0; }
+.candidate-summary div { background: var(--paper); }
+.candidate-card .table-shell { margin: 16px; border-radius: 9px; }
+.readiness-basis { margin: 0 19px 18px; padding: 13px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--muted); }
+.architecture-figure { margin: 0 0 24px; padding: 0; break-inside: avoid; }
+.diagram-copy { border-radius: 12px 12px 0 0; }
+.diagram-frame { overflow: hidden; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; background: #0f1822; }
+.diagram-frame svg { display: block; width: 100%; height: auto; }
+.architecture-detail { margin-top: 10px; }
+.diagram-facts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.diagram-facts span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: var(--paper); font-size: 11px; font-weight: 700; }
+.obligation-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.obligation-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.obligation-list p { margin: 1px 0 0; color: var(--muted); }
+.document-footer { display: flex; justify-content: space-between; gap: 18px; margin-top: 52px; padding-top: 18px; color: var(--quiet); border-top: 1px solid var(--line); font-size: 11px; }
+@media (max-width: 820px) {
+  .decision-document { width: min(100% - 16px, 1180px); margin-top: 8px; border-radius: 12px; }
+  .decision-hero { min-height: 0; padding: 44px 24px; }
+  .hero-meta, .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-meta div:nth-child(2) { border-right: 0; }
+  .hero-meta div:nth-child(-n+2) { border-bottom: 1px solid rgba(205, 227, 237, .18); }
+  .metric:last-child { grid-column: 1 / -1; }
+  .overview-grid, .narrative-grid, .priority-grid, .theme-grid, .decision-grid { grid-template-columns: 1fr; }
+  .overview-card.span-2, .narrative-card.span-2 { grid-column: auto; }
+  .candidate-card > header { display: grid; }
+  .candidate-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .document-body { padding-inline: 18px; }
+  .document-nav { position: static; }
+  .trace-links { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .hero-meta, .metric-grid, .candidate-summary { grid-template-columns: 1fr; }
+  .hero-meta div { border-right: 0; border-bottom: 1px solid rgba(205, 227, 237, .18); }
+  .hero-meta div:last-child { border-bottom: 0; }
+  .metric:last-child { grid-column: auto; }
+  .section-heading { grid-template-columns: 1fr; }
+  .section-number { width: 36px; height: 36px; }
+  .table-shell { overflow: visible; border: 0; background: transparent; }
+  table, tbody { display: block; }
+  thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); }
+  tr { display: grid; margin-bottom: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+  td { min-width: 0; display: grid; grid-template-columns: minmax(90px, .4fr) minmax(0, 1fr); gap: 10px; padding: 10px 11px; border-right: 0; }
+  td::before { content: attr(data-label); color: var(--quiet); font: 800 9px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+  .priority-card dl { grid-template-columns: 1fr; }
+  .trace-card dl { grid-template-columns: 1fr; }
+  .document-footer { display: grid; }
+}
+@page { size: Letter portrait; margin: .62in .62in .68in; }
+@media print {
+  :root, html[data-theme="dark"] {
+    color-scheme: light;
+    --page: #fff; --paper: #fff; --panel: #f5f8fa; --panel-strong: #edf2f5; --ink: #15222d; --muted: #536572; --quiet: #4a5d69; --line: #cbd6dd; --line-strong: #9eafb9; --accent: #006f79; --accent-strong: #00545c; --accent-soft: #e5f4f5; --amber: #87550f; --amber-soft: #fff3dc; --red: #923636; --red-soft: #fceaea; --green: #146441; --green-soft: #e7f5ed;
+  }
+  html { scroll-behavior: auto; }
+  body { background: #fff; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .decision-document { width: auto; margin: 0; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
+  .decision-hero { min-height: 9in; padding: .55in .48in; color: #15222d; background: #fff; break-after: page; }
+  .decision-hero::before { display: none; }
+  .decision-hero::after { height: 7px; background: linear-gradient(90deg, #007b86, #d39235 76%, transparent); }
+  .doc-kicker { color: #007b86; }
+  .decision-hero h1 { max-width: 7in; color: #15222d; font-size: 38pt; }
+  .hero-lede { max-width: 7in; color: #536572; font-size: 14pt; }
+  .hero-meta { border-color: #cbd6dd; background: #f5f8fa; backdrop-filter: none; }
+  .hero-meta div { border-color: #cbd6dd; }
+  .hero-meta dt { color: #4a5d69; }
+  .hero-meta dd { color: #15222d; }
+  .decision-callout { border-left-color: #d39235; background: #fff3dc; }
+  .decision-callout span { color: #87550f; }
+  .decision-callout p { color: #15222d; }
+  .hero-segments span { color: #00545c; border-color: #8ebfc3; background: #e5f4f5; }
+  .document-nav { display: none; }
+  .document-body { padding: 0; }
+  .doc-section { padding: 0; }
+  .doc-section + .doc-section { break-before: page; }
+  .section-heading { margin-bottom: 15px; padding-bottom: 11px; }
+  .section-heading h2 { font-size: 22pt; }
+  .metric-grid { gap: 6px; }
+  .metric { padding: 10px; }
+  .metric strong { font-size: 18pt; }
+  .overview-card, .narrative-card, .priority-card, .theme-card, .trade-card, .trace-card, .diagram-copy, .metric, .obligation-list li { break-inside: avoid; }
+  .candidate-card { overflow: visible; break-inside: auto; }
+  .candidate-card > header, .readiness-basis { break-inside: avoid; }
+  .candidate-card .table-shell, .table-shell { break-inside: auto; }
+  .table-shell { overflow: visible; }
+  table { font-size: 8pt; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  th, td { min-width: 0; padding: 7px 8px; }
+  .architecture-figure { break-before: page; break-inside: auto; }
+  #architecture > .architecture-figure:first-of-type { break-before: auto; }
+  #architecture > .subsection { break-before: page; }
+  #evidence > .subsection:last-child { break-before: page; }
+  .diagram-frame { break-inside: avoid; }
+  .diagram-frame svg { width: auto; max-width: 100%; height: auto; max-height: 6.15in; margin-inline: auto; }
+  .document-footer { margin-top: 24px; }
+  a { color: inherit; text-decoration: none; }
+}
+`;
+
+export function buildDecisionPackageContentHtml(workspace, solutionId = workspace.activeSolutionId) {
   const solution = workspace.solutions.find(record => record.id === solutionId);
   if (!solution) return "";
-  const markdown = buildDecisionPackageMarkdown(workspace, solutionId);
+  const stakeholders = scoped(workspace, "stakeholders", solutionId);
+  const outcomes = scoped(workspace, "outcomes", solutionId);
+  const measures = scoped(workspace, "measures", solutionId);
+  const allHotButtons = scoped(workspace, "hotButtons", solutionId);
+  const hotButtons = allHotButtons.filter(record => record.status !== "Retired");
+  const requirements = scoped(workspace, "requirements", solutionId);
+  const evidence = scoped(workspace, "evidence", solutionId);
+  const candidates = scoped(workspace, "candidates", solutionId);
+  const trades = scoped(workspace, "trades", solutionId);
   const views = scoped(workspace, "architectureViews", solutionId);
-  const diagrams = views.map(view => `<section class="diagram"><h2>${escapeHtml(view.name)}</h2><p>${escapeHtml(view.description)}</p>${buildDiagramSvg(workspace, view.id)}</section>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(solution.name)} — Decision Package</title><style>body{max-width:980px;margin:0 auto;padding:42px;font:15px/1.55 Segoe UI,Arial,sans-serif;color:#18212a}pre{white-space:pre-wrap;font:14px/1.55 Segoe UI,Arial,sans-serif}.marking{padding:10px 14px;border:1px solid #b8893d;background:#fff8e8;font-weight:700}.diagram{page-break-before:always}.diagram svg{max-width:100%;height:auto;border:1px solid #ccd5dd;background:#0f1822}@media print{body{padding:0}.diagram{break-before:page}}</style></head><body><p class="marking">${escapeHtml(solution.classification)} · NO CUI / CLASSIFIED DATA</p><pre>${escapeHtml(markdown)}</pre>${diagrams}</body></html>`;
+  const elements = scoped(workspace, "elements", solutionId);
+  const connections = scoped(workspace, "connections", solutionId);
+  const risks = scoped(workspace, "risks", solutionId);
+  const dependencies = scoped(workspace, "dependencies", solutionId);
+  const assumptions = scoped(workspace, "assumptions", solutionId);
+  const winThemes = scoped(workspace, "winThemes", solutionId).filter(record => record.status !== "Retired");
+  const decisions = scoped(workspace, "decisions", solutionId);
+  const roadmap = scoped(workspace, "roadmapItems", solutionId);
+  const reviews = scoped(workspace, "reviews", solutionId);
+  const transitions = scoped(workspace, "transitionActions", solutionId);
+  const obligations = collectObligations(workspace, solutionId);
+  const readiness = buildReadiness(workspace, solutionId);
+  const evidenceById = new Map(evidence.map(record => [record.id, record]));
+  const elementsById = new Map(elements.map(record => [record.id, record]));
+  const candidatesById = new Map(candidates.map(record => [record.id, record]));
+  const hotButtonsById = new Map(allHotButtons.map(record => [record.id, record]));
+  const requirementsById = new Map(requirements.map(record => [record.id, record]));
+  const prepared = formatLocalDate();
+  const summary = solution.description || solution.mission?.desiredState || solution.mission?.problem || "Decision-ready solution architecture package.";
+  const sectionHeading = (number, title, copy) => `<header class="section-heading"><span class="section-number">${escapeHtml(number)}</span><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(copy)}</p></div></header>`;
+  const relationshipLabels = (ids, lookup, label) => (ids || []).map(id => lookup.get(id)?.[label] || id);
+  const proposal = solution.proposal || {};
+  const proposalFields = [proposal.conops, proposal.technicalApproach, proposal.discriminators, proposal.estimateAssumptions, proposal.deliveryCommitments];
+
+  const priorityCards = hotButtons.length ? hotButtons.map(record => {
+    const traced = requirements.filter(requirement => requirement.linkedHotButtonIds?.includes(record.id));
+    return `<article class="priority-card"><header><h3>${decisionPackageText(record.title, "Untitled customer signal")}</h3>${decisionPackageStatus(record.status)}</header><p>${decisionPackageText(record.detail, "Context not recorded")}</p><dl><div><dt>Source</dt><dd>${decisionPackageText(record.source)}</dd></div><div><dt>Confidence</dt><dd>${decisionPackageText(record.confidence)}</dd></div><div><dt>Requirements</dt><dd>${traced.length}</dd></div></dl></article>`;
+  }).join("") : `<p class="section-empty">No customer priorities recorded.</p>`;
+
+  const winThemeCards = winThemes.length ? winThemes.map(record => `<article class="theme-card"><header><h3>${decisionPackageText(record.title, "Untitled win theme")}</h3>${decisionPackageStatus(record.status)}</header><h4>Customer value</h4><p>${decisionPackageText(record.customerValue)}</p><h4>Discriminator</h4><p>${decisionPackageText(record.discriminator)}</p><h4>Proof</h4><p>${decisionPackageText(record.proof)}</p><h4>Trace</h4>${decisionPackagePills([...relationshipLabels(record.linkedHotButtonIds, hotButtonsById, "title"), ...relationshipLabels(record.sourceEvidenceIds, evidenceById, "title")])}</article>`).join("") : `<p class="section-empty">No win themes recorded.</p>`;
+
+  const candidateCards = candidates.length ? candidates.map(candidate => {
+    const result = assessmentResult(workspace, solutionId, candidate.id);
+    const rows = result.rows.map(row => [
+      `<strong>${decisionPackageText(row.criterion.name)}</strong><span class="cell-note">${decisionPackageText(row.criterion.description, "Definition not recorded")}</span>`,
+      decisionPackageText(`${row.criterion.weight}%`),
+      row.value === null ? `<span class="not-recorded">Unknown</span>` : decisionPackageText(`${row.value} / 5`),
+      decisionPackageText(row.rationale),
+      decisionPackagePills(relationshipLabels(row.evidenceIds, evidenceById, "title"), "No evidence linked")
+    ]);
+    return `<article class="candidate-card"><header><div><h3>${decisionPackageText(candidate.name, "Unnamed candidate")}</h3><p>${decisionPackageText([candidate.category, candidate.vendor].filter(Boolean).join(" · "), "Candidate details not recorded")}</p><p>${decisionPackageText(candidate.description, "Candidate description not recorded")}</p></div><div class="candidate-summary"><div><span>Weighted score</span><strong>${result.score === null ? "Unknown" : `${result.score.toFixed(2)} / 5`}</strong></div><div><span>Assessed</span><strong>${Math.round(result.coverage * 100)}%</strong></div><div><span>Evidenced</span><strong>${Math.round(result.evidenceCoverage * 100)}%</strong></div><div><span>Status</span><strong>${decisionPackageStatus(candidate.status)}</strong></div></div></header><p class="readiness-basis"><strong>Readiness:</strong> TRL ${candidate.trl ?? "Unknown"} · MRL ${candidate.mrl ?? "Unknown"} · IRL ${candidate.irl ?? "Unknown"}${candidate.readinessAsOf ? ` · As of ${escapeHtml(candidate.readinessAsOf)}` : ""}<br>${decisionPackageText(candidate.readinessBasis, "Readiness basis not recorded")}</p>${decisionPackageTable(["Criterion and definition", "Weight", "Score", "Rationale", "Evidence"], rows, `${candidate.name} assessment`)}</article>`;
+  }).join("") : `<p class="section-empty">No technology candidates recorded.</p>`;
+
+  const requirementCards = requirements.length ? requirements.map((record, index) => `<article class="trace-card"><header><span class="trace-number">Requirement ${String(index + 1).padStart(2, "0")}</span>${decisionPackageStatus(record.status)}</header><h3>${decisionPackageText(record.title, "Untitled requirement")}</h3><dl><div><dt>Type</dt><dd>${decisionPackageText(record.type)}</dd></div><div><dt>Priority</dt><dd>${decisionPackageText(record.priority)}</dd></div><div><dt>Source</dt><dd>${decisionPackageText(evidenceById.get(record.sourceEvidenceId)?.title, "Untraced")}</dd></div></dl><div class="trace-detail"><h4>Acceptance method</h4><p>${decisionPackageText(record.acceptanceMethod)}</p></div><div class="trace-links"><div><h4>Customer drivers</h4>${decisionPackagePills(relationshipLabels(record.linkedHotButtonIds, hotButtonsById, "title"), "None linked")}</div><div><h4>Architecture trace</h4>${decisionPackagePills(relationshipLabels(record.linkedElementIds, elementsById, "name"), "None linked")}</div></div></article>`).join("") : `<p class="section-empty">No requirements recorded.</p>`;
+
+  const architectureFigures = views.length ? views.map(view => {
+    const viewElements = elements.filter(record => record.viewId === view.id);
+    const viewConnections = connections.filter(record => record.viewId === view.id);
+    const template = VIEW_TEMPLATES.find(([value]) => value === view.template)?.[1] || view.template;
+    const elementRows = viewElements.map(record => [decisionPackageText(record.name), decisionPackageText(record.type), decisionPackageText(record.description)]);
+    return `<figure class="architecture-figure"><figcaption class="diagram-copy"><h3>${decisionPackageText(view.name, "Untitled architecture view")}</h3><p>${decisionPackageText(view.description, "Architecture view description not recorded")}</p><div class="diagram-facts"><span>${escapeHtml(template || "Custom view")}</span><span>${viewElements.length} elements</span><span>${viewConnections.length} exchanges</span></div></figcaption><div class="diagram-frame">${buildDiagramSvg(workspace, view.id, { interactive: false })}</div><div class="architecture-detail">${decisionPackageTable(["Element", "Type", "Description"], elementRows, `${view.name} elements`)}</div></figure>`;
+  }).join("") : `<p class="section-empty">No architecture views recorded.</p>`;
+
+  const tradeCards = trades.length ? trades.map(record => `<article class="trade-card"><header><h3>${decisionPackageText(record.title, "Untitled trade study")}</h3>${decisionPackageStatus(record.status)}</header><p><strong>Decision question:</strong> ${decisionPackageText(record.question)}</p><div class="trade-options"><strong>Options</strong>${decisionPackagePills(relationshipLabels(record.optionIds, candidatesById, "name"), "No options recorded")}</div><p><strong>Recommendation:</strong> ${decisionPackageText(record.recommendation)}</p></article>`).join("") : `<p class="section-empty">No trade studies recorded.</p>`;
+
+  const evidenceRows = evidence.map(record => {
+    const reference = safeHttpUrl(record.url);
+    const meetingContext = `<div class="evidence-context"><strong>${decisionPackageText(record.meetingDate, "Not dated")}</strong><div><span class="cell-note">Participants</span>${decisionPackagePills(record.participants, "None recorded")}</div><div><span class="cell-note">Mission segments</span>${decisionPackagePills(record.missionSegments, "None recorded")}</div></div>`;
+    return [
+      decisionPackageText(record.title),
+      decisionPackageText(record.sourceType),
+      decisionPackageText(record.source),
+      meetingContext,
+      decisionPackageConfidence(record.confidence),
+      reference ? `<a href="${escapeHtml(reference)}" target="_blank" rel="noopener noreferrer">Open reference</a>` : `<span class="not-recorded">No link</span>`,
+      decisionPackageText(record.notes)
+    ];
+  });
+
+  return `<article class="decision-document">
+    <header class="decision-hero" id="top">
+      <div class="hero-copy"><p class="doc-kicker">Solution decision package</p><h1>${decisionPackageText(solution.name, "Untitled solution")}</h1><p class="hero-lede">${decisionPackageText(summary)}</p></div>
+      <dl class="hero-meta"><div><dt>Customer</dt><dd>${decisionPackageText(solution.customer)}</dd></div><div><dt>Lifecycle stage</dt><dd>${decisionPackageText(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${decisionPackageText(solution.domain)}</dd></div><div><dt>Prepared</dt><dd>${escapeHtml(prepared)}</dd></div></dl>
+      <div class="decision-callout"><span>Decision requested</span><p>${decisionPackageText(solution.decision, "Decision request not yet defined")}</p></div>
+      <div class="hero-segments">${(solution.missionSegments || []).length ? solution.missionSegments.map(segment => `<span>${escapeHtml(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div>
+    </header>
+    <nav class="document-nav" aria-label="Decision package sections"><a href="#overview">Overview</a><a href="#mission">Mission</a><a href="#customer">Customer</a><a href="#requirements">Requirements</a><a href="#assessment">Assessment</a><a href="#approach">Approach</a><a href="#architecture">Architecture</a><a href="#decisions">Decisions</a><a href="#risk">Risk</a><a href="#delivery">Delivery</a><a href="#evidence">Evidence</a></nav>
+    <div class="document-body">
+      <section class="doc-section" id="overview">${sectionHeading("01", "Executive overview", "A concise view of decision readiness and the mission outcome this solution is intended to enable.")}
+        <div class="metric-grid"><article class="metric"><span>Overall coverage</span><strong>${readiness.overall}%</strong></article><article class="metric"><span>Traceability</span><strong>${readiness.traceability}%</strong></article><article class="metric"><span>Evidence</span><strong>${readiness.evidence}%</strong></article><article class="metric"><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></article><article class="metric"><span>Transition</span><strong>${readiness.transition}%</strong></article></div>
+        <div class="overview-grid subsection"><article class="overview-card span-2"><h3>Mission problem</h3><p>${decisionPackageText(solution.mission?.problem)}</p></article><article class="overview-card"><h3>Current state</h3><p>${decisionPackageText(solution.mission?.currentState)}</p></article><article class="overview-card"><h3>Desired state</h3><p>${decisionPackageText(solution.mission?.desiredState)}</p></article></div>
+      </section>
+      <section class="doc-section" id="mission">${sectionHeading("02", "Mission and operational context", "The people, operating conditions, outcomes, measures, and constraints that shape the solution.")}
+        <div class="narrative-grid">${decisionPackageNarrative("Operational context", solution.mission?.operationalContext)}${decisionPackageNarrative("Constraints", solution.mission?.constraints)}</div>
+        <div class="subsection"><h3>Stakeholders</h3>${decisionPackageTable(["Stakeholder", "Role", "Primary concern"], stakeholders.map(record => [decisionPackageText(record.name), decisionPackageText(record.role), decisionPackageText(record.concern)]), "Stakeholders")}</div>
+        <div class="subsection"><h3>Outcomes and measures</h3>${decisionPackageTable(["Outcome", "Verification method", "Linked requirements"], outcomes.map(record => [decisionPackageText(record.title), decisionPackageText(record.verificationMethod), decisionPackagePills(relationshipLabels(record.linkedRequirementIds, requirementsById, "title"), "None linked")]), "Operational outcomes")}${measures.length ? `<div class="subsection">${decisionPackageTable(["Measure", "Target", "Method"], measures.map(record => [decisionPackageText(record.name), decisionPackageText(record.target), decisionPackageText(record.method)]), "Measures of effectiveness and performance")}</div>` : ""}</div>
+      </section>
+      <section class="doc-section" id="customer">${sectionHeading("03", "Customer priorities and win themes", "Customer signals are traced to requirements, customer value, discriminators, and proof.")}<div class="priority-grid">${priorityCards}</div><div class="subsection"><h3>Win themes</h3><div class="theme-grid">${winThemeCards}</div></div></section>
+      <section class="doc-section" id="requirements">${sectionHeading("04", "Requirements trace", "Each requirement is shown with its source, acceptance method, customer drivers, and architecture realization.")}<div class="trace-list">${requirementCards}</div></section>
+      <section class="doc-section" id="assessment">${sectionHeading("05", "Technology Assessment", "Weighted criteria, evidence coverage, readiness, and rationale for each solution candidate.")}<div class="candidate-grid">${candidateCards}</div></section>
+      <section class="doc-section" id="approach">${sectionHeading("06", "Solution and proposal approach", "The operational concept, technical approach, discriminators, estimate assumptions, and delivery commitments.")}<div class="narrative-grid">${decisionPackageNarrative("Concept of operations", proposal.conops)}${decisionPackageNarrative("Technical approach", proposal.technicalApproach)}${decisionPackageNarrative("Discriminators", proposal.discriminators)}${decisionPackageNarrative("Estimate assumptions", proposal.estimateAssumptions)}<div class="narrative-card span-2"><h3>Delivery commitments</h3><p>${decisionPackageText(proposal.deliveryCommitments)}</p></div></div>${proposalFields.every(value => !String(value || "").trim()) ? `<p class="section-empty subsection">The proposal narrative has not yet been developed.</p>` : ""}</section>
+      <section class="doc-section" id="architecture">${sectionHeading("07", "Architecture views", "Decision-useful views show solution elements, boundaries, interfaces, exchanges, deployment, and transition context.")}${architectureFigures}<div class="subsection"><h3>Interface register</h3>${decisionPackageTable(["View", "Source", "Exchange", "Type / protocol", "Target", "Description"], connections.map(record => [decisionPackageText(views.find(view => view.id === record.viewId)?.name), decisionPackageText(elementsById.get(record.sourceElementId)?.name), decisionPackageText(record.label), decisionPackageText([record.type, record.protocol].filter(Boolean).join(" · ")), decisionPackageText(elementsById.get(record.targetElementId)?.name), decisionPackageText(record.description)]), "Architecture interfaces and exchanges")}</div></section>
+      <section class="doc-section" id="decisions">${sectionHeading("08", "Trades and decisions", "The evaluated alternatives, recommendations, decision status, rationale, ownership, and supporting evidence.")}<div class="decision-grid">${tradeCards}</div><div class="subsection"><h3>Decision record</h3>${decisionPackageTable(["Decision", "Status", "Owner / date", "Rationale", "Evidence"], decisions.map(record => [decisionPackageText(record.title), decisionPackageStatus(record.status), decisionPackageText([record.owner, record.date].filter(Boolean).join(" · ")), decisionPackageText(record.rationale), decisionPackagePills(relationshipLabels(record.evidenceIds, evidenceById, "title"), "None linked")]), "Decisions")}</div></section>
+      <section class="doc-section" id="risk">${sectionHeading("09", "Risk, dependencies, and assumptions", "Conditions that could affect performance, integration, schedule, delivery, or sustainment.")}${decisionPackageTable(["Risk", "Likelihood", "Impact", "Owner", "Mitigation", "Status"], risks.map(record => [decisionPackageText(record.title), decisionPackageStatus(record.likelihood), decisionPackageStatus(record.impact), decisionPackageText(record.owner), decisionPackageText(record.mitigation), decisionPackageStatus(record.status)]), "Risks")}<div class="subsection">${decisionPackageTable(["Dependency", "Type", "Provider", "Owner", "Needed by", "Status", "Impact"], dependencies.map(record => [decisionPackageText(record.title), decisionPackageText(record.type), decisionPackageText(record.provider), decisionPackageText(record.owner), decisionPackageText(record.neededBy), decisionPackageStatus(record.status), decisionPackageText(record.impact)]), "Dependencies")}</div><div class="subsection">${decisionPackageTable(["Assumption", "Owner", "Validation plan", "Status"], assumptions.map(record => [decisionPackageText(record.statement), decisionPackageText(record.owner), decisionPackageText(record.validationPlan), decisionPackageStatus(record.status)]), "Assumptions")}</div></section>
+      <section class="doc-section" id="delivery">${sectionHeading("10", "Roadmap, reviews, and transition", "The sequence, ownership, gates, review criteria, receiving-team actions, and delivery blockers.")}${decisionPackageTable(["Stage", "Activity", "Start", "End", "Owner", "Status", "Gate"], roadmap.map(record => [decisionPackageText(record.stage), decisionPackageText(record.title), decisionPackageText(record.start), decisionPackageText(record.end), decisionPackageText(record.owner), decisionPackageStatus(record.status), decisionPackageText(record.gate ? "Yes" : "No")]), "Roadmap and gates")}<div class="subsection">${decisionPackageTable(["Review", "Type", "Due", "Owner", "Status", "Entry criteria"], reviews.map(record => [decisionPackageText(record.name), decisionPackageText(record.type), decisionPackageText(record.due), decisionPackageText(record.owner), decisionPackageStatus(record.status), decisionPackageText(record.entryCriteria)]), "Reviews")}</div><div class="subsection">${decisionPackageTable(["Transition action", "Owner", "Target / gate", "Status", "Blocker"], transitions.map(record => [decisionPackageText(record.title), decisionPackageText(record.owner), decisionPackageText(record.target), decisionPackageStatus(record.status), decisionPackageText(record.blocker, "No blocker recorded")]), "Transition actions")}</div></section>
+      <section class="doc-section" id="evidence">${sectionHeading("11", "Evidence and open obligations", "The evidence register and deterministic gaps that still need action before the decision can be fully supported.")}<div class="subsection"><h3>Open obligations</h3>${obligations.length ? `<ul class="obligation-list">${obligations.map(record => `<li>${decisionPackageStatus(`${record.stage} · ${record.severity}`)}<p>${decisionPackageText(record.message)}</p></li>`).join("")}</ul>` : `<p class="section-empty">No deterministic gaps detected.</p>`}</div><div class="subsection"><h3>Evidence register</h3>${decisionPackageTable(["Evidence", "Type", "Source", "Meeting context", "Confidence", "Reference", "Notes"], evidenceRows, "Source evidence")}</div><div class="subsection"><h3>Acronym key</h3>${decisionPackageTable(["Acronym", "Meaning"], [["TRL", "Technology Readiness Level"], ["MRL", "Manufacturing Readiness Level"], ["IRL", "Integration Readiness Level"], ["MOSA", "Modular Open Systems Approach"], ["CONOPS", "Concept of Operations"], ["RF", "Radio Frequency"]].map(([acronym, meaning]) => [decisionPackageText(acronym), decisionPackageText(meaning)]), "Acronyms and abbreviations")}</div></section>
+      <footer class="document-footer"><span>${decisionPackageText(solution.name, "Solution decision package")}</span><span>Solution Architect Workbench · Prepared ${escapeHtml(prepared)}</span></footer>
+    </div>
+  </article>`;
+}
+
+export function buildDecisionPackageHtml(workspace, solutionId = workspace.activeSolutionId, { theme = "light" } = {}) {
+  const solution = workspace.solutions.find(record => record.id === solutionId);
+  if (!solution) return "";
+  const resolvedTheme = theme === "dark" ? "dark" : "light";
+  return `<!doctype html><html lang="en" data-theme="${resolvedTheme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; object-src 'none'; base-uri 'none'; form-action 'none'"><title>${escapeHtml(solution.name)} — Decision Package</title><style>${DECISION_PACKAGE_CSS}</style></head><body>${buildDecisionPackageContentHtml(workspace, solutionId)}</body></html>`;
 }
 
 export function makeSnapshot(workspace, label = "Automatic snapshot") {

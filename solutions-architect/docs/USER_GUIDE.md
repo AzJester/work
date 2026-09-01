@@ -357,6 +357,13 @@ For every material requirement:
 - trace the requirement to architecture elements;
 - preserve unknowns instead of filling gaps with unsupported certainty.
 
+Each requirement is presented as a separate readable card. The requirement statement
+and acceptance method expand automatically as you type, up to a generous bounded
+height; you do not need to drag a resize handle for ordinary content. The selected
+source is repeated in full below its menu. Customer-driver and architecture links use
+wrapping chips plus an expandable checkbox list, so long names remain visible on
+desktop, tablet, and phone layouts.
+
 Evidence should identify the source, observation, type, date, confidence, and a safe
 HTTP(S) reference when appropriate. A URL is a locator, not proof that the source is
 authoritative or current.
@@ -519,16 +526,27 @@ design certification. A formal review can identify issues no automated rule sees
 ## Produce and review the decision package
 
 Open **Decision package** to assemble the selected company mission segments, mission
-brief, customer signals, requirements trace, assessments, architecture summary,
-trades, decisions, risks, dependencies, win themes, roadmap, transition actions,
-coverage indicators, and evidence gaps.
+brief, stakeholders, outcomes and measures, customer signals, requirements trace,
+assessments, proposal approach, architecture elements and interfaces, trades,
+decisions, risks, dependencies, assumptions, reviews, roadmap, transition actions,
+meeting-evidence context, coverage indicators, and evidence gaps.
 
 - **Download Markdown** creates an editable narrative.
-- **Standalone HTML** creates a printable self-contained report with diagrams.
-- **Print / Save PDF** opens a print-ready browser view and requests the print dialog. If
+- **Standalone HTML** creates a self-contained, themed executive report with a cover,
+  section navigation, semantic headings, wrapping records, tables, and embedded
+  architecture diagrams. It preserves the current light or dark site theme.
+- **Print / Save PDF** opens the same structured report with a light, Letter-size print
+  layout, cover page, repeated table headers, and controlled section and diagram page
+  breaks, then requests the print dialog. If
   the dialog does not appear, use the browser's Print command and select **Save as
   PDF** where supported.
 - The Architect screen's **SVG** and **PNG** controls download separate diagram files.
+
+The HTML and PDF presentation is generated directly from committed solution records;
+it is not Markdown placed inside a print page. The exported decision package does not
+add a data marking, browser-storage language, or authorization or conformance
+disclaimers. Add any organization-required cover, handling, approval, or distribution
+content through the governed publishing process that applies to the final artifact.
 
 Review the complete export before sharing it. A downloaded artifact can outlive the
 browser workspace and may have additional distribution, records, and destruction
@@ -542,7 +560,7 @@ are not yet available. The recommended next additions are:
 | Priority | Format | Best use |
 | --- | --- | --- |
 | 1 | Excel workbook (`.xlsx`) | Trace matrix, hot buttons, win themes, requirements, evidence, assessments, interfaces, decisions, risks, roadmap, and transition registers on separate sheets |
-| 2 | Word document (`.docx`) | Editable full decision package with real headings, tables, diagrams, captions, marking, and evidence appendix |
+| 2 | Word document (`.docx`) | Editable full decision package with real headings, tables, diagrams, captions, document metadata, and evidence appendix |
 | 3 | PowerPoint (`.pptx`) | Decision briefing: mission, customer hot buttons, win themes, architecture, trade recommendation, risks, roadmap, and decision requested |
 | 4 | CSV registers | Portable requirements, risk, interface, evidence, and trace-matrix handoffs |
 | 5 | Review-package ZIP | The selected solution's report, briefing, workbook, diagrams, workspace JSON, and a manifest with hashes |

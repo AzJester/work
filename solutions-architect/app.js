@@ -8,6 +8,7 @@ import {
   INTERFACE_TYPES,
   VIEW_TEMPLATES,
   escapeHtml,
+  formatLocalDate,
   makeId,
   createWorkspace,
   addBlankSolution,
@@ -458,6 +459,47 @@ function emptyState(title, copy, action = "") {
   return `<div class="empty-state"><strong>${h(title)}</strong><p>${h(copy)}</p>${action}</div>`;
 }
 
+function fitAutoGrowTextarea(node) {
+  if (!(node instanceof HTMLTextAreaElement) || !node.matches("textarea[data-auto-grow]")) return;
+  node.style.height = "auto";
+  const styles = getComputedStyle(node);
+  const borderHeight = (Number.parseFloat(styles.borderTopWidth) || 0) + (Number.parseFloat(styles.borderBottomWidth) || 0);
+  const minimum = Number.parseFloat(styles.minHeight) || 0;
+  const maximum = Number.parseFloat(styles.maxHeight);
+  const desired = Math.max(minimum, node.scrollHeight + borderHeight);
+  const height = Number.isFinite(maximum) ? Math.min(desired, maximum) : desired;
+  node.style.height = `${Math.ceil(height)}px`;
+  node.style.overflowY = desired > height + 1 ? "auto" : "hidden";
+}
+
+function fitAutoGrowTextareas(root = document) {
+  root.querySelectorAll("textarea[data-auto-grow]").forEach(fitAutoGrowTextarea);
+}
+
+function syncRequirementRelationshipField(field) {
+  if (!field) return;
+  const options = [...field.querySelectorAll('input[type="checkbox"]')];
+  const selected = options.filter(option => option.checked);
+  const count = field.querySelector("[data-relationship-count]");
+  const selection = field.querySelector("[data-relationship-selection]");
+  if (count) count.textContent = `${selected.length} of ${options.length} linked`;
+  if (!selection) return;
+  selection.replaceChildren();
+  if (!selected.length) {
+    const empty = document.createElement("span");
+    empty.className = "relationship-empty";
+    empty.textContent = selection.dataset.emptyLabel || "No records linked";
+    selection.append(empty);
+    return;
+  }
+  for (const option of selected) {
+    const chip = document.createElement("span");
+    chip.className = "relationship-chip";
+    chip.textContent = option.dataset.relationshipLabel || option.value;
+    selection.append(chip);
+  }
+}
+
 function render() {
   const solution = activeSolution();
   if (!solution) return;
@@ -498,6 +540,7 @@ function render() {
     </div>
     <div id="modal-root"></div><div id="toast-region" class="toast-region" aria-live="polite"></div><input id="workspace-import" type="file" accept="application/json,.json" hidden>`;
   bindDiagramInteractions();
+  fitAutoGrowTextareas(app);
 }
 
 function routeTitle(value) {
@@ -550,7 +593,7 @@ function renderDiscover(solution) {
     ${field("Customer / mission partner", solution.customer, `data-solution-field="customer" maxlength="180"`)}
     ${selectField("Current working stage", `data-solution-field="stage"`, STAGES.map(item => option(item, item, solution.stage)).join(""), "Stages are work lenses, not calendar gates; revisit them as evidence changes.")}
     ${field("Domain", solution.domain, `data-solution-field="domain" maxlength="180"`)}
-    <fieldset class="mission-segments span-2"><legend>Company mission segment(s)</legend><p>Select every segment this solution supports. This classification carries into the decision package and reviewed AI payload.</p><div class="mission-segment-grid">${MISSION_SEGMENTS.map(segment => `<label class="mission-segment-option"><input type="checkbox" value="${h(segment.name)}" data-mission-segment ${solution.missionSegments?.includes(segment.name) ? "checked" : ""}><span><strong>${h(segment.name)}</strong><small>${h(segment.description)}</small></span></label>`).join("")}</div></fieldset>
+    <fieldset class="mission-segments span-2"><legend>Company mission segment(s)</legend><p>Select every segment this solution supports. These selections carry into the decision package and reviewed AI payload.</p><div class="mission-segment-grid">${MISSION_SEGMENTS.map(segment => `<label class="mission-segment-option"><input type="checkbox" value="${h(segment.name)}" data-mission-segment ${solution.missionSegments?.includes(segment.name) ? "checked" : ""}><span><strong>${h(segment.name)}</strong><small>${h(segment.description)}</small></span></label>`).join("")}</div></fieldset>
     <div class="span-2">${field("Decision to support", solution.decision, `data-solution-field="decision" maxlength="1200"`, { multiline: true, hint: "Write the specific choice, approval, or commitment this package must support." })}</div>
     <div class="span-2">${field("Mission problem", solution.mission.problem, `data-solution-nested="mission.problem" maxlength="5000"`, { multiline: true, rows: 6 })}</div>
     <div class="span-2">${field("Operational context", solution.mission.operationalContext, `data-solution-nested="mission.operationalContext" maxlength="5000"`, { multiline: true, rows: 6 })}</div>
@@ -582,13 +625,58 @@ function evidenceCard(item) {
   return `<article class="evidence-card"><button class="delete-record" type="button" data-delete="evidence" data-id="${h(item.id)}" aria-label="Delete evidence">×</button><input class="card-title-input" value="${h(item.title)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="title"><div class="evidence-source-fields"><label><span>Source type</span><select data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="sourceType">${EVIDENCE_SOURCE_TYPES.map(value => option(value, value, item.sourceType || "Other")).join("")}</select></label><label><span>Source date</span><input type="date" value="${h(item.meetingDate || "")}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="meetingDate"></label></div>${meetingMetadata}<label><span>Source / citation</span><input value="${h(item.source)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="source"></label><label><span>Reference URL</span><input type="url" value="${h(item.url)}" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="url"></label><label><span>Confidence</span><select data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="confidence">${["Unknown", "High", "Medium", "Low", "Conflicting"].map(value => option(value, value, item.confidence)).join("")}</select></label><label><span>Notes</span><textarea rows="3" data-record-collection="evidence" data-record-id="${h(item.id)}" data-record-field="notes">${h(item.notes)}</textarea></label></article>`;
 }
 
+function requirementRelationshipField({ title, action, requirement, items, selectedIds, attribute, emptyText, labelFor }) {
+  const selectedSet = new Set(selectedIds || []);
+  const entries = items.map(item => ({ item, label: String(labelFor(item) || "Untitled link").trim() || "Untitled link" }));
+  const selected = entries.filter(({ item }) => selectedSet.has(item.id));
+  const context = String(requirement.title || "Untitled requirement").trim() || "Untitled requirement";
+  const selectedMarkup = selected.length
+    ? selected.map(({ label }) => `<span class="relationship-chip">${h(label)}</span>`).join("")
+    : `<span class="relationship-empty">${h(emptyText)}</span>`;
+  const optionsMarkup = entries.length
+    ? entries.map(({ item, label }) => `<label class="relationship-option"><input type="checkbox" value="${h(item.id)}" ${attribute}="${h(requirement.id)}" data-relationship-label="${h(label)}" ${selectedSet.has(item.id) ? "checked" : ""}><span>${h(label)}</span></label>`).join("")
+    : `<p class="relationship-options-empty">No choices are available in this solution yet.</p>`;
+  return `<fieldset class="relationship-field" aria-label="${h(`${title} for ${context}`)}" data-relationship-field>
+    <legend><span>${h(title)}</span><small data-relationship-count>${selected.length} of ${entries.length} linked</small></legend>
+    <div class="relationship-selection" data-relationship-selection data-empty-label="${h(emptyText)}" aria-live="polite">${selectedMarkup}</div>
+    <details class="relationship-picker"><summary>${h(action)}</summary><div class="relationship-options">${optionsMarkup}</div></details>
+  </fieldset>`;
+}
+
+function requirementCard(item, index, evidence, hotButtons, elements) {
+  const number = String(index + 1).padStart(2, "0");
+  const title = String(item.title || "Untitled requirement").trim() || "Untitled requirement";
+  const context = `Requirement ${index + 1}: ${title}`;
+  const source = evidence.find(record => record.id === item.sourceEvidenceId);
+  const sourcePreviewId = `requirement-source-${item.id}`;
+  const sourceTitle = source?.title || "No source evidence linked";
+  const sourceMeta = source
+    ? [source.sourceType || "Evidence", source.meetingDate || "", `${source.confidence || "Unknown"} confidence`].filter(Boolean).join(" · ")
+    : "Choose an authoritative source or keep the requirement explicitly untraced.";
+  return `<article class="requirement-card" data-requirement-card="${h(item.id)}" aria-label="${h(context)}">
+    <header class="requirement-card-header"><span class="requirement-number">Requirement ${number}</span><button class="small-button requirement-delete" type="button" data-delete="requirements" data-id="${h(item.id)}" aria-label="Delete ${h(context)}"><span aria-hidden="true">×</span><span>Delete</span></button></header>
+    <div class="requirement-card-body">
+      <label class="requirement-statement"><span>Requirement statement</span><textarea rows="3" maxlength="2000" data-auto-grow aria-label="${h(context)} statement" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="title">${h(item.title)}</textarea><small>Use one clear, testable statement.</small></label>
+      <div class="requirement-meta-grid">
+        <label><span>Status</span><select aria-label="${h(context)} status" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="status">${["Draft", "Validated", "Baselined", "Retired"].map(value => option(value, value, item.status)).join("")}</select></label>
+        <label><span>Type</span><select aria-label="${h(context)} type" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="type">${["Functional", "Performance", "Interface", "Data", "Cyber", "Safety", "Resilience", "Physical", "Sustainment"].map(value => option(value, value, item.type)).join("")}</select></label>
+        <label><span>Priority</span><select aria-label="${h(context)} priority" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="priority">${["Must", "Should", "Could"].map(value => option(value, value, item.priority)).join("")}</select></label>
+      </div>
+      <label class="requirement-source"><span>Source evidence</span><select aria-label="${h(context)} source evidence" aria-describedby="${h(sourcePreviewId)}" title="${h(sourceTitle)}" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="sourceEvidenceId"><option value="">Untraced — select source evidence</option>${evidence.map(record => option(record.id, record.title, item.sourceEvidenceId)).join("")}</select><span class="selected-source-preview ${source ? "" : "empty"}" id="${h(sourcePreviewId)}"><span>Selected source</span><strong>${h(sourceTitle)}</strong><small>${h(sourceMeta)}</small></span></label>
+      <label class="requirement-acceptance"><span>Acceptance method</span><textarea rows="3" maxlength="2000" data-auto-grow aria-label="${h(context)} acceptance method" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="acceptanceMethod">${h(item.acceptanceMethod)}</textarea><small>State the verification activity and measurable pass/fail result.</small></label>
+      ${requirementRelationshipField({ title: "Customer drivers", action: "Choose customer drivers", requirement: item, items: hotButtons, selectedIds: item.linkedHotButtonIds, attribute: "data-requirement-driver", emptyText: "No customer drivers linked", labelFor: driver => driver.title })}
+      ${requirementRelationshipField({ title: "Architecture trace", action: "Choose architecture elements", requirement: item, items: elements, selectedIds: item.linkedElementIds, attribute: "data-requirement-element", emptyText: "No architecture elements linked", labelFor: element => `${element.name} · ${element.type}` })}
+    </div>
+  </article>`;
+}
+
 function renderShape(solution) {
   const requirements = scoped(workspace, "requirements", solution.id);
   const evidence = scoped(workspace, "evidence", solution.id);
   const hotButtons = scoped(workspace, "hotButtons", solution.id).filter(item => item.status !== "Retired");
   const elements = scoped(workspace, "elements", solution.id);
   return `${renderStageRail("Shape")}<div class="section-toolbar"><div><p class="section-kicker">Traceability</p><h3>Requirements and evidence</h3><p>Bind every requirement to its source, acceptance logic, and architecture realization.</p></div><div><button class="button secondary" type="button" data-add="evidence">＋ Evidence</button><button class="button primary" type="button" data-add="requirements">＋ Requirement</button></div></div>
-  <section class="panel table-panel"><div class="table-scroll"><table class="editable-table requirements-table"><thead><tr><th>Requirement / status</th><th>Type / priority</th><th>Customer drivers</th><th>Source evidence</th><th>Acceptance method</th><th>Architecture trace</th><th></th></tr></thead><tbody>${requirements.map(item => `<tr><td data-label="Requirement / status"><textarea rows="2" aria-label="Requirement statement" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="title">${h(item.title)}</textarea><select aria-label="Requirement status" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="status">${["Draft", "Validated", "Baselined", "Retired"].map(value => option(value, value, item.status)).join("")}</select></td><td data-label="Type / priority"><select aria-label="Requirement type" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="type">${["Functional", "Performance", "Interface", "Data", "Cyber", "Safety", "Resilience", "Physical", "Sustainment"].map(value => option(value, value, item.type)).join("")}</select><select aria-label="Requirement priority" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="priority">${["Must", "Should", "Could"].map(value => option(value, value, item.priority)).join("")}</select></td><td data-label="Customer drivers"><select multiple size="3" aria-label="Linked customer drivers" data-requirement-hot-buttons="${h(item.id)}">${hotButtons.map(driver => `<option value="${h(driver.id)}" ${item.linkedHotButtonIds?.includes(driver.id) ? "selected" : ""}>${h(driver.title)}</option>`).join("")}</select></td><td data-label="Source evidence"><select aria-label="Source evidence" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="sourceEvidenceId"><option value="">Untraced</option>${evidence.map(source => option(source.id, source.title, item.sourceEvidenceId)).join("")}</select></td><td data-label="Acceptance method"><textarea rows="2" aria-label="Acceptance method" data-record-collection="requirements" data-record-id="${h(item.id)}" data-record-field="acceptanceMethod">${h(item.acceptanceMethod)}</textarea></td><td data-label="Architecture trace"><select multiple size="3" aria-label="Linked architecture elements" data-requirement-elements="${h(item.id)}">${elements.map(element => `<option value="${h(element.id)}" ${item.linkedElementIds?.includes(element.id) ? "selected" : ""}>${h(element.name)}</option>`).join("")}</select></td><td data-label="Remove"><button class="icon-button" type="button" data-delete="requirements" data-id="${h(item.id)}" aria-label="Delete requirement">×</button></td></tr>`).join("")}</tbody></table></div>${!requirements.length ? emptyState("No requirements", "Add requirements only when they can be traced to a mission need or authoritative source.") : ""}</section>
+  <section class="panel requirements-panel" aria-label="Requirements editor"><div class="requirements-list">${requirements.map((item, index) => requirementCard(item, index, evidence, hotButtons, elements)).join("")}</div>${!requirements.length ? emptyState("No requirements", "Add requirements only when they can be traced to a mission need or authoritative source.") : ""}</section>
   <section class="panel evidence-panel"><div class="panel-head"><div><h3>Evidence library</h3><p>References and approved excerpts only; v1 does not store binary attachments or full meeting transcripts.</p></div></div><div class="card-grid">${evidence.map(evidenceCard).join("")}</div>${!evidence.length ? emptyState("No evidence", "Record authoritative sources, test observations, customer statements, and documented constraints.") : ""}</section>`;
 }
 
@@ -684,8 +772,9 @@ function renderTransition(solution) {
 
 function renderDecisionPackage(solution) {
   const readiness = buildReadiness(workspace, solution.id);
-  const markdown = buildDecisionPackageMarkdown(workspace, solution.id);
-  return `${renderStageRail(solution.stage)}<div class="section-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div><button class="button secondary" type="button" data-action="export-markdown">Download Markdown</button><button class="button secondary" type="button" data-action="export-html">Standalone HTML</button><button class="button primary" type="button" data-action="print-package">Print / Save PDF</button></div></div><p class="coverage-caveat">Coverage indicates workspace completeness; it is not approval, certification, operational suitability, or authority to operate.</p><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><h3>Markdown preview</h3><p>Exports include separate SVG/PNG diagram controls in the Architect view.</p></div></div><pre>${h(markdown)}</pre></section>`;
+  const prepared = formatLocalDate();
+  const segments = solution.missionSegments || [];
+  return `${renderStageRail(solution.stage)}<div class="section-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div><button class="button secondary" type="button" data-action="export-markdown">Download Markdown</button><button class="button secondary" type="button" data-action="export-html">Standalone HTML</button><button class="button primary" type="button" data-action="print-package">Print / Save PDF</button></div></div><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><p class="section-kicker">Output preview</p><h3>Executive decision document</h3><p>Standalone HTML and Print / Save PDF share this structured visual design.</p></div></div><div class="package-preview-artifact"><header class="package-preview-cover"><p class="package-preview-kicker">Solution decision package</p><h4>${h(solution.name)}</h4><p class="package-preview-lede">${h(solution.description || solution.mission.desiredState || solution.mission.problem || "Decision-ready solution architecture package.")}</p><dl><div><dt>Customer</dt><dd>${h(solution.customer || "Not recorded")}</dd></div><div><dt>Lifecycle stage</dt><dd>${h(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${h(solution.domain || "Not recorded")}</dd></div><div><dt>Prepared</dt><dd>${h(prepared)}</dd></div></dl><div class="package-preview-decision"><span>Decision requested</span><p>${h(solution.decision || "Decision request not yet defined")}</p></div><div class="package-preview-segments"><strong>Company mission segments</strong><div class="package-preview-tags">${segments.length ? segments.map(segment => `<span>${h(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div></div></header><div class="package-preview-contents"><div><p class="section-kicker">Inside the package</p><h4>One coherent decision story</h4><p>The report carries the complete workspace into readable sections with semantic headings, wrapping records, architecture figures, and print-aware page breaks.</p></div><ol><li>Executive overview and mission context</li><li>Customer priorities, win themes, and proposal approach</li><li>Requirements, assessments, trades, and architecture</li><li>Decisions, risks, roadmap, transition, and evidence</li></ol></div></div></section>`;
 }
 
 const ADD_DEFAULTS = {
@@ -1166,7 +1255,7 @@ function showRecovery() {
 function exportWorkspaceJson() {
   const result = validateWorkspace(workspace);
   if (!result.valid) { toast(`Backup blocked: ${result.errors[0]}`, "error"); return; }
-  download(`solution-architect-workspace-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(workspace, null, 2), "application/json;charset=utf-8");
+  download(`solution-architect-workspace-${formatLocalDate()}.json`, JSON.stringify(workspace, null, 2), "application/json;charset=utf-8");
   const saved = saveNow();
   if (!saved) toast("Downloaded the current in-memory workspace. Keep this backup because browser storage did not save it.", "ok");
 }
@@ -1301,10 +1390,8 @@ function exportSelectedPng() {
 
 function printDecisionPackage() {
   const solution = activeSolution();
-  const html = buildDecisionPackageHtml(workspace, solution.id);
-  const stylesheetUrl = new URL("./print-package.css", location.href).href;
-  const printHtml = html.replace(/<style>[\s\S]*?<\/style>/, `<link rel="stylesheet" href="${h(stylesheetUrl)}">`);
-  const url = URL.createObjectURL(new Blob([printHtml], { type: "text/html" }));
+  const html = buildDecisionPackageHtml(workspace, solution.id, { theme: resolveTheme(themePreference) });
+  const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
   const popup = window.open(url, "_blank");
   if (!popup) { URL.revokeObjectURL(url); toast("Allow pop-ups to open and print the decision package.", "error"); return; }
   const invokePrint = () => {
@@ -1497,7 +1584,7 @@ document.addEventListener("click", event => {
   if (action === "export-svg") exportSelectedSvg();
   if (action === "export-png") exportSelectedPng();
   if (action === "export-markdown") download(`${slug(activeSolution().name)}-decision-package.md`, buildDecisionPackageMarkdown(workspace, workspace.activeSolutionId), "text/markdown;charset=utf-8");
-  if (action === "export-html") download(`${slug(activeSolution().name)}-decision-package.html`, buildDecisionPackageHtml(workspace, workspace.activeSolutionId), "text/html;charset=utf-8");
+  if (action === "export-html") download(`${slug(activeSolution().name)}-decision-package.html`, buildDecisionPackageHtml(workspace, workspace.activeSolutionId, { theme: resolveTheme(themePreference) }), "text/html;charset=utf-8");
   if (action === "print-package") printDecisionPackage();
   const add = event.target.closest("[data-add]")?.dataset.add; if (add) addRecord(add);
   const deletion = event.target.closest("[data-delete]"); if (deletion && confirm("Delete this record? A recovery point will be created first.")) deleteRecord(deletion.dataset.delete, deletion.dataset.id);
@@ -1604,6 +1691,7 @@ document.addEventListener("submit", event => {
 document.addEventListener("input", event => {
   const node = event.target;
   const solution = activeSolution();
+  if (node.matches("textarea[data-auto-grow]")) fitAutoGrowTextarea(node);
   if (node.matches("[data-meeting-field]") && meetingSession) {
     const meetingField = node.dataset.meetingField;
     const changed = meetingSession[meetingField] !== node.value;
@@ -1726,8 +1814,26 @@ document.addEventListener("change", event => {
   if (node.dataset.solutionField) { const solution = activeSolution(); solution[node.dataset.solutionField] = node.value; scheduleSave(); if (node.tagName === "SELECT") render(); }
   if (node.dataset.recordCollection && node.dataset.recordField && node.tagName === "SELECT" && !node.multiple) { const item = record(node.dataset.recordCollection, node.dataset.recordId); if (item) { item[node.dataset.recordField] = node.value; scheduleSave(); render(); } }
   if (node.dataset.recordLinksCollection && node.dataset.recordLinksField) { const item = record(node.dataset.recordLinksCollection, node.dataset.recordId); if (item) { item[node.dataset.recordLinksField] = [...node.selectedOptions].map(option => option.value); scheduleSave(); } }
-  if (node.dataset.requirementElements) { const item = record("requirements", node.dataset.requirementElements); item.linkedElementIds = [...node.selectedOptions].map(option => option.value); scheduleSave(); }
-  if (node.dataset.requirementHotButtons) { const item = record("requirements", node.dataset.requirementHotButtons); item.linkedHotButtonIds = [...node.selectedOptions].map(option => option.value); scheduleSave(); }
+  if (node.dataset.requirementDriver) {
+    const item = record("requirements", node.dataset.requirementDriver);
+    const field = node.closest("[data-relationship-field]");
+    if (item && field) {
+      item.linkedHotButtonIds = [...field.querySelectorAll("[data-requirement-driver]:checked")].map(option => option.value);
+      syncRequirementRelationshipField(field);
+      scheduleSave();
+    }
+    return;
+  }
+  if (node.dataset.requirementElement) {
+    const item = record("requirements", node.dataset.requirementElement);
+    const field = node.closest("[data-relationship-field]");
+    if (item && field) {
+      item.linkedElementIds = [...field.querySelectorAll("[data-requirement-element]:checked")].map(option => option.value);
+      syncRequirementRelationshipField(field);
+      scheduleSave();
+    }
+    return;
+  }
   if (node.dataset.winThemeHotButtons) { const item = record("winThemes", node.dataset.winThemeHotButtons); item.linkedHotButtonIds = [...node.selectedOptions].map(option => option.value); scheduleSave(); }
   if (node.dataset.winThemeEvidence) { const item = record("winThemes", node.dataset.winThemeEvidence); item.sourceEvidenceIds = [...node.selectedOptions].map(option => option.value); scheduleSave(); }
   if (node.dataset.candidateScore && node.dataset.scoreField === "value") { const candidate = record("candidates", node.dataset.candidateScore); let score = candidate.scores.find(item => item.criterionId === node.dataset.criterion); if (!score) { score = { criterionId: node.dataset.criterion, value: null, rationale: "", evidenceIds: [] }; candidate.scores.push(score); } score.value = node.value === "" ? null : Number(node.value); scheduleSave(); render(); }
@@ -1735,6 +1841,11 @@ document.addEventListener("change", event => {
 });
 
 window.addEventListener("hashchange", () => { route = readRoute(); setSidebarOpen(false); render(); document.querySelector("#workspace")?.focus(); });
+let autoGrowResizeFrame = 0;
+window.addEventListener("resize", () => {
+  cancelAnimationFrame(autoGrowResizeFrame);
+  autoGrowResizeFrame = requestAnimationFrame(() => fitAutoGrowTextareas(app));
+});
 window.addEventListener("storage", event => {
   if (event.key === THEME_KEY) {
     themePreference = THEME_VALUES.has(event.newValue) ? event.newValue : "light";

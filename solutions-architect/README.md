@@ -36,11 +36,19 @@ app. A signal becomes part of the requirements baseline only when the architect
 links it to a requirement that has its own authoritative evidence and acceptance
 method.
 
-The six company mission segments are available as a multi-select classification:
+The six company mission segments are available as multi-select domain tags:
 Integrated Air and Missile Defense; Lifecycle Management and Cyber Warfare; Layered
 Defense, Autonomous Warfare & Integrated Fires; Space Warfighting; Critical
 Infrastructure Protection; and Exploration and Lunar Presence. The selected segments
 carry into the decision package and the reviewed AI payload.
+
+Requirements are edited as responsive cards with automatic textarea growth, full
+selected-source previews, and wrapping customer-driver and architecture-link
+controls. The decision page previews a finished executive artifact. Standalone HTML
+uses the active site theme and semantic sections; Print / Save PDF uses the same
+content with a light Letter-size print layout and controlled pagination. Neither
+output adds data markings, browser-storage text, or authorization or conformance
+disclaimers.
 
 ## Capture and local source intake
 
