@@ -6,7 +6,7 @@ import {
   formatLocalDate,
   safeHttpUrl,
   scoped
-} from "./engine.js";
+} from "./engine.js?v=7";
 
 export const DECISION_WORKBOOK_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 

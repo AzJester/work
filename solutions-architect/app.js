@@ -27,7 +27,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js";
+} from "./engine.js?v=7";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -36,23 +36,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js";
+} from "./capture.js?v=7";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js";
-import { buildDecisionPackagePdf } from "./export-pdf.js";
+} from "./ingestion.js?v=7";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=7";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js";
+} from "./export-docx.js?v=7";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js";
+} from "./export-xlsx.js?v=7";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
@@ -1889,6 +1889,10 @@ const handleSystemThemeChange = () => { if (themePreference === "system") applyT
 if (typeof systemTheme.addEventListener === "function") systemTheme.addEventListener("change", handleSystemThemeChange);
 else systemTheme.addListener?.(handleSystemThemeChange);
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(error => console.warn("Offline shell registration failed.", error));
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  navigator.serviceWorker.register("./sw.js?v=7", { scope: "./", updateViaCache: "none" })
+    .then(registration => registration.update())
+    .catch(error => console.warn("Offline shell registration failed.", error));
+}
 render();
 if (initialWorkspaceNeedsSave) saveNow();

@@ -7,7 +7,7 @@ import {
   collectObligations,
   formatLocalDate,
   scoped
-} from "./engine.js";
+} from "./engine.js?v=7";
 
 const LETTER = Object.freeze({ width: 612, height: 792 });
 const MARGIN = 48;

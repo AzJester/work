@@ -64,7 +64,7 @@ test("the static entry point, modules, and social card are deployment-ready with
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", enginePath]));
   assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", appPath]));
   assert.match(indexSource, /<title>Solution Architect Workbench<\/title>/);
-  assert.match(indexSource, /<script\b[^>]*src="app\.js"[^>]*type="module"/);
+  assert.match(indexSource, /<script\b[^>]*src="app\.js(?:\?v=\d+)?"[^>]*type="module"/);
   assert.match(appSource, /class="development-banner"[\s\S]{0,160}<strong>Under development<\/strong>/);
   assert.match(appSource, /Approved unclassified, non-CUI information only/);
 

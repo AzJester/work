@@ -5,7 +5,7 @@ import {
   nowIso as engineNowIso,
   safeHttpUrl as engineSafeHttpUrl,
   validateWorkspace as engineValidateWorkspace
-} from "./engine.js";
+} from "./engine.js?v=7";
 
 export const CAPTURE_SCHEMA = "solution-capture-inbox-v1";
 export const CAPTURE_SCHEMA_VERSION = 1;
