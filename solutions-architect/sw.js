@@ -1,4 +1,4 @@
-const CACHE_NAME = "solution-architect-workbench-v11";
+const CACHE_NAME = "solution-architect-workbench-v12";
 const SHELL = [
   "./",
   "./index.html",

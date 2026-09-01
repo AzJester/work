@@ -4,7 +4,7 @@ import {
   MAX_KNOWLEDGE_IMPORT_BYTES,
   createKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=11";
+} from "./knowledge-base.js?v=12";
 
 export const KNOWLEDGE_IMPORT_CSV_MIME = "text/csv;charset=utf-8";
 export const KNOWLEDGE_IMPORT_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

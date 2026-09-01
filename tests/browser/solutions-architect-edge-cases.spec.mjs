@@ -23,6 +23,24 @@ async function openWorkspaceTool(page, name) {
   await tools.getByRole("button", { name, exact: true }).click();
 }
 
+async function openDecisionExportMenu(page) {
+  const trigger = page.getByRole("button", { name: "Export decision package", exact: true });
+  if (await trigger.getAttribute("aria-expanded") !== "true") await trigger.click();
+  const menu = page.getByRole("menu", { name: "Decision package export formats", exact: true });
+  await expect(menu).toBeVisible();
+  return { trigger, menu };
+}
+
+async function downloadDecisionFormat(page, accessibleName) {
+  const { trigger, menu } = await openDecisionExportMenu(page);
+  const downloadPromise = page.waitForEvent("download");
+  await menu.getByRole("menuitem", { name: accessibleName, exact: true }).click();
+  const download = await downloadPromise;
+  await expect(menu).toBeHidden();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  return download;
+}
+
 async function readDownload(download) {
   const stream = await download.createReadStream();
   const chunks = [];
@@ -234,16 +252,12 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
   await expect(page.locator(".accessible-model table")).toHaveCount(2);
 
   await page.goto(`${APP_PATH}#decision-package`, { waitUntil: "domcontentloaded" });
-  const markdownPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download decision package as Markdown", exact: true }).click();
-  const markdownDownload = await markdownPromise;
+  const markdownDownload = await downloadDecisionFormat(page, "Download decision package as Markdown");
   expect(markdownDownload.suggestedFilename()).toMatch(/-decision-package\.md$/);
   const markdown = (await readDownload(markdownDownload)).toString("utf8");
   for (const heading of ["Customer hot buttons", "Technology Assessment", "Dependencies", "Win themes", "Transition plan"]) expect(markdown).toContain(heading);
 
-  const htmlPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download decision package as standalone HTML", exact: true }).click();
-  const htmlDownload = await htmlPromise;
+  const htmlDownload = await downloadDecisionFormat(page, "Download decision package as standalone HTML");
   expect(htmlDownload.suggestedFilename()).toMatch(/-decision-package\.html$/);
   const html = (await readDownload(htmlDownload)).toString("utf8");
   expect(html).toMatch(/^<!doctype html>/i);
@@ -256,25 +270,19 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
   expect(html).not.toMatch(/data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
   expect(html).toContain("<svg");
 
-  const wordPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download decision package as Microsoft Word", exact: true }).click();
-  const wordDownload = await wordPromise;
+  const wordDownload = await downloadDecisionFormat(page, "Download decision package as Microsoft Word");
   expect(wordDownload.suggestedFilename()).toMatch(/-decision-package\.docx$/);
   const word = await readDownload(wordDownload);
   expect(word.subarray(0, 2).toString("ascii")).toBe("PK");
   expect(word.toString("latin1")).toContain("word/document.xml");
 
-  const excelPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download decision workbook as Microsoft Excel", exact: true }).click();
-  const excelDownload = await excelPromise;
+  const excelDownload = await downloadDecisionFormat(page, "Download decision workbook as Microsoft Excel");
   expect(excelDownload.suggestedFilename()).toMatch(/-decision-workbook\.xlsx$/);
   const excel = await readDownload(excelDownload);
   expect(excel.subarray(0, 2).toString("ascii")).toBe("PK");
   expect(excel.toString("latin1")).toContain("xl/workbook.xml");
 
-  const pdfPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download decision package as PDF", exact: true }).click();
-  const pdfDownload = await pdfPromise;
+  const pdfDownload = await downloadDecisionFormat(page, "Download decision package as PDF");
   expect(pdfDownload.suggestedFilename()).toMatch(/-decision-package\.pdf$/);
   const pdf = await readDownload(pdfDownload);
   expect(pdf.subarray(0, 5).toString("ascii")).toBe("%PDF-");

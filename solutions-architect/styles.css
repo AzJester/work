@@ -276,7 +276,21 @@ button:disabled { opacity: .48; cursor: not-allowed; }
 .section-toolbar h3 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.025em; }
 .section-toolbar p:not(.section-kicker) { max-width: 78ch; margin: 6px 0 0; color: var(--muted); line-height: 1.55; }
 .section-toolbar > div + div { display: flex; flex-wrap: wrap; gap: 8px; }
-.decision-export-actions .button { min-width: 84px; }
+.section-toolbar > .decision-export-actions { position: relative; display: block; flex: 0 0 auto; align-self: flex-end; }
+.decision-export-trigger { min-width: 124px; }
+.decision-export-trigger-icon, .decision-export-chevron { width: 18px; height: 18px; display: inline-grid; flex: 0 0 18px; place-items: center; }
+.decision-export-trigger-icon svg, .decision-export-chevron svg { width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.decision-export-chevron { margin-left: 2px; transition: transform 140ms ease; }
+.decision-export-trigger[aria-expanded="true"] .decision-export-chevron { transform: rotate(180deg); }
+.decision-export-menu { position: absolute; z-index: 40; top: calc(100% + 8px); right: 0; width: min(320px, calc(100vw - 32px)); display: grid; gap: 3px; padding: 7px; overflow: hidden auto; border: 1px solid var(--line-strong); border-radius: 13px; background: var(--panel); box-shadow: 0 18px 46px var(--shadow); }
+.decision-export-item { width: 100%; min-height: 62px; display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: center; gap: 11px; padding: 9px 10px; color: var(--ink); border: 1px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; text-align: left; }
+.decision-export-item:hover, .decision-export-item:focus-visible { border-color: var(--line); background: var(--panel-2); }
+.decision-export-item:focus-visible { outline: 3px solid var(--amber); outline-offset: -1px; }
+.decision-export-badge { min-height: 34px; display: inline-grid; place-items: center; padding: 5px 6px; color: var(--cyan); border: 1px solid color-mix(in srgb, var(--cyan) 34%, var(--line)); border-radius: 7px; background: var(--cyan-dim); font: 800 10px/1 var(--mono); letter-spacing: .035em; }
+.decision-export-copy { min-width: 0; display: grid; gap: 3px; }
+.decision-export-copy strong, .decision-export-copy small { overflow-wrap: anywhere; }
+.decision-export-copy strong { font-size: 14px; line-height: 1.25; }
+.decision-export-copy small { color: var(--muted); font-size: 12px; line-height: 1.35; }
 .knowledge-toolbar > div:first-child strong { color: var(--ink); }
 .knowledge-toolbar-actions { justify-content: flex-end; }
 .knowledge-search-panel { margin-bottom: 14px; padding: 20px 22px 14px; }
@@ -850,6 +864,9 @@ tbody tr:last-child td { border-bottom: 0; }
   .tool-section-head { min-height: 0; }
   .section-toolbar { align-items: stretch; flex-direction: column; }
   .section-toolbar > div + div { display: grid; grid-template-columns: 1fr; }
+  .section-toolbar > .decision-export-actions { width: 100%; align-self: stretch; }
+  .decision-export-trigger { width: 100%; }
+  .decision-export-menu { position: relative; top: auto; right: auto; width: 100%; max-height: min(430px, 62vh); margin-top: 8px; }
   .knowledge-filter-grid, .knowledge-grid, .knowledge-editor-grid, .knowledge-segment-picker > div { grid-template-columns: 1fr; }
   .knowledge-toolbar-actions { width: 100%; }
   .knowledge-search-panel { padding: 17px 15px 12px; }

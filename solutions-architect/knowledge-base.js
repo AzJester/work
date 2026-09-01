@@ -1,4 +1,4 @@
-import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=11";
+import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=12";
 
 export const KNOWLEDGE_BASE_SCHEMA = "solution-knowledge-base-v1";
 export const KNOWLEDGE_BASE_SCHEMA_VERSION = 1;

@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=11";
+} from "./engine.js?v=12";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,23 +37,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=11";
+} from "./capture.js?v=12";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=11";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=11";
+} from "./ingestion.js?v=12";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=12";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=11";
+} from "./export-docx.js?v=12";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=11";
+} from "./export-xlsx.js?v=12";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
   KNOWLEDGE_LIFECYCLE_STATUSES,
@@ -65,7 +65,7 @@ import {
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=11";
+} from "./knowledge-base.js?v=12";
 import {
   KNOWLEDGE_IMPORT_COLUMNS,
   KNOWLEDGE_IMPORT_FILE_ACCEPT,
@@ -74,9 +74,10 @@ import {
   normalizeKnowledgeImportRows,
   parseKnowledgeCsv,
   parseKnowledgeWorkbook
-} from "./knowledge-import.js?v=11";
+} from "./knowledge-import.js?v=12";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
+const DECISION_EXPORT_ACTIONS = new Set(["export-markdown", "export-html", "export-docx", "export-xlsx", "export-pdf"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u";
 const THEME_KEY = "solution_architect_theme_v1";
@@ -912,11 +913,31 @@ function renderTransition(solution) {
   ${governanceSection("Assumptions", "Validate assumptions before they become hidden delivery commitments.", "assumptions", assumptions, [{ label: "Assumption", field: "statement", multiline: true }, { label: "Owner", field: "owner" }, { label: "Validation plan", field: "validationPlan", multiline: true }, { label: "Status", field: "status", options: ["Unverified", "Validated", "Invalidated"] }])}</div>`;
 }
 
+function renderDecisionExportMenu() {
+  const formats = [
+    { action: "export-pdf", badge: "PDF", title: "PDF document", description: "Polished, share-ready report", label: "Download decision package as PDF" },
+    { action: "export-docx", badge: "DOCX", title: "Word document", description: "Editable Microsoft Word report", label: "Download decision package as Microsoft Word" },
+    { action: "export-xlsx", badge: "XLSX", title: "Excel workbook", description: "Structured Microsoft Excel workbook", label: "Download decision workbook as Microsoft Excel" },
+    { action: "export-html", badge: "HTML", title: "Standalone HTML", description: "Browser-ready report with embedded styling", label: "Download decision package as standalone HTML" },
+    { action: "export-markdown", badge: "MD", title: "Markdown", description: "Portable plain-text source", label: "Download decision package as Markdown" }
+  ];
+  return `<div class="decision-export-actions">
+    <button class="button primary decision-export-trigger" type="button" data-action="toggle-decision-export" aria-haspopup="menu" aria-expanded="false" aria-controls="decision-export-menu">
+      <span class="decision-export-trigger-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"/></svg></span>
+      <span>Export</span><span class="visually-hidden"> decision package</span>
+      <span class="decision-export-chevron" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><path d="m6 8 4 4 4-4"/></svg></span>
+    </button>
+    <div class="decision-export-menu" id="decision-export-menu" role="menu" aria-label="Decision package export formats" hidden>
+      ${formats.map(format => `<button class="decision-export-item" type="button" role="menuitem" tabindex="-1" data-action="${format.action}" aria-label="${format.label}"><span class="decision-export-badge" aria-hidden="true">${format.badge}</span><span class="decision-export-copy"><strong>${format.title}</strong><small>${format.description}</small></span></button>`).join("")}
+    </div>
+  </div>`;
+}
+
 function renderDecisionPackage(solution) {
   const readiness = buildReadiness(workspace, solution.id);
   const prepared = formatLocalDate();
   const segments = solution.missionSegments || [];
-  return `${renderStageRail(solution.stage)}<div class="section-toolbar decision-export-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div class="decision-export-actions"><button class="button secondary" type="button" data-action="export-markdown" aria-label="Download decision package as Markdown">Markdown</button><button class="button secondary" type="button" data-action="export-html" aria-label="Download decision package as standalone HTML">HTML</button><button class="button secondary" type="button" data-action="export-docx" aria-label="Download decision package as Microsoft Word">Word</button><button class="button secondary" type="button" data-action="export-xlsx" aria-label="Download decision workbook as Microsoft Excel">Excel</button><button class="button primary" type="button" data-action="export-pdf" aria-label="Download decision package as PDF">PDF</button></div></div><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><p class="section-kicker">Output preview</p><h3>Executive decision document</h3><p>HTML, PDF, Word, and Excel use the same validated solution facts with layouts tailored to each format.</p></div></div><div class="package-preview-artifact"><header class="package-preview-cover"><p class="package-preview-kicker">Solution decision package</p><h4>${h(solution.name)}</h4><p class="package-preview-lede">${h(solution.description || solution.mission.desiredState || solution.mission.problem || "Decision-ready solution architecture package.")}</p><dl><div><dt>Customer</dt><dd>${h(solution.customer || "Not recorded")}</dd></div><div><dt>Lifecycle stage</dt><dd>${h(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${h(solution.domain || "Not recorded")}</dd></div><div><dt>Prepared</dt><dd>${h(prepared)}</dd></div></dl><div class="package-preview-decision"><span>Decision requested</span><p>${h(solution.decision || "Decision request not yet defined")}</p></div><div class="package-preview-segments"><strong>Company mission segments</strong><div class="package-preview-tags">${segments.length ? segments.map(segment => `<span>${h(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div></div></header><div class="package-preview-contents"><div><p class="section-kicker">Inside the package</p><h4>One coherent decision story</h4><p>The report carries the complete workspace into readable sections with semantic headings, wrapping records, architecture figures, and format-aware pagination.</p></div><ol><li>Executive overview and mission context</li><li>Customer priorities, win themes, and proposal approach</li><li>Requirements, assessments, trades, and architecture</li><li>Decisions, risks, roadmap, transition, and evidence</li></ol></div></div></section>`;
+  return `${renderStageRail(solution.stage)}<div class="section-toolbar decision-export-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div>${renderDecisionExportMenu()}</div><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><p class="section-kicker">Output preview</p><h3>Executive decision document</h3><p>HTML, PDF, Word, and Excel use the same validated solution facts with layouts tailored to each format.</p></div></div><div class="package-preview-artifact"><header class="package-preview-cover"><p class="package-preview-kicker">Solution decision package</p><h4>${h(solution.name)}</h4><p class="package-preview-lede">${h(solution.description || solution.mission.desiredState || solution.mission.problem || "Decision-ready solution architecture package.")}</p><dl><div><dt>Customer</dt><dd>${h(solution.customer || "Not recorded")}</dd></div><div><dt>Lifecycle stage</dt><dd>${h(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${h(solution.domain || "Not recorded")}</dd></div><div><dt>Prepared</dt><dd>${h(prepared)}</dd></div></dl><div class="package-preview-decision"><span>Decision requested</span><p>${h(solution.decision || "Decision request not yet defined")}</p></div><div class="package-preview-segments"><strong>Company mission segments</strong><div class="package-preview-tags">${segments.length ? segments.map(segment => `<span>${h(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div></div></header><div class="package-preview-contents"><div><p class="section-kicker">Inside the package</p><h4>One coherent decision story</h4><p>The report carries the complete workspace into readable sections with semantic headings, wrapping records, architecture figures, and format-aware pagination.</p></div><ol><li>Executive overview and mission context</li><li>Customer priorities, win themes, and proposal approach</li><li>Requirements, assessments, trades, and architecture</li><li>Decisions, risks, roadmap, transition, and evidence</li></ol></div></div></section>`;
 }
 
 const ADD_DEFAULTS = {
@@ -1931,14 +1952,69 @@ function moveElementWithKeyboard(event) {
   });
 }
 
+function decisionExportMenuParts() {
+  const trigger = document.querySelector('[data-action="toggle-decision-export"]');
+  const menu = document.querySelector("#decision-export-menu");
+  const items = menu ? [...menu.querySelectorAll('[role="menuitem"]')] : [];
+  return { trigger, menu, items };
+}
+
+function setDecisionExportMenu(open, { focusItem = null, focusTrigger = false } = {}) {
+  const { trigger, menu, items } = decisionExportMenuParts();
+  if (!trigger || !menu) return;
+  menu.hidden = !open;
+  trigger.setAttribute("aria-expanded", String(open));
+  if (open && Number.isInteger(focusItem) && items.length) items[Math.max(0, Math.min(items.length - 1, focusItem))].focus();
+  if (!open && focusTrigger) trigger.focus();
+}
+
+function handleDecisionExportMenuKey(event) {
+  const { trigger, menu, items } = decisionExportMenuParts();
+  if (!trigger || !menu) return false;
+  const onTrigger = event.target === trigger || trigger.contains(event.target);
+  if (onTrigger && ["Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    if (menu.hidden) setDecisionExportMenu(true, { focusItem: 0 });
+    else setDecisionExportMenu(false, { focusTrigger: true });
+    return true;
+  }
+  if (onTrigger && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+    event.preventDefault();
+    setDecisionExportMenu(true, { focusItem: event.key === "ArrowDown" ? 0 : items.length - 1 });
+    return true;
+  }
+  if (menu.hidden) return false;
+  if (event.key === "Tab") {
+    setDecisionExportMenu(false);
+    return true;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    setDecisionExportMenu(false, { focusTrigger: true });
+    return true;
+  }
+  const index = items.indexOf(event.target);
+  if (index < 0 || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return false;
+  event.preventDefault();
+  const nextIndex = event.key === "Home" ? 0
+    : event.key === "End" ? items.length - 1
+      : event.key === "ArrowDown" ? (index + 1) % items.length
+        : (index - 1 + items.length) % items.length;
+  items[nextIndex]?.focus();
+  return true;
+}
+
 // Event delegation
 document.addEventListener("click", event => {
+  if (document.querySelector("#decision-export-menu:not([hidden])") && !event.target.closest(".decision-export-actions")) setDecisionExportMenu(false);
   if (document.querySelector("#sidebar.open") && !event.target.closest("#sidebar")) setSidebarOpen(false);
   if (event.target.matches("[data-modal-backdrop]")) { closeModal(); return; }
   const close = event.target.closest("[data-close-modal]"); if (close) { closeModal(); return; }
   const routeButton = event.target.closest("[data-route-button]"); if (routeButton) { location.hash = routeButton.dataset.routeButton; return; }
   const actionControl = event.target.closest("[data-action]");
   const action = actionControl?.dataset.action;
+  if (action === "toggle-decision-export") { setDecisionExportMenu(document.querySelector("#decision-export-menu")?.hidden !== false); return; }
+  if (DECISION_EXPORT_ACTIONS.has(action)) setDecisionExportMenu(false, { focusTrigger: true });
   if (action === "new-solution") showNewSolution();
   if (action === "quick-capture") showQuickCapture();
   if (action === "open-capture-inbox") showCaptureInbox();
@@ -2296,8 +2372,12 @@ document.addEventListener("keydown", event => {
   }
   if (event.key === "Escape" && document.querySelector("#modal-root .modal")) { event.preventDefault(); closeModal(); return; }
   if (event.key === "Escape" && document.querySelector("#sidebar.open")) { event.preventDefault(); setSidebarOpen(false); document.querySelector('[data-action="toggle-nav"]')?.focus(); return; }
+  if (handleDecisionExportMenuKey(event)) return;
   trapModalFocus(event);
   trapSidebarFocus(event);
+});
+document.addEventListener("focusin", event => {
+  if (document.querySelector("#decision-export-menu:not([hidden])") && !event.target.closest(".decision-export-actions")) setDecisionExportMenu(false);
 });
 document.addEventListener("dragover", event => {
   if (event.target.closest("#source-drop-zone")) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }
@@ -2313,7 +2393,7 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=11", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=12", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }

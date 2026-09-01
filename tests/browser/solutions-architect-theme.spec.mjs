@@ -252,6 +252,86 @@ test("workspace actions use one compact, aligned rail in both themes", async ({ 
   await expect(page.getByRole("dialog", { name: "Review capture inbox" })).toBeVisible();
 });
 
+test("decision package exports use one accessible, responsive format menu", async ({ page }) => {
+  for (const theme of ["light", "dark"]) {
+    for (const width of [1240, 760, 390, 320]) {
+      await test.step(`${theme} export menu at ${width}px`, async () => {
+        await page.setViewportSize({ width, height: 900 });
+        await gotoFresh(page, "decision-package");
+        if (theme === "dark") await page.locator("#theme-toggle").click();
+
+        const trigger = page.getByRole("button", { name: "Export decision package", exact: true });
+        const menu = page.getByRole("menu", { name: "Decision package export formats", exact: true });
+        await expect(trigger).toBeVisible();
+        await expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await expect(trigger).toHaveAttribute("aria-controls", "decision-export-menu");
+        await expect(menu).toBeHidden();
+        await expect(page.locator(".decision-export-actions button:visible")).toHaveCount(1);
+
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "true");
+        await expect(menu).toBeVisible();
+        const items = menu.getByRole("menuitem");
+        await expect(items).toHaveCount(5);
+        for (const name of [
+          "Download decision package as PDF",
+          "Download decision package as Microsoft Word",
+          "Download decision workbook as Microsoft Excel",
+          "Download decision package as standalone HTML",
+          "Download decision package as Markdown"
+        ]) await expect(menu.getByRole("menuitem", { name, exact: true })).toBeVisible();
+
+        const layout = await page.locator(".decision-export-actions").evaluate(node => {
+          const rect = element => {
+            const box = element.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+          };
+          return {
+            trigger: rect(node.querySelector(".decision-export-trigger")),
+            menu: rect(node.querySelector(".decision-export-menu")),
+            items: [...node.querySelectorAll(".decision-export-item")].map(rect),
+            pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+          };
+        });
+        expect(layout.trigger.height).toBeGreaterThanOrEqual(44);
+        expect(layout.menu.left).toBeGreaterThanOrEqual(-1);
+        expect(layout.menu.right).toBeLessThanOrEqual(width + 1);
+        expect(layout.pageOverflow).toBeLessThanOrEqual(1);
+        for (const item of layout.items) expect(item.height).toBeGreaterThanOrEqual(44);
+
+        await page.locator(".decision-export-toolbar h3").click();
+        await expect(menu).toBeHidden();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+      });
+    }
+  }
+
+  await page.setViewportSize({ width: 390, height: 820 });
+  await gotoFresh(page, "decision-package");
+  const trigger = page.getByRole("button", { name: "Export decision package", exact: true });
+  const menu = page.getByRole("menu", { name: "Decision package export formats", exact: true });
+  await trigger.focus();
+  await trigger.press("Enter");
+  const items = menu.getByRole("menuitem");
+  await expect(items.first()).toBeFocused();
+  await items.first().press("Shift+Tab");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await trigger.press("Space");
+  await expect(menu).toBeVisible();
+  await expect(items.first()).toBeFocused();
+  await items.first().press("End");
+  await expect(items.last()).toBeFocused();
+  await items.last().press("ArrowUp");
+  await expect(items.nth(3)).toBeFocused();
+  await items.nth(3).press("Home");
+  await expect(items.first()).toBeFocused();
+  await items.first().press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
 test("tablet navigation stays labeled and exposes the current page while Tools remains visible", async ({ page }) => {
   await page.setViewportSize({ width: 980, height: 900 });
   await gotoFresh(page);
