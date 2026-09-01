@@ -136,6 +136,31 @@ capabilities, mission-segment fit, deployment and interface notes, integration,
 cyber/safety, MOSA and data-rights considerations, optional readiness levels and
 basis, source information, review date, tags, and a change summary.
 
+For bulk entry, use the Knowledge Base **Templates** control or download the
+[Excel import template](./assets/solution-knowledge-base-import-template.xlsx)
+directly. Microsoft
+Excel (`.xlsx`) is preferred; UTF-8 CSV (`.csv`) is also accepted. Put one offering
+on each row. **Name** is the only required field for a new offering. The complete
+26-column layout is: Catalog ID, Expected Revision, Name, Offering Type, Provider /
+Owner, Version / Release, Lifecycle Status, Summary, Capabilities, Mission Segments,
+Deployment and Environment, Interfaces, Integration Considerations, Cyber and Safety
+Considerations, MOSA and Data Rights, Technology Readiness Level, Manufacturing
+Readiness Level, Integration Readiness Level, Readiness Basis, Readiness As Of, Source
+Title, Source URL, Source Notes, Tags, Last Reviewed, and Change Summary. Separate
+multi-value entries with semicolons or line breaks, use `YYYY-MM-DD` dates, and leave
+a readiness level blank when it is unknown. Valid readiness ranges are 1–9 for
+Technology, 1–10 for Manufacturing, and 0–9 for Integration. Use literal cell values
+rather than formulas and keep the import sheet and used rows/columns visible. Files
+are limited to 5 MB, and the resulting catalog is limited to 1,000 offerings.
+
+Spreadsheet import merges approved rows into the existing catalog after an atomic
+preview. New rows leave **Catalog ID** and **Expected Revision** blank. Updating an
+existing item requires explicit add/update mode plus its exact Catalog ID, current
+Expected Revision, and a Change Summary. The importer never updates by name. Any
+validation, stale-revision, duplicate, or storage error prevents the entire Apply
+operation from changing the catalog. The selected file is parsed locally in the
+browser and is not uploaded.
+
 Selecting **Use in active solution** copies the current catalog revision into that
 solution as a new, solution-scoped Technology Assessment candidate. The copy receives
 its own ID and can be scored, evidenced, and given a solution-specific status without
@@ -150,11 +175,12 @@ a catalog item also leaves existing solution copies intact; retired items cannot
 copied into another solution.
 
 The catalog uses the separate `solution-knowledge-base-v1` contract and
-`solution_architect_knowledge_base_v1` storage key. **Export catalog** and **Import
-catalog** use a separate validated JSON backup; a workspace JSON export, workspace
-snapshot, solution duplication, and decision package do not contain the catalog.
-Catalog import replaces the catalog only after complete validation. Keep dated
-catalog and workspace backups together when moving work to another browser profile.
+`solution_architect_knowledge_base_v1` storage key. Spreadsheet import is for adding
+or explicitly revising catalog rows; JSON backup/restore remains the exact portable
+catalog format and replaces the catalog only after complete validation. A workspace
+JSON export, workspace snapshot, solution duplication, and decision package do not
+contain the catalog. Keep dated catalog and workspace JSON backups together when
+moving work to another browser profile.
 
 ## Decision-support limits
 

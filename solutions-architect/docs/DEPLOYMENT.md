@@ -11,11 +11,16 @@ frontend needs no build command, cloud project database, or server-rendered runt
 Pinned PDF and spreadsheet parsing assets are repository-owned and published with the
 static site; production source ingestion does not depend on a CDN.
 
-the Light-default theme toggle, Quick Capture, the per-solution Review inbox, company
+The Light-default theme toggle, Quick Capture, the per-solution Review inbox, company
 mission segments, and local source extraction are frontend-only capabilities. They
 add no cloud upload endpoint, Supabase table, storage bucket, migration, or new Edge
 Function. Original selected files remain in the browser intake session and are never
 part of the deploy artifact or backend request.
+
+Knowledge Base Excel/CSV templates and list import are also frontend-only. The
+published Excel template is a static asset; selected `.xlsx` and UTF-8 `.csv` files
+are parsed locally and are not uploaded. JSON remains the exact catalog backup and
+restore contract, while spreadsheet Apply merges a completely validated import plan.
 
 ## Optional AI backend
 
@@ -70,10 +75,11 @@ Run focused checks:
 ```powershell
 node --check solutions-architect/app.js
 node --check solutions-architect/engine.js
+node --check solutions-architect/knowledge-import.js
 node --check solutions-architect/capture.js
 node --check solutions-architect/ingestion.js
 node --check solutions-architect/ingestion-worker.js
-node --test tests/solutions-architect.test.mjs tests/solutions-architect-capture.test.mjs tests/solutions-architect-ingestion.test.mjs tests/solutions-architect-mission-segments.test.mjs tests/solutions-architect-meeting-evidence.test.mjs tests/solutions-architect-export-pdf.test.mjs tests/solutions-architect-docx-export.test.mjs tests/solutions-architect-xlsx.test.mjs tests/solution-assist-contract.test.mjs
+node --test tests/solutions-architect.test.mjs tests/solutions-architect-knowledge-import.test.mjs tests/solutions-architect-capture.test.mjs tests/solutions-architect-ingestion.test.mjs tests/solutions-architect-mission-segments.test.mjs tests/solutions-architect-meeting-evidence.test.mjs tests/solutions-architect-export-pdf.test.mjs tests/solutions-architect-docx-export.test.mjs tests/solutions-architect-xlsx.test.mjs tests/solution-assist-contract.test.mjs
 npm run test:browser -- tests/browser/solutions-architect.spec.mjs tests/browser/solutions-architect-theme.spec.mjs tests/browser/solutions-architect-mission-segments.spec.mjs tests/browser/solutions-architect-capture-ingestion.spec.mjs tests/browser/solutions-architect-meeting-capture.spec.mjs tests/browser/solutions-architect-readability.spec.mjs
 ```
 
@@ -118,26 +124,34 @@ npm run test:browser
     segments, and locator appear in evidence and the decision package.
 13. Ingest sourced customer hot buttons, reject duplicates, trace them to requirements,
    and confirm unvalidated or untraced signals remain visible obligations.
-14. Create a win theme linked to customer signals and evidence; confirm missing
+14. Download and inspect both Knowledge Base templates. Import synthetic XLSX and
+    UTF-8 CSV rows, preview before Apply, and confirm one offering per row, Name-only
+    new items, list/date/readiness normalization, and local-only processing. Exercise
+    explicit update mode with Catalog ID, current Expected Revision, and Change
+    Summary. Reject stale revisions, update-by-name attempts, duplicates, invalid
+    rows, changed base state, and storage failures without any partial catalog change.
+    Confirm spreadsheet Apply merges while JSON restore replaces, and existing
+    solution copies never refresh automatically.
+15. Create a win theme linked to customer signals and evidence; confirm missing
    customer value, discriminator, proof, or evidence remains a proposal obligation.
-15. Create every architecture template; verify drag, keyboard movement, auto-layout,
+16. Create every architecture template; verify drag, keyboard movement, auto-layout,
    accessible tables, and SVG/PNG downloads.
-16. Verify Markdown, standalone HTML, native PDF, Word `.docx`, and Excel `.xlsx`
+17. Verify Markdown, standalone HTML, native PDF, Word `.docx`, and Excel `.xlsx`
     downloads. Open every file and confirm the active solution is isolated, the
     expected sections are present, and long content wraps without clipping. Confirm
     PDF downloads directly without opening a print or pop-up window.
-17. Test every work area at current desktop and narrow-phone sizes. Confirm larger
+18. Test every work area at current desktop and narrow-phone sizes. Confirm larger
     controls and labels, content-growing text areas, record cards, navigation,
     keyboard-only operation, Quick Capture's shortcut, touch intake/review, reduced
     motion, long content, and absence of page-level horizontal overflow. Wide
     analytical tables may scroll only inside their own panels.
-18. Mock AI unauthenticated, unauthorized, quota, timeout, malformed-output, and
+19. Mock AI unauthenticated, unauthorized, quota, timeout, malformed-output, and
    unavailable-service responses. Confirm payload cancellation sends nothing and an
    accepted result remains a draft. Confirm selected mission segments appear and
    source binaries never do.
-19. With an approved production account, send one safe synthetic payload and confirm
+20. With an approved production account, send one safe synthetic payload and confirm
    origin, allowlist, quota metadata, citations, and content-free operational logs.
-20. After merging to `main`, wait for **Deploy to GitHub Pages** and run the production
+21. After merging to `main`, wait for **Deploy to GitHub Pages** and run the production
    smoke checks against the final URL and Application Library link.
 
 The existing workflow does not publish feature-branch preview environments. Validate

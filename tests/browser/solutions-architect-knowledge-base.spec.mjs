@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 const APP_PATH = "../solutions-architect/";
 const WORKSPACE_KEY = "solution_architect_workspace_v1";
@@ -31,6 +32,215 @@ async function openRoute(page, route) {
 async function pageOverflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 }
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function knowledgeCsv(headers, rows) {
+  return `\uFEFF${[headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+async function setKnowledgeListFile(page, { name, mimeType, buffer }) {
+  await page.locator("#knowledge-list-import").setInputFiles({ name, mimeType, buffer });
+  await expect(page.getByRole("dialog", { name: "Review Knowledge Base import" })).toBeVisible();
+}
+
+async function downloadedBytes(download) {
+  expect(await download.failure()).toBeNull();
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  return readFile(path);
+}
+
+test("Knowledge Base toolbar exposes responsive templates, list import, JSON backup, and add controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
+  await gotoFresh(page);
+
+  const toolbar = page.locator(".knowledge-toolbar-actions");
+  await expect(toolbar.getByRole("button", { name: "Templates", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Import list", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "JSON backup", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Add offering", exact: true })).toBeVisible();
+
+  await toolbar.getByRole("button", { name: "Templates", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Knowledge Base import templates" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Name is the only required value");
+  await expect(dialog).toContainText("Separate capabilities, mission segments, and tags with semicolons or line breaks.");
+
+  const [excelDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    dialog.getByRole("link", { name: "Download Excel template", exact: true }).click()
+  ]);
+  expect(excelDownload.suggestedFilename()).toBe("solution-knowledge-base-import-template.xlsx");
+  const excelBytes = await downloadedBytes(excelDownload);
+  expect(excelBytes.length).toBeGreaterThan(5_000);
+  expect(excelBytes.subarray(0, 2).toString("ascii")).toBe("PK");
+
+  const [csvDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    dialog.getByRole("button", { name: "Download CSV template", exact: true }).click()
+  ]);
+  expect(csvDownload.suggestedFilename()).toBe("solution-knowledge-base-import-template.csv");
+  const csvBytes = await downloadedBytes(csvDownload);
+  expect(csvBytes.subarray(0, 3)).toEqual(Buffer.from([0xEF, 0xBB, 0xBF]));
+  const csvText = csvBytes.toString("utf8");
+  expect(csvText).toContain("Catalog ID,Expected Revision,Name,Offering Type");
+  expect(csvText.trim().split(/\r?\n/)).toHaveLength(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(dialog).toBeVisible();
+  await expect.poll(() => pageOverflow(page)).toBeLessThanOrEqual(1);
+  const dialogBounds = await dialog.evaluate(node => {
+    const box = node.getBoundingClientRect();
+    return { left: box.left, right: box.right, width: box.width, viewport: document.documentElement.clientWidth };
+  });
+  expect(dialogBounds.left).toBeGreaterThanOrEqual(0);
+  expect(dialogBounds.right).toBeLessThanOrEqual(dialogBounds.viewport + 1);
+  expect(dialogBounds.width).toBeGreaterThan(300);
+});
+
+test("valid UTF-8 CSV is previewed before one atomic Knowledge Base save", async ({ page }) => {
+  await gotoFresh(page);
+  const before = await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY);
+  const beforeCatalog = JSON.parse(before);
+  const csv = knowledgeCsv(
+    ["Name", "Offering Type", "Provider / Owner", "Version / Release", "Lifecycle Status", "Summary", "Capabilities", "Tags"],
+    [["Field Integration Toolkit", "Software", "Synthetic Engineering Group", "2.4", "Current", "Reusable unclassified integration-planning toolkit.", "Interface mapping; Verification planning", "integration; reusable"]]
+  );
+
+  await setKnowledgeListFile(page, {
+    name: "knowledge-offerings.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv, "utf8")
+  });
+  const preview = page.getByRole("dialog", { name: "Review Knowledge Base import" });
+  await expect(preview).toContainText("UTF-8 CSV");
+  await expect(preview.locator(".knowledge-import-counts")).toContainText(/New\s*1/);
+  await expect(preview).toContainText("Field Integration Toolkit");
+  expect(await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY)).toBe(before);
+
+  await preview.getByRole("button", { name: "Apply 1 change", exact: true }).click();
+  await expect(page.getByText("1 offering added. Existing solution copies were not changed.", { exact: true })).toBeVisible();
+  const imported = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), KNOWLEDGE_BASE_KEY);
+  expect(imported.items).toHaveLength(beforeCatalog.items.length + 1);
+  expect(imported.items.at(-1)).toMatchObject({
+    name: "Field Integration Toolkit",
+    offeringType: "Software",
+    provider: "Synthetic Engineering Group",
+    version: "2.4",
+    capabilities: ["Interface mapping", "Verification planning"],
+    tags: ["integration", "reusable"],
+    revision: 1
+  });
+});
+
+test("invalid CSV keeps the catalog byte-for-byte unchanged and blocks Apply on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoFresh(page);
+  const before = await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY);
+  const csv = knowledgeCsv(
+    ["Name", "Offering Type", "Technology Readiness Level"],
+    [["Invalid readiness example", "Application", "99"]]
+  );
+
+  await setKnowledgeListFile(page, {
+    name: "invalid-knowledge-offerings.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv, "utf8")
+  });
+  const preview = page.getByRole("dialog", { name: "Review Knowledge Base import" });
+  await expect(preview.locator(".knowledge-import-counts")).toContainText(/Errors\s*1/);
+  await expect(preview.locator("[data-knowledge-list-apply]")).toBeDisabled();
+  await expect(preview.getByRole("status")).toContainText("must be corrected");
+  await expect(preview).toContainText("trl must be 1-9 or null");
+  expect(await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY)).toBe(before);
+  await expect.poll(() => pageOverflow(page)).toBeLessThanOrEqual(1);
+});
+
+test("repository-bundled SheetJS imports a valid Solutions worksheet", async ({ page }) => {
+  await gotoFresh(page);
+  const beforeCount = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).items.length, KNOWLEDGE_BASE_KEY);
+  const workbookBase64 = await page.evaluate(() => {
+    const rows = [
+      ["Name", "Offering Type", "Provider / Owner", "Version / Release", "Lifecycle Status", "Summary", "Capabilities"],
+      ["Mission Data Adapter", "Application", "Synthetic Mission Systems", "3.1", "Current", "Normalizes approved unclassified mission data exchanges.", "Data translation; Interface monitoring"]
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), "Solutions");
+    return XLSX.write(workbook, { type: "base64", bookType: "xlsx", compression: true });
+  });
+
+  await setKnowledgeListFile(page, {
+    name: "knowledge-offerings.xlsx",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: Buffer.from(workbookBase64, "base64")
+  });
+  const preview = page.getByRole("dialog", { name: "Review Knowledge Base import" });
+  await expect(preview).toContainText("Excel · Solutions");
+  await expect(preview).toContainText("Mission Data Adapter");
+  await preview.getByRole("button", { name: "Apply 1 change", exact: true }).click();
+
+  const imported = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), KNOWLEDGE_BASE_KEY);
+  expect(imported.items).toHaveLength(beforeCount + 1);
+  expect(imported.items.at(-1)).toMatchObject({
+    name: "Mission Data Adapter",
+    offeringType: "Application",
+    provider: "Synthetic Mission Systems",
+    capabilities: ["Data translation", "Interface monitoring"]
+  });
+});
+
+test("explicit upsert requires ID, revision, and change summary and never auto-refreshes a solution copy", async ({ page }) => {
+  await gotoFresh(page);
+  const card = page.locator("[data-knowledge-card]").first();
+  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
+  await expect(page.getByText(/was copied into .* for solution-specific assessment\./)).toBeVisible();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+  const seeded = await page.evaluate(([workspaceKey, catalogKey]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    const item = catalog.items[0];
+    const candidate = workspace.candidates.find(record => record.catalogSource?.itemId === item.id);
+    return { item, candidate };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY]);
+  expect(seeded.candidate).toBeTruthy();
+
+  const updatedSummary = "Updated catalog facts supplied through an explicit spreadsheet upsert.";
+  const csv = knowledgeCsv(
+    ["Catalog ID", "Expected Revision", "Name", "Summary", "Change Summary"],
+    [[seeded.item.id, seeded.item.revision, seeded.item.name, updatedSummary, "Reviewed spreadsheet update for browser coverage."]]
+  );
+  await setKnowledgeListFile(page, {
+    name: "knowledge-upsert.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv, "utf8")
+  });
+  let preview = page.getByRole("dialog", { name: "Review Knowledge Base import" });
+  await expect(preview.locator("[data-knowledge-list-apply]")).toBeDisabled();
+  await expect(preview).toContainText("can only be updated in upsert mode");
+
+  await preview.getByRole("radio", { name: /Add new and update by Catalog ID/ }).check();
+  preview = page.getByRole("dialog", { name: "Review Knowledge Base import" });
+  await expect(preview.locator(".knowledge-import-counts")).toContainText(/Updated\s*1/);
+  await preview.getByRole("button", { name: "Apply 1 change", exact: true }).click();
+
+  const after = await page.evaluate(([workspaceKey, catalogKey, itemId, candidateId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    return {
+      item: catalog.items.find(record => record.id === itemId),
+      candidate: workspace.candidates.find(record => record.id === candidateId)
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY, seeded.item.id, seeded.candidate.id]);
+  expect(after.item.revision).toBe(seeded.item.revision + 1);
+  expect(after.item.summary).toBe(updatedSummary);
+  expect(after.item.changeSummary).toBe("Reviewed spreadsheet update for browser coverage.");
+  expect(after.candidate.catalogSource.revision).toBe(seeded.candidate.catalogSource.revision);
+  expect(after.candidate.description).toBe(seeded.candidate.description);
+});
 
 test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay solution-safe", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 920 });
@@ -134,8 +344,13 @@ test("an unreadable saved catalog is preserved until a valid backup is explicitl
   await page.reload({ waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("alert").filter({ hasText: "Saved catalog needs recovery" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add item", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Export catalog", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Add offering", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Import list", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "JSON backup", exact: true }).click();
+  const backupDialog = page.getByRole("dialog", { name: "Knowledge Base backup and restore" });
+  await expect(backupDialog).toContainText("Recovery required");
+  await expect(backupDialog.getByRole("button", { name: "Download JSON backup", exact: true })).toBeDisabled();
+  await expect(backupDialog.getByRole("button", { name: "Choose JSON backup", exact: true })).toBeEnabled();
   expect(await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY)).toBe(unreadableSavedValue);
 
   await page.locator("#knowledge-import").setInputFiles({
@@ -145,7 +360,8 @@ test("an unreadable saved catalog is preserved until a valid backup is explicitl
   });
   await expect(page.getByText("1 Knowledge Base item imported.", { exact: true })).toBeVisible();
   await expect(page.locator(".knowledge-recovery")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add item", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Add offering", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Import list", exact: true })).toBeEnabled();
   expect(JSON.parse(await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY)).schema).toBe("solution-knowledge-base-v1");
 });
 

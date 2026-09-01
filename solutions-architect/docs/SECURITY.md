@@ -99,6 +99,29 @@ entries, 20 MB per expanded ZIP entry, 50 MB expanded ZIP content, 200 PDF pages
 200,000 extracted text characters, and 20 seconds per extraction. These limits reduce
 resource-exhaustion risk but do not make malicious or restricted content safe.
 
+### Knowledge Base spreadsheet import
+
+Knowledge Base Excel (`.xlsx`) and UTF-8 CSV (`.csv`) list imports are separate from
+source-excerpt ingestion. The browser parses the selected file locally into bounded
+catalog fields. The original workbook/CSV bytes are not uploaded, written to
+localStorage, placed in the service-worker cache, included in workspace or catalog
+JSON backup, sent to AI, or retained after the import flow closes. Endpoint and
+browser-extension risks still apply while the file is open.
+
+Imported cell text is untrusted input. The importer maps only supported headers,
+normalizes bounded values, validates allowed types, lifecycle states, dates,
+readiness ranges, URLs, mission segments, identifiers, revisions, duplicates, and
+the final catalog before writing. A preview is not a partial save. Apply performs one
+validated catalog write, and any row error, changed base catalog, or storage failure
+leaves the prior catalog in place.
+
+Add-only is the default. Update mode requires an exact Catalog ID, current Expected
+Revision, and Change Summary and never treats a matching name as authority to change
+an existing item. This limits accidental overwrite; it does not provide approvals,
+configuration control, authenticity, or provenance verification. The user remains
+responsible for confirming that every imported fact and source is accurate, current,
+approved for this application, and within the published data boundary.
+
 ### Downloads
 
 Workspace JSON backups, separate capture-inbox JSON reference downloads, Markdown,

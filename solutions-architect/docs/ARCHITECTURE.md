@@ -15,6 +15,8 @@ index.html
   |-- export-xlsx.js   formatted decision workbook renderer
   |-- knowledge-base.js
   |                     separate catalog contract, validation, copy, and refresh
+  |-- knowledge-import.js
+  |                     bounded CSV/XLSX normalization and atomic import planning
   |-- capture.js       isolated capture-inbox contract and materialization
   |-- ingestion.js     bounded local source detection, extraction, and metadata
   |-- ingestion-worker.js
@@ -25,7 +27,7 @@ index.html
   `-- optional authentication client for AI access
 
 ../black-hat-agent/vendor/xlsx.full.min.js
-  `-- pinned local spreadsheet runtime used for ingestion and workbook export
+  `-- pinned local spreadsheet runtime used for ingestion, catalog import, and export
 
 Supabase Edge Function: solution-assist
   `-- optional authenticated, allowlisted, quota-bound model request
@@ -138,14 +140,67 @@ preserved. There is no automatic refresh or background synchronization.
 Catalog validation rejects unsupported schemas and fields, malformed IDs, duplicate
 item IDs, unsupported types or lifecycle states, invalid readiness/date/URL values,
 credential-bearing URLs, unsupported mission segments, oversized fields, more than
-1,000 items, or an import over 5 MB. Import validates the entire document and writes
-it once before replacing the in-memory catalog. A rejected file or storage failure
-leaves the current catalog in place.
+1,000 items, or an import over 5 MB. JSON restore validates the entire document and
+writes it once before replacing the in-memory catalog. A rejected file or storage
+failure leaves the current catalog in place.
 
-**Export catalog** produces the Knowledge Base's own JSON backup. Workspace JSON,
-workspace snapshots, solution duplication, capture-inbox export, decision packages,
-and AI payloads exclude the catalog. Moving reusable and active work therefore
-requires two artifacts: a workspace backup and a catalog backup.
+### Knowledge Base spreadsheet import
+
+The catalog has a second, merge-oriented import path for the downloadable Excel
+template (`.xlsx`) and matching UTF-8 CSV (`.csv`). XLSX is preferred because it can
+carry Instructions, Allowed Values, and Synthetic Example sheets beside the
+importable Solutions sheet. CSV uses only the canonical header row. Both formats are
+parsed locally; the source file and its bytes are not uploaded, persisted, cached, or
+added to JSON backup.
+
+The import contract uses one offering per row and these 26 canonical columns:
+
+```text
+Catalog ID | Expected Revision | Name | Offering Type | Provider / Owner |
+Version / Release | Lifecycle Status | Summary | Capabilities | Mission Segments |
+Deployment and Environment | Interfaces | Integration Considerations |
+Cyber and Safety Considerations | MOSA and Data Rights |
+Technology Readiness Level | Manufacturing Readiness Level |
+Integration Readiness Level | Readiness Basis | Readiness As Of | Source Title |
+Source URL | Source Notes | Tags | Last Reviewed | Change Summary
+```
+
+Name is the only required value for a new row. Multi-value cells accept semicolons or
+line breaks. Dates use `YYYY-MM-DD`. Readiness fields are nullable integers with
+Technology 1–9, Manufacturing 1–10, and Integration 0–9 bounds; blank means unknown.
+Normal field lengths, URL rules, mission-segment allowlists, offering types,
+lifecycle states, 5 MB input limit, and 1,000-item catalog bound still apply. Formula
+cells and hidden selected sheets, rows, or columns are rejected so preview reflects
+the literal visible table the user reviewed.
+
+Spreadsheet import is plan-then-commit rather than row-at-a-time mutation:
+
+```text
+local XLSX/CSV bytes
+  -> bounded parse and canonical header mapping
+  -> row normalization and complete catalog validation
+  -> preview additions, updates, no-ops, and errors
+  -> user Apply against the same base catalog `savedAt` state
+  -> one storage write and one in-memory replacement
+```
+
+Add-only is the default. A new row leaves Catalog ID and Expected Revision blank.
+Explicit add/update mode permits an existing item to change only when the row carries
+its exact Catalog ID, its current Expected Revision, and a nonblank Change Summary.
+There is no update-by-name behavior. Unknown or duplicate IDs, stale revisions,
+duplicate logical offerings, invalid fields, a changed base catalog, or storage
+failure rejects the entire Apply operation. Valid rows are never partially committed.
+
+The merge result changes only the reusable catalog. It does not traverse
+`catalogSource` provenance or update candidates already copied into solutions. Those
+point-in-time copies continue to require the separate **Refresh solution copy**
+action.
+
+**JSON backup** produces or restores the Knowledge Base's exact portable JSON.
+Spreadsheet import is a merge workflow and is not a replacement for backup/restore.
+Workspace JSON, workspace snapshots, solution duplication, capture-inbox export,
+decision packages, and AI payloads exclude the catalog. Moving reusable and active
+work therefore requires two artifacts: a workspace backup and a catalog backup.
 
 ## Capture-inbox contract
 
@@ -255,10 +310,11 @@ downloaded JSON workspace is the durable backup and transfer mechanism.
 
 The Knowledge Base is serialized independently under
 `solution_architect_knowledge_base_v1`. It is not included in workspace recovery
-points or workspace JSON. Its **Export catalog** JSON is the only portable catalog
-backup in v1; catalog import replaces only the catalog after complete validation and
-does not create a workspace snapshot. Back up both stores before clearing site data
-or moving to another browser profile.
+points or workspace JSON. Its **JSON backup** is the exact portable catalog backup;
+JSON restore replaces only the catalog after complete validation and does not create
+a workspace snapshot. Spreadsheet import merges validated rows but is not a durable
+backup. Back up both stores before clearing site data or moving to another browser
+profile.
 
 The application does not encrypt workspace values inside `localStorage`, synchronize
 them to another device, or guarantee persistence across browser policies, private

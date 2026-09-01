@@ -143,9 +143,23 @@ A successful workspace lets that user:
 - Prevent a retired catalog item from being newly copied while leaving prior solution
   copies usable. Prevent a second copy of the same item in one solution; open the
   existing assessment instead.
-- Export and import the catalog through a separate validated JSON file. Validate the
-  complete import before replacing catalog storage, reject unsupported versions and
-  malformed or duplicate items, bound imports to 5 MB and 1,000 records, and leave
+- Provide downloadable Knowledge Base templates for preferred Microsoft Excel
+  (`.xlsx`) and UTF-8 CSV (`.csv`) list intake. Use one offering per row and the 26
+  canonical columns documented in the user guide. Require only Name for a new item;
+  accept semicolon- or line-break-separated lists, `YYYY-MM-DD` dates, nullable
+  readiness values within Technology 1–9, Manufacturing 1–10, and Integration 0–9,
+  and the catalog's existing allowed-value and field bounds.
+- Preview spreadsheet changes before Apply and commit them atomically as a merge into
+  the current catalog. Default to add-only. Permit an explicit update only when the
+  row supplies the exact Catalog ID, current Expected Revision, and nonblank Change
+  Summary. Never update by name. Reject unknown or duplicate IDs, stale revisions,
+  logical duplicates, invalid rows, changed base state, or storage failures without
+  applying any row. Process the source file locally and do not persist or upload its
+  bytes.
+- Export and restore the catalog through a separate validated JSON file. JSON is the
+  exact backup/transfer contract, not the spreadsheet merge contract. Validate the
+  complete restore before replacing catalog storage, reject unsupported versions
+  and malformed or duplicate items, bound inputs to 5 MB and 1,000 records, and leave
   the current catalog unchanged on rejection or storage failure.
 - Keep the Knowledge Base out of workspace snapshots, workspace JSON backups,
   decision-package exports, capture inboxes, and AI payloads. Make clear that moving

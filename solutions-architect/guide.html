@@ -11,8 +11,8 @@
   <title>Solution Architect Workbench User Guide</title>
   <link rel="canonical" href="https://azjester.github.io/work/solutions-architect/guide.html">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <script src="theme-init.js?v=9"></script>
-  <link rel="stylesheet" href="styles.css?v=9">
+  <script src="theme-init.js?v=10"></script>
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body class="guide-document">
   <a class="skip-link" href="#guide-content">Skip to guide</a>
@@ -42,6 +42,7 @@ traceable solution, and produce a decision package.</p>
 <li><a href="#open-local-files-for-ingestion">Open permitted local files</a></li>
 <li><a href="#use-the-readable-work-area-layout">Use the readable work-area layout</a></li>
 <li><a href="#build-and-reuse-the-knowledge-base">Build and reuse the Knowledge Base</a></li>
+<li><a href="#import-a-list-from-excel-or-csv">Import Knowledge Base offerings from Excel or CSV</a></li>
 <li><a href="#work-the-solution-lifecycle">Work the iterative solution lifecycle</a></li>
 <li><a href="#run-an-optional-analysis-of-alternatives">Run an optional Analysis of Alternatives</a></li>
 <li><a href="#produce-and-review-the-decision-package">Produce the decision package</a></li>
@@ -167,6 +168,11 @@ mission connection is not a strategy.</p>
 <td>A permitted document, spreadsheet, or image</td>
 <td><strong>Workspace tools → Open local files</strong></td>
 <td>Only selected excerpts or a manual image caption, plus source metadata</td>
+</tr>
+<tr>
+<td>A list of reusable solution offerings</td>
+<td><strong>Knowledge base → Import list</strong></td>
+<td>Validated additions or explicit revision-controlled updates to the reusable catalog</td>
 </tr>
 <tr>
 <td>A short list of customer signals</td>
@@ -435,7 +441,7 @@ integrated solutions, and other offerings. It is shared across solutions in this
 browser profile, but it is not a cloud library or an enterprise system of record.</p>
 <h3 id="add-or-revise-an-offering">Add or revise an offering</h3>
 <ol>
-<li>Select <strong>Add item</strong>.</li>
+<li>Select <strong>Add offering</strong>.</li>
 <li>Record the reusable facts: name, offering type, provider, product version/release,
 lifecycle status, summary, capabilities, mission segments, deployment and
 environment, interfaces, integration considerations, cyber and safety,
@@ -454,6 +460,67 @@ control, or technical maturity.</p>
 <p>Use <strong>Current</strong>, <strong>Emerging</strong>, <strong>Legacy</strong>, and <strong>Retired</strong> as catalog lifecycle labels.
 A retired item remains available as historical reference but cannot be newly copied
 into a solution. Retiring or deleting it never deletes an existing solution copy.</p>
+<h3 id="import-a-list-from-excel-or-csv">Import a list from Excel or CSV</h3>
+<p>Use the Knowledge Base <strong>Templates</strong> control before preparing a large list. The
+<a href="./assets/solution-knowledge-base-import-template.xlsx" download>Excel import template</a> is also available directly. Microsoft
+Excel (<code>.xlsx</code>) is the preferred format because its Instructions and Allowed Values
+sheets preserve the field guidance. A UTF-8 CSV (<code>.csv</code>) with the same header row is
+also accepted. The spreadsheet is processed locally in the browser; the selected
+file is not uploaded or added to the catalog backup.</p>
+<p>Use one offering per row. <strong>Name</strong> is the only required field for a new offering.
+Keep <strong>Catalog ID</strong> and <strong>Expected Revision</strong> blank when adding a new item. Use
+semicolons or line breaks between values in Capabilities, Mission Segments, and
+Tags. Enter Interfaces as a plain-text interface summary. Use <code>YYYY-MM-DD</code> for dates.
+Leave a readiness level blank when
+it is unknown; valid values are 1–9 for Technology Readiness Level, 1–10 for
+Manufacturing Readiness Level, and 0–9 for Integration Readiness Level.</p>
+<p>Enter literal values rather than formulas. Keep the Solutions sheet and every used
+row and column visible; the separate Instructions, Allowed Values, and Synthetic
+Example sheets are guidance and are not offering rows. Each file is limited to 5 MB,
+and the resulting catalog cannot exceed 1,000 offerings.</p>
+<p>The canonical columns, in order, are:</p>
+<table>
+<thead><tr><th>#</th><th>Column</th><th>Entry rule</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Catalog ID</td><td>Blank for a new item; exact existing ID for an explicit update</td></tr>
+<tr><td>2</td><td>Expected Revision</td><td>Blank for a new item; current positive revision for an update</td></tr>
+<tr><td>3</td><td>Name</td><td>Required for a new item</td></tr>
+<tr><td>4</td><td>Offering Type</td><td>Product, Application, Software, Service, Platform, Integrated solution, or Other offering</td></tr>
+<tr><td>5</td><td>Provider / Owner</td><td>Organization responsible for the reusable offering information</td></tr>
+<tr><td>6</td><td>Version / Release</td><td>Provider's product or release identifier</td></tr>
+<tr><td>7</td><td>Lifecycle Status</td><td>Current, Emerging, Legacy, or Retired</td></tr>
+<tr><td>8</td><td>Summary</td><td>Reusable description, not mission-specific assessment rationale</td></tr>
+<tr><td>9</td><td>Capabilities</td><td>Semicolon- or line-break-separated list</td></tr>
+<tr><td>10</td><td>Mission Segments</td><td>Semicolon- or line-break-separated supported company segment names</td></tr>
+<tr><td>11</td><td>Deployment and Environment</td><td>Hosting, platform, facility, network, or operating context</td></tr>
+<tr><td>12</td><td>Interfaces</td><td>Plain-text summary of physical, electrical, RF, network, API, data, and process interfaces</td></tr>
+<tr><td>13</td><td>Integration Considerations</td><td>Dependencies, constraints, adapters, and integration effort</td></tr>
+<tr><td>14</td><td>Cyber and Safety Considerations</td><td>Known reusable cyber, authorization, and safety facts</td></tr>
+<tr><td>15</td><td>MOSA and Data Rights</td><td>Modular boundaries, open interfaces, standards, competition, and necessary rights</td></tr>
+<tr><td>16</td><td>Technology Readiness Level</td><td>Integer 1–9, or blank for unknown</td></tr>
+<tr><td>17</td><td>Manufacturing Readiness Level</td><td>Integer 1–10, or blank for unknown</td></tr>
+<tr><td>18</td><td>Integration Readiness Level</td><td>Integer 0–9, or blank for unknown</td></tr>
+<tr><td>19</td><td>Readiness Basis</td><td>Scope, evidence, and limiting condition behind the readiness summaries</td></tr>
+<tr><td>20</td><td>Readiness As Of</td><td><code>YYYY-MM-DD</code>, or blank</td></tr>
+<tr><td>21</td><td>Source Title</td><td>Human-readable source name</td></tr>
+<tr><td>22</td><td>Source URL</td><td>Safe <code>http://</code> or <code>https://</code> locator without embedded credentials</td></tr>
+<tr><td>23</td><td>Source Notes</td><td>Provenance, authority, limitations, and review notes</td></tr>
+<tr><td>24</td><td>Tags</td><td>Semicolon- or line-break-separated search terms</td></tr>
+<tr><td>25</td><td>Last Reviewed</td><td><code>YYYY-MM-DD</code>, or blank</td></tr>
+<tr><td>26</td><td>Change Summary</td><td>Required for an explicit update; recommended for new items</td></tr>
+</tbody>
+</table>
+<p>After selecting <strong>Import list</strong>, review the preview before applying it. The preview
+shows proposed additions, updates, unchanged rows, and any errors. The default mode
+adds new items only. To revise existing items in one file, deliberately choose the
+add/update mode and supply <strong>Catalog ID</strong>, <strong>Expected Revision</strong>, and <strong>Change
+Summary</strong> for every update row. Names are never used as update keys. An unknown ID,
+stale revision, duplicate ID or logical duplicate, invalid field, or storage failure
+cancels the whole Apply operation; successfully validated rows are not partly saved.</p>
+<p>Spreadsheet import merges rows into the current catalog. Existing candidates already
+copied into solutions remain point-in-time copies and do not refresh automatically.
+Review each <strong>Update available</strong> notice and use <strong>Refresh solution copy</strong> explicitly
+when the changed reusable facts apply to that solution.</p>
 <h3 id="copy-an-offering-into-a-solution">Copy an offering into a solution</h3>
 <ol>
 <li>Confirm the correct active solution in the left-side selector.</li>
@@ -491,10 +558,13 @@ solution-specific reasoning into score rationales, evidence, trades, decisions, 
 risks before refreshing.</p>
 <h3 id="back-up-the-catalog-separately">Back up the catalog separately</h3>
 <ul>
-<li><strong>Export catalog</strong> downloads a validated <code>solution-knowledge-base-v1</code> JSON file.</li>
-<li><strong>Import catalog</strong> validates the whole file and then replaces the current catalog;
-it does not merge items. Export the current catalog first when you may need to
-reverse the replacement.</li>
+<li><strong>JSON backup</strong> downloads or restores a validated
+<code>solution-knowledge-base-v1</code> JSON file. Restore validates the whole file and then
+replaces the current catalog; it does not merge items.</li>
+<li><strong>Import list</strong> accepts the Knowledge Base Excel template or a matching UTF-8 CSV
+and merges its validated additions or explicit updates into the catalog.</li>
+<li>Download a catalog JSON backup before a large spreadsheet Apply when you may need
+to reverse the change.</li>
 <li>A workspace JSON backup, recovery point, solution duplicate, capture-inbox export,
 decision package, and AI payload do not include the Knowledge Base.</li>
 </ul>
@@ -762,12 +832,12 @@ workspace and every solution it contains.</li>
 <li><strong>Create recovery point</strong> keeps a bounded local snapshot.</li>
 <li><strong>Recovery</strong> restores a selected snapshot after first preserving the current state.</li>
 </ul>
-<p>The Knowledge Base is a second local data store. In <strong>Knowledge base</strong>, use <strong>Export
-catalog</strong> to download its separate <code>solution-knowledge-base-v1</code> JSON and <strong>Import
-catalog</strong> to validate and replace the catalog. The workspace backup does not contain
-the catalog, and the catalog backup does not contain solutions, assessments, or
-recovery points. Keep both dated files when you need the full setup on another
-browser or device.</p>
+<p>The Knowledge Base is a second local data store. In <strong>Knowledge base</strong>, use <strong>JSON
+backup</strong> to download or restore its separate <code>solution-knowledge-base-v1</code> JSON.
+Restore validates and replaces the catalog; <strong>Import list</strong> instead merges validated
+Excel or CSV rows. The workspace backup does not contain the catalog, and the catalog
+backup does not contain solutions, assessments, or recovery points. Keep both dated
+JSON files when you need the full setup on another browser or device.</p>
 <p>The per-solution review inbox is stored separately and is not part of the workspace
 JSON export or recovery snapshots. <strong>Download inbox JSON</strong> can preserve a separate
 reference copy, but the current UI does not import it. Commit useful items before a
@@ -900,9 +970,13 @@ approved; the app has no OCR.</li>
 <li><strong>Review commit failed:</strong> correct the cited field or dependency and retry. The
 authoritative workspace should remain unchanged.</li>
 <li><strong>Save failed:</strong> stop adding content and export the current in-memory JSON backup.</li>
-<li><strong>A Knowledge Base import was rejected:</strong> correct the first validation error or use
-the last exported catalog JSON. A rejected import leaves the current catalog in
-place; import replaces rather than merges after validation.</li>
+<li><strong>A Knowledge Base list import was rejected:</strong> correct every preview error and try
+again. No row is applied when any row fails. Confirm that dates use <code>YYYY-MM-DD</code>,
+lists use semicolons or line breaks, and an update has the exact Catalog ID,
+current Expected Revision, and a Change Summary.</li>
+<li><strong>A Knowledge Base JSON restore was rejected:</strong> correct the first validation error
+or use the last exported catalog JSON. A rejected restore leaves the current
+catalog in place; JSON restore replaces rather than merges after validation.</li>
 <li><strong>A solution copy says Update available:</strong> review the catalog change summary, then
 refresh explicitly if the new generic facts apply. Scores and solution status are
 retained, but catalog-derived name, description, and readiness fields are replaced.</li>
@@ -918,6 +992,6 @@ Local recovery points and capture inboxes cannot survive cleared site data.</li>
 
   </main>
   <footer class="guide-footer"><a href="./">Return to the workbench</a><span>Use separate downloaded workspace and catalog JSON backups for durable recovery.</span></footer>
-  <script src="guide.js?v=9" type="module"></script>
+  <script src="guide.js?v=10" type="module"></script>
 </body>
 </html>

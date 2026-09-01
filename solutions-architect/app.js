@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=9";
+} from "./engine.js?v=10";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,23 +37,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=9";
+} from "./capture.js?v=10";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=9";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=9";
+} from "./ingestion.js?v=10";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=10";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=9";
+} from "./export-docx.js?v=10";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=9";
+} from "./export-xlsx.js?v=10";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
   KNOWLEDGE_LIFECYCLE_STATUSES,
@@ -65,7 +65,16 @@ import {
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=9";
+} from "./knowledge-base.js?v=10";
+import {
+  KNOWLEDGE_IMPORT_COLUMNS,
+  KNOWLEDGE_IMPORT_FILE_ACCEPT,
+  buildKnowledgeCsvTemplate,
+  buildKnowledgeImportPlan,
+  normalizeKnowledgeImportRows,
+  parseKnowledgeCsv,
+  parseKnowledgeWorkbook
+} from "./knowledge-import.js?v=10";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
@@ -116,6 +125,8 @@ let ingestionProcessing = false;
 let ingestionAbortController = null;
 let meetingSession = null;
 let knowledgeFilters = { search: "", type: "", status: "", segment: "" };
+let knowledgeImportSession = null;
+let knowledgeImportGeneration = 0;
 
 function h(value) { return escapeHtml(value); }
 function activeSolution() { return workspace.solutions.find(item => item.id === workspace.activeSolutionId) || workspace.solutions[0]; }
@@ -417,6 +428,7 @@ function closeModal() {
   if (root) root.innerHTML = "";
   aiPreview = null;
   aiResponse = null;
+  knowledgeImportSession = null;
   const returnTarget = modalReturnFocus;
   modalReturnFocus = null;
   if (returnTarget?.isConnected) returnTarget.focus();
@@ -567,7 +579,7 @@ function render() {
         <div class="content">${renderRoute(solution)}</div>
       </main>
     </div>
-    <div id="modal-root"></div><div id="toast-region" class="toast-region" aria-live="polite"></div><input id="workspace-import" type="file" accept="application/json,.json" hidden><input id="knowledge-import" type="file" accept="application/json,.json" hidden>`;
+    <div id="modal-root"></div><div id="toast-region" class="toast-region" aria-live="polite"></div><input id="workspace-import" type="file" accept="application/json,.json" hidden><input id="knowledge-import" type="file" accept="application/json,.json" hidden><input id="knowledge-list-import" type="file" accept="${h(KNOWLEDGE_IMPORT_FILE_ACCEPT)}" hidden>`;
   bindDiagramInteractions();
   fitAutoGrowTextareas(app);
 }
@@ -953,7 +965,7 @@ function renderKnowledgeBase(solution) {
   const resultAnnouncement = `${visible} of ${knowledgeBase.items.length} Knowledge Base items match the current filters.`;
   return `<div class="section-toolbar knowledge-toolbar">
     <div><p class="section-kicker">Reusable reference</p><h3>Knowledge base</h3><p>Maintain approved unclassified, non-CUI products, applications, software, platforms, solutions, and offerings. Using an item creates an independent Technology Assessment candidate for <strong>${h(solution.name)}</strong>.</p></div>
-    <div class="knowledge-toolbar-actions"><button class="button secondary" type="button" data-knowledge-export ${knowledgeBaseLoadError ? "disabled" : ""}>Export catalog</button><button class="button secondary" type="button" data-knowledge-import>Import catalog</button><button class="button primary" type="button" data-knowledge-add ${knowledgeBaseLoadError ? "disabled" : ""}>Add item</button></div>
+    <div class="knowledge-toolbar-actions"><button class="button secondary" type="button" data-knowledge-template>Templates</button><button class="button secondary" type="button" data-knowledge-list-import ${knowledgeBaseLoadError ? "disabled" : ""}>Import list</button><button class="button secondary" type="button" data-knowledge-backup>JSON backup</button><button class="button primary" type="button" data-knowledge-add ${knowledgeBaseLoadError ? "disabled" : ""}>Add offering</button></div>
   </div>${recovery}<section class="panel knowledge-search-panel" aria-label="Knowledge Base filters" aria-describedby="knowledge-filter-status">
     <div class="knowledge-filter-grid">
       <label class="knowledge-search"><span>Search</span><input type="search" value="${h(knowledgeFilters.search)}" data-knowledge-filter="search" placeholder="Name, provider, capability, tag, or version" ${filterAttributes}></label>
@@ -1018,6 +1030,125 @@ function refreshKnowledgeCandidate(itemId) {
   const candidate = scoped(workspace, "candidates").find(record => record.catalogSource?.itemId === itemId);
   if (!item || !candidate) return;
   if (commit(next => { const index = next.candidates.findIndex(record => record.id === candidate.id); next.candidates[index] = refreshCandidateFromKnowledge(next.candidates[index], item); }, { snapshot: `Before refreshing ${candidate.name} from Knowledge Base` })) toast(`${item.name} was refreshed. Assessment scores and solution-specific status were preserved.`, "ok");
+}
+
+function formatImportFileSize(bytes) {
+  const value = Number(bytes) || 0;
+  if (value < 1_000) return `${value} bytes`;
+  if (value < 1_000_000) return `${(value / 1_000).toFixed(1)} KB`;
+  return `${(value / 1_000_000).toFixed(1)} MB`;
+}
+
+function showKnowledgeTemplateDialog() {
+  const columnRows = KNOWLEDGE_IMPORT_COLUMNS.map(column => `<tr><td><strong>${h(column.header)}</strong>${column.key === "name" ? `<span class="required-badge">Required</span>` : ""}</td><td>${h(column.description)}</td></tr>`).join("");
+  openModal("Knowledge Base import templates", `<div class="knowledge-template-intro"><p class="modal-intro">Use Excel when possible. CSV is also supported for simple lists. Both formats keep processing in this browser and use one offering per row.</p><div class="knowledge-template-options"><article><span class="file-format-badge">XLSX · Preferred</span><h3>Excel workbook</h3><p>Includes a formatted Solutions sheet, instructions, allowed values, validation controls, and a separate synthetic example.</p><a class="button primary" href="./assets/solution-knowledge-base-import-template.xlsx" download="solution-knowledge-base-import-template.xlsx">Download Excel template</a></article><article><span class="file-format-badge">CSV · UTF-8</span><h3>CSV template</h3><p>Header-only template for a flat list. Save the finished file as UTF-8 CSV before importing it.</p><button class="button secondary" type="button" data-knowledge-download-csv>Download CSV template</button></article></div><section class="knowledge-format-guide"><h3>Format rules</h3><div class="knowledge-rule-grid"><div><strong>Required</strong><span>Name is the only required value for a new offering.</span></div><div><strong>Lists</strong><span>Separate capabilities, mission segments, and tags with semicolons or line breaks.</span></div><div><strong>Dates</strong><span>Use YYYY-MM-DD.</span></div><div><strong>Readiness</strong><span>Technology 1–9, Manufacturing 1–10, Integration 0–9, or blank when unknown.</span></div><div><strong>Updates</strong><span>Use the exact Catalog ID, Expected Revision, and Change Summary. Names never trigger updates.</span></div><div><strong>Apply safely</strong><span>The full list is validated and previewed before one all-or-nothing save.</span></div></div></section><details class="knowledge-column-reference"><summary>See all ${KNOWLEDGE_IMPORT_COLUMNS.length} supported columns</summary><div class="table-scroll"><table><thead><tr><th>Column</th><th>What it contains</th></tr></thead><tbody>${columnRows}</tbody></table></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Close</button><button class="button primary" type="button" data-knowledge-list-import ${knowledgeBaseLoadError ? "disabled" : ""}>Choose a list to import</button></div></div>`, { wide: true });
+}
+
+function showKnowledgeBackupDialog() {
+  const recoveryCopy = knowledgeBaseLoadError
+    ? `<div class="knowledge-import-alert error" role="alert"><strong>Recovery required</strong><span>The unreadable saved catalog was left unchanged. Restore a valid JSON backup to recover it.</span></div>`
+    : `<p class="modal-intro">JSON is the exact full-catalog backup and recovery format. Spreadsheet imports merge reviewed rows; JSON restore deliberately replaces the catalog after complete validation.</p>`;
+  openModal("Knowledge Base backup and restore", `${recoveryCopy}<div class="knowledge-backup-options"><article><h3>Download JSON backup</h3><p>Save the complete catalog contract, IDs, revisions, source details, and timestamps.</p><button class="button secondary" type="button" data-knowledge-export ${knowledgeBaseLoadError ? "disabled" : ""}>Download JSON backup</button></article><article><h3>Restore JSON backup</h3><p>Choose a valid <code>solution-knowledge-base-v1</code> JSON file. Nothing changes unless the entire backup passes validation.</p><button class="button primary" type="button" data-knowledge-import>Choose JSON backup</button></article></div><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Close</button></div>`);
+}
+
+function importDiagnosticList(diagnostics) {
+  if (!diagnostics.length) return `<p class="knowledge-import-clean"><strong>No import findings.</strong> The selected rows passed all checks.</p>`;
+  const visible = diagnostics.slice(0, 20);
+  const remaining = diagnostics.length - visible.length;
+  return `<ul class="knowledge-import-diagnostics">${visible.map(item => `<li class="${h(item.severity || "info")}"><strong>${h((item.severity || "info").toUpperCase())}</strong><span>${h(item.message)}</span></li>`).join("")}${remaining ? `<li class="info"><strong>INFO</strong><span>${remaining} more finding${remaining === 1 ? "" : "s"} not shown.</span></li>` : ""}</ul>`;
+}
+
+function refreshKnowledgeImportPlan(mode = knowledgeImportSession?.mode || "add") {
+  if (!knowledgeImportSession) return;
+  knowledgeImportSession.mode = mode;
+  knowledgeImportSession.plan = buildKnowledgeImportPlan(knowledgeBase, knowledgeImportSession.table, { mode });
+}
+
+function showKnowledgeImportPreview({ focusSelector = "" } = {}) {
+  if (!knowledgeImportSession) return;
+  const { fileName, fileSize, table, normalized, plan, mode } = knowledgeImportSession;
+  const counts = plan.counts;
+  const actionable = counts.created + counts.updated;
+  const previewRows = normalized.rows.slice(0, 10).map(row => {
+    const values = row.values || {};
+    return `<tr><td>${h(row.rowNumber)}</td><td>${h(values.name || "")}</td><td>${h(values.provider || "—")}</td><td>${h(values.offeringType || "Integrated solution")}</td><td>${row.catalogId ? "Update" : "Add"}</td></tr>`;
+  }).join("");
+  const sourceLabel = table.sourceType === "xlsx" ? `Excel · ${table.sheetName || "visible worksheet"}` : "UTF-8 CSV";
+  const statusCopy = plan.valid
+    ? actionable
+      ? `${actionable} catalog change${actionable === 1 ? " is" : "s are"} ready to apply.`
+      : "The file is valid, but it contains no new or changed offerings to apply."
+    : `${counts.errors} error${counts.errors === 1 ? " must" : "s must"} be corrected before this list can be applied.`;
+  const applyLabel = actionable ? `Apply ${actionable} change${actionable === 1 ? "" : "s"}` : "Nothing to apply";
+  openModal("Review Knowledge Base import", `<div class="knowledge-import-summary"><div><span class="file-format-badge">${h(sourceLabel)}</span><h3>${h(fileName)}</h3><p>${h(formatImportFileSize(fileSize))} · ${counts.dataRows} data row${counts.dataRows === 1 ? "" : "s"}${counts.blankRows ? ` · ${counts.blankRows} blank row${counts.blankRows === 1 ? "" : "s"} ignored` : ""}</p></div><button class="button secondary" type="button" data-knowledge-list-import>Choose another file</button></div><fieldset class="knowledge-import-mode"><legend>Import behavior</legend><label><input type="radio" name="knowledge-import-mode" value="add" data-knowledge-import-mode ${mode === "add" ? "checked" : ""}><span><strong>Add new offerings only</strong><small>Catalog ID must be blank on every row.</small></span></label><label><input type="radio" name="knowledge-import-mode" value="upsert" data-knowledge-import-mode ${mode === "upsert" ? "checked" : ""}><span><strong>Add new and update by Catalog ID</strong><small>Updates require the exact Expected Revision and a Change Summary.</small></span></label></fieldset><dl class="knowledge-import-counts" aria-label="Import preview totals"><div><dt>New</dt><dd>${counts.created}</dd></div><div><dt>Updated</dt><dd>${counts.updated}</dd></div><div><dt>Unchanged</dt><dd>${counts.unchanged}</dd></div><div><dt>Warnings</dt><dd>${counts.warnings}</dd></div><div class="${counts.errors ? "has-errors" : ""}"><dt>Errors</dt><dd>${counts.errors}</dd></div></dl><p class="knowledge-import-status ${plan.valid ? "ready" : "blocked"}" role="status" aria-live="polite">${h(statusCopy)}</p>${previewRows ? `<section class="knowledge-import-preview"><h3>Row preview</h3><div class="table-scroll"><table><thead><tr><th>Row</th><th>Name</th><th>Provider / owner</th><th>Offering type</th><th>Action</th></tr></thead><tbody>${previewRows}</tbody></table></div>${normalized.rows.length > 10 ? `<p>${normalized.rows.length - 10} more row${normalized.rows.length - 10 === 1 ? "" : "s"} will be included in the same validation and apply step.</p>` : ""}</section>` : ""}<section class="knowledge-import-findings"><h3>Validation findings</h3>${importDiagnosticList(plan.diagnostics)}</section><p class="knowledge-import-boundary"><strong>Existing solution copies stay unchanged.</strong> Refresh a copied offering explicitly from its Knowledge Base card when you want the newer facts.</p><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="button" data-knowledge-list-apply ${!plan.valid || !actionable ? "disabled" : ""}>${h(applyLabel)}</button></div>`, { wide: true });
+  if (focusSelector) document.querySelector(focusSelector)?.focus();
+}
+
+async function importKnowledgeListFile(file) {
+  if (!file) return;
+  const generation = ++knowledgeImportGeneration;
+  const input = document.querySelector("#knowledge-list-import");
+  try {
+    if (knowledgeBaseLoadError) throw new Error("Restore a valid JSON catalog backup before importing a spreadsheet list.");
+    if (file.size === 0) throw new Error("The selected file is empty.");
+    if (file.size > MAX_KNOWLEDGE_IMPORT_BYTES) throw new Error("Knowledge Base list import exceeds 5 MB.");
+    const fileName = String(file.name || "knowledge-base-list").split(/[\\/]/).at(-1).slice(0, 255);
+    const bytes = await file.arrayBuffer();
+    if (generation !== knowledgeImportGeneration) return;
+    let table;
+    if (/\.csv$/i.test(fileName)) table = parseKnowledgeCsv(bytes);
+    else if (/\.xlsx$/i.test(fileName)) {
+      if (!window.XLSX?.read) throw new Error("The repository-bundled Excel reader is unavailable.");
+      let workbook;
+      try {
+        workbook = window.XLSX.read(bytes, { type: "array", cellDates: false, cellFormula: true, cellHTML: false, cellStyles: true, bookVBA: true, bookDeps: false, WTF: false });
+      } catch {
+        throw new Error("The Excel workbook could not be read. Use an unencrypted .xlsx file or the provided template.");
+      }
+      table = parseKnowledgeWorkbook(workbook, { xlsx: window.XLSX });
+    } else throw new Error("Choose an .xlsx workbook or UTF-8 .csv file.");
+    const normalized = normalizeKnowledgeImportRows(table);
+    knowledgeImportSession = { fileName, fileSize: file.size, table, normalized, mode: "add", baseSavedAt: knowledgeBase.savedAt, plan: null };
+    refreshKnowledgeImportPlan("add");
+    showKnowledgeImportPreview();
+  } catch (error) {
+    knowledgeImportSession = null;
+    openModal("Knowledge Base list rejected", `<div class="knowledge-import-alert error" role="alert"><strong>The file was not imported</strong><span>${h(error.message || "The selected file could not be read.")}</span></div><p>Use the provided Excel or CSV template, keep one offering per row, and try again. The current Knowledge Base was not changed.</p><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Close</button><button class="button primary" type="button" data-knowledge-template>Open templates</button></div>`);
+  } finally {
+    if (input?.isConnected) input.value = "";
+    else {
+      const current = document.querySelector("#knowledge-list-import");
+      if (current) current.value = "";
+    }
+  }
+}
+
+function currentStoredKnowledgeBaseSavedAt() {
+  const raw = localStorage.getItem(KNOWLEDGE_BASE_STORAGE_KEY);
+  if (raw === null) return "";
+  const candidate = JSON.parse(raw);
+  const validation = validateKnowledgeBase(candidate);
+  if (!validation.valid) throw new Error("The saved Knowledge Base changed into an unreadable state. Reload before importing.");
+  return candidate.savedAt;
+}
+
+function applyKnowledgeListImport() {
+  const session = knowledgeImportSession;
+  if (!session?.plan?.valid || !session.plan.nextCatalog) return;
+  const actionable = session.plan.counts.created + session.plan.counts.updated;
+  if (!actionable) return;
+  try {
+    const storedSavedAt = currentStoredKnowledgeBaseSavedAt();
+    if (knowledgeBase.savedAt !== session.baseSavedAt || storedSavedAt !== session.baseSavedAt) throw new Error("The Knowledge Base changed after this preview was created. Close the preview, reload, and review the file again.");
+    if (!persistKnowledgeBase(session.plan.nextCatalog)) return;
+    const { created, updated } = session.plan.counts;
+    closeModal();
+    render();
+    const changes = [created ? `${created} offering${created === 1 ? "" : "s"} added` : "", updated ? `${updated} offering${updated === 1 ? "" : "s"} updated` : ""].filter(Boolean).join(" and ");
+    toast(`${changes}. Existing solution copies were not changed.`, "ok");
+  } catch (error) {
+    toast(`Knowledge Base list was not applied: ${error.message}`, "error");
+  }
 }
 
 function exportKnowledgeBaseJson() {
@@ -1824,6 +1955,11 @@ document.addEventListener("click", event => {
     const item = knowledgeBase.items.find(record => record.id === knowledgeDelete);
     if (item && confirm(`Delete “${item.name}” from the Knowledge Base? Existing solution copies will remain unchanged.`)) commitKnowledgeBase(next => { next.items = next.items.filter(record => record.id !== knowledgeDelete); });
   }
+  if (event.target.closest("[data-knowledge-template]")) showKnowledgeTemplateDialog();
+  if (event.target.closest("[data-knowledge-backup]")) showKnowledgeBackupDialog();
+  if (event.target.closest("[data-knowledge-download-csv]")) download("solution-knowledge-base-import-template.csv", buildKnowledgeCsvTemplate(), "text/csv;charset=utf-8");
+  if (event.target.closest("[data-knowledge-list-import]")) document.querySelector("#knowledge-list-import")?.click();
+  if (event.target.closest("[data-knowledge-list-apply]")) applyKnowledgeListImport();
   if (event.target.closest("[data-knowledge-export]")) exportKnowledgeBaseJson();
   if (event.target.closest("[data-knowledge-import]")) document.querySelector("#knowledge-import")?.click();
   if (event.target.closest("[data-knowledge-clear]")) { knowledgeFilters = { search: "", type: "", status: "", segment: "" }; render(); }
@@ -2018,6 +2154,8 @@ document.addEventListener("input", event => {
 document.addEventListener("change", event => {
   const node = event.target;
   if (node.matches("[data-knowledge-filter]")) { knowledgeFilters[node.dataset.knowledgeFilter] = node.value; applyKnowledgeFilters(); return; }
+  if (node.matches("[data-knowledge-import-mode]")) { refreshKnowledgeImportPlan(node.value); showKnowledgeImportPreview({ focusSelector: `[data-knowledge-import-mode][value="${node.value}"]` }); return; }
+  if (node.id === "knowledge-list-import") { importKnowledgeListFile(node.files?.[0]); return; }
   if (node.id === "knowledge-import") { importKnowledgeBaseFile(node.files?.[0]); return; }
   if (node.id === "meeting-ack" && meetingSession) {
     meetingSession.acknowledged = node.checked;
@@ -2164,7 +2302,7 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=9", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=10", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }
