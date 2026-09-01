@@ -101,6 +101,13 @@ A successful workspace lets that user:
 - Default to the Light theme and offer a compact theme toggle in the left navigation.
   Provide **Use device theme** under Workspace tools. Theme state must not alter or
   travel with workspace content.
+- Use one readable, responsive form system across every work area: consistent
+  16-pixel controls, larger labels and targets, taller content-growing text areas,
+  separated record cards, wrapping relationship names, and layouts that stack
+  before controls overlap. Keep wide analytical tables scrollable within their own
+  panels.
+- Keep lifecycle navigation grouped and legible, with a sufficiently wide solution
+  selector and touch-sized navigation targets.
 
 ### Company mission segments
 
@@ -231,8 +238,20 @@ as a reference, not as a certification automatically produced by the app.
   buttons, requirements traceability,
   assessments, architecture, trades, decisions, risks, dependencies, win themes,
   roadmap, evidence gaps, and transition plan.
-- Export Markdown and standalone HTML.
-- Provide a print-ready view for browser PDF generation.
+- Export Markdown and self-contained themed HTML.
+- Generate and directly download a native, Letter-size PDF with a designed cover,
+  page headers and numbers, controlled pagination, tables, and print-friendly
+  architecture diagrams; do not rely on a browser print dialog.
+- Generate a valid editable Microsoft Word `.docx` package with document styles,
+  headings, tables, headers, footers, and page fields.
+- Generate a valid Microsoft Excel `.xlsx` workbook with separate, formatted sheets
+  for executive context, mission and outcomes, customer and win themes, requirements
+  and evidence, Technology Assessment, architecture and interfaces, decisions and
+  risk, delivery and transition, and gaps and readiness.
+- Build every format locally from the same validated selected-solution records.
+  Exclude pending inbox entries, original sources, full meeting text, snapshots, and
+  unaccepted AI drafts. Do not add workspace data-boundary or browser notices to the
+  decision-package content.
 
 ### Requirement support check
 

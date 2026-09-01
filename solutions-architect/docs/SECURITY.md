@@ -102,11 +102,14 @@ resource-exhaustion risk but do not make malicious or restricted content safe.
 ### Downloads
 
 Workspace JSON backups, separate capture-inbox JSON reference downloads, Markdown,
-HTML, SVG, and PNG are written through the browser download flow. V1 does not import
-an inbox JSON download. **Print / Save PDF** opens a separate HTML view and requests the browser print
-dialog; a PDF exists only if the user creates one with the browser or operating-system
-print workflow. Once created or downloaded, those files are outside the app's control and must be protected, retained,
-transmitted, and destroyed according to the information they contain.
+standalone HTML, native PDF, Microsoft Word `.docx`, Microsoft Excel `.xlsx`, SVG,
+and PNG are written through the browser download flow. V1 does not import an inbox
+JSON download. PDF, Word, and Excel files are generated locally from validated,
+solution-scoped records without a print dialog or cloud conversion service. Decision
+packages omit the workspace data-boundary banner and browser notices; that omission
+does not change the handling requirements of their content. Once downloaded, files
+are outside the app's control and must be protected, retained, transmitted, and
+destroyed according to the information they contain.
 
 ### Optional AI
 

@@ -42,13 +42,19 @@ Defense, Autonomous Warfare & Integrated Fires; Space Warfighting; Critical
 Infrastructure Protection; and Exploration and Lunar Presence. The selected segments
 carry into the decision package and the reviewed AI payload.
 
-Requirements are edited as responsive cards with automatic textarea growth, full
-selected-source previews, and wrapping customer-driver and architecture-link
-controls. The decision page previews a finished executive artifact. Standalone HTML
-uses the active site theme and semantic sections; Print / Save PDF uses the same
-content with a light Letter-size print layout and controlled pagination. Neither
-output adds data markings, browser-storage text, or authorization or conformance
-disclaimers.
+Every work area uses the same readable, responsive form system: larger controls and
+labels, taller content-growing text areas, well-spaced record cards, wrapping linked
+records, and narrow-screen card layouts for editable registers. The wider,
+better-grouped side navigation and solution selector keep the lifecycle easy to scan
+without crowding the work surface. Wide analytical tables scroll inside their own
+panels instead of overlapping adjacent content.
+
+The decision page previews a finished executive artifact. Standalone HTML uses the
+active site theme and semantic sections. Native PDF uses a purpose-built Letter-size
+layout with a designed cover, report headers, page numbers, controlled pagination,
+and print-friendly architecture diagrams. Word and Excel use layouts tailored to
+editable narrative and register-based analysis. Decision-package exports do not add
+data markings, browser-storage text, or authorization or conformance disclaimers.
 
 ## Capture and local source intake
 
@@ -101,11 +107,22 @@ setting, and **Use device theme** under Workspace tools restores automatic syste
 matching. Theme state does not travel with a workspace backup and does not alter
 solution content.
 
-Decision packages can be downloaded as Markdown or standalone HTML. **Print / Save PDF**
-opens a separate print-ready view and requests the browser print dialog; if the
-dialog does not appear, use the browser's Print command. Choose **Save as PDF**
-where supported. The app does not generate or retain a PDF itself.
-Architecture views can be downloaded separately as SVG or PNG.
+Decision packages can be downloaded in five formats:
+
+- Markdown for a portable editable narrative;
+- standalone HTML for a self-contained executive report in the active Light or Dark
+  theme;
+- native PDF for a professionally paginated, directly downloaded report—no browser
+  print dialog or Markdown rendering step;
+- Microsoft Word (`.docx`) for an editable document with real headings, tables,
+  header/footer content, and page numbering; and
+- Microsoft Excel (`.xlsx`) for nine formatted sheets covering executive context,
+  mission, customer and win themes, requirements and evidence, assessments,
+  architecture and interfaces, decisions and risk, delivery and transition, and
+  gaps and readiness.
+
+All five formats use the same validated active-solution facts and are generated
+locally. Architecture views can also be downloaded separately as SVG or PNG.
 
 ## Decision-support limits
 

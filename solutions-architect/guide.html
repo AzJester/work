@@ -39,6 +39,7 @@ traceable solution, and produce a decision package.</p>
 <li><a href="#choose-the-fastest-safe-intake-path">Choose the right capture or ingestion path</a></li>
 <li><a href="#ingest-a-meeting-transcript-or-summary">Ingest a meeting transcript or summary</a></li>
 <li><a href="#open-local-files-for-ingestion">Open permitted local files</a></li>
+<li><a href="#use-the-readable-work-area-layout">Use the readable work-area layout</a></li>
 <li><a href="#work-the-solution-lifecycle">Work the iterative solution lifecycle</a></li>
 <li><a href="#produce-and-review-the-decision-package">Produce the decision package</a></li>
 <li><a href="#back-up-recover-and-move-work">Back up, recover, or move work</a></li>
@@ -91,6 +92,26 @@ tools</strong> and choose <strong>Use device theme</strong>.</p>
 <p>The setting does not change the solution, appear in exports, or travel with a JSON
 backup. If browser storage is unavailable, the choice lasts only for the current
 session.</p>
+<h3 id="use-the-readable-work-area-layout">Use the readable work-area layout</h3>
+<p>The same visual system now applies across Command, Discover, Shape, Assess,
+Architect, Prove, Propose, Transition, and Decision package:</p>
+<ul>
+<li>the left navigation uses larger labels and targets, clear grouping, and a wider
+solution selector;</li>
+<li>inputs, menus, buttons, and field labels use a consistent, readable size;</li>
+<li>narrative text boxes start taller and expand with their content to a bounded
+height, then scroll internally for unusually long entries—ordinary editing does
+not require dragging a resize handle;</li>
+<li>editable records are separated into cards with consistent spacing, headings, and
+remove controls rather than running together as dense rows;</li>
+<li>long labels and linked-record names wrap instead of covering adjacent controls;</li>
+<li>editable governance and architecture registers become labeled cards where space
+is limited, while wide analytical tables stay inside a scrollable panel; and</li>
+<li>desktop, tablet, and phone layouts stack controls before they become too narrow.</li>
+</ul>
+<p>Use the browser zoom control if you need additional magnification. The responsive
+layout will reflow, although complex assessment or report tables may still require
+horizontal scrolling within their own panel.</p>
 <h3 id="understand-the-synthetic-example">Understand the synthetic example</h3>
 <p>The first launch contains a clearly synthetic defense-integration example. Use it to
 learn the lifecycle, assessment, architecture, and export workflows. Create a new
@@ -578,32 +599,39 @@ meeting-evidence context, coverage indicators, and evidence gaps.</p>
 <li><strong>Standalone HTML</strong> creates a self-contained, themed executive report with a cover,
 section navigation, semantic headings, wrapping records, tables, and embedded
 architecture diagrams. It preserves the current light or dark site theme.</li>
-<li><strong>Print / Save PDF</strong> opens the same structured report with a light, Letter-size print
-layout, cover page, repeated table headers, and controlled section and diagram page
-breaks, then requests the print dialog. If
-the dialog does not appear, use the browser's Print command and select <strong>Save as
-PDF</strong> where supported.</li>
+<li><strong>Word</strong> downloads a real Microsoft Word <code>.docx</code> document with an editable cover,
+heading hierarchy, page header and footer, page numbers, formatted tables, and the
+complete architecture and interface register.</li>
+<li><strong>Excel</strong> downloads a formatted <code>.xlsx</code> workbook with nine purpose-built sheets:
+Executive Summary; Mission &amp; Outcomes; Customer &amp; Win Themes; Requirements &amp;
+Evidence; Technology Assessment; Architecture &amp; Interfaces; Decisions &amp; Risk;
+Delivery &amp; Transition; and Gaps &amp; Readiness. The sheets use wrapped text, frozen
+headings, useful column widths, and no formulas or macros.</li>
+<li><strong>PDF</strong> downloads a native, professionally formatted PDF directly. It uses a
+designed cover, Letter-size pages, repeated report headers, page numbers, wrapping
+tables, controlled pagination, and embedded print-friendly architecture diagrams.
+It does not open a browser print window or place Markdown inside a PDF page.</li>
 <li>The Architect screen's <strong>SVG</strong> and <strong>PNG</strong> controls download separate diagram files.</li>
 </ul>
-<p>The HTML and PDF presentation is generated directly from committed solution records;
-it is not Markdown placed inside a print page. The exported decision package does not
-add a data marking, browser-storage language, or authorization or conformance
-disclaimers. Add any organization-required cover, handling, approval, or distribution
-content through the governed publishing process that applies to the final artifact.</p>
+<p>Every decision-package format is generated locally from the same validated,
+selected-solution records. Pending inbox items, original source files, full meeting
+text, snapshots, and unaccepted AI drafts are not included. The exported decision
+package does not add a data marking, browser-storage language, or authorization or
+conformance disclaimers. Add any organization-required cover, handling, approval, or
+distribution content through the governed publishing process that applies to the
+final artifact.</p>
 <p>Review the complete export before sharing it. A downloaded artifact can outlive the
 browser workspace and may have additional distribution, records, and destruction
 requirements.</p>
-<h3 id="export-roadmap">Export roadmap</h3>
-<p>The current release provides the safe, tested exports above. Native Office exports
-are not yet available. The recommended next additions are:</p>
+<h3 id="other-useful-export-additions">Other useful export additions</h3>
+<p>The current release provides Markdown, standalone HTML, native PDF, Microsoft Word,
+Microsoft Excel, and separate SVG/PNG diagrams. The most useful next additions are:</p>
 <table>
 <thead><tr><th>Priority</th><th>Format</th><th>Best use</th></tr></thead>
 <tbody>
-<tr><td>1</td><td>Excel workbook (<code>.xlsx</code>)</td><td>Trace matrix, hot buttons, win themes, requirements, evidence, assessments, interfaces, decisions, risks, roadmap, and transition registers on separate sheets</td></tr>
-<tr><td>2</td><td>Word document (<code>.docx</code>)</td><td>Editable full decision package with real headings, tables, diagrams, captions, document metadata, and evidence appendix</td></tr>
-<tr><td>3</td><td>PowerPoint (<code>.pptx</code>)</td><td>Decision briefing: mission, customer hot buttons, win themes, architecture, trade recommendation, risks, roadmap, and decision requested</td></tr>
-<tr><td>4</td><td>CSV registers</td><td>Portable requirements, risk, interface, evidence, and trace-matrix handoffs</td></tr>
-<tr><td>5</td><td>Review-package ZIP</td><td>The selected solution's report, briefing, workbook, diagrams, workspace JSON, and a manifest with hashes</td></tr>
+<tr><td>1</td><td>PowerPoint (<code>.pptx</code>)</td><td>Decision briefing: mission, customer hot buttons, win themes, architecture, trade recommendation, risks, roadmap, and decision requested</td></tr>
+<tr><td>2</td><td>CSV registers</td><td>Portable requirements, risk, interface, evidence, and trace-matrix handoffs for systems that do not accept a workbook</td></tr>
+<tr><td>3</td><td>Review-package ZIP</td><td>The selected solution's report, briefing, workbook, diagrams, workspace JSON, and a manifest with hashes</td></tr>
 </tbody>
 </table>
 <p>Every future format should render the same validated, selected-solution package so
@@ -738,8 +766,10 @@ authoritative workspace should remain unchanged.</li>
 <li><strong>Save failed:</strong> stop adding content and export the current in-memory JSON backup.</li>
 <li><strong>A file may contain restricted information:</strong> cancel intake and follow the
 organization's approved handling process. Do not “test” it in the app.</li>
-<li><strong>Print did not open:</strong> allow the pop-up, reopen Print / Save PDF, or use the browser's
-Print command.</li>
+<li><strong>An export did not download:</strong> retry from Decision package, confirm the browser is
+allowed to download files from this site, and verify that the active solution is
+valid. PDF, Word, and Excel generation stays local and does not require a pop-up or
+cloud conversion service.</li>
 <li><strong>Browser data disappeared:</strong> restore the most recent downloaded JSON backup.
 Local recovery points and capture inboxes cannot survive cleared site data.</li>
 </ul>

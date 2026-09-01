@@ -10,17 +10,20 @@ index.html
   |-- styles.css       application shell and responsive presentation
   |-- app.js           views, interactions, persistence, imports, exports, and AI UI
   |-- engine.js        schema, validation, calculations, diagrams, and report builders
+  |-- export-pdf.js    native PDF decision-package renderer
+  |-- export-docx.js   dependency-free Word Open XML package renderer
+  |-- export-xlsx.js   formatted decision workbook renderer
   |-- capture.js       isolated capture-inbox contract and materialization
   |-- ingestion.js     bounded local source detection, extraction, and metadata
   |-- ingestion-worker.js
   |                     isolated Office/spreadsheet extraction and ZIP preflight
-  `-- vendor/          pinned local PDF.js runtime and license
+  `-- vendor/          pinned local PDF.js and PDF-LIB runtimes and licenses
 
 ../assets/vendor/supabase-js-2.110.2.umd.js
   `-- optional authentication client for AI access
 
 ../black-hat-agent/vendor/xlsx.full.min.js
-  `-- pinned local spreadsheet parser loaded only inside the ingestion worker
+  `-- pinned local spreadsheet runtime used for ingestion and workbook export
 
 Supabase Edge Function: solution-assist
   `-- optional authenticated, allowlisted, quota-bound model request
@@ -210,7 +213,7 @@ SVG renderer escapes user content and is reused for:
 - accessible element/exchange tables;
 - standalone SVG download;
 - local canvas-based PNG download;
-- standalone and print-ready decision packages.
+- standalone HTML and native PDF decision packages.
 
 The templates use DoDAF's decision-focused, fit-for-purpose presentation idea and
 selected viewpoint concepts as guidance. They are not DoDAF-described Models, a DM2
@@ -220,20 +223,30 @@ diagrams—the workbench does not claim conformance.
 
 ## Decision-package pipeline
 
-Markdown generation reads only records scoped to the selected solution and assembles
-an editable narrative. The standalone HTML path renders those committed records
-independently as semantic HTML: an executive cover, section navigation, mission and
-customer context, requirement cards, assessment tables, proposal narrative,
-architecture figures and interface register, decisions, governance, transition,
-evidence, obligations, and an acronym key. It embeds locally generated SVG diagrams,
-bundles all report styles, uses no external resources or scripts, and resolves record
-relationships to readable names instead of exposing raw IDs.
+All decision-package builders validate the workspace, select one solution, and
+resolve relationships to readable names instead of exposing raw IDs. Markdown
+generation assembles an editable narrative. The standalone HTML path renders the
+same committed records independently as semantic HTML: an executive cover, section
+navigation, mission and customer context, requirement cards, assessment tables,
+proposal narrative, architecture figures and interface register, decisions,
+governance, transition, evidence, obligations, and an acronym key. It embeds locally
+generated SVG diagrams, bundles its report styles, uses no external resources or
+scripts, and retains the Light or Dark theme active when exported.
 
-**Print / Save PDF** opens the same structured HTML and requests the print dialog.
-Print CSS forces a light Letter-size layout with a cover page, repeated table headers,
-and controlled section and diagram page breaks. The standalone HTML retains the
-light or dark theme active when it was exported. JavaScript does not create or store
-a PDF binary; the browser's print system performs Save as PDF.
+The PDF path uses the pinned local PDF-LIB runtime to create a PDF binary directly.
+Its report renderer owns Letter-size pagination, cover composition, repeated report
+headers, page numbers, text wrapping, table splitting, and print-palette architecture
+images. It does not open an HTML print view or depend on the browser print system.
+
+The Word path builds a standards-based WordprocessingML ZIP package with document
+styles, fixed table geometry, headings, numbering, header/footer parts, and page
+fields. The Excel path uses the pinned spreadsheet runtime to create nine styled
+worksheets with wrapped cells, frozen headings, bounded column widths, print setup,
+and no formulas or macros. Neither Office export requires a cloud conversion
+service.
+
+Pending inbox records, original source files, full meeting text, snapshots, and
+unaccepted AI drafts are excluded from every decision-package format.
 
 Decision outputs do not add the workspace's data-handling banner, solution
 classification field, browser-storage language, or authorization or conformance

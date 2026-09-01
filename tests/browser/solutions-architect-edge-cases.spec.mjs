@@ -235,13 +235,17 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
 
   await page.goto(`${APP_PATH}#decision-package`, { waitUntil: "domcontentloaded" });
   const markdownPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download Markdown", exact: true }).click();
-  const markdown = (await readDownload(await markdownPromise)).toString("utf8");
+  await page.getByRole("button", { name: "Download decision package as Markdown", exact: true }).click();
+  const markdownDownload = await markdownPromise;
+  expect(markdownDownload.suggestedFilename()).toMatch(/-decision-package\.md$/);
+  const markdown = (await readDownload(markdownDownload)).toString("utf8");
   for (const heading of ["Customer hot buttons", "Technology Assessment", "Dependencies", "Win themes", "Transition plan"]) expect(markdown).toContain(heading);
 
   const htmlPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Standalone HTML", exact: true }).click();
-  const html = (await readDownload(await htmlPromise)).toString("utf8");
+  await page.getByRole("button", { name: "Download decision package as standalone HTML", exact: true }).click();
+  const htmlDownload = await htmlPromise;
+  expect(htmlDownload.suggestedFilename()).toMatch(/-decision-package\.html$/);
+  const html = (await readDownload(htmlDownload)).toString("utf8");
   expect(html).toMatch(/^<!doctype html>/i);
   expect(html).toContain('<article class="decision-document">');
   expect(html).toContain('<header class="decision-hero"');
@@ -252,23 +256,29 @@ test("diagram keyboard movement, accessible data, and decision-package downloads
   expect(html).not.toMatch(/data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
   expect(html).toContain("<svg");
 
-  await page.context().addInitScript(() => {
-    Object.defineProperty(window, "print", {
-      configurable: true,
-      value() { globalThis.__printCalled = true; },
-    });
-  });
-  const popupPromise = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Print / Save PDF", exact: true }).click();
-  const printPage = await popupPromise;
-  await printPage.waitForLoadState("domcontentloaded");
-  await expect(printPage.locator(".decision-hero")).toBeVisible();
-  await expect(printPage.getByRole("heading", { name: "Executive overview", exact: true })).toBeVisible();
-  await expect(printPage.locator(".architecture-figure")).toHaveCount(3);
-  await expect(printPage.locator("body")).not.toContainText(/data marking|NO CUI|CLASSIFIED DATA|browser(?:-local| storage)|not authorized|not an authorization|approval or authorization determination|DoD[- ]confirmed determination|DOF[- ]confirmed determination|DoDAF[- ]conformance determination/i);
-  await expect.poll(() => printPage.locator("style").textContent()).toContain("size: Letter portrait");
-  await expect.poll(() => printPage.evaluate(() => globalThis.__printCalled === true)).toBe(true);
-  await printPage.close();
+  const wordPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download decision package as Microsoft Word", exact: true }).click();
+  const wordDownload = await wordPromise;
+  expect(wordDownload.suggestedFilename()).toMatch(/-decision-package\.docx$/);
+  const word = await readDownload(wordDownload);
+  expect(word.subarray(0, 2).toString("ascii")).toBe("PK");
+  expect(word.toString("latin1")).toContain("word/document.xml");
+
+  const excelPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download decision workbook as Microsoft Excel", exact: true }).click();
+  const excelDownload = await excelPromise;
+  expect(excelDownload.suggestedFilename()).toMatch(/-decision-workbook\.xlsx$/);
+  const excel = await readDownload(excelDownload);
+  expect(excel.subarray(0, 2).toString("ascii")).toBe("PK");
+  expect(excel.toString("latin1")).toContain("xl/workbook.xml");
+
+  const pdfPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download decision package as PDF", exact: true }).click();
+  const pdfDownload = await pdfPromise;
+  expect(pdfDownload.suggestedFilename()).toMatch(/-decision-package\.pdf$/);
+  const pdf = await readDownload(pdfDownload);
+  expect(pdf.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+  expect(pdf.length).toBeGreaterThan(20_000);
 });
 
 test("narrow touch layout, reduced motion, and every lifecycle route avoid page overflow", async ({ browser }) => {

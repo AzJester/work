@@ -1,4 +1,4 @@
-const CACHE_NAME = "solution-architect-workbench-v5";
+const CACHE_NAME = "solution-architect-workbench-v6";
 const SHELL = [
   "./",
   "./index.html",
@@ -11,12 +11,17 @@ const SHELL = [
   "./capture.js",
   "./ingestion.js",
   "./ingestion-worker.js",
+  "./export-docx.js",
+  "./export-pdf.js",
+  "./export-xlsx.js",
   "./app.js",
   "./icon.svg",
   "./og-card.png",
   "./vendor/pdf-6.3.289.min.mjs",
   "./vendor/pdf.worker-6.3.289.min.mjs",
   "./vendor/PDFJS-LICENSE.txt",
+  "./vendor/pdf-lib-1.17.1.min.js",
+  "./vendor/PDF-LIB-LICENSE.txt",
   "./vendor/README.md",
   "../black-hat-agent/vendor/xlsx.full.min.js",
   "../black-hat-agent/vendor/SHEETJS-LICENSE.txt",

@@ -979,7 +979,7 @@ function elementColor(type) {
   })[type] || "#8c9cab";
 }
 
-export function buildDiagramSvg(workspace, viewId, { standalone = false, interactive = true } = {}) {
+export function buildDiagramSvg(workspace, viewId, { standalone = false, interactive = true, palette = "screen" } = {}) {
   const view = workspace.architectureViews.find(record => record.id === viewId);
   if (!view) return "";
   const idSuffix = String(view.id || viewId).replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 128) || "view";
@@ -990,7 +990,11 @@ export function buildDiagramSvg(workspace, viewId, { standalone = false, interac
   const elements = workspace.elements.filter(record => record.viewId === viewId);
   const byId = new Map(elements.map(element => [element.id, element]));
   const connections = workspace.connections.filter(record => record.viewId === viewId);
-  const defs = `<defs><marker id="${arrowId}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#718495"/></marker><filter id="${shadowId}" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".28"/></filter></defs>`;
+  const printPalette = palette === "print";
+  const diagramColors = printPalette
+    ? { background: "#f5f8fa", line: "#607887", labelFill: "#ffffff", labelStroke: "#b8c7cf", labelText: "#314654", elementFill: "#ffffff", elementText: "#17232f" }
+    : { background: "#0f1822", line: "#718495", labelFill: "#0b1119", labelStroke: "#273442", labelText: "#b8c4cf", elementFill: "#162230", elementText: "#e7edf3" };
+  const defs = `<defs><marker id="${arrowId}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${diagramColors.line}"/></marker>${printPalette ? "" : `<filter id="${shadowId}" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".28"/></filter>`}</defs>`;
   const lineMarkup = connections.map(connection => {
     const source = byId.get(connection.sourceElementId);
     const target = byId.get(connection.targetElementId);
@@ -1001,21 +1005,22 @@ export function buildDiagramSvg(workspace, viewId, { standalone = false, interac
     const y2 = target.y + target.height / 2;
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
-    return `<g data-connection-id="${escapeHtml(connection.id)}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#718495" stroke-width="2" marker-end="url(#${arrowId})"/><rect x="${midX - 70}" y="${midY - 13}" width="140" height="24" rx="5" fill="#0b1119" stroke="#273442"/><text x="${midX}" y="${midY + 4}" text-anchor="middle" fill="#b8c4cf" font-size="11">${escapeHtml(connection.label || connection.type)}</text></g>`;
+    return `<g data-connection-id="${escapeHtml(connection.id)}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${diagramColors.line}" stroke-width="2" marker-end="url(#${arrowId})"/><rect x="${midX - 70}" y="${midY - 13}" width="140" height="24" rx="5" fill="${diagramColors.labelFill}" stroke="${diagramColors.labelStroke}"/><text x="${midX}" y="${midY + 4}" text-anchor="middle" fill="${diagramColors.labelText}" font-size="11">${escapeHtml(connection.label || connection.type)}</text></g>`;
   }).join("");
   const elementMarkup = elements.map(element => {
     const color = elementColor(element.type);
     const label = escapeHtml(element.name).slice(0, 80);
     const type = escapeHtml(element.type).slice(0, 40);
     const interaction = interactive ? ` tabindex="0" role="button" aria-label="${label}, ${type}"` : "";
-    return `<g data-element-id="${escapeHtml(element.id)}"${interaction} transform="translate(${element.x} ${element.y})"><rect width="${element.width}" height="${element.height}" rx="10" fill="#162230" stroke="${color}" stroke-width="2" filter="url(#${shadowId})"/><rect width="5" height="${element.height}" rx="3" fill="${color}"/><text x="16" y="25" fill="${color}" font-size="10" font-weight="700" letter-spacing="1">${type.toUpperCase()}</text><text x="16" y="52" fill="#e7edf3" font-size="14" font-weight="700">${label}</text></g>`;
+    const shadow = printPalette ? "" : ` filter="url(#${shadowId})"`;
+    return `<g data-element-id="${escapeHtml(element.id)}"${interaction} transform="translate(${element.x} ${element.y})"><rect width="${element.width}" height="${element.height}" rx="10" fill="${diagramColors.elementFill}" stroke="${color}" stroke-width="2"${shadow}/><rect width="5" height="${element.height}" rx="3" fill="${color}"/><text x="16" y="25" fill="${printPalette ? "#405766" : color}" font-size="10" font-weight="700" letter-spacing="1">${type.toUpperCase()}</text><text x="16" y="52" fill="${diagramColors.elementText}" font-size="14" font-weight="700">${label}</text></g>`;
   }).join("");
-  const content = `${defs}<rect width="100%" height="100%" fill="#0f1822"/><g>${lineMarkup}${elementMarkup}</g>`;
+  const content = `${defs}<rect width="100%" height="100%" fill="${diagramColors.background}"/><g>${lineMarkup}${elementMarkup}</g>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view.width} ${view.height}" width="${view.width}" height="${view.height}" role="img" aria-labelledby="${titleId} ${descriptionId}"><title id="${titleId}">${escapeHtml(view.name)}</title><desc id="${descriptionId}">${escapeHtml(view.description || "Architecture elements and their exchanges.")}</desc>${content}</svg>`;
   return standalone ? `<?xml version="1.0" encoding="UTF-8"?>\n${svg}` : svg;
 }
 
-function cleanDecisionPackageValue(value) {
+export function cleanDecisionPackageValue(value) {
   return String(value ?? "")
     .replace(/;\s*they are not an approval or authorization determination\.?/gi, ".")
     .replace(/\s*this package is not an authorization or DoDAF-conformance determination\.?/gi, "")
@@ -1376,7 +1381,7 @@ tbody tr:nth-child(even) td { background: var(--panel); }
   .trace-card dl { grid-template-columns: 1fr; }
   .document-footer { display: grid; }
 }
-@page { size: Letter portrait; margin: .62in .62in .68in; }
+@page { size: Letter portrait; margin: .68in .62in .74in; }
 @media print {
   :root, html[data-theme="dark"] {
     color-scheme: light;
@@ -1385,7 +1390,7 @@ tbody tr:nth-child(even) td { background: var(--panel); }
   html { scroll-behavior: auto; }
   body { background: #fff; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .decision-document { width: auto; margin: 0; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
-  .decision-hero { min-height: 9in; padding: .55in .48in; color: #15222d; background: #fff; break-after: page; }
+  .decision-hero { min-height: 9.05in; padding: .5in .44in; color: #15222d; background: #fff; break-after: page; }
   .decision-hero::before { display: none; }
   .decision-hero::after { height: 7px; background: linear-gradient(90deg, #007b86, #d39235 76%, transparent); }
   .doc-kicker { color: #007b86; }
@@ -1401,10 +1406,11 @@ tbody tr:nth-child(even) td { background: var(--panel); }
   .hero-segments span { color: #00545c; border-color: #8ebfc3; background: #e5f4f5; }
   .document-nav { display: none; }
   .document-body { padding: 0; }
-  .doc-section { padding: 0; }
-  .doc-section + .doc-section { break-before: page; }
-  .section-heading { margin-bottom: 15px; padding-bottom: 11px; }
-  .section-heading h2 { font-size: 22pt; }
+  .doc-section { padding: .18in 0 .08in; }
+  .doc-section + .doc-section { break-before: auto; }
+  .section-heading { margin-bottom: 15px; padding-bottom: 11px; break-after: avoid; }
+  .section-heading h2 { font-size: 20pt; }
+  .subsection > h3, .diagram-copy, caption { break-after: avoid; }
   .metric-grid { gap: 6px; }
   .metric { padding: 10px; }
   .metric strong { font-size: 18pt; }
@@ -1417,12 +1423,12 @@ tbody tr:nth-child(even) td { background: var(--panel); }
   thead { display: table-header-group; }
   tr { break-inside: avoid; }
   th, td { min-width: 0; padding: 7px 8px; }
-  .architecture-figure { break-before: page; break-inside: auto; }
-  #architecture > .architecture-figure:first-of-type { break-before: auto; }
-  #architecture > .subsection { break-before: page; }
-  #evidence > .subsection:last-child { break-before: page; }
+  .architecture-figure { break-before: auto; break-inside: auto; }
+  .architecture-figure + .architecture-figure { break-before: page; }
+  #architecture > .subsection, #evidence > .subsection:last-child { break-before: auto; }
   .diagram-frame { break-inside: avoid; }
-  .diagram-frame svg { width: auto; max-width: 100%; height: auto; max-height: 6.15in; margin-inline: auto; }
+  .diagram-frame { background: #f5f8fa; }
+  .diagram-frame svg { width: auto; max-width: 100%; height: auto; max-height: 4.8in; margin-inline: auto; }
   .document-footer { margin-top: 24px; }
   a { color: inherit; text-decoration: none; }
 }

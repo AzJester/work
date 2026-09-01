@@ -16,8 +16,8 @@
   .decision-document { width: auto; margin: 0; border: 0; box-shadow: none; }
   .decision-hero { min-height: 9in; break-after: page; }
   .document-nav { display: none; }
-  .doc-section + .doc-section,
-  .architecture-figure { break-before: page; }
+  .doc-section { break-before: auto; }
+  .architecture-figure + .architecture-figure { break-before: page; }
   h1, h2, h3, caption { break-after: avoid-page; }
   .overview-card,
   .narrative-card,
@@ -36,7 +36,7 @@
     width: auto;
     max-width: 100%;
     height: auto;
-    max-height: 6.15in;
+    max-height: 4.8in;
     margin-inline: auto;
   }
   thead { display: table-header-group; }

@@ -73,8 +73,8 @@ node --check solutions-architect/engine.js
 node --check solutions-architect/capture.js
 node --check solutions-architect/ingestion.js
 node --check solutions-architect/ingestion-worker.js
-node --test tests/solutions-architect.test.mjs tests/solutions-architect-capture.test.mjs tests/solutions-architect-ingestion.test.mjs tests/solutions-architect-mission-segments.test.mjs tests/solutions-architect-meeting-evidence.test.mjs tests/solution-assist-contract.test.mjs
-npm run test:browser -- tests/browser/solutions-architect.spec.mjs tests/browser/solutions-architect-theme.spec.mjs tests/browser/solutions-architect-mission-segments.spec.mjs tests/browser/solutions-architect-capture-ingestion.spec.mjs tests/browser/solutions-architect-meeting-capture.spec.mjs
+node --test tests/solutions-architect.test.mjs tests/solutions-architect-capture.test.mjs tests/solutions-architect-ingestion.test.mjs tests/solutions-architect-mission-segments.test.mjs tests/solutions-architect-meeting-evidence.test.mjs tests/solutions-architect-export-pdf.test.mjs tests/solutions-architect-docx-export.test.mjs tests/solutions-architect-xlsx.test.mjs tests/solution-assist-contract.test.mjs
+npm run test:browser -- tests/browser/solutions-architect.spec.mjs tests/browser/solutions-architect-theme.spec.mjs tests/browser/solutions-architect-mission-segments.spec.mjs tests/browser/solutions-architect-capture-ingestion.spec.mjs tests/browser/solutions-architect-meeting-capture.spec.mjs tests/browser/solutions-architect-readability.spec.mjs
 ```
 
 Then run the complete pre-release suites:
@@ -122,11 +122,15 @@ npm run test:browser
    customer value, discriminator, proof, or evidence remains a proposal obligation.
 15. Create every architecture template; verify drag, keyboard movement, auto-layout,
    accessible tables, and SVG/PNG downloads.
-16. Verify Markdown and standalone HTML downloads, then open the separate print view
-    and create a PDF with the browser print workflow.
-17. Test current desktop and narrow-phone layouts, keyboard-only operation, Quick
-   Capture's shortcut, touch intake/review, reduced motion, long content, and
-   page-level horizontal overflow.
+16. Verify Markdown, standalone HTML, native PDF, Word `.docx`, and Excel `.xlsx`
+    downloads. Open every file and confirm the active solution is isolated, the
+    expected sections are present, and long content wraps without clipping. Confirm
+    PDF downloads directly without opening a print or pop-up window.
+17. Test every work area at current desktop and narrow-phone sizes. Confirm larger
+    controls and labels, content-growing text areas, record cards, navigation,
+    keyboard-only operation, Quick Capture's shortcut, touch intake/review, reduced
+    motion, long content, and absence of page-level horizontal overflow. Wide
+    analytical tables may scroll only inside their own panels.
 18. Mock AI unauthenticated, unauthorized, quota, timeout, malformed-output, and
    unavailable-service responses. Confirm payload cancellation sends nothing and an
    accepted result remains a draft. Confirm selected mission segments appear and

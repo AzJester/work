@@ -353,7 +353,7 @@ test("sanitizers reject unsafe URLs and decision packages safely render authored
   assert.match(html, /Architecture interfaces and exchanges/);
   assert.doesNotMatch(html, /<pre\b/i);
   assert.doesNotMatch(html, /role="button"|tabindex=/i, "standalone diagrams must not expose inert editor controls");
-  assert.match(html, /max-height:\s*6\.15in/i);
+  assert.match(html, /max-height:\s*4\.8in/i);
   assert.match(html, /status status-negative">Invalidated</);
   assert.match(html, /Trades and decisions/);
   assert.match(html, /Mission package technology selection/);

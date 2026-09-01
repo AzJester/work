@@ -42,6 +42,17 @@ import {
   SOURCE_FILE_ACCEPT,
   extractLocalSource
 } from "./ingestion.js";
+import { buildDecisionPackagePdf } from "./export-pdf.js";
+import {
+  DOCX_MIME_TYPE,
+  buildDecisionPackageDocx,
+  decisionPackageDocxFilename
+} from "./export-docx.js";
+import {
+  DECISION_WORKBOOK_MIME,
+  decisionWorkbookFilename,
+  writeDecisionWorkbook
+} from "./export-xlsx.js";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
@@ -774,7 +785,7 @@ function renderDecisionPackage(solution) {
   const readiness = buildReadiness(workspace, solution.id);
   const prepared = formatLocalDate();
   const segments = solution.missionSegments || [];
-  return `${renderStageRail(solution.stage)}<div class="section-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div><button class="button secondary" type="button" data-action="export-markdown">Download Markdown</button><button class="button secondary" type="button" data-action="export-html">Standalone HTML</button><button class="button primary" type="button" data-action="print-package">Print / Save PDF</button></div></div><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><p class="section-kicker">Output preview</p><h3>Executive decision document</h3><p>Standalone HTML and Print / Save PDF share this structured visual design.</p></div></div><div class="package-preview-artifact"><header class="package-preview-cover"><p class="package-preview-kicker">Solution decision package</p><h4>${h(solution.name)}</h4><p class="package-preview-lede">${h(solution.description || solution.mission.desiredState || solution.mission.problem || "Decision-ready solution architecture package.")}</p><dl><div><dt>Customer</dt><dd>${h(solution.customer || "Not recorded")}</dd></div><div><dt>Lifecycle stage</dt><dd>${h(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${h(solution.domain || "Not recorded")}</dd></div><div><dt>Prepared</dt><dd>${h(prepared)}</dd></div></dl><div class="package-preview-decision"><span>Decision requested</span><p>${h(solution.decision || "Decision request not yet defined")}</p></div><div class="package-preview-segments"><strong>Company mission segments</strong><div class="package-preview-tags">${segments.length ? segments.map(segment => `<span>${h(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div></div></header><div class="package-preview-contents"><div><p class="section-kicker">Inside the package</p><h4>One coherent decision story</h4><p>The report carries the complete workspace into readable sections with semantic headings, wrapping records, architecture figures, and print-aware page breaks.</p></div><ol><li>Executive overview and mission context</li><li>Customer priorities, win themes, and proposal approach</li><li>Requirements, assessments, trades, and architecture</li><li>Decisions, risks, roadmap, transition, and evidence</li></ol></div></div></section>`;
+  return `${renderStageRail(solution.stage)}<div class="section-toolbar decision-export-toolbar"><div><p class="section-kicker">Review artifact</p><h3>Decision package</h3><p>Mission brief, traceability, assessments, architecture, decisions, risks, roadmap, and evidence gaps.</p></div><div class="decision-export-actions"><button class="button secondary" type="button" data-action="export-markdown" aria-label="Download decision package as Markdown">Markdown</button><button class="button secondary" type="button" data-action="export-html" aria-label="Download decision package as standalone HTML">HTML</button><button class="button secondary" type="button" data-action="export-docx" aria-label="Download decision package as Microsoft Word">Word</button><button class="button secondary" type="button" data-action="export-xlsx" aria-label="Download decision workbook as Microsoft Excel">Excel</button><button class="button primary" type="button" data-action="export-pdf" aria-label="Download decision package as PDF">PDF</button></div></div><section class="panel package-summary"><div><span>Overall coverage</span><strong>${readiness.overall}%</strong></div><div><span>Traceability</span><strong>${readiness.traceability}%</strong></div><div><span>Evidence</span><strong>${readiness.evidence}%</strong></div><div><span>Element connectivity</span><strong>${readiness.interfaces}%</strong></div><div><span>Transition</span><strong>${readiness.transition}%</strong></div></section><section class="panel package-preview"><div class="panel-head"><div><p class="section-kicker">Output preview</p><h3>Executive decision document</h3><p>HTML, PDF, Word, and Excel use the same validated solution facts with layouts tailored to each format.</p></div></div><div class="package-preview-artifact"><header class="package-preview-cover"><p class="package-preview-kicker">Solution decision package</p><h4>${h(solution.name)}</h4><p class="package-preview-lede">${h(solution.description || solution.mission.desiredState || solution.mission.problem || "Decision-ready solution architecture package.")}</p><dl><div><dt>Customer</dt><dd>${h(solution.customer || "Not recorded")}</dd></div><div><dt>Lifecycle stage</dt><dd>${h(solution.stage)}</dd></div><div><dt>Domain</dt><dd>${h(solution.domain || "Not recorded")}</dd></div><div><dt>Prepared</dt><dd>${h(prepared)}</dd></div></dl><div class="package-preview-decision"><span>Decision requested</span><p>${h(solution.decision || "Decision request not yet defined")}</p></div><div class="package-preview-segments"><strong>Company mission segments</strong><div class="package-preview-tags">${segments.length ? segments.map(segment => `<span>${h(segment)}</span>`).join("") : `<span>Mission segment not selected</span>`}</div></div></header><div class="package-preview-contents"><div><p class="section-kicker">Inside the package</p><h4>One coherent decision story</h4><p>The report carries the complete workspace into readable sections with semantic headings, wrapping records, architecture figures, and format-aware pagination.</p></div><ol><li>Executive overview and mission context</li><li>Customer priorities, win themes, and proposal approach</li><li>Requirements, assessments, trades, and architecture</li><li>Decisions, risks, roadmap, transition, and evidence</li></ol></div></div></section>`;
 }
 
 const ADD_DEFAULTS = {
@@ -1388,20 +1399,10 @@ function exportSelectedPng() {
   image.src = url;
 }
 
-function printDecisionPackage() {
+async function downloadDecisionPackagePdf() {
   const solution = activeSolution();
-  const html = buildDecisionPackageHtml(workspace, solution.id, { theme: resolveTheme(themePreference) });
-  const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-  const popup = window.open(url, "_blank");
-  if (!popup) { URL.revokeObjectURL(url); toast("Allow pop-ups to open and print the decision package.", "error"); return; }
-  const invokePrint = () => {
-    if (popup.closed) return;
-    popup.focus();
-    popup.print();
-  };
-  if (popup.location.href === url && popup.document.readyState === "complete") setTimeout(invokePrint, 0);
-  else popup.addEventListener("load", invokePrint, { once: true });
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  const pdf = await buildDecisionPackagePdf(workspace, solution.id);
+  download(`${slug(solution.name)}-decision-package.pdf`, pdf, "application/pdf");
 }
 
 // AI assistance
@@ -1585,7 +1586,15 @@ document.addEventListener("click", event => {
   if (action === "export-png") exportSelectedPng();
   if (action === "export-markdown") download(`${slug(activeSolution().name)}-decision-package.md`, buildDecisionPackageMarkdown(workspace, workspace.activeSolutionId), "text/markdown;charset=utf-8");
   if (action === "export-html") download(`${slug(activeSolution().name)}-decision-package.html`, buildDecisionPackageHtml(workspace, workspace.activeSolutionId, { theme: resolveTheme(themePreference) }), "text/html;charset=utf-8");
-  if (action === "print-package") printDecisionPackage();
+  if (action === "export-docx") {
+    try { download(decisionPackageDocxFilename(workspace, workspace.activeSolutionId), buildDecisionPackageDocx(workspace, workspace.activeSolutionId), DOCX_MIME_TYPE); }
+    catch (error) { toast(`Word export failed: ${error.message}`, "error"); }
+  }
+  if (action === "export-xlsx") {
+    try { download(decisionWorkbookFilename(workspace, workspace.activeSolutionId), writeDecisionWorkbook(workspace, workspace.activeSolutionId), DECISION_WORKBOOK_MIME); }
+    catch (error) { toast(`Excel export failed: ${error.message}`, "error"); }
+  }
+  if (action === "export-pdf") downloadDecisionPackagePdf().catch(error => toast(`PDF export failed: ${error.message}`, "error"));
   const add = event.target.closest("[data-add]")?.dataset.add; if (add) addRecord(add);
   const deletion = event.target.closest("[data-delete]"); if (deletion && confirm("Delete this record? A recovery point will be created first.")) deleteRecord(deletion.dataset.delete, deletion.dataset.id);
   const candidate = event.target.closest("[data-candidate]")?.dataset.candidate; if (candidate) { selectedCandidateId = candidate; render(); }
