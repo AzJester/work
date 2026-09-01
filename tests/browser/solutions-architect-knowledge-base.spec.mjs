@@ -40,15 +40,23 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   await expect(navigation.locator('[data-route="knowledge-base"] .label')).toHaveText("Knowledge base");
   await expect(page.getByRole("heading", { level: 3, name: "Knowledge base", exact: true })).toBeVisible();
   await expect(page.locator('[data-knowledge-count]')).toHaveText("1 of 1 items");
+  const filterStatus = page.locator("[data-knowledge-filter-status]");
+  await expect(filterStatus).toHaveAttribute("role", "status");
+  await expect(filterStatus).toHaveAttribute("aria-live", "polite");
+  await expect(filterStatus).toHaveText("1 of 1 Knowledge Base items match the current filters.");
 
   const search = page.locator('[data-knowledge-filter="search"]');
+  await expect(search).toHaveAttribute("aria-controls", "knowledge-results-grid");
+  await expect(search).toHaveAttribute("aria-describedby", "knowledge-filter-status");
   await search.fill("governed data exchange");
   await expect(page.locator("[data-knowledge-card]")).toBeVisible();
   await search.fill("no matching offering");
+  await expect(filterStatus).toHaveText("0 of 1 Knowledge Base items match the current filters.");
   await expect(page.locator("[data-knowledge-card]")).toBeHidden();
   await expect(page.locator("[data-knowledge-empty]")).toBeVisible();
   await page.locator("[data-knowledge-clear]").click();
   await expect(search).toHaveValue("");
+  await expect(filterStatus).toHaveText("1 of 1 Knowledge Base items match the current filters.");
 
   const card = page.locator("[data-knowledge-card]");
   await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
@@ -239,7 +247,8 @@ test("optional Analysis of Alternatives stays legible, contained, and responsive
     };
   });
   expect(Math.abs(desktop.title.top - desktop.status.top)).toBeLessThanOrEqual(1);
-  expect(Math.abs(desktop.title.width - desktop.status.width)).toBeLessThanOrEqual(1);
+  expect(desktop.title.width).toBeGreaterThan(desktop.status.width * 2);
+  expect(desktop.status.width).toBeGreaterThanOrEqual(220);
   expect(desktop.objective.width).toBeGreaterThan(desktop.owner.width * 1.8);
   expect(desktop.recommendation.width).toBeGreaterThan(desktop.owner.width * 1.8);
   for (const control of desktop.controls) {
@@ -267,13 +276,25 @@ test("optional Analysis of Alternatives stays legible, contained, and responsive
     };
     return {
       headerContained: inside(header),
+      headerContentContained: header.scrollWidth <= header.clientWidth + 1,
       titleContained: inside(title),
       titleWrap: getComputedStyle(title).overflowWrap,
       candidateContained: candidateCell ? inside(candidateCell) : false,
-      candidateWrap: candidateCell ? getComputedStyle(candidateCell).overflowWrap : ""
+      candidateContentContained: candidateCell ? candidateCell.scrollWidth <= candidateCell.clientWidth + 1 : false,
+      candidateWrap: candidateCell ? getComputedStyle(candidateCell).overflowWrap : "",
+      headerWraps: [...card.querySelectorAll(".aoa-comparison th")].every(node => getComputedStyle(node).overflowWrap === "anywhere")
     };
   }, longCandidateName);
-  expect(longTextContainment).toEqual({ headerContained: true, titleContained: true, titleWrap: "anywhere", candidateContained: true, candidateWrap: "anywhere" });
+  expect(longTextContainment).toEqual({
+    headerContained: true,
+    headerContentContained: true,
+    titleContained: true,
+    titleWrap: "anywhere",
+    candidateContained: true,
+    candidateContentContained: true,
+    candidateWrap: "anywhere",
+    headerWraps: true
+  });
   expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
 
   await page.setViewportSize({ width: 390, height: 844 });

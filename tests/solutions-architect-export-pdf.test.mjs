@@ -73,3 +73,26 @@ test("PDF export text normalization and status classification are deterministic"
   assert.equal(PDF_EXPORT_INTERNALS.statusTone("Validated"), "positive");
   assert.deepEqual(PDF_EXPORT_INTERNALS.normalizeWidths([1, 2], 2).map(value => Math.round(value)), [172, 344]);
 });
+
+test("native PDF keeps a long AoA objective with its heading at page boundaries", async () => {
+  const base = createWorkspace();
+  const solutionId = base.activeSolutionId;
+  const analysis = base.trades.find(record => record.analysisType === "Analysis of Alternatives");
+  analysis.question = `PDF LONG OBJECTIVE LEAD ${"mission context and evaluation detail ".repeat(180)}`;
+
+  for (const repeatCount of [50, 55]) {
+    const workspace = structuredClone(base);
+    const ordinaryTrade = workspace.trades.find(record => record.analysisType !== "Analysis of Alternatives");
+    workspace.trades.push(...Array.from({ length: 9 }, (_, index) => ({
+      ...structuredClone(ordinaryTrade),
+      id: `trade_pdf_boundary_${repeatCount}_${index}`,
+      title: `Boundary filler ${index + 1}`,
+      question: index === 8 ? `Boundary detail ${"shift ".repeat(repeatCount)}` : ordinaryTrade.question
+    })));
+
+    const blob = await buildDecisionPackagePdf(workspace, solutionId);
+    const extracted = await extractPdfText(new Uint8Array(await blob.arrayBuffer()));
+    const headingPage = extracted.pages.find(page => page.includes("Analysis of Alternatives: Mission package technology selection"));
+    assert.match(headingPage || "", /DECISION OBJECTIVE\s+PDF LONG OBJECTIVE LEAD/i, `AoA lead content was orphaned with ${repeatCount} repeated shift tokens`);
+  }
+});

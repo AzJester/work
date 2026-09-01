@@ -7,7 +7,7 @@ import {
   formatLocalDate,
   safeHttpUrl,
   scoped
-} from "./engine.js?v=8";
+} from "./engine.js?v=9";
 
 export const DECISION_WORKBOOK_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -694,7 +694,11 @@ export function buildDecisionWorkbook(
   const decisionsSheet = createReportSheet(XLSX, {
     title: "Decisions & Risk",
     subtitle,
-    widths: [38, 48, 40, 48, 30, 36, 44],
+    // These widths are shared by sections with different column meanings. Keep
+    // every narrative-bearing position wide enough for wrapped trade, decision,
+    // risk, dependency, and assumption content instead of optimizing one table
+    // at the expense of another.
+    widths: [38, 48, 40, 48, 48, 44, 44],
     sections: [
       section("Trade studies", ["Trade study", "Decision question", "Options", "Recommendation", "Status"], trades.map(record => [
         text(record.title), text(record.question), joinNames(record.optionIds, candidateById, "name"), text(record.recommendation), text(record.status)

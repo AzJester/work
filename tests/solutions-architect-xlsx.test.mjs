@@ -111,7 +111,10 @@ test("native decision workbook is polished, active-solution scoped, formula-free
     .join("\n");
   assert.match(decisionsText, /Representative demonstration delivery path/);
   assert.doesNotMatch(decisionsText, /Mission package technology selection|Analysis of Alternatives \(AoA\)/, "the AoA must not be duplicated in the generic trade register");
-  assert.ok(workbook.Sheets["Decisions & Risk"]["!cols"][3].wch >= 48, "long recommendations must retain a readable column width");
+  const decisionColumns = workbook.Sheets["Decisions & Risk"]["!cols"];
+  assert.ok(decisionColumns[3].wch >= 48, "long trade recommendations must retain a readable shared column width");
+  assert.ok(decisionColumns[4].wch >= 48, "wrapped decision rationales and risk mitigations must not inherit a narrow status column");
+  assert.ok(decisionColumns[5].wch >= 44, "wrapped decision evidence and dependency statuses must retain a readable shared column width");
   const alternativesText = Array.from(XLSX.utils.sheet_to_json(workbook.Sheets["Analysis of Alternatives"], { header: 1, raw: false, defval: "" }))
     .flatMap(row => Array.from(row).map(value => String(value ?? "")))
     .join("\n");
