@@ -110,7 +110,7 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
   await expect(page.getByText("Customer hot buttons", { exact: true })).not.toBeVisible();
   await lifecycle.getByRole("link", { name: /Discover$/ }).click();
   await expect(page.getByText("Customer hot buttons", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Ingest", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Ingest list", exact: true })).toBeVisible();
   await lifecycle.getByRole("link", { name: /Propose$/ }).click();
   await expect(page.getByRole("heading", { name: "Win themes", exact: true })).toBeVisible();
   await expect(page.locator(".win-theme-card").first().getByRole("textbox", { name: "Win theme", exact: true }))
