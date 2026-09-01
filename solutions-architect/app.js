@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=10";
+} from "./engine.js?v=11";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,23 +37,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=10";
+} from "./capture.js?v=11";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=10";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=10";
+} from "./ingestion.js?v=11";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=11";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=10";
+} from "./export-docx.js?v=11";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=10";
+} from "./export-xlsx.js?v=11";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
   KNOWLEDGE_LIFECYCLE_STATUSES,
@@ -65,7 +65,7 @@ import {
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=10";
+} from "./knowledge-base.js?v=11";
 import {
   KNOWLEDGE_IMPORT_COLUMNS,
   KNOWLEDGE_IMPORT_FILE_ACCEPT,
@@ -74,7 +74,7 @@ import {
   normalizeKnowledgeImportRows,
   parseKnowledgeCsv,
   parseKnowledgeWorkbook
-} from "./knowledge-import.js?v=10";
+} from "./knowledge-import.js?v=11";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const SUPABASE_URL = "https://hqqwlkmggwgaoiyzgrhy.supabase.co";
@@ -544,6 +544,7 @@ function render() {
   const solution = activeSolution();
   if (!solution) return;
   const resolvedTheme = resolveTheme(themePreference);
+  const pendingCaptures = pendingCaptureCount();
   clearTransientModalSessions();
   const navItems = [
     ["dashboard", "00", "Command view"],
@@ -572,7 +573,17 @@ function render() {
         <header class="topbar">
           <div class="title-block"><h2>${h(routeTitle(route))}</h2><p>${h(routeSubtitle(route, solution))}</p></div>
           <span id="save-state" class="save-state" data-tone="${dirty ? "warn" : "ok"}">${dirty ? "Unsaved changes" : "Saved locally"}</span>
-          <div class="top-actions"><button class="button primary capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q">＋ Capture</button><button class="inbox-button" type="button" data-action="open-capture-inbox" aria-label="Open capture inbox, ${pendingCaptureCount()} pending"><span>Inbox</span><strong>${pendingCaptureCount()}</strong></button><button class="button tools-button" type="button" data-action="open-tools" aria-label="Workspace tools" title="Workspace tools"><span class="tools-icon" aria-hidden="true">•••</span><span class="tools-label">Tools</span></button></div>
+          <div class="top-actions" role="group" aria-label="Workspace actions">
+            <button class="top-action capture-button" type="button" data-action="quick-capture" aria-keyshortcuts="Alt+Q" aria-haspopup="dialog">
+              <span class="top-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 5v14M5 12h14"/></svg></span><span class="top-action-label">Capture</span>
+            </button>
+            <button class="top-action inbox-button" type="button" data-action="open-capture-inbox" aria-label="Open capture inbox, ${pendingCaptures} pending" aria-haspopup="dialog">
+              <span class="top-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4.5 7.5h15l1.5 11h-18l1.5-11Z"/><path d="M3.8 14h4.6l1.5 2h4.2l1.5-2h4.6"/></svg></span><span class="top-action-label">Inbox</span><span class="inbox-count" aria-hidden="true" ${pendingCaptures ? "" : "hidden"}>${pendingCaptures}</span>
+            </button>
+            <button class="top-action tools-button" type="button" data-action="open-tools" aria-label="Workspace tools" aria-haspopup="dialog" title="Workspace tools">
+              <span class="top-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7h7M15 7h5M4 17h3M11 17h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></span><span class="top-action-label tools-label">Tools</span>
+            </button>
+          </div>
         </header>
         <aside class="development-banner" aria-label="Development status"><strong>Under development</strong><span>This workbench is still being actively built and refined.</span></aside>
         <div class="data-boundary" role="note"><strong>Data boundary</strong><span class="boundary-short">Approved unclassified, non-CUI only. Browser storage is not an authorization boundary.</span><span class="boundary-detail">Approved unclassified, non-CUI information only. Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted content. Browser storage is not an authorization boundary. <a href="https://www.acquisition.gov/dfars/204.7302-policy." target="_blank" rel="noopener noreferrer">DFARS safeguarding policy context</a>.</span></div>
@@ -2302,7 +2313,7 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=10", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=11", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }

@@ -200,6 +200,58 @@ test("Capture and grouped Workspace tools remain reachable across responsive bre
   }
 });
 
+test("workspace actions use one compact, aligned rail in both themes", async ({ page }) => {
+  for (const theme of ["light", "dark"]) {
+    for (const width of [1240, 650, 360, 320]) {
+      await test.step(`${theme} at ${width}px`, async () => {
+        await page.setViewportSize({ width, height: 900 });
+        await gotoFresh(page);
+        if (theme === "dark") await page.locator("#theme-toggle").click();
+
+        const rail = page.locator(".top-actions");
+        const actions = rail.locator(".top-action");
+        await expect(rail).toHaveAttribute("role", "group");
+        await expect(rail).toHaveAttribute("aria-label", "Workspace actions");
+        await expect(actions).toHaveCount(3);
+
+        const layout = await rail.evaluate(node => {
+          const rect = element => {
+            const box = element.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: box.top, width: box.width, height: box.height };
+          };
+          return {
+            rail: rect(node),
+            actions: [...node.querySelectorAll(".top-action")].map(rect),
+            pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+          };
+        });
+
+        expect(layout.rail.left).toBeGreaterThanOrEqual(-1);
+        expect(layout.rail.right).toBeLessThanOrEqual(width + 1);
+        expect(layout.rail.width).toBeLessThanOrEqual(340);
+        expect(layout.pageOverflow).toBeLessThanOrEqual(1);
+        for (const [index, action] of layout.actions.entries()) {
+          expect(action.height).toBeGreaterThanOrEqual(44);
+          expect(action.width).toBeLessThan(140);
+          expect(Math.abs(action.height - layout.actions[0].height)).toBeLessThanOrEqual(1);
+          expect(Math.abs(action.top - layout.actions[0].top)).toBeLessThanOrEqual(1);
+          if (index) expect(action.left).toBeGreaterThanOrEqual(layout.actions[index - 1].right - 1);
+        }
+
+        const inbox = page.locator('[data-action="open-capture-inbox"]');
+        await expect(inbox).toHaveAttribute("aria-label", "Open capture inbox, 0 pending");
+        await expect(inbox.locator(".inbox-count")).toBeHidden();
+        await expect(actions.locator(".top-action-icon")).toHaveCount(3);
+      });
+    }
+  }
+
+  await page.setViewportSize({ width: 360, height: 740 });
+  await gotoFresh(page);
+  await page.locator('[data-action="open-capture-inbox"]').click();
+  await expect(page.getByRole("dialog", { name: "Review capture inbox" })).toBeVisible();
+});
+
 test("tablet navigation stays labeled and exposes the current page while Tools remains visible", async ({ page }) => {
   await page.setViewportSize({ width: 980, height: 900 });
   await gotoFresh(page);
