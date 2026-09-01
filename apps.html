@@ -940,7 +940,7 @@
           category: "Operations",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/roadmap.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/roadmap.html",
           repo: "work",
           tags: ["Roadmaps", "Portfolio", "AI-assisted"],
           featured: true
@@ -962,7 +962,7 @@
           category: "Defense",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/index.html",
           repo: "work",
           tags: ["CJADC2", "Simulation", "F2T2EA"],
           featured: true
@@ -994,7 +994,7 @@
           category: "Operations",
           access: "Account",
           liveUrl: "https://azjester.github.io/work/tracker.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/tracker.html",
           repo: "work",
           tags: ["Status", "KPIs", "Supabase"]
         },
@@ -1014,7 +1014,7 @@
           category: "Operations",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/weekly-task-tracker.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/weekly-task-tracker.html",
           repo: "work",
           tags: ["Tasks", "Offline", "Reports"]
         },
@@ -1024,7 +1024,7 @@
           category: "Operations",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/status.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/status.html",
           repo: "work",
           tags: ["Status", "One-page", "Export"]
         },
@@ -1034,7 +1034,7 @@
           category: "Operations",
           access: "Account",
           liveUrl: "https://azjester.github.io/work/dashboard.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/dashboard.html",
           repo: "work",
           tags: ["Dashboard", "KPIs", "Read-only"]
         },
@@ -1044,7 +1044,7 @@
           category: "Research",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/radar-signal-chain.html",
-          repoUrl: "https://github.com/AzJester/work",
+          repoUrl: "https://github.com/AzJester/work/blob/main/radar-signal-chain.html",
           repo: "work",
           tags: ["Radar", "DSP", "Interactive"]
         },
@@ -1054,7 +1054,7 @@
           category: "Defense",
           access: "Public",
           liveUrl: "https://azjester.github.io/work/astrion-division/ldawif/",
-          repoUrl: "https://github.com/AzJester/work/tree/main/astrion-division",
+          repoUrl: "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
           repo: "work",
           tags: ["Astrion", "C-UAS", "Concept"]
         },
@@ -1332,7 +1332,7 @@
 
           const actions = card.querySelector(".card-actions");
           const liveLink = app.liveUrl ? makeLink("Open app", app.liveUrl, true, app.title) : null;
-          const sourceLink = makeLink(app.liveUrl ? "Source" : "View source", app.repoUrl, !app.liveUrl, app.title);
+          const sourceLink = makeLink("View source", app.repoUrl, !app.liveUrl, app.title);
           if (liveLink) actions.appendChild(liveLink);
           if (sourceLink) actions.appendChild(sourceLink);
           fragment.appendChild(card);

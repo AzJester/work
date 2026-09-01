@@ -47,6 +47,17 @@ const sourceOnlyRepos = [
   "https://github.com/AzJester/ai-metrics",
 ];
 
+const exactWorkSourceUrls = [
+  "https://github.com/AzJester/work/blob/main/roadmap.html",
+  "https://github.com/AzJester/work/blob/main/index.html",
+  "https://github.com/AzJester/work/blob/main/tracker.html",
+  "https://github.com/AzJester/work/blob/main/weekly-task-tracker.html",
+  "https://github.com/AzJester/work/blob/main/status.html",
+  "https://github.com/AzJester/work/blob/main/dashboard.html",
+  "https://github.com/AzJester/work/blob/main/radar-signal-chain.html",
+  "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
+];
+
 test("application hub publishes at a stable root HTML route", () => {
   assert.match(hub, /<link rel="canonical" href="https:\/\/azjester\.github\.io\/work\/apps\.html">/);
   assert.match(readme, /https:\/\/azjester\.github\.io\/work\/apps\.html/);
@@ -107,6 +118,18 @@ test("all verified live applications use their working primary URLs", () => {
 test("unpublished applications are represented honestly as source-only", () => {
   for (const url of sourceOnlyRepos) assert.ok(hub.includes(`repoUrl: "${url}"`), `Missing source-only app: ${url}`);
   assert.equal((hub.match(/access: "Source"/g) || []).length, 3);
+});
+
+test("application cards link directly to their exact source and use a clear action label", () => {
+  for (const url of exactWorkSourceUrls) {
+    assert.ok(hub.includes(`repoUrl: "${url}"`), `Missing exact source URL: ${url}`);
+  }
+  assert.equal(
+    (hub.match(/repoUrl: "https:\/\/github\.com\/AzJester\/work",/g) || []).length,
+    0,
+    "Monorepo cards must not send users to the generic repository root",
+  );
+  assert.match(hub, /const sourceLink = makeLink\("View source", app\.repoUrl/);
 });
 
 test("The AI Compendium is classified as a graphics application", () => {
