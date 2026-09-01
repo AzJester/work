@@ -101,6 +101,7 @@ The reusable catalog is intentionally separate from the workspace and capture in
 - schema: `solution-knowledge-base-v1`;
 - schema version: `1`;
 - storage key: `solution_architect_knowledge_base_v1`; and
+- bundled-default version key: `solution_architect_knowledge_defaults_version`; and
 - portable shape: `schema`, `schemaVersion`, `savedAt`, and `items`.
 
 Separation is an isolation and lifecycle design, not an authorization boundary. The
@@ -116,22 +117,43 @@ change summary, and creation/update timestamps. Allowed offering types are Produ
 Application, Software, Service, Platform, Integrated solution, and Other offering;
 lifecycle states are Current, Emerging, Legacy, and Retired.
 
+The application bundle includes a versioned 28-item default catalog derived from the
+provided Solutions & Offerings list. A missing catalog is created from those records.
+When the bundled-default version advances, a valid existing catalog receives only
+defaults whose stable ID and normalized name are both absent; a matching locally
+maintained item is preserved. The synthetic legacy seed is removed during this
+migration. The defaults-version marker is written only with a successful catalog
+save, so the catalog and migration state do not claim success after a storage failure.
+Later catalog edits, archives, additions, and deletions remain browser-local and are
+not written back into the bundled source file.
+
 The catalog is shared by all solutions within one browser profile and origin, but its
 items never carry `solutionId`. Strict solution isolation starts at copy-on-use:
 
 ```text
 Knowledge Base item revision N
-  -> explicit Use in active solution
-  -> new solution-scoped candidate ID + catalogSource provenance
-  -> independent status, scores, rationales, and evidence links
+  -> explicit Target opportunity / solution
+  -> searchable checkbox selection of one or more eligible items
+  -> one atomic workspace commit and one recovery point
+  -> new target-scoped candidate IDs + catalogSource provenance
+  -> independent status, scores, rationales, and evidence links per target
 ```
+
+The chooser starts with the active solution as its target, but target selection is
+separate state and never changes `workspace.activeSolutionId`. Duplicate detection is
+computed for the selected target. Therefore one catalog item can materialize once in
+each of many solutions, while a second copy in the same solution is unavailable. A
+per-card **Add to solution…** action uses the same chooser with that item initially
+selected; Technology Assessment and the Knowledge Base toolbar expose the full batch
+chooser.
 
 Editing a catalog item increments `revision`; it does not traverse candidate
 provenance or write to a workspace. Deleting or retiring an item also leaves copied
 candidates intact. A retired item cannot be newly materialized.
 
 If the current catalog revision exceeds a candidate's recorded revision, the UI
-offers **Refresh solution copy**. Refresh creates a workspace recovery point, then
+offers **Refresh active copy** for the currently active solution. Refresh creates a
+workspace recovery point, then
 updates the candidate's catalog-derived name, category, vendor, description,
 readiness basis/date/levels, and provenance. The candidate ID, solution ID, status,
 and separately stored assessment scores, rationales, and evidence links are
@@ -193,7 +215,7 @@ failure rejects the entire Apply operation. Valid rows are never partially commi
 
 The merge result changes only the reusable catalog. It does not traverse
 `catalogSource` provenance or update candidates already copied into solutions. Those
-point-in-time copies continue to require the separate **Refresh solution copy**
+point-in-time copies continue to require the separate **Refresh active copy**
 action.
 
 **JSON backup** produces or restores the Knowledge Base's exact portable JSON.
@@ -292,8 +314,11 @@ durability. Duplicating a solution remaps all
 solution-scoped IDs and relationships so the copy is independent.
 
 Knowledge Base reuse does not weaken this boundary. Materialization always assigns a
-new candidate ID and the current active `solutionId`. Refresh locates only that
-solution copy; its catalog provenance cannot be used as a cross-solution reference.
+new candidate ID and the explicitly selected target `solutionId`. The chooser's
+target is validated immediately before the batch commit, and that commit stamps only
+the target solution's update time without changing `activeSolutionId`. Refresh locates
+only the active solution's matching copy; its catalog provenance cannot be used as a
+cross-solution reference.
 AoA alternatives, baseline, and evidence also pass the existing same-solution
 relationship checks.
 

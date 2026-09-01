@@ -281,6 +281,7 @@ test("stale revisions, missing change summaries, unknown IDs, and add-mode updat
 
 test("duplicate IDs and logical offerings are rejected, and a blank ID never updates by name", () => {
   const catalog = createKnowledgeBase({ generatedAt });
+  const initialItemCount = catalog.items.length;
   const existing = catalog.items[0];
   const duplicateId = table(
     ["Catalog ID", "Expected Revision", "Name", "Change Summary"],
@@ -299,7 +300,7 @@ test("duplicate IDs and logical offerings are rejected, and a blank ID never upd
   assert.equal(namePlan.valid, false);
   assert.match(errors(namePlan), /duplicate-logical-offering/i);
   assert.equal(namePlan.nextCatalog, null, "a name match must never become an implicit update");
-  assert.equal(catalog.items.length, 1);
+  assert.equal(catalog.items.length, initialItemCount);
 });
 
 test("logical duplicate checks use effective catalog values when an update omits Provider / Owner", () => {

@@ -7,7 +7,7 @@ const KNOWLEDGE_BASE_KEY = "solution_architect_knowledge_base_v1";
 
 test.use({ serviceWorkers: "block" });
 
-async function gotoFresh(page, route = "knowledge-base") {
+async function gotoFresh(page, route = "knowledge-base", { catalogMode = "single" } = {}) {
   const response = await page.goto(`${APP_PATH}#${route}`, { waitUntil: "domcontentloaded" });
   if (response) expect(response.status()).toBe(200);
   await page.evaluate(async () => {
@@ -21,6 +21,16 @@ async function gotoFresh(page, route = "knowledge-base") {
   });
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator("#workspace")).toBeVisible();
+  if (catalogMode === "single") {
+    await page.evaluate(key => {
+      const catalog = JSON.parse(localStorage.getItem(key));
+      catalog.items = catalog.items.slice(0, 1);
+      catalog.savedAt = new Date().toISOString();
+      localStorage.setItem(key, JSON.stringify(catalog));
+    }, KNOWLEDGE_BASE_KEY);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#workspace")).toBeVisible();
+  }
 }
 
 async function openRoute(page, route) {
@@ -52,6 +62,16 @@ async function downloadedBytes(download) {
   const path = await download.path();
   expect(path).toBeTruthy();
   return readFile(path);
+}
+
+async function addCardOfferingToActiveSolution(page, card) {
+  await card.getByRole("button", { name: "Add to solution…", exact: true }).click();
+  const chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  await expect(chooser).toBeVisible();
+  await expect(chooser.locator("[data-offering-choice-check]:checked")).toHaveCount(1);
+  await chooser.getByRole("button", { name: "Add 1 offering", exact: true }).click();
+  await expect(chooser).toBeHidden();
+  await expect(card.getByRole("button", { name: "Open active assessment", exact: true })).toBeVisible();
 }
 
 async function seedOfferingChooserCatalog(page) {
@@ -94,7 +114,7 @@ async function seedOfferingChooserCatalog(page) {
         name: "Archived sensor bridge",
         offeringType: "Product",
         lifecycleStatus: "Retired",
-        summary: "Archived offering that must never appear in the active-solution chooser.",
+        summary: "Archived offering that must never appear in the target-solution chooser.",
         updatedAt: timestamp
       }
     ];
@@ -112,7 +132,8 @@ test("Knowledge Base toolbar exposes responsive templates, list import, JSON bac
   await expect(toolbar.getByRole("button", { name: "Templates", exact: true })).toBeVisible();
   await expect(toolbar.getByRole("button", { name: "Import list", exact: true })).toBeVisible();
   await expect(toolbar.getByRole("button", { name: "JSON backup", exact: true })).toBeVisible();
-  await expect(toolbar.getByRole("button", { name: "Add offering", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Create offering", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Add to solution", exact: true })).toBeVisible();
 
   await toolbar.getByRole("button", { name: "Templates", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Knowledge Base import templates" });
@@ -150,6 +171,20 @@ test("Knowledge Base toolbar exposes responsive templates, list import, JSON bac
   expect(dialogBounds.left).toBeGreaterThanOrEqual(0);
   expect(dialogBounds.right).toBeLessThanOrEqual(dialogBounds.viewport + 1);
   expect(dialogBounds.width).toBeGreaterThan(300);
+});
+
+test("the provided 28 offerings are a permanent reusable catalog for every new browser", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
+  await gotoFresh(page, "knowledge-base", { catalogMode: "bundled" });
+
+  await expect(page.locator("[data-knowledge-card]")).toHaveCount(28);
+  await expect(page.locator("[data-knowledge-count]")).toHaveText("28 of 28 items");
+  for (const name of ["PULSE", "ASGARD", "Program Atlas", "Space Maneuver SIL/HWIL"]) {
+    await expect(page.getByRole("heading", { level: 3, name, exact: true })).toBeVisible();
+  }
+  const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), KNOWLEDGE_BASE_KEY);
+  expect(stored.items).toHaveLength(28);
+  expect(stored.items.every(item => !Object.hasOwn(item, "solutionId"))).toBe(true);
 });
 
 test("valid UTF-8 CSV is previewed before one atomic Knowledge Base save", async ({ page }) => {
@@ -246,8 +281,8 @@ test("repository-bundled SheetJS imports a valid Solutions worksheet", async ({ 
 test("explicit upsert requires ID, revision, and change summary and never auto-refreshes a solution copy", async ({ page }) => {
   await gotoFresh(page);
   const card = page.locator("[data-knowledge-card]").first();
-  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
-  await expect(page.getByText(/was copied into .* for solution-specific assessment\./)).toBeVisible();
+  await addCardOfferingToActiveSolution(page, card);
+  await expect(page.getByText(/1 offering added to/)).toBeVisible();
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
   const seeded = await page.evaluate(([workspaceKey, catalogKey]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -308,7 +343,7 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   const search = page.locator('[data-knowledge-filter="search"]');
   await expect(search).toHaveAttribute("aria-controls", "knowledge-results-grid");
   await expect(search).toHaveAttribute("aria-describedby", "knowledge-filter-status");
-  await search.fill("governed data exchange");
+  await search.fill("systems engineering");
   await expect(page.locator("[data-knowledge-card]")).toBeVisible();
   await search.fill("no matching offering");
   await expect(filterStatus).toHaveText("0 of 1 Knowledge Base items match the current filters.");
@@ -319,9 +354,8 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   await expect(filterStatus).toHaveText("1 of 1 Knowledge Base items match the current filters.");
 
   const card = page.locator("[data-knowledge-card]");
-  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
-  await expect(page.getByText(/was copied into .* for solution-specific assessment\./)).toBeVisible();
-  await expect(card.getByRole("button", { name: "Open assessment", exact: true })).toBeVisible();
+  await addCardOfferingToActiveSolution(page, card);
+  await expect(page.getByText(/1 offering added to/)).toBeVisible();
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
 
   const firstCopy = await page.evaluate(([workspaceKey, catalogKey]) => {
@@ -335,7 +369,7 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   expect(firstCopy.candidate.status).toBe("Considering");
 
   const candidateId = firstCopy.candidate.id;
-  await card.getByRole("button", { name: "Open assessment", exact: true }).click();
+  await openRoute(page, "assess");
   await expect(page).toHaveURL(/#assess$/);
   await expect(page.locator(".candidate-provenance")).toContainText("Knowledge Base copy · Catalog revision 1");
   const candidateStatus = page.locator(`[data-record-collection="candidates"][data-record-id="${candidateId}"][data-record-field="status"]`);
@@ -350,7 +384,7 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   await editor.getByRole("button", { name: "Save new revision", exact: true }).click();
   await expect(page.getByText("Knowledge Base revision saved. Existing solution copies were not changed.", { exact: true })).toBeVisible();
   await expect(page.locator("[data-knowledge-card]")).toContainText("Revision 2");
-  await expect(page.getByRole("button", { name: "Refresh solution copy", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh active copy", exact: true })).toBeVisible();
 
   const beforeRefresh = await page.evaluate(([workspaceKey, catalogKey, id]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -363,15 +397,15 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   expect(beforeRefresh.catalogRevision).toBe(2);
   expect(beforeRefresh.candidate.catalogSource.revision).toBe(1);
   expect(beforeRefresh.candidate.status).toBe("Shortlist");
-  expect(beforeRefresh.candidate.description).toContain("Reference release 1.0");
+  expect(beforeRefresh.candidate.description).not.toContain("Reference release 2.0");
 
   await openRoute(page, "assess");
   await expect(page.locator(".candidate-provenance.update-available")).toContainText("Update available · Solution copy revision 1 · Catalog revision 2");
   await openRoute(page, "knowledge-base");
 
-  await page.getByRole("button", { name: "Refresh solution copy", exact: true }).click();
+  await page.getByRole("button", { name: "Refresh active copy", exact: true }).click();
   await expect(page.getByText(/was refreshed\. Assessment scores and solution-specific status were preserved\./)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open assessment", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open active assessment", exact: true })).toBeVisible();
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
 
   const refreshed = await page.evaluate(([workspaceKey, id]) => {
@@ -386,61 +420,135 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
 });
 
-test("Technology Assessment offering chooser exposes every active catalog item and prevents duplicate solution copies", async ({ page }) => {
+test("permanent Knowledge Base offerings can be batch-copied independently into multiple target opportunities", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 920 });
   await gotoFresh(page, "assess");
   await seedOfferingChooserCatalog(page);
 
-  const addOffering = page.getByRole("button", { name: "Add offering", exact: true });
-  await expect(addOffering).toBeVisible();
-  await addOffering.click();
+  const original = await page.evaluate(key => {
+    const workspace = JSON.parse(localStorage.getItem(key));
+    const solution = workspace.solutions.find(item => item.id === workspace.activeSolutionId);
+    return { id: solution.id, name: solution.name };
+  }, WORKSPACE_KEY);
+  await page.getByRole("button", { name: "Workspace tools", exact: true }).click();
+  await page.getByRole("button", { name: "Create a new solution", exact: true }).click();
+  const createDialog = page.getByRole("dialog", { name: "Create a solution workspace" });
+  await createDialog.getByLabel("Solution name", { exact: true }).fill("Second target opportunity");
+  await createDialog.getByRole("button", { name: "Create solution", exact: true }).click();
+  const second = await page.evaluate(key => {
+    const workspace = JSON.parse(localStorage.getItem(key));
+    const solution = workspace.solutions.find(item => item.id === workspace.activeSolutionId);
+    return { id: solution.id, name: solution.name };
+  }, WORKSPACE_KEY);
+  expect(second.id).not.toBe(original.id);
 
-  const chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await page.locator("#solution-select").selectOption(original.id);
+  await expect(page.locator("#solution-select")).toHaveValue(original.id);
+  await openRoute(page, "assess");
+  const addOfferings = page.getByRole("button", { name: "Add offerings", exact: true });
+  await expect(addOfferings).toBeVisible();
+  await addOfferings.click();
+
+  let chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
   await expect(chooser).toBeVisible();
-  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText("3");
+  const target = chooser.locator("[data-offering-target-solution]");
+  await expect(target.locator("option")).toHaveCount(2);
+  await expect(target).toHaveValue(original.id);
+  await target.selectOption(second.id);
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  await expect(chooser.locator("[data-offering-target-solution]")).toHaveValue(second.id);
+  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText("3 active offerings");
   await expect(chooser.locator("[data-offering-choice]")).toHaveCount(3);
   await expect(chooser).toContainText("Current mission gateway");
   await expect(chooser).toContainText("Emerging edge analytics");
   await expect(chooser).toContainText("Legacy interface adapter");
   await expect(chooser).not.toContainText("Archived sensor bridge");
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).activeSolutionId, WORKSPACE_KEY)).toBe(original.id);
 
   const search = chooser.getByLabel("Search offerings", { exact: true });
   await search.fill("edge analytics");
   await expect(chooser.locator("[data-offering-choice]:visible")).toHaveCount(1);
-  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText(/1\s+of\s+3/i);
   const edgeOffering = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
-  await expect(edgeOffering).toBeVisible();
+  await edgeOffering.locator("[data-offering-choice-check]").check();
+  await expect(edgeOffering.locator(".offering-choice-state")).toHaveText("Selected");
 
-  const beforeCount = await page.evaluate(key => {
-    const workspace = JSON.parse(localStorage.getItem(key));
-    return workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId).length;
-  }, WORKSPACE_KEY);
-  await edgeOffering.getByRole("button", { name: "Add to solution", exact: true }).click();
-  await expect(edgeOffering.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
-  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText(/1\s+added/i);
+  await search.fill("mission gateway");
+  const gatewayOffering = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_current"]');
+  await expect(gatewayOffering).toBeVisible();
+  await gatewayOffering.locator("[data-offering-choice-check]").check();
+  await expect(chooser.getByRole("button", { name: "Add 2 offerings", exact: true })).toBeEnabled();
+  await chooser.getByRole("button", { name: "Add 2 offerings", exact: true }).click();
+  await expect(chooser).toBeHidden();
+  await expect(page.getByText("2 offerings added to Second target opportunity.", { exact: true })).toBeVisible();
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
 
-  const copied = await page.evaluate(([workspaceKey, itemId]) => {
+  const afterBatch = await page.evaluate(([workspaceKey, originalId, secondId]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalogCopies = workspace.candidates.filter(candidate => candidate.catalogSource?.itemId);
     return {
-      activeCandidateCount: workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId).length,
-      matchingCopies: workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === itemId)
+      activeSolutionId: workspace.activeSolutionId,
+      originalCopies: catalogCopies.filter(candidate => candidate.solutionId === originalId),
+      secondCopies: catalogCopies.filter(candidate => candidate.solutionId === secondId)
     };
-  }, [WORKSPACE_KEY, "offering_chooser_emerging"]);
-  expect(copied.activeCandidateCount).toBe(beforeCount + 1);
-  expect(copied.matchingCopies).toHaveLength(1);
+  }, [WORKSPACE_KEY, original.id, second.id]);
+  expect(afterBatch.activeSolutionId).toBe(original.id);
+  expect(afterBatch.originalCopies).toHaveLength(0);
+  expect(afterBatch.secondCopies.map(candidate => candidate.catalogSource.itemId).sort()).toEqual([
+    "offering_chooser_current",
+    "offering_chooser_emerging"
+  ]);
 
-  await chooser.locator("[data-close-modal]").first().click();
-  await addOffering.click();
-  const reopened = page.getByRole("dialog", { name: "Add offering to active solution" });
-  await reopened.getByLabel("Search offerings", { exact: true }).fill("edge analytics");
-  const existingCopy = reopened.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
-  await expect(existingCopy.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
-  await expect(existingCopy.getByRole("button", { name: "Add to solution", exact: true })).toHaveCount(0);
-  expect((await page.evaluate(([workspaceKey, itemId]) => {
+  await openRoute(page, "knowledge-base");
+  const gatewayCard = page.locator('[data-knowledge-card][data-knowledge-search*="current mission gateway"]');
+  await gatewayCard.getByRole("button", { name: "Add to solution…", exact: true }).click();
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  let gatewayChoice = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_current"]');
+  await expect(gatewayChoice.locator("[data-offering-choice-check]")).toBeChecked();
+  await chooser.locator("[data-offering-target-solution]").selectOption(second.id);
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  gatewayChoice = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_current"]');
+  await expect(gatewayChoice.locator("[data-offering-choice-check]")).toBeDisabled();
+  await expect(gatewayChoice.locator(".offering-choice-state")).toHaveText("Already added");
+  await chooser.locator("[data-offering-target-solution]").selectOption(original.id);
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  gatewayChoice = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_current"]');
+  await expect(gatewayChoice.locator("[data-offering-choice-check]")).toBeChecked();
+  await chooser.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await openRoute(page, "assess");
+
+  await addOfferings.click();
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  await chooser.getByLabel("Search offerings", { exact: true }).fill("edge analytics");
+  await chooser.locator("[data-offering-target-solution]").selectOption(second.id);
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  await expect(chooser.getByLabel("Search offerings", { exact: true })).toHaveValue("edge analytics");
+  let existingCopy = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
+  await expect(existingCopy.locator("[data-offering-choice-check]")).toBeDisabled();
+  await expect(existingCopy.locator(".offering-choice-state")).toHaveText("Already added");
+
+  await chooser.locator("[data-offering-target-solution]").selectOption(original.id);
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
+  await expect(chooser.getByLabel("Search offerings", { exact: true })).toHaveValue("edge analytics");
+  existingCopy = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
+  await expect(existingCopy.locator("[data-offering-choice-check]")).toBeEnabled();
+  await existingCopy.locator("[data-offering-choice-check]").check();
+  await chooser.getByRole("button", { name: "Add 1 offering", exact: true }).click();
+  await expect(page.getByText(`1 offering added to ${original.name}.`, { exact: true })).toBeVisible();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+
+  const reused = await page.evaluate(([workspaceKey, itemId, originalId, secondId]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
-    return workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === itemId).length;
-  }, [WORKSPACE_KEY, "offering_chooser_emerging"]))).toBe(1);
+    const copies = workspace.candidates.filter(candidate => candidate.catalogSource?.itemId === itemId);
+    return {
+      activeSolutionId: workspace.activeSolutionId,
+      original: copies.filter(candidate => candidate.solutionId === originalId),
+      second: copies.filter(candidate => candidate.solutionId === secondId)
+    };
+  }, [WORKSPACE_KEY, "offering_chooser_emerging", original.id, second.id]);
+  expect(reused.activeSolutionId).toBe(original.id);
+  expect(reused.original).toHaveLength(1);
+  expect(reused.second).toHaveLength(1);
+  expect(reused.original[0].id).not.toBe(reused.second[0].id);
 });
 
 test("the offering chooser creates a reusable offering, returns it for selection, and stays light and phone-contained", async ({ page }) => {
@@ -449,9 +557,10 @@ test("the offering chooser creates a reusable offering, returns it for selection
   await seedOfferingChooserCatalog(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-  await page.getByRole("button", { name: "Add offering", exact: true }).click();
-  let chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await page.getByRole("button", { name: "Add offerings", exact: true }).click();
+  let chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
   await expect(chooser).toBeVisible();
+  await expect(chooser.locator("[data-offering-target-solution]")).toHaveValue(await page.locator("#solution-select").inputValue());
   await expect.poll(() => pageOverflow(page)).toBeLessThanOrEqual(1);
   const chooserBounds = await chooser.evaluate(node => {
     const box = node.getBoundingClientRect();
@@ -459,8 +568,8 @@ test("the offering chooser creates a reusable offering, returns it for selection
   });
   expect(chooserBounds.left).toBeGreaterThanOrEqual(0);
   expect(chooserBounds.right).toBeLessThanOrEqual(chooserBounds.viewport + 1);
-  const touchTargetHeights = await chooser.getByRole("button", { name: /^(Add to solution|Added|Create new offering)$/ }).evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height));
-  expect(touchTargetHeights.length).toBeGreaterThan(1);
+  const touchTargetHeights = await chooser.locator("button.button:visible").evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height));
+  expect(touchTargetHeights.length).toBeGreaterThanOrEqual(3);
   for (const height of touchTargetHeights) expect(height).toBeGreaterThanOrEqual(44);
 
   await chooser.getByRole("button", { name: "Create new offering", exact: true }).click();
@@ -468,15 +577,16 @@ test("the offering chooser creates a reusable offering, returns it for selection
   await expect(editor).toBeVisible();
   await editor.getByLabel("Name", { exact: true }).fill("New operator planning service");
   await editor.getByRole("combobox", { name: "Offering type", exact: true }).selectOption("Service");
-  await editor.getByLabel("Summary", { exact: true }).fill("Reusable planning support created directly from the active-solution chooser.");
+  await editor.getByLabel("Summary", { exact: true }).fill("Reusable planning support created directly in the permanent catalog.");
   await editor.getByRole("button", { name: "Add to Knowledge Base", exact: true }).click();
 
-  chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  chooser = page.getByRole("dialog", { name: "Add offerings to a solution" });
   await expect(chooser).toBeVisible();
   await chooser.getByLabel("Search offerings", { exact: true }).fill("operator planning service");
   const newOffering = chooser.locator("[data-offering-choice]", { hasText: "New operator planning service" });
   await expect(newOffering).toBeVisible();
-  await expect(newOffering.getByRole("button", { name: "Add to solution", exact: true })).toBeEnabled();
+  await expect(newOffering.locator("[data-offering-choice-check]")).toBeChecked();
+  await expect(newOffering.locator(".offering-choice-state")).toHaveText("Selected");
 
   const beforeAdd = await page.evaluate(([workspaceKey, catalogKey, name]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -490,8 +600,8 @@ test("the offering chooser creates a reusable offering, returns it for selection
   expect(beforeAdd.item).toMatchObject({ offeringType: "Service", lifecycleStatus: "Current", revision: 1 });
   expect(beforeAdd.copyCount).toBe(0);
 
-  await newOffering.getByRole("button", { name: "Add to solution", exact: true }).click();
-  await expect(newOffering.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
+  await chooser.getByRole("button", { name: "Add 1 offering", exact: true }).click();
+  await expect(chooser).toBeHidden();
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
   const afterAdd = await page.evaluate(([workspaceKey, itemId]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -512,7 +622,7 @@ test("Knowledge Base archive and restore are confirmed, persisted, and unavailab
   await expect(card.getByRole("button", { name: "Archive offering", exact: true })).toBeVisible();
   await expect(card.getByRole("button", { name: "Delete permanently", exact: true })).toHaveCount(0);
 
-  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
+  await addCardOfferingToActiveSolution(page, card);
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
   const before = await page.evaluate(([workspaceKey, catalogKey]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -548,8 +658,8 @@ test("Knowledge Base archive and restore are confirmed, persisted, and unavailab
   await expect(archivedCard).toContainText("Archived");
   await expect(archivedCard.getByRole("button", { name: "Restore offering", exact: true })).toBeVisible();
   await expect(archivedCard.getByRole("button", { name: "Delete permanently", exact: true })).toBeVisible();
-  await expect(archivedCard.getByRole("button", { name: "Use in active solution", exact: true })).toHaveCount(0);
-  await expect(archivedCard.getByRole("button", { name: "Refresh solution copy", exact: true })).toHaveCount(0);
+  await expect(archivedCard.getByRole("button", { name: "Add to solution…", exact: true })).toHaveCount(0);
+  await expect(archivedCard.getByRole("button", { name: "Refresh active copy", exact: true })).toHaveCount(0);
 
   await archivedCard.getByRole("button", { name: "Restore offering", exact: true }).click();
   dialog = page.getByRole("dialog", { name: "Restore solution offering" });
@@ -580,7 +690,7 @@ test("permanent offering deletion requires archival and the exact offering name 
   const offeringName = (await card.getByRole("heading", { level: 3 }).textContent()).trim();
   await expect(card.getByRole("button", { name: "Delete permanently", exact: true })).toHaveCount(0);
 
-  await card.getByRole("button", { name: "Use in active solution", exact: true }).click();
+  await addCardOfferingToActiveSolution(page, card);
   await expect(page.locator("#save-state")).toHaveText("Saved locally");
   const ids = await page.evaluate(([workspaceKey, catalogKey]) => {
     const workspace = JSON.parse(localStorage.getItem(workspaceKey));
@@ -597,8 +707,8 @@ test("permanent offering deletion requires archival and the exact offering name 
   await page.locator('[data-knowledge-filter="status"]').selectOption("archived");
   card = page.locator("[data-knowledge-card]");
   await expect(card).toBeVisible();
-  await expect(card.getByRole("button", { name: "Use in active solution", exact: true })).toHaveCount(0);
-  await expect(card.getByRole("button", { name: "Refresh solution copy", exact: true })).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "Add to solution…", exact: true })).toHaveCount(0);
+  await expect(card.getByRole("button", { name: "Refresh active copy", exact: true })).toHaveCount(0);
 
   await card.getByRole("button", { name: "Delete permanently", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Delete solution offering permanently" });
@@ -638,7 +748,8 @@ test("an unreadable saved catalog is preserved until a valid backup is explicitl
   await page.reload({ waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("alert").filter({ hasText: "Saved catalog needs recovery" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add offering", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Create offering", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Add to solution", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Import list", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "JSON backup", exact: true }).click();
   const backupDialog = page.getByRole("dialog", { name: "Knowledge Base backup and restore" });
@@ -654,7 +765,8 @@ test("an unreadable saved catalog is preserved until a valid backup is explicitl
   });
   await expect(page.getByText("1 Knowledge Base item imported.", { exact: true })).toBeVisible();
   await expect(page.locator(".knowledge-recovery")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add offering", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Create offering", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Add to solution", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Import list", exact: true })).toBeEnabled();
   expect(JSON.parse(await page.evaluate(key => localStorage.getItem(key), KNOWLEDGE_BASE_KEY)).schema).toBe("solution-knowledge-base-v1");
 });

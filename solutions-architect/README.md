@@ -129,12 +129,22 @@ locally. Architecture views can also be downloaded separately as SVG or PNG.
 
 ### Reusable Knowledge Base
 
-The **Knowledge base** is a separate browser-local catalog for approved unclassified,
-non-CUI products, applications, software, services, platforms, integrated solutions,
-and other offerings. Catalog items can record provider and release, lifecycle status,
-capabilities, mission-segment fit, deployment and interface notes, integration,
-cyber/safety, MOSA and data-rights considerations, optional readiness levels and
-basis, source information, review date, tags, and a change summary.
+The **Knowledge base** is a permanent reusable catalog, separate from every
+opportunity or solution workspace. It ships with the 28 products, applications,
+platforms, technologies, solutions, and offerings from the provided **Solutions &
+Offerings** list. A new browser catalog receives those choices automatically, and an
+existing valid catalog receives any missing bundled choices once without replacing a
+same-named item that is already maintained locally. Catalog records never carry a
+solution ID, so they do not belong to the synthetic Expeditionary Sensor Node example
+or to any other active solution.
+
+The catalog remains browser-local and approved-unclassified/non-CUI. Users can add,
+revise, archive, restore, permanently delete, import, and back up its items. Catalog
+items can record provider and release, lifecycle status, capabilities,
+mission-segment fit, deployment and interface notes, integration, cyber/safety, MOSA
+and data-rights considerations, optional readiness levels and basis, source
+information, review date, tags, and a change summary. These maintained catalog facts
+are reusable input; they are not a mission-fit determination.
 
 For bulk entry, use the Knowledge Base **Templates** control or download the
 [Excel import template](./assets/solution-knowledge-base-import-template.xlsx)
@@ -161,18 +171,26 @@ validation, stale-revision, duplicate, or storage error prevents the entire Appl
 operation from changing the catalog. The selected file is parsed locally in the
 browser and is not uploaded.
 
-Selecting **Use in active solution** copies the current catalog revision into that
-solution as a new, solution-scoped Technology Assessment candidate. The copy receives
-its own ID and can be scored, evidenced, and given a solution-specific status without
-changing the reusable catalog item or any other solution. Saving a catalog edit
-increments its revision; it never silently changes an existing solution copy.
+Select **Add offerings** from Technology Assessment, **Add to solution** from the
+Knowledge Base toolbar, or **Add to solution…** on one catalog card. The searchable
+chooser has an explicit **Target opportunity / solution** field, checkbox cards,
+**Select visible**, **Clear selection**, and one **Add N offerings** action. Changing
+the target does not switch the active workspace shown in the left navigation. Items
+already copied into the selected target are marked **Already added** and cannot be
+duplicated there.
 
-When a newer catalog revision exists, **Refresh solution copy** explicitly updates the
-copied name, category, provider, description, readiness summaries and basis, and
-catalog provenance. Refresh preserves the candidate's solution-specific status and
-its separate assessment scores, rationales, and evidence links. Deleting or retiring
-a catalog item also leaves existing solution copies intact; retired items cannot be
-copied into another solution.
+The batch action copies each selected catalog revision into the chosen target as a
+new solution-scoped Technology Assessment candidate. The same catalog offering can
+be copied once into each of many opportunities, and every copy receives its own ID,
+status, scores, rationales, and evidence links. Saving a catalog edit increments its
+revision; it never silently changes an existing solution copy or another solution.
+
+When a newer catalog revision exists, **Refresh active copy** on the Knowledge Base
+card explicitly updates the copy in the currently active workspace. Refresh preserves
+the candidate's solution-specific status and its separate assessment scores,
+rationales, and evidence links. Deleting or archiving a catalog item also leaves
+existing solution copies intact; archived items are excluded from the chooser until
+restored.
 
 The catalog uses the separate `solution-knowledge-base-v1` contract and
 `solution_architect_knowledge_base_v1` storage key. Spreadsheet import is for adding

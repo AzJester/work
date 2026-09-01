@@ -5,6 +5,8 @@ import {
   KNOWLEDGE_BASE_SCHEMA,
   KNOWLEDGE_BASE_SCHEMA_VERSION,
   KNOWLEDGE_BASE_STORAGE_KEY,
+  KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY,
+  DEFAULT_KNOWLEDGE_CATALOG_VERSION,
   KNOWLEDGE_LIFECYCLE_STATUSES,
   KNOWLEDGE_OFFERING_TYPES,
   MAX_KNOWLEDGE_IMPORT_BYTES,
@@ -13,6 +15,7 @@ import {
   createKnowledgeItem,
   deleteArchivedKnowledgeItem,
   materializeKnowledgeItem,
+  mergeDefaultKnowledgeOfferings,
   refreshCandidateFromKnowledge,
   restoreKnowledgeItem,
   updateKnowledgeItem,
@@ -42,15 +45,19 @@ test("the Knowledge Base uses a separate, versioned, browser-local contract", ()
   assert.equal(KNOWLEDGE_BASE_SCHEMA, "solution-knowledge-base-v1");
   assert.equal(KNOWLEDGE_BASE_SCHEMA_VERSION, 1);
   assert.equal(KNOWLEDGE_BASE_STORAGE_KEY, "solution_architect_knowledge_base_v1");
+  assert.equal(KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY, "solution_architect_knowledge_defaults_version");
+  assert.equal(DEFAULT_KNOWLEDGE_CATALOG_VERSION, 1);
   assert.equal(MAX_KNOWLEDGE_IMPORT_BYTES, 5_000_000);
   assert.deepEqual(KNOWLEDGE_OFFERING_TYPES, ["Product", "Application", "Software", "Service", "Platform", "Integrated solution", "Other offering"]);
   assert.deepEqual(KNOWLEDGE_LIFECYCLE_STATUSES, ["Current", "Emerging", "Legacy", "Retired"]);
   assert.equal(validateKnowledgeBase(empty).valid, true);
 
   const seeded = createKnowledgeBase({ generatedAt: createdAt });
-  assert.equal(seeded.items.length, 1);
-  assert.equal(seeded.items[0].name, "Synthetic modular mission integration kit");
-  assert.equal(seeded.items[0].readinessAsOf, "2026-08-31");
+  assert.equal(seeded.items.length, 28);
+  assert.deepEqual(seeded.items.slice(0, 3).map(item => item.name), ["PULSE", "Meridian", "RIMFIRE"]);
+  assert.ok(seeded.items.some(item => item.name === "Space Maneuver SIL/HWIL"));
+  assert.equal(new Set(seeded.items.map(item => item.id)).size, 28);
+  assert.ok(seeded.items.every(item => !Object.hasOwn(item, "solutionId")));
   assert.equal(validateKnowledgeBase(seeded).valid, true);
 
   const workspace = createWorkspace();
@@ -58,6 +65,38 @@ test("the Knowledge Base uses a separate, versioned, browser-local contract", ()
   const mixedContract = structuredClone(workspace);
   mixedContract.knowledgeBase = seeded;
   assert.match(validateWorkspace(mixedContract).errors.join("\n"), /Workspace\.knowledgeBase is not supported/i);
+});
+
+test("the provided permanent catalog upgrades legacy browsers without duplicating imported names", () => {
+  const legacy = createKnowledgeBase({ seed: false, generatedAt: createdAt });
+  legacy.items.push(createKnowledgeItem({
+    id: "offering_synthetic_modular_mission_kit",
+    name: "Synthetic modular mission integration kit"
+  }, createdAt));
+  legacy.items.push(createKnowledgeItem({
+    id: "offering_user_imported_pulse",
+    name: "  PULSE  ",
+    summary: "User-maintained details must win over bundled defaults."
+  }, createdAt));
+  legacy.items.push(createKnowledgeItem({
+    id: "offering_custom_local",
+    name: "Custom local offering"
+  }, createdAt));
+
+  const merged = mergeDefaultKnowledgeOfferings(legacy, { generatedAt: updatedAt });
+  assert.equal(merged.changed, true);
+  assert.equal(merged.added, 27);
+  assert.equal(merged.knowledgeBase.items.length, 29);
+  assert.equal(merged.knowledgeBase.items.some(item => item.id === "offering_synthetic_modular_mission_kit"), false);
+  assert.equal(merged.knowledgeBase.items.filter(item => item.name.trim() === "PULSE").length, 1);
+  assert.equal(merged.knowledgeBase.items.find(item => item.id === "offering_user_imported_pulse").summary, "User-maintained details must win over bundled defaults.");
+  assert.ok(merged.knowledgeBase.items.some(item => item.name === "Custom local offering"));
+  assert.equal(validateKnowledgeBase(merged.knowledgeBase).valid, true);
+
+  const repeated = mergeDefaultKnowledgeOfferings(merged.knowledgeBase, { generatedAt: updatedAt });
+  assert.equal(repeated.changed, false);
+  assert.equal(repeated.added, 0);
+  assert.deepEqual(repeated.knowledgeBase, merged.knowledgeBase);
 });
 
 test("knowledge items clone list values and preserve the complete offering record", () => {
@@ -154,8 +193,7 @@ test("copy-on-use creates solution-scoped candidates with explicit, validated ca
   assert.equal(candidate.name, item.name);
   assert.equal(candidate.category, item.offeringType);
   assert.equal(candidate.vendor, item.provider);
-  assert.match(candidate.description, /Capabilities: Modular sensor integration/);
-  assert.match(candidate.description, /MOSA and data rights:/);
+  assert.match(candidate.description, /Capabilities: Systems Engineering & Integration/);
   assert.equal(candidate.status, "Considering");
   assert.deepEqual(candidate.scores, []);
   assert.deepEqual(candidate.catalogSource, {
@@ -198,6 +236,15 @@ test("copy-on-use creates solution-scoped candidates with explicit, validated ca
   otherSolutionCopy.solutions.push({ ...structuredClone(otherSolutionCopy.solutions[0]), id: otherSolutionId, name: "Other solution" });
   otherSolutionCopy.candidates.push({ ...structuredClone(candidate), id: "candidate_other_solution_catalog_copy", solutionId: otherSolutionId });
   assert.equal(validateWorkspace(otherSolutionCopy).valid, true, "the same catalog item may be copied once into each solution");
+
+  const independentSecondCopy = materializeKnowledgeItem(item, otherSolutionId, {
+    generatedAt: updatedAt,
+    idFactory: () => "candidate_independent_second_copy"
+  });
+  independentSecondCopy.status = "Preferred";
+  assert.notEqual(independentSecondCopy.id, candidate.id);
+  assert.notEqual(independentSecondCopy.scores, candidate.scores);
+  assert.equal(candidate.status, "Considering", "editing one solution copy must not alter another");
 });
 
 test("catalog revisions refresh copied facts without overwriting solution-specific assessment work", () => {
@@ -235,6 +282,10 @@ test("catalog revisions refresh copied facts without overwriting solution-specif
   assert.deepEqual(refreshed.scores, candidate.scores);
   assert.equal(refreshed.solutionNote, candidate.solutionNote);
   assert.equal(candidate.name, originalItem.name, "refresh must not mutate the existing solution copy");
+  assert.throws(
+    () => refreshCandidateFromKnowledge(candidate, nextCatalog.items[1], { generatedAt: updatedAt }),
+    /does not match this solution copy/i,
+  );
   assert.throws(() => updateKnowledgeItem(catalog, "offering_missing", {}, { generatedAt: updatedAt }), /item was not found/i);
 
   const exhausted = structuredClone(catalog);

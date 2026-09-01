@@ -353,15 +353,25 @@ record system.
 
 ## Build and reuse the Knowledge Base
 
-Open **Knowledge base** in the left navigation to manage the catalog, or select **Add
-offering** from Assess to choose from it. This is a separate browser-local catalog for reusable approved
-unclassified, non-CUI products, applications, software, services, platforms,
-integrated solutions, and other offerings. It is shared across solutions in this
-browser profile, but it is not a cloud library or an enterprise system of record.
+Open **Knowledge base** in the left navigation to manage the permanent reusable
+catalog, or select **Add offerings** from Assess to choose from it. The workbench ships
+with the 28 products, applications, platforms, technologies, solutions, and offerings
+from the provided **Solutions & Offerings** list. Those records are solution-neutral:
+they do not belong to Expeditionary Sensor Node or any other opportunity. Every new
+browser catalog receives the bundled choices, and an existing valid catalog receives
+any missing bundled choices once without replacing a same-named item that is already
+maintained locally.
+
+The catalog is shared by all opportunities and solutions in this browser profile. It
+is still browser-local—not a cloud library, enterprise repository, or organization-wide
+source of truth. Add details, revise facts, archive obsolete items, and back up the
+catalog in this browser. Another browser, device, or profile receives the bundled
+defaults but not your later local maintenance unless you move a Knowledge Base JSON
+backup there.
 
 ### Add or revise an offering
 
-1. Select **Add offering**.
+1. Select **Create offering**.
 2. Record the reusable facts: name, offering type, provider, product version/release,
    lifecycle status, summary, capabilities, mission segments, deployment and
    environment, interfaces, integration considerations, cyber and safety,
@@ -466,75 +476,82 @@ cancels the whole Apply operation; successfully validated rows are not partly sa
 
 Spreadsheet import merges rows into the current catalog. Existing candidates already
 copied into solutions remain point-in-time copies and do not refresh automatically.
-Review each **Update available** notice and use **Refresh solution copy** explicitly
-when the changed reusable facts apply to that solution.
+Review each **Update available** notice and use **Refresh active copy** explicitly
+when the changed reusable facts apply to the currently active solution.
 
 ### Add a Knowledge Base offering from Technology Assessment
 
 Use this path when you are building a solution and want to choose from the complete
-active catalog without leaving the assessment:
+active catalog without binding the catalog to whichever workspace happens to be open:
 
-1. Confirm the correct active solution in the left-side solution selector.
-2. Open **Assess → Technology Assessment** and select **Add offering**. The **Add
-   offering to active solution** chooser opens.
+1. Open **Assess → Technology Assessment** and select **Add offerings**. The **Add
+   offerings to a solution** chooser opens.
+2. Choose the destination in **Target opportunity / solution**. It initially shows the
+   active workspace, but you can select any solution in the browser workspace. This
+   target field controls only where the copies will go; it does not switch the active
+   solution in the left navigation.
 3. Use **Search offerings** to narrow the list by offering name, provider, capability,
-   tag, version, type, or other displayed catalog details. The chooser shows every
-   active Knowledge Base offering, including the offerings previously imported from
-   Excel or CSV.
-4. Select **Add to solution** on each offering you want. The workbench creates and
-   selects a Technology Assessment candidate in the background while keeping the
-   chooser open so you can add more. An item already copied into this solution is
-   marked **Added** and cannot be duplicated.
-5. If the offering does not exist yet, select **Create new offering** in the chooser,
-   record its reusable catalog facts, and save it. The workbench returns to the
-   chooser with the new item available; select **Add to solution** to copy it into the
-   active solution. Saving the catalog item alone does not add it to a solution.
-6. Select **Done** or close the chooser to return to Technology Assessment and work
-   with the selected candidate.
+   tag, version, type, or mission segment. The chooser includes the bundled 28-item
+   list plus any active items later created or imported in this browser.
+4. Check one or more offering cards. Use **Select visible** for all eligible filtered
+   results or **Clear selection** to start over. An item already copied into the chosen
+   target is marked **Already added**, is disabled, and cannot be duplicated there.
+   Switch the target to see that offering available for another opportunity.
+5. If the offering does not exist yet, select **Create new offering**, record its
+   reusable catalog facts, and save it. The workbench returns to the chooser with the
+   new item selected for the same target. It is not copied until you submit the batch.
+6. Select **Add N offerings**. The workbench validates and copies the complete
+   selection in one operation, creates a recovery point, closes the chooser, and keeps
+   the left-side active solution unchanged. Closing the chooser before that action
+   adds nothing.
 
 Use **Custom candidate** only for a one-off candidate that should belong to this
 solution without becoming a reusable Knowledge Base offering.
 
 Archived offerings are deliberately excluded from the chooser. Restore an offering
 from **Knowledge base → Archived offerings** before using it in another solution.
-The chooser prevents duplicate copies by marking a catalog item **Added** when its
-candidate is already in the active solution.
+The chooser evaluates duplicates against the explicitly selected target, not against
+the currently visible workspace.
 
-Adding an offering uses the same copy-on-use rule as the Knowledge Base page. The new
-candidate belongs only to the active solution. Later catalog edits do not silently
-change its scores, rationale, evidence, status, trades, or decisions; review and apply
-an available catalog refresh deliberately.
+Adding an offering creates a new candidate that belongs only to the chosen target.
+The same catalog item can be copied once into each of many opportunities. Those
+candidate copies have different IDs and independent statuses, scores, rationales,
+evidence, trades, and decisions. Later catalog edits never silently change them;
+review and apply an available catalog refresh deliberately.
 
 ### Copy an offering into a solution
 
 You can also start from **Knowledge base** when you want to inspect or maintain the
 catalog before using an item:
 
-1. Confirm the correct active solution in the left-side selector.
-2. Search or filter the Knowledge Base by offering type, availability, or company
+1. Search or filter the Knowledge Base by offering type, availability, or company
    mission segment. Active offerings are shown by default.
-3. Review the source, review date, readiness basis, interfaces, and integration
+2. Review the source, review date, readiness basis, interfaces, and integration
    limitations. Catalog content is reusable input, not proof that the offering fits
    this mission.
-4. Select **Use in active solution**.
-5. Open Assess and add solution-specific status, scores, rationales, and supporting
+3. Select **Add to solution…** on that card. The same chooser opens with the offering
+   preselected when it is eligible for the initial target.
+4. Confirm or change **Target opportunity / solution**, then select **Add 1 offering**.
+5. Open that target's Technology Assessment and add solution-specific status, scores,
+   rationales, and supporting
    evidence to the new candidate.
 
-Copy-on-use creates a new candidate ID bound only to the active solution. The
-candidate records the source catalog item and revision, but it is not live-linked.
-Editing, retiring, deleting, or importing the catalog does not silently change that
-candidate or any assessment in another solution. If the same catalog item is already
-present in the active solution, the control opens the existing assessment rather
-than creating a duplicate.
+Copy-on-use creates a new candidate ID bound only to the chosen target. The candidate
+records the source catalog item and revision, but it is not live-linked. Editing,
+archiving, deleting, or importing the catalog does not silently change that candidate
+or any assessment in another solution. A card may also show **Open active assessment**
+when the currently active solution already contains its copy; the chooser still lets
+you target a different solution.
 
 ### Refresh an existing solution copy
 
 When an active item has a newer catalog revision, its card shows **Update available**
-and **Refresh solution copy**. Archived offerings cannot refresh solution copies.
+and **Refresh active copy** for the currently active solution. Archived offerings
+cannot refresh solution copies.
 
 1. Review the catalog change summary and the candidate's current solution-specific
    assessment.
-2. Select **Refresh solution copy** only when you want the newer reusable facts.
+2. Select **Refresh active copy** only when you want the newer reusable facts.
 3. Recheck the refreshed candidate before using it in a trade, AoA, decision, or
    export.
 
@@ -625,11 +642,12 @@ performance, maturity, integration, cybersecurity and authorization, system safe
 MOSA and openness, data rights, supply chain, affordability, schedule, and
 sustainment.
 
-Select **Add offering** to open the searchable list of all active Knowledge Base
-items. Use **Add to solution** for every reusable option you want to assess, or
-**Create new offering** to add a missing reusable item to the catalog before selecting
-it. Use **Custom candidate** for a one-off, solution-only option. See [Add a Knowledge
-Base offering from Technology Assessment](#add-a-knowledge-base-offering-from-technology-assessment)
+Select **Add offerings** to open the searchable list of all active Knowledge Base
+items, including the 28 bundled choices. Choose the explicit **Target opportunity /
+solution**, check every reusable option you want, and submit the batch. Use **Create
+new offering** to add a missing reusable item to the catalog before selecting it. Use
+**Custom candidate** for a one-off, solution-only option. See [Add a Knowledge Base
+offering from Technology Assessment](#add-a-knowledge-base-offering-from-technology-assessment)
 for the complete workflow.
 
 Enter a 0–5 score only when it has defensible rationale and evidence confidence. Link
@@ -969,10 +987,13 @@ reviews and acknowledges an AI payload that contains it.
   again. No row is applied when any row fails. Confirm that dates use `YYYY-MM-DD`,
   lists use semicolons or line breaks, and an update has the exact Catalog ID,
   current Expected Revision, and a Change Summary.
-- **An imported offering does not appear under Assess → Add offering:** clear the
-  **Search offerings** value and confirm the item is active. The chooser includes
-  Current, Emerging, and Legacy items but deliberately excludes Archived offerings.
-  Restore an archived item from the Knowledge Base before selecting it.
+- **An offering does not appear under Assess → Add offerings:** clear the **Search
+  offerings** value and confirm the item is active. The chooser includes Current,
+  Emerging, and Legacy items but deliberately excludes Archived offerings. Restore
+  an archived item from the Knowledge Base before selecting it.
+- **An offering says Already added:** check **Target opportunity / solution**. The
+  status applies only to that destination. Select another opportunity to reuse the
+  same catalog item there, or open the existing candidate in the indicated target.
 - **A Knowledge Base JSON restore was rejected:** correct the first validation error
   or use the last exported catalog JSON. A rejected restore leaves the current
   catalog in place; JSON restore replaces rather than merges after validation.

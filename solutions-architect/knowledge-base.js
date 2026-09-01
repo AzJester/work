@@ -1,8 +1,15 @@
-import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=14";
+import { MISSION_SEGMENTS, makeId, safeHttpUrl } from "./engine.js?v=15";
+import {
+  DEFAULT_KNOWLEDGE_CATALOG_VERSION,
+  DEFAULT_KNOWLEDGE_OFFERINGS,
+  DEFAULT_KNOWLEDGE_RELEASED_AT
+} from "./default-offerings.js?v=15";
 
 export const KNOWLEDGE_BASE_SCHEMA = "solution-knowledge-base-v1";
 export const KNOWLEDGE_BASE_SCHEMA_VERSION = 1;
 export const KNOWLEDGE_BASE_STORAGE_KEY = "solution_architect_knowledge_base_v1";
+export const KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY = "solution_architect_knowledge_defaults_version";
+export { DEFAULT_KNOWLEDGE_CATALOG_VERSION };
 export const MAX_KNOWLEDGE_IMPORT_BYTES = 5_000_000;
 export const KNOWLEDGE_OFFERING_TYPES = Object.freeze(["Product", "Application", "Software", "Service", "Platform", "Integrated solution", "Other offering"]);
 export const KNOWLEDGE_LIFECYCLE_STATUSES = Object.freeze(["Current", "Emerging", "Legacy", "Retired"]);
@@ -91,32 +98,41 @@ export function createKnowledgeItem(values = {}, generatedAt = new Date()) {
 
 export function createKnowledgeBase({ seed = true, generatedAt = new Date() } = {}) {
   const timestamp = generatedAt instanceof Date ? generatedAt.toISOString() : new Date(generatedAt).toISOString();
-  const items = seed ? [createKnowledgeItem({
-    id: "offering_synthetic_modular_mission_kit",
-    name: "Synthetic modular mission integration kit",
-    offeringType: "Integrated solution",
-    provider: "Synthetic internal offering",
-    version: "Reference release 1.0",
-    lifecycleStatus: "Current",
-    summary: "Reusable unclassified example combining a modular sensor boundary, edge processing, mission gateway, and integration harness.",
-    capabilities: ["Modular sensor integration", "Edge mission processing", "Governed data exchange", "Interface conformance testing"],
-    missionSegments: ["Layered Defense, Autonomous Warfare & Integrated Fires"],
-    deploymentAndEnvironment: "Transportable integration-lab and representative platform-demonstration environments.",
-    interfaces: "Open sensor interface, versioned internal API, and governed mission-message schema.",
-    integrationConsiderations: "Requires confirmation of host-platform power, mounting, transport, safety, and network constraints.",
-    cyberSafetyConsiderations: "Boundary, identity, logging, software assurance, platform safety, and authorization evidence remain solution-specific.",
-    mosaDataRights: "Modular boundaries and required interface/software data rights must be confirmed for each pursuit.",
-    trl: 6,
-    mrl: 4,
-    irl: 5,
-    readinessBasis: "Synthetic reference values for demonstrating catalog behavior only.",
-    readinessAsOf: timestamp.slice(0, 10),
-    sourceTitle: "Synthetic workbench example",
-    tags: ["MOSA", "edge", "integration", "synthetic"],
-    reviewedAt: timestamp.slice(0, 10),
-    changeSummary: "Initial synthetic catalog example."
-  }, generatedAt)] : [];
+  const items = seed ? DEFAULT_KNOWLEDGE_OFFERINGS.map(item => createKnowledgeItem({
+    ...item,
+    sourceTitle: "Provided Solutions & Offerings list",
+    changeSummary: "Added from the provided Solutions & Offerings list."
+  }, DEFAULT_KNOWLEDGE_RELEASED_AT)) : [];
   return { schema: KNOWLEDGE_BASE_SCHEMA, schemaVersion: KNOWLEDGE_BASE_SCHEMA_VERSION, savedAt: timestamp, items };
+}
+
+function catalogNameKey(value) {
+  return String(value || "").normalize("NFKC").trim().toLocaleLowerCase("en-US").replace(/\s+/g, " ");
+}
+
+export function mergeDefaultKnowledgeOfferings(candidate, { generatedAt = new Date() } = {}) {
+  const timestamp = (generatedAt instanceof Date ? generatedAt : new Date(generatedAt)).toISOString();
+  const next = structuredClone(candidate);
+  const beforeLength = next.items.length;
+  next.items = next.items.filter(item => item.id !== "offering_synthetic_modular_mission_kit");
+  const knownIds = new Set(next.items.map(item => item.id));
+  const knownNames = new Set(next.items.map(item => catalogNameKey(item.name)));
+  let added = 0;
+  for (const record of DEFAULT_KNOWLEDGE_OFFERINGS) {
+    const nameKey = catalogNameKey(record.name);
+    if (knownIds.has(record.id) || knownNames.has(nameKey)) continue;
+    next.items.push(createKnowledgeItem({
+      ...record,
+      sourceTitle: "Provided Solutions & Offerings list",
+      changeSummary: "Added from the provided Solutions & Offerings list."
+    }, DEFAULT_KNOWLEDGE_RELEASED_AT));
+    knownIds.add(record.id);
+    knownNames.add(nameKey);
+    added += 1;
+  }
+  const changed = added > 0 || next.items.length !== beforeLength;
+  if (changed) next.savedAt = timestamp;
+  return { knowledgeBase: changed ? next : candidate, changed, added };
 }
 
 export function validateKnowledgeBase(candidate) {
@@ -204,6 +220,7 @@ export function materializeKnowledgeItem(item, solutionId, { generatedAt = new D
 
 export function refreshCandidateFromKnowledge(candidate, item, { generatedAt = new Date() } = {}) {
   if (item?.lifecycleStatus === "Retired") throw new Error("Archived Knowledge Base items cannot refresh a solution copy.");
+  if (!candidate?.catalogSource?.itemId || candidate.catalogSource.itemId !== item?.id) throw new Error("Knowledge Base item does not match this solution copy.");
   const refreshed = materializeKnowledgeItem(item, candidate.solutionId, { generatedAt, idFactory: () => candidate.id });
   return { ...candidate, name: refreshed.name, category: refreshed.category, vendor: refreshed.vendor, description: refreshed.description, readinessBasis: refreshed.readinessBasis, readinessAsOf: refreshed.readinessAsOf, trl: refreshed.trl, mrl: refreshed.mrl, irl: refreshed.irl, catalogSource: refreshed.catalogSource };
 }

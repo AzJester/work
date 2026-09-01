@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=14";
+} from "./engine.js?v=15";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,25 +37,27 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=14";
+} from "./capture.js?v=15";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=14";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=14";
+} from "./ingestion.js?v=15";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=15";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=14";
+} from "./export-docx.js?v=15";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=14";
+} from "./export-xlsx.js?v=15";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
+  KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY,
+  DEFAULT_KNOWLEDGE_CATALOG_VERSION,
   KNOWLEDGE_LIFECYCLE_STATUSES,
   KNOWLEDGE_OFFERING_TYPES,
   MAX_KNOWLEDGE_IMPORT_BYTES,
@@ -65,10 +67,11 @@ import {
   restoreKnowledgeItem,
   deleteArchivedKnowledgeItem,
   materializeKnowledgeItem,
+  mergeDefaultKnowledgeOfferings,
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=14";
+} from "./knowledge-base.js?v=15";
 import {
   KNOWLEDGE_IMPORT_COLUMNS,
   KNOWLEDGE_IMPORT_FILE_ACCEPT,
@@ -77,7 +80,7 @@ import {
   normalizeKnowledgeImportRows,
   parseKnowledgeCsv,
   parseKnowledgeWorkbook
-} from "./knowledge-import.js?v=14";
+} from "./knowledge-import.js?v=15";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const DECISION_EXPORT_ACTIONS = new Set(["export-markdown", "export-html", "export-docx", "export-xlsx", "export-pdf"]);
@@ -107,6 +110,7 @@ let themePreference = loadThemePreference();
 applyTheme(themePreference);
 let initialWorkspaceNeedsSave = false;
 let initialKnowledgeBaseNeedsSave = false;
+let initialKnowledgeDefaultsVersionNeedsSave = false;
 let knowledgeBaseLoadError = "";
 let workspace = loadWorkspace();
 let knowledgeBase = loadKnowledgeBase();
@@ -129,6 +133,7 @@ let ingestionProcessing = false;
 let ingestionAbortController = null;
 let meetingSession = null;
 let knowledgeFilters = { search: "", type: "", status: "active", segment: "" };
+let offeringChooserState = null;
 let knowledgeImportSession = null;
 let knowledgeImportGeneration = 0;
 
@@ -375,11 +380,11 @@ function scheduleSave() {
   saveTimer = setTimeout(saveNow, 450);
 }
 
-function commit(mutator, { renderAfter = true, snapshot = "" } = {}) {
+function commit(mutator, { renderAfter = true, snapshot = "", touchedSolutionId = workspace.activeSolutionId } = {}) {
   let next = structuredClone(workspace);
   if (snapshot) next = pushSnapshot(next, snapshot);
   mutator(next);
-  const solution = next.solutions.find(item => item.id === next.activeSolutionId);
+  const solution = next.solutions.find(item => item.id === touchedSolutionId);
   if (solution) solution.updatedAt = new Date().toISOString();
   const result = validateWorkspace(next);
   if (!result.valid) { toast(result.errors[0], "error"); return false; }
@@ -605,7 +610,7 @@ function routeTitle(value) {
 }
 
 function routeSubtitle(value, solution) {
-  if (value === "knowledge-base") return `Reusable local catalog · Add items to ${solution.name}`;
+  if (value === "knowledge-base") return "Reusable catalog across every solution workspace";
   return `${solution.name} · Solution status: ${solution.stage}`;
 }
 
@@ -774,7 +779,7 @@ function renderAssess(solution) {
   const selected = candidates.find(item => item.id === selectedCandidateId);
   const catalogNotice = selected ? catalogCandidateNotice(selected) : "";
   const results = candidates.map(item => ({ candidate: item, result: assessmentResult(workspace, solution.id, item.id) })).sort((a, b) => (b.result.score ?? -1) - (a.result.score ?? -1));
-  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><div><button class="button secondary" type="button" data-add="candidates">Custom candidate</button><button class="button primary" type="button" data-offering-chooser-open>Add offering</button></div></div>
+  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><div><button class="button secondary" type="button" data-add="candidates">Custom candidate</button><button class="button primary" type="button" data-offering-chooser-open>Add offerings</button></div></div>
   <section class="readiness-key" aria-labelledby="readiness-key-title"><div class="readiness-key-heading"><p class="section-kicker">Key</p><h4 id="readiness-key-title">Readiness levels</h4><p>Use these optional fields only when the team has a defensible, dated basis. Leave them blank when readiness is unknown.</p></div><dl><div><dt>TRL</dt><dd><strong>Technology Readiness Level</strong><span>Technology maturity for its intended use · 1–9</span></dd></div><div><dt>MRL</dt><dd><strong>Manufacturing Readiness Level</strong><span>Manufacturing and production maturity · 1–10</span></dd></div><div><dt>IRL</dt><dd><strong>Integration Readiness Level</strong><span>Integration maturity between specified components · 0–9</span></dd></div></dl></section>
   <div class="assessment-layout"><section class="panel candidate-rank"><div class="panel-head"><div><h3>Provisional candidate comparison</h3><p>Order reflects entered scores only. Coverage and evidence support determine how much confidence to place in it.</p></div></div>${results.length ? results.map(({ candidate, result }, index) => { const unsupported = result.rows.filter(row => row.value !== null && (!row.rationale?.trim() || !row.evidenceIds?.length)).length; return `<button class="candidate-row ${candidate.id === selectedCandidateId ? "active" : ""}" type="button" data-candidate="${h(candidate.id)}" aria-pressed="${candidate.id === selectedCandidateId}"><span class="rank">${index + 1}</span><span><strong>${h(candidate.name)}</strong><small>${h(candidate.category)} · TRL ${h(candidate.trl ?? "—")} · summary IRL ${h(candidate.irl ?? "—")}</small></span><span class="score">${result.score === null ? "—" : result.score.toFixed(2)}<small>${Math.round(result.coverage * 100)}% assessed · ${Math.round(result.evidenceCoverage * 100)}% evidenced · ${unsupported} unsupported</small></span></button>`; }).join("") : emptyState("No candidates", "Add hardware, software, tools, vendors, platforms, or integrated mission-package alternatives.")}</section>
   <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description || "No candidate description recorded.")}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div>${catalogNotice}<div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Status</span><select data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="status">${["Considering", "Shortlist", "Preferred", "Rejected", "Retired"].map(value => option(value, value, selected.status)).join("")}</select></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label class="candidate-description"><span>Description</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="description">${h(selected.description)}</textarea></label><label class="candidate-readiness-basis"><span>Readiness basis / scope</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessBasis">${h(selected.readinessBasis || "")}</textarea></label><label><span>Readiness as-of date</span><input type="date" value="${h(selected.readinessAsOf || "")}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessAsOf"></label><label><span title="Technology Readiness Level">TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" aria-label="Technology Readiness Level (TRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span title="Manufacturing Readiness Level">MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" aria-label="Manufacturing Readiness Level (MRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span title="Integration Readiness Level">Summary / limiting IRL</span><input type="number" min="0" max="9" value="${h(selected.irl ?? "")}" aria-label="Summary or limiting Integration Readiness Level (IRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
@@ -821,6 +826,13 @@ function loadKnowledgeBase() {
     const candidate = JSON.parse(raw);
     const result = validateKnowledgeBase(candidate);
     if (!result.valid) throw new Error(result.errors[0]);
+    const installedVersion = Number(localStorage.getItem(KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY) || 0);
+    if (!Number.isSafeInteger(installedVersion) || installedVersion < DEFAULT_KNOWLEDGE_CATALOG_VERSION) {
+      const merged = mergeDefaultKnowledgeOfferings(candidate);
+      initialKnowledgeBaseNeedsSave = merged.changed;
+      initialKnowledgeDefaultsVersionNeedsSave = true;
+      return merged.knowledgeBase;
+    }
     return candidate;
   } catch (error) {
     console.warn("Could not load the saved Solution Architect Knowledge Base.", error);
@@ -841,7 +853,9 @@ function persistKnowledgeBase(candidate, { quiet = false, renderAfter = false, r
   }
   try {
     localStorage.setItem(KNOWLEDGE_BASE_STORAGE_KEY, JSON.stringify(candidate));
+    localStorage.setItem(KNOWLEDGE_DEFAULTS_VERSION_STORAGE_KEY, String(DEFAULT_KNOWLEDGE_CATALOG_VERSION));
     knowledgeBase = candidate;
+    initialKnowledgeDefaultsVersionNeedsSave = false;
     if (replaceInvalidStore) knowledgeBaseLoadError = "";
     if (renderAfter) render();
     return true;
@@ -1002,15 +1016,12 @@ function knowledgeCard(item, solution) {
   const archived = item.lifecycleStatus === "Retired";
   const stale = !archived && existing && Number(existing.catalogSource?.revision || 0) < item.revision;
   const sourceUrl = safeHttpUrl(item.sourceUrl);
-  const primaryAction = archived
-    ? existing
-      ? `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open assessment</button>`
-      : ""
-    : existing
-    ? stale
-      ? `<button class="button primary" type="button" data-knowledge-refresh="${h(item.id)}">Refresh solution copy</button>`
-      : `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open assessment</button>`
-    : `<button class="button primary" type="button" data-knowledge-use="${h(item.id)}">Use in active solution</button>`;
+  const assessmentAction = existing
+    ? stale && !archived
+      ? `<button class="button secondary" type="button" data-knowledge-refresh="${h(item.id)}">Refresh active copy</button>`
+      : `<button class="button secondary" type="button" data-knowledge-open="${h(existing.id)}">Open active assessment</button>`
+    : "";
+  const addAction = archived ? "" : `<button class="button primary" type="button" data-knowledge-choose="${h(item.id)}">Add to solution…</button>`;
   const statusNote = archived
     ? `<p class="knowledge-archive-note"><strong>Archived</strong> Hidden from active results and unavailable for new solution use or refresh.${existing ? ` The independent copy in ${h(solution.name)} remains available.` : ""}</p>`
     : stale
@@ -1028,7 +1039,7 @@ function knowledgeCard(item, solution) {
     ${item.missionSegments.length ? `<div class="knowledge-segments" aria-label="Company mission segments">${item.missionSegments.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}
     <dl class="knowledge-meta"><div><dt>Readiness levels</dt><dd>TRL ${h(item.trl ?? "—")} · MRL ${h(item.mrl ?? "—")} · IRL ${h(item.irl ?? "—")}</dd></div><div><dt>Last reviewed</dt><dd>${h(item.reviewedAt || "Not recorded")}</dd></div><div><dt>Last change</dt><dd>${h(item.changeSummary || "No change summary")}</dd></div></dl>
     <details class="knowledge-details"><summary>Offering details</summary><div><h4>Deployment and environment</h4><p>${h(item.deploymentAndEnvironment || "Not recorded")}</p><h4>Interfaces</h4><p>${h(item.interfaces || "Not recorded")}</p><h4>Integration considerations</h4><p>${h(item.integrationConsiderations || "Not recorded")}</p><h4>Cyber and safety considerations</h4><p>${h(item.cyberSafetyConsiderations || "Not recorded")}</p><h4>MOSA and data rights</h4><p>${h(item.mosaDataRights || "Not recorded")}</p><h4>Source</h4><p>${h(item.sourceTitle || "Not recorded")}${sourceUrl ? ` · <a href="${h(sourceUrl)}" target="_blank" rel="noopener noreferrer">Open reference</a>` : ""}</p></div></details>
-    ${statusNote}<footer class="knowledge-card-actions"><button class="button secondary" type="button" data-knowledge-edit="${h(item.id)}">Edit</button>${primaryAction}${managementActions}</footer>
+    ${statusNote}<footer class="knowledge-card-actions"><button class="button secondary" type="button" data-knowledge-edit="${h(item.id)}">Edit</button>${addAction}${assessmentAction}${managementActions}</footer>
   </article>`;
 }
 
@@ -1038,8 +1049,8 @@ function renderKnowledgeBase(solution) {
   const filterAttributes = `aria-controls="knowledge-results-grid" aria-describedby="knowledge-filter-status"`;
   const resultAnnouncement = `${visible} of ${knowledgeBase.items.length} Knowledge Base items match the current filters.`;
   return `<div class="section-toolbar knowledge-toolbar">
-    <div><p class="section-kicker">Reusable reference</p><h3>Knowledge base</h3><p>Maintain approved unclassified, non-CUI products, applications, software, platforms, solutions, and offerings. Using an item creates an independent Technology Assessment candidate for <strong>${h(solution.name)}</strong>.</p></div>
-    <div class="knowledge-toolbar-actions"><button class="button secondary" type="button" data-knowledge-template>Templates</button><button class="button secondary" type="button" data-knowledge-list-import ${knowledgeBaseLoadError ? "disabled" : ""}>Import list</button><button class="button secondary" type="button" data-knowledge-backup>JSON backup</button><button class="button primary" type="button" data-knowledge-add ${knowledgeBaseLoadError ? "disabled" : ""}>Add offering</button></div>
+    <div><p class="section-kicker">Permanent reusable catalog</p><h3>Knowledge base</h3><p>Maintain products, applications, software, platforms, solutions, and offerings once, then copy their current facts into any opportunity or solution workspace for independent assessment.</p></div>
+    <div class="knowledge-toolbar-actions"><button class="button secondary" type="button" data-knowledge-template>Templates</button><button class="button secondary" type="button" data-knowledge-list-import ${knowledgeBaseLoadError ? "disabled" : ""}>Import list</button><button class="button secondary" type="button" data-knowledge-backup>JSON backup</button><button class="button secondary" type="button" data-knowledge-add ${knowledgeBaseLoadError ? "disabled" : ""}>Create offering</button><button class="button primary" type="button" data-offering-chooser-open ${knowledgeBaseLoadError ? "disabled" : ""}>Add to solution</button></div>
   </div>${recovery}<section class="panel knowledge-search-panel" aria-label="Knowledge Base filters" aria-describedby="knowledge-filter-status">
     <div class="knowledge-filter-grid">
       <label class="knowledge-search"><span>Search</span><input type="search" value="${h(knowledgeFilters.search)}" data-knowledge-filter="search" placeholder="Name, provider, capability, tag, or version" ${filterAttributes}></label>
@@ -1048,7 +1059,7 @@ function renderKnowledgeBase(solution) {
       <label><span>Mission segment</span><select data-knowledge-filter="segment" ${filterAttributes}><option value="">All mission segments</option>${MISSION_SEGMENTS.map(record => option(record.name, record.name, knowledgeFilters.segment)).join("")}</select></label>
     </div>
     <div class="knowledge-results-meta"><strong data-knowledge-count>${visible} of ${knowledgeBase.items.length} items</strong><span class="visually-hidden" id="knowledge-filter-status" data-knowledge-filter-status role="status" aria-live="polite" aria-atomic="true">${h(resultAnnouncement)}</span><button class="text-button" type="button" data-knowledge-clear aria-controls="knowledge-results-grid">Clear filters</button></div>
-  </section><p class="knowledge-boundary-note"><strong>Copy-on-use:</strong> catalog updates never silently alter solution assessments, scores, decisions, or evidence. Archived offerings are hidden by default and cannot be copied or refreshed until restored; existing solution copies remain independent.</p><div class="knowledge-grid" id="knowledge-results-grid" data-knowledge-grid>${knowledgeBase.items.map(item => knowledgeCard(item, solution)).join("")}</div><div class="panel knowledge-empty" data-knowledge-empty ${visible ? "hidden" : ""}>${emptyState("No Knowledge Base items match", "Reset the filters or add a reusable solution offering.")}</div>`;
+  </section><p class="knowledge-boundary-note"><strong>Shared catalog, independent copies:</strong> choose the target solution when adding offerings. Catalog updates never silently alter solution assessments, scores, decisions, or evidence. Archived offerings cannot be copied or refreshed until restored.</p><div class="knowledge-grid" id="knowledge-results-grid" data-knowledge-grid>${knowledgeBase.items.map(item => knowledgeCard(item, solution)).join("")}</div><div class="panel knowledge-empty" data-knowledge-empty ${visible ? "hidden" : ""}>${emptyState("No Knowledge Base items match", "Reset the filters or create a reusable solution offering.")}</div>`;
 }
 
 function applyKnowledgeFilters() {
@@ -1084,89 +1095,152 @@ function offeringChooserSearchText(item) {
   ].filter(Boolean).join(" ").toLowerCase();
 }
 
-function offeringChoice(item, existingCandidate) {
+function offeringTargetSolution(solutionId) {
+  return workspace.solutions.find(solution => solution.id === solutionId) || null;
+}
+
+function offeringTargetLabel(solution) {
+  const normalizedName = String(solution.name || "Untitled solution").trim().toLocaleLowerCase("en-US");
+  const matches = workspace.solutions.filter(item => String(item.name || "Untitled solution").trim().toLocaleLowerCase("en-US") === normalizedName);
+  if (matches.length === 1) return solution.name || "Untitled solution";
+  const position = matches.findIndex(item => item.id === solution.id) + 1;
+  return `${solution.name || "Untitled solution"} (${position} of ${matches.length}${solution.customer ? ` · ${solution.customer}` : ""})`;
+}
+
+function offeringChoice(item, existingCandidate, selected) {
   const provider = [item.provider, item.version].filter(Boolean).join(" · ") || "Provider and version not recorded";
   const capabilities = (item.capabilities || []).slice(0, 4);
   const segments = (item.missionSegments || []).slice(0, 3);
-  return `<article class="offering-choice" data-offering-choice data-offering-id="${h(item.id)}" data-offering-search="${h(offeringChooserSearchText(item))}">
+  return `<label class="offering-choice ${existingCandidate ? "is-added" : ""}" data-offering-choice data-offering-id="${h(item.id)}" data-offering-search="${h(offeringChooserSearchText(item))}">
+    <input class="offering-choice-check" type="checkbox" name="offeringIds" value="${h(item.id)}" data-offering-choice-check ${selected ? "checked" : ""} ${existingCandidate ? "disabled" : ""}>
     <div class="offering-choice-copy">
       <div class="offering-choice-badges"><span class="knowledge-type">${h(item.offeringType)}</span><span class="knowledge-status status-${h(item.lifecycleStatus.toLowerCase())}">${h(knowledgeLifecycleLabel(item.lifecycleStatus))}</span></div>
-      <h3>${h(item.name)}</h3>
-      <p class="offering-choice-provider">${h(provider)}</p>
-      <p class="offering-choice-summary">${h(item.summary || "Summary not recorded.")}</p>
+      <strong class="offering-choice-title">${h(item.name)}</strong>
+      <span class="offering-choice-provider">${h(provider)}</span>
+      <span class="offering-choice-summary">${h(item.summary || "Summary not recorded.")}</span>
       ${capabilities.length ? `<div class="offering-choice-tags" aria-label="Capabilities">${capabilities.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}
-      ${segments.length ? `<p class="offering-choice-segments"><strong>Mission fit:</strong> ${h(segments.join(" · "))}</p>` : ""}
+      ${segments.length ? `<span class="offering-choice-segments"><strong>Mission fit:</strong> ${h(segments.join(" · "))}</span>` : ""}
     </div>
-    <div class="offering-choice-action">${existingCandidate
-      ? `<button class="button secondary" type="button" disabled>Added</button>`
-      : `<button class="button primary" type="button" data-offering-add="${h(item.id)}">Add to solution</button>`}
-    </div>
-  </article>`;
+    <span class="offering-choice-state">${existingCandidate ? "Already added" : selected ? "Selected" : "Available"}</span>
+  </label>`;
 }
 
-function offeringChooserCounts() {
+function offeringChooserCounts(targetSolutionId) {
   const activeItems = knowledgeBase.items.filter(item => item.lifecycleStatus !== "Retired");
-  const copiedIds = new Set(scoped(workspace, "candidates").map(candidate => candidate.catalogSource?.itemId).filter(Boolean));
+  const copiedIds = new Set(scoped(workspace, "candidates", targetSolutionId).map(candidate => candidate.catalogSource?.itemId).filter(Boolean));
   return { activeItems, copiedIds, added: activeItems.filter(item => copiedIds.has(item.id)).length };
 }
 
-function offeringChooserStatus(visible, total, added) {
-  return `${visible} of ${total} active offering${total === 1 ? "" : "s"} shown · ${added} added to this solution`;
+function offeringChooserStatus(visible, total, selected, added, targetName) {
+  return `${visible} of ${total} active offering${total === 1 ? "" : "s"} shown · ${selected} selected · ${added} already in ${targetName}`;
 }
 
-function showOfferingChooser({ search = "" } = {}) {
+function sanitizeOfferingChooserSelection() {
+  if (!offeringChooserState) return;
+  const { activeItems, copiedIds } = offeringChooserCounts(offeringChooserState.targetSolutionId);
+  const activeIds = new Set(activeItems.map(item => item.id));
+  const selectedIds = new Set([...offeringChooserState.selectedIds].filter(id => activeIds.has(id) && !copiedIds.has(id)));
+  for (const id of offeringChooserState.preferredIds || []) {
+    if (activeIds.has(id) && !copiedIds.has(id)) selectedIds.add(id);
+  }
+  offeringChooserState.selectedIds = selectedIds;
+}
+
+function showOfferingChooser({ search = "", targetSolutionId = workspace.activeSolutionId, selectedItemIds = [], preserveState = false, focusTarget = false } = {}) {
   if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
-  const solution = activeSolution();
-  const { activeItems, added } = offeringChooserCounts();
+  if (!preserveState || !offeringChooserState) {
+    offeringChooserState = {
+      targetSolutionId: offeringTargetSolution(targetSolutionId)?.id || workspace.activeSolutionId,
+      search: String(search || ""),
+      selectedIds: new Set(selectedItemIds),
+      preferredIds: new Set(selectedItemIds)
+    };
+  }
+  const solution = offeringTargetSolution(offeringChooserState.targetSolutionId);
+  if (!solution) { toast("The selected target solution is no longer available.", "error"); return; }
+  sanitizeOfferingChooserSelection();
+  const { activeItems, copiedIds, added } = offeringChooserCounts(solution.id);
   const sortedItems = [...activeItems].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-  const normalizedSearch = String(search || "").trim().toLowerCase();
+  const normalizedSearch = offeringChooserState.search.trim().toLowerCase();
   const visible = normalizedSearch ? sortedItems.filter(item => offeringChooserSearchText(item).includes(normalizedSearch)).length : sortedItems.length;
-  const choices = sortedItems.map(item => offeringChoice(item, scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id))).join("");
-  openModal("Add offering to active solution", `<div class="offering-chooser"><div class="offering-chooser-intro"><div><p class="modal-intro">Choose reusable offerings for <strong>${h(solution.name)}</strong>. Add as many as you need; each becomes an independent Technology Assessment candidate.</p><p class="offering-chooser-boundary">Showing active Current, Emerging, and Legacy offerings. Archived offerings are excluded.</p></div><button class="button secondary" type="button" data-offering-create>Create new offering</button></div>
-    <label class="offering-chooser-search"><span>Search offerings</span><input type="search" value="${h(search)}" placeholder="Name, provider, capability, type, tag, or mission segment" data-offering-chooser-search aria-controls="offering-chooser-list" autofocus></label>
-    <div class="offering-chooser-meta"><strong data-offering-chooser-status role="status" aria-live="polite" aria-atomic="true">${h(offeringChooserStatus(visible, sortedItems.length, added))}</strong><button class="text-button" type="button" data-offering-chooser-clear ${search ? "" : "hidden"}>Clear search</button></div>
-    <div class="offering-chooser-list" id="offering-chooser-list">${choices}</div>
+  const choices = sortedItems.map(item => offeringChoice(item, copiedIds.has(item.id), offeringChooserState.selectedIds.has(item.id))).join("");
+  openModal("Add offerings to a solution", `<form class="offering-chooser" id="offering-chooser-form"><div class="offering-chooser-intro"><div><p class="modal-intro">The Knowledge Base is a permanent reusable catalog. Choose the opportunity or solution workspace that should receive independent Technology Assessment copies.</p><p class="offering-chooser-boundary">The master offerings remain in the catalog. Archived offerings are excluded, and adding here does not switch the active workspace.</p></div><button class="button secondary" type="button" data-offering-create>Create new offering</button></div>
+    <div class="offering-chooser-controls"><label><span>Target opportunity / solution</span><select name="targetSolutionId" data-offering-target-solution>${workspace.solutions.map(item => option(item.id, offeringTargetLabel(item), solution.id)).join("")}</select><small>This chooses the destination without changing the active solution.</small></label><label class="offering-chooser-search"><span>Search offerings</span><input type="search" value="${h(offeringChooserState.search)}" placeholder="Name, provider, capability, type, tag, or mission segment" data-offering-chooser-search aria-controls="offering-chooser-list" ${focusTarget ? "" : "autofocus"}></label></div>
+    <div class="offering-chooser-meta"><strong data-offering-chooser-status role="status" aria-live="polite" aria-atomic="true">${h(offeringChooserStatus(visible, sortedItems.length, offeringChooserState.selectedIds.size, added, solution.name))}</strong><div><button class="text-button" type="button" data-offering-select-visible>Select visible</button><button class="text-button" type="button" data-offering-clear-selection ${offeringChooserState.selectedIds.size ? "" : "disabled"}>Clear selection</button><button class="text-button" type="button" data-offering-chooser-clear ${offeringChooserState.search ? "" : "hidden"}>Clear search</button></div></div>
+    <fieldset class="offering-chooser-fieldset"><legend class="visually-hidden">Available Knowledge Base offerings</legend><div class="offering-chooser-list" id="offering-chooser-list">${choices}</div></fieldset>
     <div class="offering-chooser-empty" data-offering-chooser-empty ${visible ? "hidden" : ""}>${emptyState(sortedItems.length ? "No offerings match" : "No active offerings yet", sortedItems.length ? "Try another search or clear the search field." : "Create a reusable offering here, or import a Knowledge Base list.")}</div>
-    <div class="modal-actions offering-chooser-actions"><button class="button secondary" type="button" data-offering-manage>Manage Knowledge Base</button><button class="button primary" type="button" data-close-modal>Done</button></div></div>`, { wide: true });
+    <div class="modal-actions offering-chooser-actions"><span data-offering-footer-summary>${h(offeringChooserState.selectedIds.size ? `${offeringChooserState.selectedIds.size} selected for ${solution.name}` : `Choose offerings for ${solution.name}`)}</span><button class="button secondary" type="button" data-offering-manage>Manage Knowledge Base</button><button class="button primary" type="submit" data-offering-apply ${offeringChooserState.selectedIds.size ? "" : "disabled"}>${h(offeringChooserState.selectedIds.size ? `Add ${offeringChooserState.selectedIds.size} offering${offeringChooserState.selectedIds.size === 1 ? "" : "s"}` : "Select offerings to add")}</button></div></form>`, { wide: true });
   applyOfferingChooserSearch();
+  if (focusTarget) document.querySelector("[data-offering-target-solution]")?.focus();
 }
 
 function applyOfferingChooserSearch() {
   const input = document.querySelector("[data-offering-chooser-search]");
-  if (!input) return;
+  if (!input || !offeringChooserState) return;
   const query = input.value.trim().toLowerCase();
+  offeringChooserState.search = input.value;
   let visible = 0;
   document.querySelectorAll("[data-offering-choice]").forEach(choice => {
     const matches = !query || choice.dataset.offeringSearch.includes(query);
     choice.hidden = !matches;
     if (matches) visible += 1;
   });
-  const { activeItems, added } = offeringChooserCounts();
+  const target = offeringTargetSolution(offeringChooserState.targetSolutionId);
+  if (!target) return;
+  const { activeItems, added } = offeringChooserCounts(target.id);
   const status = document.querySelector("[data-offering-chooser-status]");
-  if (status) status.textContent = offeringChooserStatus(visible, activeItems.length, added);
+  if (status) status.textContent = offeringChooserStatus(visible, activeItems.length, offeringChooserState.selectedIds.size, added, target.name);
   const empty = document.querySelector("[data-offering-chooser-empty]");
   if (empty) empty.hidden = visible > 0;
   const clear = document.querySelector("[data-offering-chooser-clear]");
   if (clear) clear.hidden = !query;
+  document.querySelectorAll("[data-offering-choice-check]").forEach(checkbox => {
+    checkbox.checked = offeringChooserState.selectedIds.has(checkbox.value);
+    const state = checkbox.closest("[data-offering-choice]")?.querySelector(".offering-choice-state");
+    if (state && !checkbox.disabled) state.textContent = checkbox.checked ? "Selected" : "Available";
+  });
+  const apply = document.querySelector("[data-offering-apply]");
+  if (apply) {
+    apply.disabled = offeringChooserState.selectedIds.size === 0;
+    apply.textContent = offeringChooserState.selectedIds.size ? `Add ${offeringChooserState.selectedIds.size} offering${offeringChooserState.selectedIds.size === 1 ? "" : "s"}` : "Select offerings to add";
+  }
+  const selectionClear = document.querySelector("[data-offering-clear-selection]");
+  if (selectionClear) selectionClear.disabled = offeringChooserState.selectedIds.size === 0;
+  const footer = document.querySelector("[data-offering-footer-summary]");
+  if (footer) footer.textContent = offeringChooserState.selectedIds.size ? `${offeringChooserState.selectedIds.size} selected for ${target.name}` : `Choose offerings for ${target.name}`;
 }
 
-function addOfferingFromChooser(itemId) {
-  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
-  const item = knowledgeBase.items.find(record => record.id === itemId);
-  if (!item || item.lifecycleStatus === "Retired") return;
-  const existing = scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id);
-  if (existing) {
-    selectedCandidateId = existing.id;
-    applyOfferingChooserSearch();
-    return;
-  }
-  const created = materializeKnowledgeItem(item, workspace.activeSolutionId);
-  const search = document.querySelector("[data-offering-chooser-search]")?.value || "";
-  if (commit(next => next.candidates.push(created), { renderAfter: false, snapshot: `Before using Knowledge Base item ${item.name}` })) {
-    selectedCandidateId = created.id;
-    showOfferingChooser({ search });
-    toast(`${item.name} was added to ${activeSolution().name}.`, "ok");
-  }
+function selectVisibleOfferings() {
+  if (!offeringChooserState) return;
+  document.querySelectorAll("[data-offering-choice]:not([hidden]) [data-offering-choice-check]:not(:disabled)").forEach(checkbox => {
+    offeringChooserState.selectedIds.add(checkbox.value);
+    offeringChooserState.preferredIds.add(checkbox.value);
+  });
+  applyOfferingChooserSearch();
+}
+
+function clearOfferingSelection() {
+  if (!offeringChooserState) return;
+  offeringChooserState.selectedIds.clear();
+  offeringChooserState.preferredIds.clear();
+  applyOfferingChooserSearch();
+}
+
+function addSelectedOfferingsFromChooser() {
+  if (!offeringChooserState || knowledgeBaseLoadError) return;
+  const target = offeringTargetSolution(offeringChooserState.targetSolutionId);
+  if (!target) { toast("The selected target solution is no longer available. Nothing was added.", "error"); return; }
+  const copiedIds = new Set(scoped(workspace, "candidates", target.id).map(candidate => candidate.catalogSource?.itemId).filter(Boolean));
+  const items = [...offeringChooserState.selectedIds].map(id => knowledgeBase.items.find(item => item.id === id)).filter(item => item && item.lifecycleStatus !== "Retired" && !copiedIds.has(item.id));
+  if (!items.length) { toast("Select at least one available offering before adding.", "error"); sanitizeOfferingChooserSelection(); applyOfferingChooserSearch(); return; }
+  const created = items.map(item => materializeKnowledgeItem(item, target.id));
+  const label = items.length === 1 ? items[0].name : `${items.length} Knowledge Base offerings`;
+  if (!commit(next => next.candidates.push(...created), { renderAfter: false, snapshot: `Before adding ${label} to ${target.name}`, touchedSolutionId: target.id })) return;
+  if (target.id === workspace.activeSolutionId) selectedCandidateId = created.at(-1)?.id || selectedCandidateId;
+  offeringChooserState = null;
+  closeModal();
+  render();
+  toast(`${items.length} offering${items.length === 1 ? "" : "s"} added to ${target.name}.`, "ok");
 }
 
 function showKnowledgeEditor(itemId = "", { returnToOfferingChooser = false } = {}) {
@@ -1226,17 +1300,11 @@ function showKnowledgeDeleteDialog(itemId) {
   openModal("Delete solution offering permanently", `<form id="knowledge-delete-form" data-knowledge-id="${h(item.id)}" data-knowledge-name="${h(item.name)}"><p class="modal-intro">Permanently delete <strong>${h(item.name)}</strong> from this browser's Knowledge Base?</p><div class="guide-note warning"><strong>This cannot be undone without a JSON backup</strong><p>${copies ? `${copies} existing solution cop${copies === 1 ? "y" : "ies"} will remain independent and usable, but catalog management and refresh will no longer be available.` : "No existing solution copies were found."}</p></div><label><span>Type the offering name to confirm</span><input name="confirmation" data-knowledge-delete-confirm-input data-knowledge-name="${h(item.name)}" autocomplete="off" required autofocus></label><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button danger" type="submit" data-knowledge-delete-confirm disabled>Delete permanently</button></div></form>`);
 }
 
-function useKnowledgeItem(itemId) {
+function showOfferingChooserForItem(itemId) {
   if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
   const item = knowledgeBase.items.find(record => record.id === itemId);
   if (!item || item.lifecycleStatus === "Retired") return;
-  const existing = scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id);
-  if (existing) { selectedCandidateId = existing.id; location.hash = "assess"; return; }
-  const created = materializeKnowledgeItem(item, workspace.activeSolutionId);
-  if (commit(next => next.candidates.push(created), { snapshot: `Before using Knowledge Base item ${item.name}` })) {
-    selectedCandidateId = created.id;
-    toast(`${item.name} was copied into ${activeSolution().name} for solution-specific assessment.`, "ok");
-  }
+  showOfferingChooser({ selectedItemIds: [item.id] });
 }
 
 function refreshKnowledgeCandidate(itemId) {
@@ -2191,8 +2259,8 @@ function handleDecisionExportMenuKey(event) {
 document.addEventListener("click", event => {
   if (document.querySelector("#decision-export-menu:not([hidden])") && !event.target.closest(".decision-export-actions")) setDecisionExportMenu(false);
   if (document.querySelector("#sidebar.open") && !event.target.closest("#sidebar")) setSidebarOpen(false);
-  if (event.target.matches("[data-modal-backdrop]")) { closeModal(); return; }
-  const close = event.target.closest("[data-close-modal]"); if (close) { closeModal(); return; }
+  if (event.target.matches("[data-modal-backdrop]")) { if (document.querySelector("#offering-chooser-form")) offeringChooserState = null; closeModal(); return; }
+  const close = event.target.closest("[data-close-modal]"); if (close) { if (document.querySelector("#offering-chooser-form")) offeringChooserState = null; closeModal(); return; }
   const routeButton = event.target.closest("[data-route-button]"); if (routeButton) { location.hash = routeButton.dataset.routeButton; return; }
   const actionControl = event.target.closest("[data-action]");
   const action = actionControl?.dataset.action;
@@ -2215,19 +2283,19 @@ document.addEventListener("click", event => {
   if (action === "use-system-theme") { setThemePreference("system"); closeModal(); }
   if (action === "ingest-hot-buttons") showHotButtonIngest();
   if (action === "add-aoa") addAnalysisOfAlternatives();
-  if (event.target.closest("[data-offering-chooser-open]")) { showOfferingChooser(); return; }
+  if (event.target.closest("[data-offering-chooser-open]")) { offeringChooserState = null; showOfferingChooser(); return; }
   if (event.target.closest("[data-offering-create]")) { showKnowledgeEditor("", { returnToOfferingChooser: true }); return; }
-  const offeringAdd = event.target.closest("[data-offering-add]")?.dataset.offeringAdd;
-  if (offeringAdd) { addOfferingFromChooser(offeringAdd); return; }
+  if (event.target.closest("[data-offering-select-visible]")) { selectVisibleOfferings(); return; }
+  if (event.target.closest("[data-offering-clear-selection]")) { clearOfferingSelection(); return; }
   if (event.target.closest("[data-offering-chooser-clear]")) {
     const input = document.querySelector("[data-offering-chooser-search]");
     if (input) { input.value = ""; applyOfferingChooserSearch(); input.focus(); }
     return;
   }
-  if (event.target.closest("[data-offering-manage]")) { closeModal(); location.hash = "knowledge-base"; return; }
+  if (event.target.closest("[data-offering-manage]")) { offeringChooserState = null; closeModal(); location.hash = "knowledge-base"; return; }
   if (event.target.closest("[data-knowledge-add]")) showKnowledgeEditor();
   const knowledgeEdit = event.target.closest("[data-knowledge-edit]")?.dataset.knowledgeEdit; if (knowledgeEdit) showKnowledgeEditor(knowledgeEdit);
-  const knowledgeUse = event.target.closest("[data-knowledge-use]")?.dataset.knowledgeUse; if (knowledgeUse) useKnowledgeItem(knowledgeUse);
+  const knowledgeChoose = event.target.closest("[data-knowledge-choose]")?.dataset.knowledgeChoose; if (knowledgeChoose) { showOfferingChooserForItem(knowledgeChoose); return; }
   const knowledgeRefresh = event.target.closest("[data-knowledge-refresh]")?.dataset.knowledgeRefresh; if (knowledgeRefresh) refreshKnowledgeCandidate(knowledgeRefresh);
   const knowledgeOpen = event.target.closest("[data-knowledge-open]")?.dataset.knowledgeOpen; if (knowledgeOpen) { selectedCandidateId = knowledgeOpen; location.hash = "assess"; }
   const knowledgeArchive = event.target.closest("[data-knowledge-archive]")?.dataset.knowledgeArchive;
@@ -2302,6 +2370,11 @@ document.addEventListener("submit", event => {
   event.preventDefault();
   const form = event.target;
   const data = new FormData(form);
+  if (form.id === "offering-chooser-form") {
+    if (offeringChooserState) offeringChooserState.targetSolutionId = String(data.get("targetSolutionId") || "");
+    addSelectedOfferingsFromChooser();
+    return;
+  }
   if (form.id === "knowledge-archive-form") {
     try {
       const item = knowledgeBase.items.find(record => record.id === form.dataset.knowledgeId);
@@ -2359,21 +2432,28 @@ document.addEventListener("submit", event => {
     try {
       const itemId = form.dataset.knowledgeId || "";
       let next;
+      let savedItem;
       if (itemId) {
         const existing = knowledgeBase.items.find(record => record.id === itemId);
         if (!existing) throw new Error("The offering no longer exists.");
         if (existing.lifecycleStatus === "Retired" && values.lifecycleStatus !== "Retired") throw new Error("Use Restore offering to return an archived item to active use.");
         if (existing.lifecycleStatus !== "Retired" && values.lifecycleStatus === "Retired") throw new Error("Use Archive offering to remove an item from active use.");
         next = updateKnowledgeItem(knowledgeBase, itemId, values);
+        savedItem = next.items.find(record => record.id === itemId);
       }
       else {
         next = structuredClone(knowledgeBase);
-        next.items.push(createKnowledgeItem(values));
+        savedItem = createKnowledgeItem(values);
+        next.items.push(savedItem);
         next.savedAt = new Date().toISOString();
       }
       if (!persistKnowledgeBase(next)) return;
       const returnToOfferingChooser = form.dataset.returnToOfferingChooser === "true" && !itemId;
-      if (returnToOfferingChooser) showOfferingChooser();
+      if (returnToOfferingChooser && offeringChooserState) {
+        offeringChooserState.selectedIds.add(savedItem.id);
+        offeringChooserState.preferredIds.add(savedItem.id);
+        showOfferingChooser({ preserveState: true });
+      }
       else {
         closeModal();
         render();
@@ -2503,6 +2583,25 @@ document.addEventListener("input", event => {
 
 document.addEventListener("change", event => {
   const node = event.target;
+  if (node.matches("[data-offering-target-solution]")) {
+    if (!offeringChooserState || !offeringTargetSolution(node.value)) { toast("That target solution is no longer available.", "error"); return; }
+    offeringChooserState.targetSolutionId = node.value;
+    sanitizeOfferingChooserSelection();
+    showOfferingChooser({ preserveState: true, focusTarget: true });
+    return;
+  }
+  if (node.matches("[data-offering-choice-check]")) {
+    if (!offeringChooserState) return;
+    if (node.checked) {
+      offeringChooserState.selectedIds.add(node.value);
+      offeringChooserState.preferredIds.add(node.value);
+    } else {
+      offeringChooserState.selectedIds.delete(node.value);
+      offeringChooserState.preferredIds.delete(node.value);
+    }
+    applyOfferingChooserSearch();
+    return;
+  }
   if (node.matches("[data-knowledge-filter]")) { knowledgeFilters[node.dataset.knowledgeFilter] = node.value; applyKnowledgeFilters(); return; }
   if (node.matches("[data-knowledge-import-mode]")) { refreshKnowledgeImportPlan(node.value); showKnowledgeImportPreview({ focusSelector: `[data-knowledge-import-mode][value="${node.value}"]` }); return; }
   if (node.id === "knowledge-list-import") { importKnowledgeListFile(node.files?.[0]); return; }
@@ -2633,7 +2732,7 @@ document.addEventListener("keydown", event => {
     event.target.closest("#quick-capture-form").querySelector('button[name="next"][value="continue"]')?.click();
     return;
   }
-  if (event.key === "Escape" && document.querySelector("#modal-root .modal")) { event.preventDefault(); closeModal(); return; }
+  if (event.key === "Escape" && document.querySelector("#modal-root .modal")) { event.preventDefault(); if (document.querySelector("#offering-chooser-form")) offeringChooserState = null; closeModal(); return; }
   if (event.key === "Escape" && document.querySelector("#sidebar.open")) { event.preventDefault(); setSidebarOpen(false); document.querySelector('[data-action="toggle-nav"]')?.focus(); return; }
   if (handleDecisionExportMenuKey(event)) return;
   trapModalFocus(event);
@@ -2656,11 +2755,11 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=14", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=15", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }
 render();
 if (initialWorkspaceNeedsSave) saveNow();
-if (initialKnowledgeBaseNeedsSave) persistKnowledgeBase(knowledgeBase, { quiet: true });
+if (initialKnowledgeBaseNeedsSave || initialKnowledgeDefaultsVersionNeedsSave) persistKnowledgeBase(knowledgeBase, { quiet: true });
 if (knowledgeBaseLoadError) toast("Saved Knowledge Base could not be opened and was left unchanged. Import a valid catalog backup to recover.", "error");

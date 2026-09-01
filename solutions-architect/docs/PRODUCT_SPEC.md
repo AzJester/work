@@ -122,6 +122,11 @@ A successful workspace lets that user:
   applications, software, services, platforms, integrated solutions, and other
   offerings. The catalog is reusable across solutions in the same browser profile;
   it is not embedded in `solution-workspace-v1`.
+- Bundle the 28 records from the provided Solutions & Offerings list as the default
+  permanent catalog choices. Seed every new catalog with them and merge missing
+  bundled records into an existing valid catalog once per default-catalog release.
+  Preserve an existing record when its stable ID or normalized name already matches,
+  and never assign a catalog item a `solutionId`.
 - Let users search and filter by name or catalog text, offering type, lifecycle
   status, and company mission segment. Catalog records must support provider,
   version/release, lifecycle status, summary, capabilities, mission segments,
@@ -130,19 +135,25 @@ A successful workspace lets that user:
   date, and change summary.
 - Increment an item's catalog revision whenever it is edited. Show the revision used
   by an existing solution copy and identify when a newer revision is available.
-- Implement copy-on-use: **Use in active solution** creates a new candidate ID bound
-  only to the active solution and records catalog item ID, revision, item name,
-  import time, review date, and safe source URL as provenance. Catalog edits,
-  retirement, or deletion must never silently mutate or delete existing solution
-  copies.
-- Require an explicit **Refresh solution copy** action before applying a newer
+- Provide one searchable, batch-select chooser from Technology Assessment and the
+  Knowledge Base. Require an explicit **Target opportunity / solution**, allow the
+  user to select individual or all visible eligible offerings, show items already in
+  that target, and commit all selected copies atomically. Changing the target must not
+  change the workspace's active-solution selection.
+- Implement copy-on-use: every chosen offering creates a new candidate ID bound only
+  to the selected target and records catalog item ID, revision, item name, import
+  time, review date, and safe source URL as provenance. The same catalog item may be
+  copied once into each of many solutions, but never twice into one solution. Catalog
+  edits, retirement, or deletion must never silently mutate or delete existing
+  solution copies.
+- Require an explicit **Refresh active copy** action before applying a newer
   catalog revision. Refresh reusable identity, description, readiness, and provenance
   fields while preserving the candidate's solution-specific status and its separate
-  assessment scores, rationales, and evidence links. Create a recovery point before
-  copy or refresh.
+  assessment scores, rationales, and evidence links. Create one recovery point before
+  each copy batch or refresh.
 - Prevent a retired catalog item from being newly copied while leaving prior solution
-  copies usable. Prevent a second copy of the same item in one solution; open the
-  existing assessment instead.
+  copies usable. Mark the item **Already added** for a target that contains it while
+  keeping it available for other targets.
 - Provide downloadable Knowledge Base templates for preferred Microsoft Excel
   (`.xlsx`) and UTF-8 CSV (`.csv`) list intake. Use one offering per row and the 26
   canonical columns documented in the user guide. Require only Name for a new item;
@@ -164,6 +175,9 @@ A successful workspace lets that user:
 - Keep the Knowledge Base out of workspace snapshots, workspace JSON backups,
   decision-package exports, capture inboxes, and AI payloads. Make clear that moving
   work between browsers requires both a workspace backup and a catalog backup.
+- Make the maintenance boundary explicit: bundled defaults are shipped with the app,
+  while additions, revisions, lifecycle changes, and deletions remain local to the
+  current browser profile until a user transfers a validated catalog JSON backup.
 
 ### Company mission segments
 
