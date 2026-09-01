@@ -54,6 +54,56 @@ async function downloadedBytes(download) {
   return readFile(path);
 }
 
+async function seedOfferingChooserCatalog(page) {
+  await page.evaluate(key => {
+    const catalog = JSON.parse(localStorage.getItem(key));
+    const seed = catalog.items[0];
+    const timestamp = new Date().toISOString();
+    catalog.savedAt = timestamp;
+    catalog.items = [
+      {
+        ...seed,
+        id: "offering_chooser_current",
+        name: "Current mission gateway",
+        offeringType: "Platform",
+        lifecycleStatus: "Current",
+        summary: "Current reusable gateway offering for chooser coverage.",
+        updatedAt: timestamp
+      },
+      {
+        ...seed,
+        id: "offering_chooser_emerging",
+        name: "Emerging edge analytics",
+        offeringType: "Software",
+        lifecycleStatus: "Emerging",
+        summary: "Emerging edge analytics offering for chooser coverage.",
+        updatedAt: timestamp
+      },
+      {
+        ...seed,
+        id: "offering_chooser_legacy",
+        name: "Legacy interface adapter",
+        offeringType: "Application",
+        lifecycleStatus: "Legacy",
+        summary: "Legacy but active interface adapter for chooser coverage.",
+        updatedAt: timestamp
+      },
+      {
+        ...seed,
+        id: "offering_chooser_archived",
+        name: "Archived sensor bridge",
+        offeringType: "Product",
+        lifecycleStatus: "Retired",
+        summary: "Archived offering that must never appear in the active-solution chooser.",
+        updatedAt: timestamp
+      }
+    ];
+    localStorage.setItem(key, JSON.stringify(catalog));
+  }, KNOWLEDGE_BASE_KEY);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("#workspace")).toBeVisible();
+}
+
 test("Knowledge Base toolbar exposes responsive templates, list import, JSON backup, and add controls", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 920 });
   await gotoFresh(page);
@@ -334,6 +384,121 @@ test("Knowledge Base search, copy-on-use, revision, and explicit refresh stay so
   expect(refreshed.status).toBe("Shortlist");
   expect(refreshed.description).toContain("Reference release 2.0");
   expect(await pageOverflow(page)).toBeLessThanOrEqual(1);
+});
+
+test("Technology Assessment offering chooser exposes every active catalog item and prevents duplicate solution copies", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
+  await gotoFresh(page, "assess");
+  await seedOfferingChooserCatalog(page);
+
+  const addOffering = page.getByRole("button", { name: "Add offering", exact: true });
+  await expect(addOffering).toBeVisible();
+  await addOffering.click();
+
+  const chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await expect(chooser).toBeVisible();
+  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText("3");
+  await expect(chooser.locator("[data-offering-choice]")).toHaveCount(3);
+  await expect(chooser).toContainText("Current mission gateway");
+  await expect(chooser).toContainText("Emerging edge analytics");
+  await expect(chooser).toContainText("Legacy interface adapter");
+  await expect(chooser).not.toContainText("Archived sensor bridge");
+
+  const search = chooser.getByLabel("Search offerings", { exact: true });
+  await search.fill("edge analytics");
+  await expect(chooser.locator("[data-offering-choice]:visible")).toHaveCount(1);
+  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText(/1\s+of\s+3/i);
+  const edgeOffering = chooser.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
+  await expect(edgeOffering).toBeVisible();
+
+  const beforeCount = await page.evaluate(key => {
+    const workspace = JSON.parse(localStorage.getItem(key));
+    return workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId).length;
+  }, WORKSPACE_KEY);
+  await edgeOffering.getByRole("button", { name: "Add to solution", exact: true }).click();
+  await expect(edgeOffering.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
+  await expect(chooser.locator("[data-offering-chooser-status]")).toContainText(/1\s+added/i);
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+
+  const copied = await page.evaluate(([workspaceKey, itemId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    return {
+      activeCandidateCount: workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId).length,
+      matchingCopies: workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === itemId)
+    };
+  }, [WORKSPACE_KEY, "offering_chooser_emerging"]);
+  expect(copied.activeCandidateCount).toBe(beforeCount + 1);
+  expect(copied.matchingCopies).toHaveLength(1);
+
+  await chooser.locator("[data-close-modal]").first().click();
+  await addOffering.click();
+  const reopened = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await reopened.getByLabel("Search offerings", { exact: true }).fill("edge analytics");
+  const existingCopy = reopened.locator('[data-offering-choice][data-offering-id="offering_chooser_emerging"]');
+  await expect(existingCopy.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
+  await expect(existingCopy.getByRole("button", { name: "Add to solution", exact: true })).toHaveCount(0);
+  expect((await page.evaluate(([workspaceKey, itemId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    return workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === itemId).length;
+  }, [WORKSPACE_KEY, "offering_chooser_emerging"]))).toBe(1);
+});
+
+test("the offering chooser creates a reusable offering, returns it for selection, and stays light and phone-contained", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoFresh(page, "assess");
+  await seedOfferingChooserCatalog(page);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await page.getByRole("button", { name: "Add offering", exact: true }).click();
+  let chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await expect(chooser).toBeVisible();
+  await expect.poll(() => pageOverflow(page)).toBeLessThanOrEqual(1);
+  const chooserBounds = await chooser.evaluate(node => {
+    const box = node.getBoundingClientRect();
+    return { left: box.left, right: box.right, viewport: document.documentElement.clientWidth };
+  });
+  expect(chooserBounds.left).toBeGreaterThanOrEqual(0);
+  expect(chooserBounds.right).toBeLessThanOrEqual(chooserBounds.viewport + 1);
+  const touchTargetHeights = await chooser.getByRole("button", { name: /^(Add to solution|Added|Create new offering)$/ }).evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().height));
+  expect(touchTargetHeights.length).toBeGreaterThan(1);
+  for (const height of touchTargetHeights) expect(height).toBeGreaterThanOrEqual(44);
+
+  await chooser.getByRole("button", { name: "Create new offering", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Add solution offering" });
+  await expect(editor).toBeVisible();
+  await editor.getByLabel("Name", { exact: true }).fill("New operator planning service");
+  await editor.getByRole("combobox", { name: "Offering type", exact: true }).selectOption("Service");
+  await editor.getByLabel("Summary", { exact: true }).fill("Reusable planning support created directly from the active-solution chooser.");
+  await editor.getByRole("button", { name: "Add to Knowledge Base", exact: true }).click();
+
+  chooser = page.getByRole("dialog", { name: "Add offering to active solution" });
+  await expect(chooser).toBeVisible();
+  await chooser.getByLabel("Search offerings", { exact: true }).fill("operator planning service");
+  const newOffering = chooser.locator("[data-offering-choice]", { hasText: "New operator planning service" });
+  await expect(newOffering).toBeVisible();
+  await expect(newOffering.getByRole("button", { name: "Add to solution", exact: true })).toBeEnabled();
+
+  const beforeAdd = await page.evaluate(([workspaceKey, catalogKey, name]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    const catalog = JSON.parse(localStorage.getItem(catalogKey));
+    const item = catalog.items.find(record => record.name === name);
+    return {
+      item,
+      copyCount: workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === item?.id).length
+    };
+  }, [WORKSPACE_KEY, KNOWLEDGE_BASE_KEY, "New operator planning service"]);
+  expect(beforeAdd.item).toMatchObject({ offeringType: "Service", lifecycleStatus: "Current", revision: 1 });
+  expect(beforeAdd.copyCount).toBe(0);
+
+  await newOffering.getByRole("button", { name: "Add to solution", exact: true }).click();
+  await expect(newOffering.getByRole("button", { name: "Added", exact: true })).toBeDisabled();
+  await expect(page.locator("#save-state")).toHaveText("Saved locally");
+  const afterAdd = await page.evaluate(([workspaceKey, itemId]) => {
+    const workspace = JSON.parse(localStorage.getItem(workspaceKey));
+    return workspace.candidates.filter(candidate => candidate.solutionId === workspace.activeSolutionId && candidate.catalogSource?.itemId === itemId).length;
+  }, [WORKSPACE_KEY, beforeAdd.item.id]);
+  expect(afterAdd).toBe(1);
+  await expect.poll(() => pageOverflow(page)).toBeLessThanOrEqual(1);
 });
 
 test("Knowledge Base archive and restore are confirmed, persisted, and unavailable offerings stay out of active work", async ({ page }) => {

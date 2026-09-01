@@ -14,6 +14,7 @@ traceable solution, and produce a decision package.
 - [Open permitted local files](#open-local-files-for-ingestion)
 - [Use the readable work-area layout](#use-the-readable-work-area-layout)
 - [Build and reuse the Knowledge Base](#build-and-reuse-the-knowledge-base)
+- [Add a Knowledge Base offering from Technology Assessment](#add-a-knowledge-base-offering-from-technology-assessment)
 - [Archive, restore, or permanently delete an offering](#archive-restore-or-permanently-delete-an-offering)
 - [Import Knowledge Base offerings from Excel or CSV](#import-a-list-from-excel-or-csv)
 - [Work the iterative solution lifecycle](#work-the-solution-lifecycle)
@@ -352,8 +353,8 @@ record system.
 
 ## Build and reuse the Knowledge Base
 
-Open **Knowledge base** in the left navigation, or select **Browse Knowledge Base**
-from Assess. This is a separate browser-local catalog for reusable approved
+Open **Knowledge base** in the left navigation to manage the catalog, or select **Add
+offering** from Assess to choose from it. This is a separate browser-local catalog for reusable approved
 unclassified, non-CUI products, applications, software, services, platforms,
 integrated solutions, and other offerings. It is shared across solutions in this
 browser profile, but it is not a cloud library or an enterprise system of record.
@@ -468,7 +469,46 @@ copied into solutions remain point-in-time copies and do not refresh automatical
 Review each **Update available** notice and use **Refresh solution copy** explicitly
 when the changed reusable facts apply to that solution.
 
+### Add a Knowledge Base offering from Technology Assessment
+
+Use this path when you are building a solution and want to choose from the complete
+active catalog without leaving the assessment:
+
+1. Confirm the correct active solution in the left-side solution selector.
+2. Open **Assess → Technology Assessment** and select **Add offering**. The **Add
+   offering to active solution** chooser opens.
+3. Use **Search offerings** to narrow the list by offering name, provider, capability,
+   tag, version, type, or other displayed catalog details. The chooser shows every
+   active Knowledge Base offering, including the offerings previously imported from
+   Excel or CSV.
+4. Select **Add to solution** on each offering you want. The workbench creates and
+   selects a Technology Assessment candidate in the background while keeping the
+   chooser open so you can add more. An item already copied into this solution is
+   marked **Added** and cannot be duplicated.
+5. If the offering does not exist yet, select **Create new offering** in the chooser,
+   record its reusable catalog facts, and save it. The workbench returns to the
+   chooser with the new item available; select **Add to solution** to copy it into the
+   active solution. Saving the catalog item alone does not add it to a solution.
+6. Select **Done** or close the chooser to return to Technology Assessment and work
+   with the selected candidate.
+
+Use **Custom candidate** only for a one-off candidate that should belong to this
+solution without becoming a reusable Knowledge Base offering.
+
+Archived offerings are deliberately excluded from the chooser. Restore an offering
+from **Knowledge base → Archived offerings** before using it in another solution.
+The chooser prevents duplicate copies by marking a catalog item **Added** when its
+candidate is already in the active solution.
+
+Adding an offering uses the same copy-on-use rule as the Knowledge Base page. The new
+candidate belongs only to the active solution. Later catalog edits do not silently
+change its scores, rationale, evidence, status, trades, or decisions; review and apply
+an available catalog refresh deliberately.
+
 ### Copy an offering into a solution
+
+You can also start from **Knowledge base** when you want to inspect or maintain the
+catalog before using an item:
 
 1. Confirm the correct active solution in the left-side selector.
 2. Search or filter the Knowledge Base by offering type, availability, or company
@@ -584,6 +624,13 @@ sustainment consequences. The default weighted criteria cover mission fit,
 performance, maturity, integration, cybersecurity and authorization, system safety,
 MOSA and openness, data rights, supply chain, affordability, schedule, and
 sustainment.
+
+Select **Add offering** to open the searchable list of all active Knowledge Base
+items. Use **Add to solution** for every reusable option you want to assess, or
+**Create new offering** to add a missing reusable item to the catalog before selecting
+it. Use **Custom candidate** for a one-off, solution-only option. See [Add a Knowledge
+Base offering from Technology Assessment](#add-a-knowledge-base-offering-from-technology-assessment)
+for the complete workflow.
 
 Enter a 0–5 score only when it has defensible rationale and evidence confidence. Link
 supporting evidence. Use optional TRL, MRL, and IRL values only when the team has an
@@ -922,6 +969,10 @@ reviews and acknowledges an AI payload that contains it.
   again. No row is applied when any row fails. Confirm that dates use `YYYY-MM-DD`,
   lists use semicolons or line breaks, and an update has the exact Catalog ID,
   current Expected Revision, and a Change Summary.
+- **An imported offering does not appear under Assess → Add offering:** clear the
+  **Search offerings** value and confirm the item is active. The chooser includes
+  Current, Emerging, and Legacy items but deliberately excludes Archived offerings.
+  Restore an archived item from the Knowledge Base before selecting it.
 - **A Knowledge Base JSON restore was rejected:** correct the first validation error
   or use the last exported catalog JSON. A rejected restore leaves the current
   catalog in place; JSON restore replaces rather than merges after validation.

@@ -28,7 +28,7 @@ import {
   restoreSnapshot,
   buildAiPayload,
   validateAiResponse
-} from "./engine.js?v=13";
+} from "./engine.js?v=14";
 import {
   CAPTURE_TARGETS,
   captureStorageKey,
@@ -37,23 +37,23 @@ import {
   createCaptureProvenance,
   materializeCaptureItems,
   validateCaptureInbox
-} from "./capture.js?v=13";
+} from "./capture.js?v=14";
 import {
   MAX_SOURCE_FILE_BYTES,
   SOURCE_FILE_ACCEPT,
   extractLocalSource
-} from "./ingestion.js?v=13";
-import { buildDecisionPackagePdf } from "./export-pdf.js?v=13";
+} from "./ingestion.js?v=14";
+import { buildDecisionPackagePdf } from "./export-pdf.js?v=14";
 import {
   DOCX_MIME_TYPE,
   buildDecisionPackageDocx,
   decisionPackageDocxFilename
-} from "./export-docx.js?v=13";
+} from "./export-docx.js?v=14";
 import {
   DECISION_WORKBOOK_MIME,
   decisionWorkbookFilename,
   writeDecisionWorkbook
-} from "./export-xlsx.js?v=13";
+} from "./export-xlsx.js?v=14";
 import {
   KNOWLEDGE_BASE_STORAGE_KEY,
   KNOWLEDGE_LIFECYCLE_STATUSES,
@@ -68,7 +68,7 @@ import {
   refreshCandidateFromKnowledge,
   updateKnowledgeItem,
   validateKnowledgeBase
-} from "./knowledge-base.js?v=13";
+} from "./knowledge-base.js?v=14";
 import {
   KNOWLEDGE_IMPORT_COLUMNS,
   KNOWLEDGE_IMPORT_FILE_ACCEPT,
@@ -77,7 +77,7 @@ import {
   normalizeKnowledgeImportRows,
   parseKnowledgeCsv,
   parseKnowledgeWorkbook
-} from "./knowledge-import.js?v=13";
+} from "./knowledge-import.js?v=14";
 
 const ROUTES = new Set(["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]);
 const DECISION_EXPORT_ACTIONS = new Set(["export-markdown", "export-html", "export-docx", "export-xlsx", "export-pdf"]);
@@ -421,7 +421,8 @@ function openModal(title, body, { wide = false, transient = "" } = {}) {
   clearTransientModalSessions({ preserve: transient });
   if (!root.querySelector(".modal")) modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   root.innerHTML = `<div class="modal-backdrop" data-modal-backdrop><section class="modal ${wide ? "wide" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-title"><header><h2 id="modal-title">${h(title)}</h2><button class="icon-button" type="button" data-close-modal aria-label="Close dialog">×</button></header><div class="modal-body">${body}</div></section></div>`;
-  const initialFocus = root.querySelector("[autofocus], input:not([type='hidden']), textarea, select, button:not([data-close-modal])")
+  const initialFocus = root.querySelector("[autofocus]")
+    || root.querySelector("input:not([type='hidden']), textarea, select, button:not([data-close-modal])")
     || root.querySelector("[data-close-modal]");
   initialFocus?.focus();
 }
@@ -773,7 +774,7 @@ function renderAssess(solution) {
   const selected = candidates.find(item => item.id === selectedCandidateId);
   const catalogNotice = selected ? catalogCandidateNotice(selected) : "";
   const results = candidates.map(item => ({ candidate: item, result: assessmentResult(workspace, solution.id, item.id) })).sort((a, b) => (b.result.score ?? -1) - (a.result.score ?? -1));
-  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><div><button class="button secondary" type="button" data-route-button="knowledge-base">Browse Knowledge Base</button><button class="button primary" type="button" data-add="candidates">＋ Candidate</button></div></div>
+  return `${renderStageRail("Assess")}<div class="section-toolbar"><div><p class="section-kicker">Technology Assessment</p><h3>Compare complete solution candidates</h3><p>Unknown remains unknown. Scores without rationale or evidence create visible obligations.</p></div><div><button class="button secondary" type="button" data-add="candidates">Custom candidate</button><button class="button primary" type="button" data-offering-chooser-open>Add offering</button></div></div>
   <section class="readiness-key" aria-labelledby="readiness-key-title"><div class="readiness-key-heading"><p class="section-kicker">Key</p><h4 id="readiness-key-title">Readiness levels</h4><p>Use these optional fields only when the team has a defensible, dated basis. Leave them blank when readiness is unknown.</p></div><dl><div><dt>TRL</dt><dd><strong>Technology Readiness Level</strong><span>Technology maturity for its intended use · 1–9</span></dd></div><div><dt>MRL</dt><dd><strong>Manufacturing Readiness Level</strong><span>Manufacturing and production maturity · 1–10</span></dd></div><div><dt>IRL</dt><dd><strong>Integration Readiness Level</strong><span>Integration maturity between specified components · 0–9</span></dd></div></dl></section>
   <div class="assessment-layout"><section class="panel candidate-rank"><div class="panel-head"><div><h3>Provisional candidate comparison</h3><p>Order reflects entered scores only. Coverage and evidence support determine how much confidence to place in it.</p></div></div>${results.length ? results.map(({ candidate, result }, index) => { const unsupported = result.rows.filter(row => row.value !== null && (!row.rationale?.trim() || !row.evidenceIds?.length)).length; return `<button class="candidate-row ${candidate.id === selectedCandidateId ? "active" : ""}" type="button" data-candidate="${h(candidate.id)}" aria-pressed="${candidate.id === selectedCandidateId}"><span class="rank">${index + 1}</span><span><strong>${h(candidate.name)}</strong><small>${h(candidate.category)} · TRL ${h(candidate.trl ?? "—")} · summary IRL ${h(candidate.irl ?? "—")}</small></span><span class="score">${result.score === null ? "—" : result.score.toFixed(2)}<small>${Math.round(result.coverage * 100)}% assessed · ${Math.round(result.evidenceCoverage * 100)}% evidenced · ${unsupported} unsupported</small></span></button>`; }).join("") : emptyState("No candidates", "Add hardware, software, tools, vendors, platforms, or integrated mission-package alternatives.")}</section>
   <section class="panel assessment-detail">${selected ? `<div class="panel-head"><div><p class="section-kicker">Selected candidate</p><h3>${h(selected.name)}</h3><p>${h(selected.description || "No candidate description recorded.")}</p></div><button class="icon-button" type="button" data-delete="candidates" data-id="${h(selected.id)}" aria-label="Delete candidate">×</button></div>${catalogNotice}<div class="candidate-meta"><label><span>Name</span><input value="${h(selected.name)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="name"></label><label><span>Category</span><input value="${h(selected.category)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="category"></label><label><span>Status</span><select data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="status">${["Considering", "Shortlist", "Preferred", "Rejected", "Retired"].map(value => option(value, value, selected.status)).join("")}</select></label><label><span>Vendor / source</span><input value="${h(selected.vendor)}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="vendor"></label><label class="candidate-description"><span>Description</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="description">${h(selected.description)}</textarea></label><label class="candidate-readiness-basis"><span>Readiness basis / scope</span><textarea rows="3" maxlength="3000" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessBasis">${h(selected.readinessBasis || "")}</textarea></label><label><span>Readiness as-of date</span><input type="date" value="${h(selected.readinessAsOf || "")}" data-record-collection="candidates" data-record-id="${h(selected.id)}" data-record-field="readinessAsOf"></label><label><span title="Technology Readiness Level">TRL</span><input type="number" min="1" max="9" value="${h(selected.trl ?? "")}" aria-label="Technology Readiness Level (TRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="trl"></label><label><span title="Manufacturing Readiness Level">MRL</span><input type="number" min="1" max="10" value="${h(selected.mrl ?? "")}" aria-label="Manufacturing Readiness Level (MRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="mrl"></label><label><span title="Integration Readiness Level">Summary / limiting IRL</span><input type="number" min="0" max="9" value="${h(selected.irl ?? "")}" aria-label="Summary or limiting Integration Readiness Level (IRL)" aria-describedby="readiness-key-title" data-record-number="candidates" data-record-id="${h(selected.id)}" data-record-field="irl"></label></div>
@@ -1069,12 +1070,111 @@ function applyKnowledgeFilters() {
   if (empty) empty.hidden = visible > 0;
 }
 
-function showKnowledgeEditor(itemId = "") {
+function offeringChooserSearchText(item) {
+  return [
+    item.name,
+    item.offeringType,
+    item.provider,
+    item.version,
+    item.lifecycleStatus,
+    item.summary,
+    ...(item.capabilities || []),
+    ...(item.tags || []),
+    ...(item.missionSegments || [])
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function offeringChoice(item, existingCandidate) {
+  const provider = [item.provider, item.version].filter(Boolean).join(" · ") || "Provider and version not recorded";
+  const capabilities = (item.capabilities || []).slice(0, 4);
+  const segments = (item.missionSegments || []).slice(0, 3);
+  return `<article class="offering-choice" data-offering-choice data-offering-id="${h(item.id)}" data-offering-search="${h(offeringChooserSearchText(item))}">
+    <div class="offering-choice-copy">
+      <div class="offering-choice-badges"><span class="knowledge-type">${h(item.offeringType)}</span><span class="knowledge-status status-${h(item.lifecycleStatus.toLowerCase())}">${h(knowledgeLifecycleLabel(item.lifecycleStatus))}</span></div>
+      <h3>${h(item.name)}</h3>
+      <p class="offering-choice-provider">${h(provider)}</p>
+      <p class="offering-choice-summary">${h(item.summary || "Summary not recorded.")}</p>
+      ${capabilities.length ? `<div class="offering-choice-tags" aria-label="Capabilities">${capabilities.map(value => `<span>${h(value)}</span>`).join("")}</div>` : ""}
+      ${segments.length ? `<p class="offering-choice-segments"><strong>Mission fit:</strong> ${h(segments.join(" · "))}</p>` : ""}
+    </div>
+    <div class="offering-choice-action">${existingCandidate
+      ? `<button class="button secondary" type="button" disabled>Added</button>`
+      : `<button class="button primary" type="button" data-offering-add="${h(item.id)}">Add to solution</button>`}
+    </div>
+  </article>`;
+}
+
+function offeringChooserCounts() {
+  const activeItems = knowledgeBase.items.filter(item => item.lifecycleStatus !== "Retired");
+  const copiedIds = new Set(scoped(workspace, "candidates").map(candidate => candidate.catalogSource?.itemId).filter(Boolean));
+  return { activeItems, copiedIds, added: activeItems.filter(item => copiedIds.has(item.id)).length };
+}
+
+function offeringChooserStatus(visible, total, added) {
+  return `${visible} of ${total} active offering${total === 1 ? "" : "s"} shown · ${added} added to this solution`;
+}
+
+function showOfferingChooser({ search = "" } = {}) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
+  const solution = activeSolution();
+  const { activeItems, added } = offeringChooserCounts();
+  const sortedItems = [...activeItems].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const normalizedSearch = String(search || "").trim().toLowerCase();
+  const visible = normalizedSearch ? sortedItems.filter(item => offeringChooserSearchText(item).includes(normalizedSearch)).length : sortedItems.length;
+  const choices = sortedItems.map(item => offeringChoice(item, scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id))).join("");
+  openModal("Add offering to active solution", `<div class="offering-chooser"><div class="offering-chooser-intro"><div><p class="modal-intro">Choose reusable offerings for <strong>${h(solution.name)}</strong>. Add as many as you need; each becomes an independent Technology Assessment candidate.</p><p class="offering-chooser-boundary">Showing active Current, Emerging, and Legacy offerings. Archived offerings are excluded.</p></div><button class="button secondary" type="button" data-offering-create>Create new offering</button></div>
+    <label class="offering-chooser-search"><span>Search offerings</span><input type="search" value="${h(search)}" placeholder="Name, provider, capability, type, tag, or mission segment" data-offering-chooser-search aria-controls="offering-chooser-list" autofocus></label>
+    <div class="offering-chooser-meta"><strong data-offering-chooser-status role="status" aria-live="polite" aria-atomic="true">${h(offeringChooserStatus(visible, sortedItems.length, added))}</strong><button class="text-button" type="button" data-offering-chooser-clear ${search ? "" : "hidden"}>Clear search</button></div>
+    <div class="offering-chooser-list" id="offering-chooser-list">${choices}</div>
+    <div class="offering-chooser-empty" data-offering-chooser-empty ${visible ? "hidden" : ""}>${emptyState(sortedItems.length ? "No offerings match" : "No active offerings yet", sortedItems.length ? "Try another search or clear the search field." : "Create a reusable offering here, or import a Knowledge Base list.")}</div>
+    <div class="modal-actions offering-chooser-actions"><button class="button secondary" type="button" data-offering-manage>Manage Knowledge Base</button><button class="button primary" type="button" data-close-modal>Done</button></div></div>`, { wide: true });
+  applyOfferingChooserSearch();
+}
+
+function applyOfferingChooserSearch() {
+  const input = document.querySelector("[data-offering-chooser-search]");
+  if (!input) return;
+  const query = input.value.trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll("[data-offering-choice]").forEach(choice => {
+    const matches = !query || choice.dataset.offeringSearch.includes(query);
+    choice.hidden = !matches;
+    if (matches) visible += 1;
+  });
+  const { activeItems, added } = offeringChooserCounts();
+  const status = document.querySelector("[data-offering-chooser-status]");
+  if (status) status.textContent = offeringChooserStatus(visible, activeItems.length, added);
+  const empty = document.querySelector("[data-offering-chooser-empty]");
+  if (empty) empty.hidden = visible > 0;
+  const clear = document.querySelector("[data-offering-chooser-clear]");
+  if (clear) clear.hidden = !query;
+}
+
+function addOfferingFromChooser(itemId) {
+  if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before using Knowledge Base items.", "error"); return; }
+  const item = knowledgeBase.items.find(record => record.id === itemId);
+  if (!item || item.lifecycleStatus === "Retired") return;
+  const existing = scoped(workspace, "candidates").find(candidate => candidate.catalogSource?.itemId === item.id);
+  if (existing) {
+    selectedCandidateId = existing.id;
+    applyOfferingChooserSearch();
+    return;
+  }
+  const created = materializeKnowledgeItem(item, workspace.activeSolutionId);
+  const search = document.querySelector("[data-offering-chooser-search]")?.value || "";
+  if (commit(next => next.candidates.push(created), { renderAfter: false, snapshot: `Before using Knowledge Base item ${item.name}` })) {
+    selectedCandidateId = created.id;
+    showOfferingChooser({ search });
+    toast(`${item.name} was added to ${activeSolution().name}.`, "ok");
+  }
+}
+
+function showKnowledgeEditor(itemId = "", { returnToOfferingChooser = false } = {}) {
   if (knowledgeBaseLoadError) { toast("Import a valid catalog backup before editing the Knowledge Base.", "error"); return; }
   const existing = knowledgeBase.items.find(item => item.id === itemId);
   const item = existing || createKnowledgeItem({ name: "" });
   if (!existing) item.name = "";
-  openModal(existing ? "Update solution offering" : "Add solution offering", `<form id="knowledge-item-form" data-knowledge-id="${h(existing?.id || "")}"><p class="modal-intro">Catalog facts are reusable reference material. Saving an update creates revision ${h(existing ? existing.revision + 1 : 1)}; existing solution copies remain unchanged until explicitly refreshed.</p><div class="knowledge-editor-grid"><label class="span-2"><span>Name</span><input name="name" value="${h(item.name)}" required maxlength="280" autofocus></label><label><span>Offering type</span><select name="offeringType">${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, item.offeringType)).join("")}</select></label><label><span>Lifecycle status</span><select name="lifecycleStatus">${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, knowledgeLifecycleLabel(value), item.lifecycleStatus)).join("")}</select></label><label><span>Provider / owner</span><input name="provider" value="${h(item.provider)}" maxlength="300"></label><label><span>Version / release</span><input name="version" value="${h(item.version)}" maxlength="160"></label><label class="span-2"><span>Summary</span><textarea name="summary" rows="4" maxlength="5000" data-auto-grow>${h(item.summary)}</textarea></label><fieldset class="knowledge-segment-picker span-2"><legend>Applicable company mission segments</legend><div>${MISSION_SEGMENTS.map(record => `<label><input type="checkbox" name="missionSegments" value="${h(record.name)}" ${item.missionSegments.includes(record.name) ? "checked" : ""}><span>${h(record.name)}</span></label>`).join("")}</div></fieldset><label class="span-2"><span>Capabilities — one per line</span><textarea name="capabilities" rows="4" maxlength="12000" data-auto-grow>${h(item.capabilities.join("\n"))}</textarea></label><label class="span-2"><span>Tags — comma separated</span><input name="tags" value="${h(item.tags.join(", "))}" maxlength="6000"></label><label><span>Last reviewed</span><input type="date" name="reviewedAt" value="${h(item.reviewedAt)}"></label><label><span>Change summary</span><input name="changeSummary" value="${h(item.changeSummary)}" maxlength="3000" placeholder="What changed in this revision?"></label></div><details class="knowledge-more" open><summary>Architecture, readiness, and source details</summary><div class="knowledge-editor-grid"><label class="span-2"><span>Deployment and environment</span><textarea name="deploymentAndEnvironment" rows="3" maxlength="5000" data-auto-grow>${h(item.deploymentAndEnvironment)}</textarea></label><label class="span-2"><span>Interfaces</span><textarea name="interfaces" rows="3" maxlength="5000" data-auto-grow>${h(item.interfaces)}</textarea></label><label class="span-2"><span>Integration considerations</span><textarea name="integrationConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.integrationConsiderations)}</textarea></label><label class="span-2"><span>Cyber and safety considerations</span><textarea name="cyberSafetyConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.cyberSafetyConsiderations)}</textarea></label><label class="span-2"><span>MOSA and data rights</span><textarea name="mosaDataRights" rows="3" maxlength="5000" data-auto-grow>${h(item.mosaDataRights)}</textarea></label><label><span>TRL</span><input type="number" name="trl" min="1" max="9" value="${h(item.trl ?? "")}"></label><label><span>MRL</span><input type="number" name="mrl" min="1" max="10" value="${h(item.mrl ?? "")}"></label><label><span>IRL</span><input type="number" name="irl" min="0" max="9" value="${h(item.irl ?? "")}"></label><label><span>Readiness as-of</span><input type="date" name="readinessAsOf" value="${h(item.readinessAsOf)}"></label><label class="span-2"><span>Readiness basis</span><textarea name="readinessBasis" rows="3" maxlength="5000" data-auto-grow>${h(item.readinessBasis)}</textarea></label><label><span>Source title</span><input name="sourceTitle" value="${h(item.sourceTitle)}" maxlength="500"></label><label><span>Source URL</span><input type="url" name="sourceUrl" value="${h(item.sourceUrl)}" maxlength="2000" placeholder="https://"></label><label class="span-2"><span>Source notes</span><textarea name="sourceNotes" rows="3" maxlength="5000" data-auto-grow>${h(item.sourceNotes)}</textarea></label></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">${existing ? "Save new revision" : "Add to Knowledge Base"}</button></div></form>`, { wide: true });
+  openModal(existing ? "Update solution offering" : "Add solution offering", `<form id="knowledge-item-form" data-knowledge-id="${h(existing?.id || "")}" data-return-to-offering-chooser="${returnToOfferingChooser}"><p class="modal-intro">Catalog facts are reusable reference material. Saving an update creates revision ${h(existing ? existing.revision + 1 : 1)}; existing solution copies remain unchanged until explicitly refreshed.</p><div class="knowledge-editor-grid"><label class="span-2"><span>Name</span><input name="name" value="${h(item.name)}" required maxlength="280" autofocus></label><label><span>Offering type</span><select name="offeringType">${KNOWLEDGE_OFFERING_TYPES.map(value => option(value, value, item.offeringType)).join("")}</select></label><label><span>Lifecycle status</span><select name="lifecycleStatus">${KNOWLEDGE_LIFECYCLE_STATUSES.map(value => option(value, knowledgeLifecycleLabel(value), item.lifecycleStatus)).join("")}</select></label><label><span>Provider / owner</span><input name="provider" value="${h(item.provider)}" maxlength="300"></label><label><span>Version / release</span><input name="version" value="${h(item.version)}" maxlength="160"></label><label class="span-2"><span>Summary</span><textarea name="summary" rows="4" maxlength="5000" data-auto-grow>${h(item.summary)}</textarea></label><fieldset class="knowledge-segment-picker span-2"><legend>Applicable company mission segments</legend><div>${MISSION_SEGMENTS.map(record => `<label><input type="checkbox" name="missionSegments" value="${h(record.name)}" ${item.missionSegments.includes(record.name) ? "checked" : ""}><span>${h(record.name)}</span></label>`).join("")}</div></fieldset><label class="span-2"><span>Capabilities — one per line</span><textarea name="capabilities" rows="4" maxlength="12000" data-auto-grow>${h(item.capabilities.join("\n"))}</textarea></label><label class="span-2"><span>Tags — comma separated</span><input name="tags" value="${h(item.tags.join(", "))}" maxlength="6000"></label><label><span>Last reviewed</span><input type="date" name="reviewedAt" value="${h(item.reviewedAt)}"></label><label><span>Change summary</span><input name="changeSummary" value="${h(item.changeSummary)}" maxlength="3000" placeholder="What changed in this revision?"></label></div><details class="knowledge-more" open><summary>Architecture, readiness, and source details</summary><div class="knowledge-editor-grid"><label class="span-2"><span>Deployment and environment</span><textarea name="deploymentAndEnvironment" rows="3" maxlength="5000" data-auto-grow>${h(item.deploymentAndEnvironment)}</textarea></label><label class="span-2"><span>Interfaces</span><textarea name="interfaces" rows="3" maxlength="5000" data-auto-grow>${h(item.interfaces)}</textarea></label><label class="span-2"><span>Integration considerations</span><textarea name="integrationConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.integrationConsiderations)}</textarea></label><label class="span-2"><span>Cyber and safety considerations</span><textarea name="cyberSafetyConsiderations" rows="3" maxlength="5000" data-auto-grow>${h(item.cyberSafetyConsiderations)}</textarea></label><label class="span-2"><span>MOSA and data rights</span><textarea name="mosaDataRights" rows="3" maxlength="5000" data-auto-grow>${h(item.mosaDataRights)}</textarea></label><label><span>TRL</span><input type="number" name="trl" min="1" max="9" value="${h(item.trl ?? "")}"></label><label><span>MRL</span><input type="number" name="mrl" min="1" max="10" value="${h(item.mrl ?? "")}"></label><label><span>IRL</span><input type="number" name="irl" min="0" max="9" value="${h(item.irl ?? "")}"></label><label><span>Readiness as-of</span><input type="date" name="readinessAsOf" value="${h(item.readinessAsOf)}"></label><label class="span-2"><span>Readiness basis</span><textarea name="readinessBasis" rows="3" maxlength="5000" data-auto-grow>${h(item.readinessBasis)}</textarea></label><label><span>Source title</span><input name="sourceTitle" value="${h(item.sourceTitle)}" maxlength="500"></label><label><span>Source URL</span><input type="url" name="sourceUrl" value="${h(item.sourceUrl)}" maxlength="2000" placeholder="https://"></label><label class="span-2"><span>Source notes</span><textarea name="sourceNotes" rows="3" maxlength="5000" data-auto-grow>${h(item.sourceNotes)}</textarea></label></div></details><div class="modal-actions"><button class="button secondary" type="button" data-close-modal>Cancel</button><button class="button primary" type="submit">${existing ? "Save new revision" : "Add to Knowledge Base"}</button></div></form>`, { wide: true });
   const lifecycleSelect = document.querySelector('#knowledge-item-form [name="lifecycleStatus"]');
   if (lifecycleSelect) {
     const archivedOption = lifecycleSelect.querySelector('option[value="Retired"]');
@@ -2115,6 +2215,16 @@ document.addEventListener("click", event => {
   if (action === "use-system-theme") { setThemePreference("system"); closeModal(); }
   if (action === "ingest-hot-buttons") showHotButtonIngest();
   if (action === "add-aoa") addAnalysisOfAlternatives();
+  if (event.target.closest("[data-offering-chooser-open]")) { showOfferingChooser(); return; }
+  if (event.target.closest("[data-offering-create]")) { showKnowledgeEditor("", { returnToOfferingChooser: true }); return; }
+  const offeringAdd = event.target.closest("[data-offering-add]")?.dataset.offeringAdd;
+  if (offeringAdd) { addOfferingFromChooser(offeringAdd); return; }
+  if (event.target.closest("[data-offering-chooser-clear]")) {
+    const input = document.querySelector("[data-offering-chooser-search]");
+    if (input) { input.value = ""; applyOfferingChooserSearch(); input.focus(); }
+    return;
+  }
+  if (event.target.closest("[data-offering-manage]")) { closeModal(); location.hash = "knowledge-base"; return; }
   if (event.target.closest("[data-knowledge-add]")) showKnowledgeEditor();
   const knowledgeEdit = event.target.closest("[data-knowledge-edit]")?.dataset.knowledgeEdit; if (knowledgeEdit) showKnowledgeEditor(knowledgeEdit);
   const knowledgeUse = event.target.closest("[data-knowledge-use]")?.dataset.knowledgeUse; if (knowledgeUse) useKnowledgeItem(knowledgeUse);
@@ -2262,8 +2372,12 @@ document.addEventListener("submit", event => {
         next.savedAt = new Date().toISOString();
       }
       if (!persistKnowledgeBase(next)) return;
-      closeModal();
-      render();
+      const returnToOfferingChooser = form.dataset.returnToOfferingChooser === "true" && !itemId;
+      if (returnToOfferingChooser) showOfferingChooser();
+      else {
+        closeModal();
+        render();
+      }
       toast(itemId ? "Knowledge Base revision saved. Existing solution copies were not changed." : "Solution offering added to the Knowledge Base.", "ok");
     } catch (error) {
       toast(`Knowledge Base item was not saved: ${error.message}`, "error");
@@ -2342,6 +2456,7 @@ document.addEventListener("input", event => {
     if (button) button.disabled = node.value !== form.dataset.knowledgeName;
     return;
   }
+  if (node.matches("[data-offering-chooser-search]")) { applyOfferingChooserSearch(); return; }
   if (node.matches('[data-knowledge-filter="search"]')) { knowledgeFilters.search = node.value; applyKnowledgeFilters(); return; }
   if (node.matches("[data-meeting-field]") && meetingSession) {
     const meetingField = node.dataset.meetingField;
@@ -2541,7 +2656,7 @@ if (typeof systemTheme.addEventListener === "function") systemTheme.addEventList
 else systemTheme.addListener?.(handleSystemThemeChange);
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  navigator.serviceWorker.register("./sw.js?v=13", { scope: "./", updateViaCache: "none" })
+  navigator.serviceWorker.register("./sw.js?v=14", { scope: "./", updateViaCache: "none" })
     .then(registration => registration.update())
     .catch(error => console.warn("Offline shell registration failed.", error));
 }

@@ -342,6 +342,29 @@ button:disabled { opacity: .48; cursor: not-allowed; }
 .knowledge-card.is-archived .knowledge-card-actions .button.danger { grid-column: 1 / -1; }
 .knowledge-card-actions .icon-button { margin-left: auto; color: var(--muted); }
 .knowledge-empty { margin-top: 18px; }
+.offering-chooser { min-width: 0; }
+.offering-chooser-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 18px; }
+.offering-chooser-intro .modal-intro { margin-bottom: 5px; font-size: 16px; line-height: 1.55; }
+.offering-chooser-boundary { margin: 0; color: var(--quiet); font-size: 13px; line-height: 1.5; }
+.offering-chooser-search { display: grid; gap: 7px; margin-top: 20px; }
+.offering-chooser-search > span { color: var(--muted); font-size: 14px; font-weight: 750; }
+.offering-chooser-search input { min-width: 0; }
+.offering-chooser-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+.offering-chooser-meta strong { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.offering-chooser-list { display: grid; gap: 11px; }
+.offering-choice { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 160px; align-items: center; gap: 20px; padding: 17px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--elevated); }
+.offering-choice-copy { min-width: 0; }
+.offering-choice-badges, .offering-choice-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.offering-choice h3 { margin: 10px 0 0; font-size: 18px; line-height: 1.3; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.offering-choice-provider { margin: 5px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.offering-choice-summary { margin: 9px 0 0; color: var(--ink); font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.offering-choice-tags { margin-top: 10px; }
+.offering-choice-tags span { padding: 4px 7px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+.offering-choice-segments { margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.offering-choice-action, .offering-choice-action .button { width: 100%; }
+.offering-choice-action .button:disabled { color: var(--muted); border-color: color-mix(in srgb, var(--cyan) 36%, var(--line)); background: var(--cyan-dim); opacity: 1; cursor: default; }
+.offering-chooser-empty { margin-top: 6px; border: 1px dashed var(--line-strong); border-radius: 12px; }
+.offering-chooser-actions { position: sticky; bottom: -24px; margin: 18px -24px -24px; padding: 14px 24px; border-top: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 94%, transparent); backdrop-filter: blur(10px); }
 .knowledge-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 18px; }
 .knowledge-editor-grid label { display: grid; align-content: start; gap: 7px; min-width: 0; }
 .knowledge-editor-grid label > span { color: var(--muted); font-size: 14px; font-weight: 750; }
@@ -884,6 +907,11 @@ tbody tr:last-child td { border-bottom: 0; }
   .knowledge-card-actions, .knowledge-card.is-archived .knowledge-card-actions { display: grid; grid-template-columns: 1fr; }
   .knowledge-card.is-archived .knowledge-card-actions .button.danger { grid-column: auto; }
   .knowledge-card-actions .button, .knowledge-card-actions .icon-button { width: 100%; margin-left: 0; }
+  .offering-chooser-intro, .offering-choice { grid-template-columns: 1fr; }
+  .offering-chooser-intro .button, .offering-choice-action .button { width: 100%; }
+  .offering-chooser-meta { align-items: flex-start; flex-direction: column; }
+  .offering-choice { gap: 14px; padding: 16px; }
+  .offering-chooser-actions { bottom: -17px; margin: 18px -14px -17px; padding: 12px 14px; }
   .knowledge-editor-grid .span-2 { grid-column: auto; }
   .knowledge-template-options, .knowledge-backup-options, .knowledge-rule-grid, .knowledge-import-mode { grid-template-columns: 1fr; }
   .knowledge-import-summary { align-items: stretch; flex-direction: column; }

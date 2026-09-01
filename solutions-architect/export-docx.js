@@ -9,7 +9,7 @@ import {
   safeHttpUrl,
   scoped,
   validateWorkspace
-} from "./engine.js?v=13";
+} from "./engine.js?v=14";
 
 export const DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
