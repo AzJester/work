@@ -27,10 +27,14 @@ test("the review site publishes at its own route without replacing the earlier A
 
 test("the hero recreates the reference motion treatment and copy", () => {
   assert.match(page, /<section id="top" class="hero">/);
-  assert.match(page, /<img class="hero-scene" src="assets\/hero-coastal-defense-v2\.webp"/);
+  assert.match(page, /<video id="hero-video" class="hero-motion is-active" poster="assets\/hero-coastal-defense-v2\.webp" autoplay muted playsinline/);
+  assert.equal((page.match(/<source src="assets\/hero-video\.mp4" type="video\/mp4">/g) || []).length, 2);
+  assert.match(page, /<img class="hero-rock-island" src="assets\/hero-rock-island-overlay-v4\.webp"/);
+  assert.match(page, /class="hero-beacon"/);
   assert.match(page, /<h1 class="display">Missions are won<br>at the seams\.<\/h1>/);
   assert.match(page, /Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge/);
-  assert.match(page, /@keyframes hero-breathe/);
+  assert.match(page, /@keyframes beacon-pulse/);
+  assert.match(page, /function transitionHeroVideo\(\)/);
   assert.match(page, /\.hero-in \{[^}]*justify-content: flex-end/);
 });
 

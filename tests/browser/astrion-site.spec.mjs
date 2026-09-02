@@ -17,7 +17,10 @@ test("the reference-style page loads cleanly with local fonts, imagery, and moti
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle("Astrion · Missions are won at the seams");
   expect((await page.locator("h1").innerText()).replace(/\s+/g, " ").trim()).toBe("MISSIONS ARE WON AT THE SEAMS.");
-  await expect(page.locator(".hero-scene")).toHaveAttribute("src", "assets/hero-coastal-defense-v2.webp");
+  await expect(page.locator(".hero-motion")).toHaveCount(2);
+  await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-video.mp4");
+  await expect(page.locator(".hero-rock-island")).toHaveAttribute("src", "assets/hero-rock-island-overlay-v4.webp");
+  await expect(page.locator(".hero-beacon")).toBeAttached();
   await expect(page.locator(".mission-tab")).toHaveCount(6);
   await expect(page.locator(".system-art")).toHaveCount(4);
   await expect(page.locator(".orchestration-art")).toHaveAttribute("src", "assets/mission-orchestration-v2.webp");
@@ -122,7 +125,22 @@ test("the header solidifies on scroll and reduced motion keeps content visible",
   await expect(header).toHaveClass(/\bscrolled\b/);
   expect(await page.evaluate(() => [...document.querySelectorAll(".reveal")].filter(element => getComputedStyle(element).opacity !== "1").length)).toBe(0);
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
-  await expect(page.locator(".hero-scene")).toHaveCSS("animation-name", "none");
+  expect(await page.locator(".hero-motion").evaluateAll(videos => videos.every(video => video.paused))).toBe(true);
+});
+
+test("the hero crossfades between moving layers without a visible reset", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto(route(baseURL), { waitUntil: "load" });
+  const primary = page.locator("#hero-video");
+  const buffer = page.locator("#hero-video-buffer");
+  await expect(primary).toHaveClass(/\bis-active\b/);
+  await primary.dispatchEvent("ended");
+  await expect(buffer).toHaveClass(/\bis-entering\b/);
+  await expect(buffer).toHaveClass(/\bis-active\b/, { timeout: 2500 });
+  await expect(primary).not.toHaveClass(/\bis-active\b/);
+  await expect(page.locator(".hero-beacon")).toHaveCSS("animation-name", "none");
+  expect(await page.locator(".hero-beacon").evaluate(element => getComputedStyle(element, "::before").animationName)).toBe("beacon-pulse");
 });
 
 test("orchestration labels sit below the unobstructed image", async ({ page, baseURL }) => {
