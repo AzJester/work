@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -25,16 +25,13 @@ test("the review site publishes at its own route without replacing the earlier A
   assert.match(landing, /<link rel="canonical" href="https:\/\/azjester\.github\.io\/work\/astrion\/">/);
 });
 
-test("the hero recreates the reference motion treatment and copy", () => {
+test("the hero uses one coherent, lightweight looping scene", () => {
   assert.match(page, /<section id="top" class="hero">/);
-  assert.match(page, /<video id="hero-video" class="hero-motion is-active" poster="assets\/hero-coastal-defense-v2\.webp" autoplay muted playsinline/);
-  assert.equal((page.match(/<source src="assets\/hero-video\.mp4" type="video\/mp4">/g) || []).length, 2);
-  assert.match(page, /<img class="hero-rock-island" src="assets\/hero-rock-island-overlay-v4\.webp"/);
-  assert.match(page, /class="hero-beacon"/);
+  assert.match(page, /<video id="hero-video" class="hero-motion" poster="assets\/hero-poster\.webp" autoplay muted loop playsinline preload="none"/);
+  assert.equal((page.match(/<source data-src="assets\/hero-loop\.mp4" type="video\/mp4">/g) || []).length, 1);
+  assert.doesNotMatch(page, /hero-video-buffer|hero-rock-island|hero-beacon|beacon-pulse|transitionHeroVideo/);
   assert.match(page, /<h1 class="display">Missions are won<br>at the seams\.<\/h1>/);
   assert.match(page, /Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge/);
-  assert.match(page, /@keyframes beacon-pulse/);
-  assert.match(page, /function transitionHeroVideo\(\)/);
   assert.match(page, /\.hero-in \{[^}]*justify-content: flex-end/);
 });
 
@@ -78,13 +75,13 @@ test("the page mirrors the reference's image-led section architecture", () => {
   const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
   const ids = [...main.matchAll(/<section id="([a-z-]+)"/g)].map(match => match[1]);
   assert.deepEqual(ids, ["top", "problem", "missions", "field-intelligence", "orchestration", "edge", "proof", "intelligence", "careers"]);
-  for (const asset of ["space-mission.png", "field-intelligence.png", "edge-system.png", "edge-hero.png", "system-sensor-v2.webp", "system-command-v2.webp", "system-platform-v2.webp", "system-effector-v2.webp", "mission-orchestration-v2.webp"]) assert.ok(page.includes(`assets/${asset}`), `${asset} is used`);
+  for (const asset of ["space-mission.png", "artemis-lunar-v2.webp", "field-intelligence.png", "edge-system.png", "hero-poster.webp", "system-sensor-v2.webp", "system-command-v2.webp", "system-platform-v2.webp", "system-effector-v2.webp", "mission-orchestration-v2.webp"]) assert.ok(page.includes(`assets/${asset}`), `${asset} is used`);
   for (const heading of ["The systems exist.", "Already inside", "The field", "Change the", "Intelligence,", "What the field", "The mission is", "From the field.", "Live the mission."]) assert.ok(page.includes(heading), `reference section retained: ${heading}`);
 });
 
 test("all fonts, motion media, and imagery are self-contained", () => {
   const refs = [...new Set([
-    ...[...page.matchAll(/(?:src|href|poster)="(assets\/[^"]+)"/g)].map(match => match[1]),
+    ...[...page.matchAll(/(?:src|href|poster|data-src)="(assets\/[^"]+)"/g)].map(match => match[1]),
     ...[...page.matchAll(/url\("(assets\/[^"]+)"\)/g)].map(match => match[1]),
   ])];
   assert.ok(refs.length >= 12, "expected the local fonts, motion media, images, icons, and logo");
@@ -92,8 +89,16 @@ test("all fonts, motion media, and imagery are self-contained", () => {
   for (const face of ["Archivo-Variable", "JetBrainsMono-400", "JetBrainsMono-500", "JetBrainsMono-600"]) assert.ok(page.includes(`assets/fonts/${face}.woff2`));
   assert.doesNotMatch(page, /<script[^>]+src=/);
   assert.doesNotMatch(page, /@import|fonts\.googleapis|fonts\.gstatic|cdn\./i);
-  const allowedUrl = url => url.startsWith("https://azjester.github.io/work/astrion-site/") || /^https:\/\/astrion\.us\/?$/.test(url);
+  const allowedUrl = url => url.startsWith("https://azjester.github.io/work/astrion-site/") || /^https:\/\/(?:careers\.)?astrion\.us(?:\/(?:contact-us\/?)?)?$/.test(url);
   for (const [url] of page.matchAll(/(?:https?:)?\/\/(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[:/][^"'\s)]*)?/gi)) assert.ok(allowedUrl(url), `remote reference ${url}`);
+});
+
+test("the hero ships one compressed scene and no discarded composite layers", () => {
+  const heroLoop = resolve(root, "astrion-site/assets/hero-loop.mp4");
+  assert.ok(statSync(heroLoop).size < 2_500_000, "hero loop stays below 2.5 MB");
+  for (const discarded of ["hero-video.mp4", "hero-rock-island-overlay-v4.webp", "hero-coastal-defense-v2.webp", "edge-hero.png"]) {
+    assert.equal(existsSync(resolve(root, "astrion-site/assets", discarded)), false, `${discarded} was removed`);
+  }
 });
 
 test("the design keeps the reference palette, typography, and responsive safeguards", () => {
@@ -117,12 +122,15 @@ test("interaction and accessibility contracts are present", () => {
   assert.equal((page.match(/role="tab"/g) || []).length, 6);
   assert.equal((page.match(/role="tabpanel"/g) || []).length, 6);
   assert.match(page, /event\.key==='ArrowDown'\|\|event\.key==='ArrowRight'/);
+  assert.match(page, /event\.key==='Tab'&&menu\.classList\.contains\('open'\)/);
   assert.match(page, /event\.key==='Escape'/);
+  assert.match(page, /main\.setAttribute\('inert',''\)/);
   assert.match(page, /html\.still \.reveal/);
   assert.match(page, /class="scroll-progress"/);
   assert.match(page, /requestAnimationFrame\(renderScroll\)/);
   assert.match(page, /\.orchestration-legend/);
-  assert.match(page, /\.mission-detail \.counter \{ display: none; \}/);
+  assert.doesNotMatch(page, /class="counter"/);
+  assert.match(page, /function placeMissionPanel\(index\)/);
   assert.match(page, /function scrollToTarget\(target\)/);
 });
 
