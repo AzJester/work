@@ -17,10 +17,11 @@ test("the reference-style page loads cleanly with local fonts, imagery, and moti
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle("Astrion · Missions are won at the seams");
   expect((await page.locator("h1").innerText()).replace(/\s+/g, " ").trim()).toBe("MISSIONS ARE WON AT THE SEAMS.");
-  await expect(page.locator(".hero-motion")).toHaveCount(2);
-  await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-video.mp4");
-  await expect(page.locator(".hero-rock-island")).toHaveAttribute("src", "assets/hero-rock-island-overlay-v4.webp");
-  await expect(page.locator(".hero-beacon")).toBeAttached();
+  await expect(page.locator(".hero-motion")).toHaveCount(1);
+  await expect(page.locator("#hero-video")).toHaveAttribute("poster", "assets/hero-poster.webp");
+  await expect(page.locator("#hero-video")).toHaveAttribute("loop", "");
+  await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-loop.mp4");
+  await expect(page.locator(".hero-rock-island, .hero-beacon, #hero-video-buffer")).toHaveCount(0);
   await expect(page.locator(".mission-tab")).toHaveCount(6);
   await expect(page.locator(".system-art")).toHaveCount(4);
   await expect(page.locator(".orchestration-art")).toHaveAttribute("src", "assets/mission-orchestration-v2.webp");
@@ -64,6 +65,28 @@ for (const width of [320, 360, 390, 430, 640, 720, 768, 900, 1001, 1280, 1440, 1
   });
 }
 
+test("long headings and navigation remain readable at the narrow breakpoints", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(route(baseURL), { waitUntil: "load" });
+  const overflow = await page.locator("#field-intelligence .field-title, #orchestration .section-title, #edge .section-title").evaluateAll(elements =>
+    elements.filter(element => element.scrollWidth > element.clientWidth + 1).map(element => element.textContent.trim())
+  );
+  expect(overflow).toEqual([]);
+  const wordmark = await page.locator(".wordmark").boundingBox();
+  expect(wordmark.height).toBeGreaterThanOrEqual(44);
+  await page.locator("#menu-btn").click();
+  const menuOverflow = await page.locator("#site-menu a").evaluateAll(elements =>
+    elements.filter(element => element.scrollWidth > element.clientWidth + 1).map(element => element.textContent.trim())
+  );
+  expect(menuOverflow).toEqual([]);
+
+  await page.setViewportSize({ width: 721, height: 900 });
+  await page.reload({ waitUntil: "load" });
+  const edgeDirection = await page.locator(".edge-layout").evaluate(element => getComputedStyle(element).flexDirection);
+  expect(edgeDirection).toBe("column");
+});
+
 test("desktop disclosure navigation opens, routes to a pillar, and closes", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(route(baseURL), { waitUntil: "load" });
@@ -94,10 +117,20 @@ test("the mobile menu traps focus sensibly and closes on Escape", async ({ page,
   await expect(menu).toHaveClass(/\bopen\b/);
   await expect(menu).toHaveAttribute("aria-hidden", "false");
   await expect(menu.locator("a").first()).toBeFocused();
+  await expect(page.locator("main")).toHaveAttribute("inert", "");
+  await page.keyboard.press("Shift+Tab");
+  await expect(button).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(menu.locator("a").last()).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(button).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(menu.locator("a").first()).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu).not.toHaveClass(/\bopen\b/);
   await expect(menu).toHaveAttribute("aria-hidden", "true");
   await expect(button).toBeFocused();
+  await expect(page.locator("main")).not.toHaveAttribute("inert", "");
 });
 
 test("mission pillars switch with click and keyboard and expose the requested details", async ({ page, baseURL }) => {
@@ -108,11 +141,31 @@ test("mission pillars switch with click and keyboard and expose the requested de
   await expect(lunar).toHaveAttribute("aria-selected", "true");
   await expect(page.locator("#pillar-lunar")).toBeVisible();
   await expect(page.locator("#pillar-lunar .mission-tags li")).toHaveText(["Transport", "Power", "Communications", "Habitation", "In-situ resources"]);
+  await expect(page.locator("#mission-image")).toHaveAttribute("src", "assets/artemis-lunar-v2.webp");
   await lunar.press("Home");
   await expect(page.locator("#tab-iamd")).toBeFocused();
   await expect(page.locator("#pillar-iamd")).toBeVisible();
   await page.locator("#tab-ldawif").click();
   await expect(page.locator("#pillar-ldawif .textlink")).toHaveAttribute("href", "../astrion-division/ldawif/");
+});
+
+test("a late mission image response cannot replace the currently selected pillar", async ({ page, baseURL }) => {
+  await page.route("**/space-mission.png", async route => {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    await route.continue();
+  });
+  await page.route("**/artemis-lunar-v2.webp", async route => {
+    await new Promise(resolve => setTimeout(resolve, 40));
+    await route.continue();
+  });
+  await page.goto(route(baseURL, "#missions"), { waitUntil: "load" });
+  await page.locator("#tab-space").click();
+  await page.locator("#tab-lunar").click();
+  await expect(page.locator("#tab-lunar")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#mission-image")).toHaveAttribute("src", "assets/artemis-lunar-v2.webp");
+  await page.waitForTimeout(700);
+  await expect(page.locator("#mission-image")).toHaveAttribute("src", "assets/artemis-lunar-v2.webp");
+  await expect(page.locator("#mission-image")).not.toHaveClass(/\bchanging\b/);
 });
 
 test("the header solidifies on scroll and reduced motion keeps content visible", async ({ page, baseURL }) => {
@@ -128,19 +181,21 @@ test("the header solidifies on scroll and reduced motion keeps content visible",
   expect(await page.locator(".hero-motion").evaluateAll(videos => videos.every(video => video.paused))).toBe(true);
 });
 
-test("the hero crossfades between moving layers without a visible reset", async ({ page, baseURL }) => {
+test("the hero uses a single native loop with no composited duplicate scene", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto(route(baseURL), { waitUntil: "load" });
   const primary = page.locator("#hero-video");
-  const buffer = page.locator("#hero-video-buffer");
-  await expect(primary).toHaveClass(/\bis-active\b/);
-  await primary.dispatchEvent("ended");
-  await expect(buffer).toHaveClass(/\bis-entering\b/);
-  await expect(buffer).toHaveClass(/\bis-active\b/, { timeout: 2500 });
-  await expect(primary).not.toHaveClass(/\bis-active\b/);
-  await expect(page.locator(".hero-beacon")).toHaveCSS("animation-name", "none");
-  expect(await page.locator(".hero-beacon").evaluate(element => getComputedStyle(element, "::before").animationName)).toBe("beacon-pulse");
+  await expect(page.locator(".hero-motion")).toHaveCount(1);
+  await expect(primary).toHaveAttribute("loop", "");
+  await expect(primary.locator("source")).toHaveAttribute("src", "assets/hero-loop.mp4");
+  await expect(page.locator(".hero-rock-island, .hero-beacon, #hero-video-buffer")).toHaveCount(0);
+  const duration = await primary.evaluate(video => new Promise(resolve => {
+    if (Number.isFinite(video.duration)) resolve(video.duration);
+    else video.addEventListener("loadedmetadata", () => resolve(video.duration), { once: true });
+  }));
+  expect(duration).toBeGreaterThan(4);
+  expect(duration).toBeLessThan(4.3);
 });
 
 test("orchestration labels sit below the unobstructed image", async ({ page, baseURL }) => {
@@ -154,7 +209,7 @@ test("orchestration labels sit below the unobstructed image", async ({ page, bas
   });
   expect(geometry.nodeTops).toHaveLength(4);
   for (const top of geometry.nodeTops) expect(top).toBeGreaterThanOrEqual(geometry.visualBottom - 1);
-  await expect(page.locator(".mission-detail .counter").first()).toBeHidden();
+  await expect(page.locator(".mission-detail .counter")).toHaveCount(0);
 });
 
 test("scroll progress and parallax respond without breaking the field headline", async ({ page, baseURL }) => {
@@ -162,13 +217,36 @@ test("scroll progress and parallax respond without breaking the field headline",
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto(route(baseURL), { waitUntil: "load" });
   expect(await page.locator("html").getAttribute("class")).not.toMatch(/\bstill\b/);
-  const titleWord = page.locator(".field-title .nowrap");
-  await expect(titleWord).toHaveText("intelligence");
-  expect(await titleWord.evaluate(element => element.getClientRects().length)).toBe(1);
+  const titleLines = page.locator(".field-title .title-line");
+  await expect(titleLines).toHaveCount(2);
+  await expect(titleLines.nth(1)).toHaveText("intelligence engine.");
+  expect(await titleLines.nth(1).evaluate(element => element.getClientRects().length)).toBe(1);
   await page.evaluate(() => window.scrollTo(0, document.querySelector("#field-intelligence").offsetTop));
   await expect(page.locator("#scroll-progress")).toHaveClass(/\bon\b/);
   expect(await page.locator("#scroll-progress-bar").evaluate(element => getComputedStyle(element).transform)).not.toBe("none");
   await expect.poll(() => page.locator("#field-intelligence .section-media").getAttribute("style")).toMatch(/translate3d/);
+});
+
+test("the active mission detail follows its control on a phone", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(route(baseURL, "#missions"), { waitUntil: "load" });
+  await page.locator("#tab-lunar").click();
+  await expect(page.locator("#lunar > #pillar-lunar")).toBeVisible();
+  const gap = await page.evaluate(() => {
+    const tab = document.querySelector("#tab-lunar").getBoundingClientRect();
+    const panel = document.querySelector("#pillar-lunar").getBoundingClientRect();
+    return Math.round(panel.top - tab.bottom);
+  });
+  expect(gap).toBeLessThanOrEqual(8);
+});
+
+test("readable copy is not dimmed as it moves through the viewport", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(route(baseURL), { waitUntil: "load" });
+  const copy = page.locator("#problem .body-copy");
+  await page.evaluate(() => window.scrollTo(0, document.querySelector("#problem").offsetTop));
+  await expect(copy).toHaveCSS("opacity", "1");
 });
 
 test("direct section links reveal their content immediately", async ({ page, baseURL }) => {
