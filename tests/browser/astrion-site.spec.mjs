@@ -20,6 +20,8 @@ test("the reference-style page loads cleanly with local fonts, imagery, and moti
   await expect(page.locator("#hero-video")).toHaveAttribute("poster", "assets/hero-poster.jpg");
   await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-video.mp4");
   await expect(page.locator(".mission-tab")).toHaveCount(6);
+  await expect(page.locator(".system-art")).toHaveCount(4);
+  await expect(page.locator(".orchestration-art")).toHaveAttribute("src", "assets/mission-orchestration-v2.webp");
 
   const styles = await page.evaluate(async () => {
     await document.fonts.ready;
@@ -44,7 +46,7 @@ for (const width of [320, 360, 390, 430, 640, 720, 768, 900, 1001, 1280, 1440, 1
     const issues = await page.evaluate(() => {
       const found = [];
       if (document.documentElement.scrollWidth > innerWidth + 1) found.push(`page scrolls horizontally (${document.documentElement.scrollWidth} > ${innerWidth})`);
-      const selectors = [".header-in", ".hero-in", ".headline-grid", ".systems-grid", ".mission-layout", ".mission-tabs", ".mission-detail:not([hidden])", ".capability-strip", ".orchestration-head", ".orchestration-map", ".edge-cards", ".engine-grid", ".proof-grid", ".field-notes", ".footer-bottom"];
+      const selectors = [".header-in", ".hero-in", ".headline-grid", ".systems-grid", ".mission-layout", ".mission-tabs", ".mission-detail:not([hidden])", ".field-title", ".capability-strip", ".orchestration-head", ".orchestration-map", ".edge-cards", ".engine-grid", ".proof-grid", ".field-notes", ".footer-bottom"];
       for (const element of document.querySelectorAll(selectors.join(","))) {
         const box = element.getBoundingClientRect();
         if (box.left < -1 || box.right > innerWidth + 1) found.push(`${element.className} leaves the viewport: ${box.left}-${box.right}`);
@@ -122,4 +124,25 @@ test("the header solidifies on scroll and reduced motion keeps content visible",
   expect(await page.evaluate(() => [...document.querySelectorAll(".reveal")].filter(element => getComputedStyle(element).opacity !== "1").length)).toBe(0);
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   expect(await page.locator("#hero-video").evaluate(video => video.paused)).toBe(true);
+});
+
+test("scroll progress and parallax respond without breaking the field headline", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto(route(baseURL), { waitUntil: "load" });
+  expect(await page.locator("html").getAttribute("class")).not.toMatch(/\bstill\b/);
+  const titleWord = page.locator(".field-title .nowrap");
+  await expect(titleWord).toHaveText("intelligence");
+  expect(await titleWord.evaluate(element => element.getClientRects().length)).toBe(1);
+  await page.evaluate(() => window.scrollTo(0, document.querySelector("#field-intelligence").offsetTop));
+  await expect(page.locator("#scroll-progress")).toHaveClass(/\bon\b/);
+  expect(await page.locator("#scroll-progress-bar").evaluate(element => getComputedStyle(element).transform)).not.toBe("none");
+  await expect.poll(() => page.locator("#field-intelligence .section-media").getAttribute("style")).toMatch(/translate3d/);
+});
+
+test("direct section links reveal their content immediately", async ({ page, baseURL }) => {
+  await page.goto(route(baseURL, "#field-intelligence"), { waitUntil: "load" });
+  await expect(page.locator(".field-title")).toBeVisible();
+  await expect(page.locator(".field-title")).toHaveClass(/\bin\b/);
+  await expect(page.locator("#field-intelligence .body-copy")).toBeVisible();
 });

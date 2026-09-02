@@ -75,8 +75,8 @@ test("the page mirrors the reference's image-led section architecture", () => {
   const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
   const ids = [...main.matchAll(/<section id="([a-z-]+)"/g)].map(match => match[1]);
   assert.deepEqual(ids, ["top", "problem", "missions", "field-intelligence", "orchestration", "edge", "proof", "intelligence", "careers"]);
-  for (const asset of ["space-mission.png", "field-intelligence.png", "edge-system.png", "edge-hero.png"]) assert.ok(page.includes(`assets/${asset}`), `${asset} is used`);
-  for (const heading of ["The systems exist.", "Already inside", "The field is the", "Change the", "Intelligence,", "What the field", "The mission is", "From the field.", "Live the mission."]) assert.ok(page.includes(heading), `reference section retained: ${heading}`);
+  for (const asset of ["space-mission.png", "field-intelligence.png", "edge-system.png", "edge-hero.png", "system-sensor-v2.webp", "system-command-v2.webp", "system-platform-v2.webp", "system-effector-v2.webp", "mission-orchestration-v2.webp"]) assert.ok(page.includes(`assets/${asset}`), `${asset} is used`);
+  for (const heading of ["The systems exist.", "Already inside", "The field", "Change the", "Intelligence,", "What the field", "The mission is", "From the field.", "Live the mission."]) assert.ok(page.includes(heading), `reference section retained: ${heading}`);
 });
 
 test("all fonts, motion media, and imagery are self-contained", () => {
@@ -115,7 +115,11 @@ test("interaction and accessibility contracts are present", () => {
   assert.equal((page.match(/role="tabpanel"/g) || []).length, 6);
   assert.match(page, /event\.key==='ArrowDown'\|\|event\.key==='ArrowRight'/);
   assert.match(page, /event\.key==='Escape'/);
-  assert.match(page, /html\.still \.reveal \{ opacity: 1; translate: none; \}/);
+  assert.match(page, /html\.still \.reveal/);
+  assert.match(page, /class="scroll-progress"/);
+  assert.match(page, /requestAnimationFrame\(renderScroll\)/);
+  assert.match(page, /data-drift="\.045"/);
+  assert.match(page, /function scrollToTarget\(target\)/);
 });
 
 test("the catalog and README retain both Astrion routes", () => {
