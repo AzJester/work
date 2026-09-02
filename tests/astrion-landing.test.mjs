@@ -41,7 +41,7 @@ test("the six company mission segments appear in canonical order with their desc
   assert.deepEqual(segmentCards.map(card => card.id), ["iamd", "lifecycle-cyber", "ldawif", "space", "cip", "lunar"]);
 
   const descriptions = [
-    "against the full spectrum of air and missile threats: ballistic missiles, cruise missiles, hypersonic weapons, and unmanned aircraft systems",
+    "against the full spectrum of air and missile threats, including ballistic missiles, cruise missiles, hypersonic weapons, and unmanned aircraft systems",
     "weapon system testing and lifecycle management. The integrated employment of offensive and defensive cyberspace operations, and cryptologic capabilities",
     "synchronized detection, identification, tracking, and defeat capabilities. Integrated employment of multi-domain autonomous systems",
     "freedom of movement and action in, from, and to space for the United States and its allies while denying the same to adversaries",
