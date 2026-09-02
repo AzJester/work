@@ -17,8 +17,7 @@ test("the reference-style page loads cleanly with local fonts, imagery, and moti
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle("Astrion · Missions are won at the seams");
   expect((await page.locator("h1").innerText()).replace(/\s+/g, " ").trim()).toBe("MISSIONS ARE WON AT THE SEAMS.");
-  await expect(page.locator("#hero-video")).toHaveAttribute("poster", "assets/hero-poster.jpg");
-  await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-video.mp4");
+  await expect(page.locator(".hero-scene")).toHaveAttribute("src", "assets/hero-coastal-defense-v2.webp");
   await expect(page.locator(".mission-tab")).toHaveCount(6);
   await expect(page.locator(".system-art")).toHaveCount(4);
   await expect(page.locator(".orchestration-art")).toHaveAttribute("src", "assets/mission-orchestration-v2.webp");
@@ -123,7 +122,21 @@ test("the header solidifies on scroll and reduced motion keeps content visible",
   await expect(header).toHaveClass(/\bscrolled\b/);
   expect(await page.evaluate(() => [...document.querySelectorAll(".reveal")].filter(element => getComputedStyle(element).opacity !== "1").length)).toBe(0);
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
-  expect(await page.locator("#hero-video").evaluate(video => video.paused)).toBe(true);
+  await expect(page.locator(".hero-scene")).toHaveCSS("animation-name", "none");
+});
+
+test("orchestration labels sit below the unobstructed image", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(route(baseURL, "#orchestration"), { waitUntil: "load" });
+  const geometry = await page.evaluate(() => {
+    const visual = document.querySelector(".orchestration-visual").getBoundingClientRect();
+    const nodes = [...document.querySelectorAll(".orchestration-legend .node")].map(node => node.getBoundingClientRect());
+    return { visualBottom: visual.bottom, nodeTops: nodes.map(node => node.top) };
+  });
+  expect(geometry.nodeTops).toHaveLength(4);
+  for (const top of geometry.nodeTops) expect(top).toBeGreaterThanOrEqual(geometry.visualBottom - 1);
+  await expect(page.locator(".mission-detail .counter").first()).toBeHidden();
 });
 
 test("scroll progress and parallax respond without breaking the field headline", async ({ page, baseURL }) => {

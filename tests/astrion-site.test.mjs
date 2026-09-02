@@ -27,11 +27,10 @@ test("the review site publishes at its own route without replacing the earlier A
 
 test("the hero recreates the reference motion treatment and copy", () => {
   assert.match(page, /<section id="top" class="hero">/);
-  assert.match(page, /<video id="hero-video" poster="assets\/hero-poster\.jpg" autoplay muted loop playsinline/);
-  assert.match(page, /<source src="assets\/hero-video\.mp4" type="video\/mp4">/);
+  assert.match(page, /<img class="hero-scene" src="assets\/hero-coastal-defense-v2\.webp"/);
   assert.match(page, /<h1 class="display">Missions are won<br>at the seams\.<\/h1>/);
   assert.match(page, /Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge/);
-  assert.match(page, /\.hero-media video \{[^}]*height: 112%;[^}]*object-position: 62% center/);
+  assert.match(page, /@keyframes hero-breathe/);
   assert.match(page, /\.hero-in \{[^}]*justify-content: flex-end/);
 });
 
@@ -118,7 +117,8 @@ test("interaction and accessibility contracts are present", () => {
   assert.match(page, /html\.still \.reveal/);
   assert.match(page, /class="scroll-progress"/);
   assert.match(page, /requestAnimationFrame\(renderScroll\)/);
-  assert.match(page, /data-drift="\.045"/);
+  assert.match(page, /\.orchestration-legend/);
+  assert.match(page, /\.mission-detail \.counter \{ display: none; \}/);
   assert.match(page, /function scrollToTarget\(target\)/);
 });
 
