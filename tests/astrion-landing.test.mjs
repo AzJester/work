@@ -94,9 +94,17 @@ test("the page is self-contained: local assets exist and nothing loads from a CD
   assert.equal(socialCard.readUInt32BE(20), 630);
   assert.match(page, /property="og:image:width" content="1200"/);
   assert.match(page, /property="og:image:height" content="630"/);
+  assert.match(page, /property="og:image:alt" content="Astrion\. Defend This World\. Build the Next\./, "social card carries alt text");
 });
 
 test("the page follows the 2026 brand standards", () => {
+  const favicon = readFileSync(resolve(root, "astrion/assets/favicon.svg"), "utf8");
+  assert.equal((favicon.match(/<path /g) || []).length, 7, "favicon embeds the seven wordmark paths of the stacked logo");
+  assert.equal((favicon.match(/<polygon /g) || []).length, 3, "favicon embeds the three mark polygons of the stacked logo");
+  assert.match(favicon, /fill="#101820"/);
+  const touchIcon = readFileSync(resolve(root, "astrion/assets/apple-touch-icon.png"));
+  assert.equal(touchIcon.readUInt32BE(16), 180);
+  assert.equal(touchIcon.readUInt32BE(20), 180);
   assert.match(page, /<p class="eyebrow">Defend This World\. Build the Next\.<\/p>/, "slogan used verbatim");
   assert.match(page, /<h1>Built for the <span class="hl">outcome\.<\/span><\/h1>/, "approved campaign headline");
   assert.equal((page.match(/@font-face \{ font-family: "Archivo"/g) || []).length, 3);
@@ -108,10 +116,14 @@ test("the page follows the 2026 brand standards", () => {
   const palette = [["--black", "#101820"], ["--midnight", "#222230"], ["--deep", "#1E2436"], ["--alabaster", "#F1E9DB"], ["--platinum", "#DDDDDD"], ["--silver", "#BDBDBD"],
     ["--twilight", "#FC5442"], ["--supernova", "#FFAF2E"], ["--sky", "#29AAE1"], ["--refraction", "#1ED872"], ["--daylight", "#4DD3F7"], ["--zenith", "#9382F9"]];
   for (const [token, hex] of palette) assert.ok(page.includes(`${token}: ${hex};`), `palette token ${token} is bound to ${hex}`);
+  const paletteHexes = new Set(palette.map(([, hex]) => hex.toUpperCase()));
+  const literals = [...new Set([...page.matchAll(/#[0-9a-fA-F]{6}\b/g)].map(match => match[0].toUpperCase()))];
+  for (const hex of literals) assert.ok(paletteHexes.has(hex), `${hex} is not a 2026 palette color`);
+  assert.doesNotMatch(page, /\.contact \.panel \.mark \{[^}]*filter:/, "no effects on the logo");
   assert.match(page, /<p class="mono-note">\/\/ Innovation fuels it\. Engineering proves it\. Astrion makes it mission-ready\.<\/p>/, "approach note is an approved statement");
   assert.match(page, /Astrion stands at the intersection of innovation and operational reality\. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed\./, "positioning statement verbatim");
   assert.match(page, /--gradient: linear-gradient\(90deg, var\(--refraction\) 0%, var\(--daylight\) 50%, var\(--zenith\) 100%\);/);
-  assert.match(page, /<img src="assets\/astrion-logo-white\.png" alt="Astrion" width="176" height="30"/, "white logo is the default on dark");
+  assert.match(page, /<img src="assets\/astrion-logo-white\.png" alt="Astrion" width="1000" height="170"/, "white logo is the default on dark");
 });
 
 test("accessibility and motion affordances match the division page", () => {
@@ -134,6 +146,10 @@ test("accessibility and motion affordances match the division page", () => {
   assert.ok(anchors.includes("segments") && anchors.includes("contact"));
   for (const id of anchors) assert.ok(page.includes(`id="${id}"`), `in-page link target #${id} exists`);
   assert.equal((page.match(/<h1>/g) || []).length, 1);
+  for (const [, body] of page.matchAll(/<section[^>]*>([\s\S]*?)<\/section>/g)) {
+    assert.match(body, /<h[12][ >]/, "every section owns a heading");
+  }
+  assert.match(page, /<h2 class="proof-label reveal">Track record<\/h2>/);
 });
 
 test("the inline scripts parse without a build step", () => {

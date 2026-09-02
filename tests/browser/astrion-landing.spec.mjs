@@ -49,8 +49,14 @@ test("the Astrion landing page loads cleanly and renders all six mission segment
 
   await expect(page.locator(".nav .logo img")).toHaveAttribute("alt", "Astrion");
   await expect(page.locator("#ldawif .seglink")).toHaveAttribute("href", "../astrion-division/ldawif/");
-  expect(await page.locator("#terrain").evaluate(canvas => canvas.width > 0 && canvas.height > 0)).toBe(true);
-  expect(await page.locator("#eval").evaluate(canvas => canvas.width > 0 && canvas.height > 0)).toBe(true);
+  // the canvases are sized by their resize() handlers, not left at the 300x150 default
+  const sized = canvas => {
+    const box = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, canvas.id === "terrain" ? 1.5 : 2);
+    return canvas.width === Math.round(box.width * dpr) && canvas.height === Math.round(box.height * dpr) && canvas.width > 300;
+  };
+  expect(await page.locator("#terrain").evaluate(sized)).toBe(true);
+  expect(await page.locator("#eval").evaluate(sized)).toBe(true);
   expect(problems).toEqual([]);
 });
 
@@ -92,6 +98,12 @@ for (const width of [320, 360, 390, 430, 460, 640, 768, 940, 941, 1024, 1041, 11
       const cta = document.querySelector(".nav .btn-primary").getBoundingClientRect();
       const gutter = navBox.right - parseFloat(getComputedStyle(navIn).paddingRight);
       if (cta.right > gutter + 1) issues.push(`nav CTA breaks the right gutter (${Math.round(cta.right)} > ${Math.round(gutter)})`);
+      // the founder card stacks on narrow phones instead of squeezing its text beside the avatar
+      const founder = document.querySelector(".co-featured");
+      const founderColumns = getComputedStyle(founder).gridTemplateColumns.trim().split(/\s+/).length;
+      const who = founder.querySelector(".who").getBoundingClientRect();
+      if (innerWidth <= 420 && founderColumns !== 1) issues.push(`founder card keeps ${founderColumns} columns at ${innerWidth}px`);
+      if (who.width < 180) issues.push(`founder text column is only ${Math.round(who.width)}px wide`);
       return issues;
     });
     expect(layout).toEqual([]);
@@ -161,6 +173,8 @@ test("cards lift on hover and the evaluation console validates each run before i
   const segment = page.locator("#space");
   await segment.scrollIntoViewIfNeeded();
   await expect(segment).toHaveClass(/\bin\b/);
+  // the page scrolls smoothly: let the scroll settle so the hover pointer stays over the card
+  await page.waitForFunction(() => new Promise(resolve => { const start = scrollY; setTimeout(() => resolve(scrollY === start), 250); }));
   await segment.hover();
   await expect.poll(() => segment.evaluate(element => getComputedStyle(element).transform)).toBe("matrix(1, 0, 0, 1, 0, -5)");
 
