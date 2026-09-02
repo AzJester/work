@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astrion · Missions are won at the seams</title>
+<meta name="description" content="Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge, making complex National Security systems work as one.">
+<meta name="theme-color" content="#050607">
+<!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="canonical" href="https://azjester.github.io/work/astrion-site/">
+<link rel="preload" href="assets/fonts/Archivo-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/JetBrainsMono-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/hero.jpg" as="image" fetchpriority="high">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Astrion">
+<meta property="og:title" content="Astrion · Missions are won at the seams">
+<meta property="og:description" content="Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge, making complex National Security systems work as one.">
+<meta property="og:url" content="https://azjester.github.io/work/astrion-site/">
+<meta property="og:image" content="https://azjester.github.io/work/astrion-site/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script>(function(){var h=document.documentElement;h.classList.add('js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('still');}catch(e){}})();</script>
+<style>
+  /* ============================================================
+     ASTRION COMPANY SITE (team review build)
+     Design system carried over from the reference build: Archivo
+     (variable, width + weight axes) for display and body, JetBrains
+     Mono for labels and controls, a near-black "void" ground with
+     "carbon" bands, a warm off-white foreground, and one cyan
+     primary. Tokens are the reference's oklch values with hex
+     fallbacks for engines without oklch().
+     Self-contained page + local assets/.
+     ============================================================ */
+
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; src: url("assets/fonts/Archivo-Variable.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/JetBrainsMono-400.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("assets/fonts/JetBrainsMono-500.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("assets/fonts/JetBrainsMono-600.woff2") format("woff2"); }
+
+  :root {
+    --radius: .625rem;
+    --void: #050607;          --void: oklch(12.1% .0039 245.47);
+    --carbon: #0b0d10;        --carbon: oklch(15.82% .0072 258.37);
+    --secondary: #171b22;     --secondary: oklch(22.12% .015 261.62);
+    --fg: #eeede7;            --fg: oklch(94.52% .0081 98.88);
+    --muted-fg: #8a8f99;      --muted-fg: oklch(64.91% .016 264.46);
+    --primary: #23cef0;       --primary: oklch(78.56% .1345 216.5);
+    --primary-fg: #050607;    --primary-fg: oklch(12.1% .0039 245.47);
+    --border: rgba(255,255,255,.1);
+    --input: rgba(255,255,255,.14);
+    --ring: var(--primary);
+
+    --font-sans: "Archivo", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+    --container: 1400px;
+    --gutter: clamp(24px, 4.2vw, 64px);
+    --header-h: 72px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 8px); -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--void); color: var(--fg);
+    font-family: var(--font-sans); font-size: 17px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  h1, h2, h3 { margin: 0; color: var(--fg); }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .skip { position: absolute; left: -999px; top: 0; z-index: 100; background: var(--primary); color: var(--primary-fg); padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+  .skip:focus { left: 12px; top: 12px; }
+
+  .container { width: 100%; max-width: var(--container); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
+
+  /* labels: mono, tracked, uppercase */
+  .label { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 14px; color: var(--primary); margin-bottom: 26px; }
+  .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; opacity: .8; }
+  .eyebrow .n { color: var(--muted-fg); }
+
+  /* display type: heavy, tight, uppercase */
+  .display { font-weight: 800; font-stretch: 100%; text-transform: uppercase; letter-spacing: -.02em; line-height: .95; text-wrap: balance; }
+  h2.display { font-size: clamp(34px, 4.6vw, 64px); max-width: 18ch; }
+  .lede { font-size: clamp(17px, 1.35vw, 19px); color: var(--muted-fg); max-width: 62ch; margin-top: 26px; }
+  .lede strong { color: var(--fg); font-weight: 500; }
+
+  /* buttons and links */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 52px; padding: 0 28px;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap;
+    border: 1px solid var(--input); background: rgba(5,6,7,.55); color: var(--fg);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    transition: background-color .25s ease, border-color .25s ease, color .25s ease; }
+  .btn:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.3); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+  .btn.primary:hover { background: #7fe1f7; border-color: #7fe1f7; }
+  .textlink { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--primary); padding: 6px 0; white-space: nowrap;
+    border-bottom: 1px solid transparent; transition: border-color .25s ease; }
+  .textlink:hover { border-bottom-color: currentColor; }
+  .textlink .arr { transition: transform .2s ease; }
+  .textlink:hover .arr { transform: translateX(4px); }
+
+  /* ---------------- HEADER ---------------- */
+  .header { position: fixed; inset: 0 0 auto 0; z-index: 50; background: transparent; border-bottom: 1px solid transparent;
+    transition: background-color .7s ease, border-color .7s ease, -webkit-backdrop-filter .7s ease, backdrop-filter .7s ease; }
+  .header.scrolled { background: rgba(5,6,7,.82); border-bottom-color: var(--border); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .header-in { display: flex; align-items: center; height: var(--header-h); gap: clamp(28px, 6vw, 120px); }
+  .wordmark { font-family: var(--font-sans); font-weight: 500; font-stretch: 112%; font-size: 15px; letter-spacing: .38em; text-transform: uppercase; color: var(--fg); display: inline-flex; align-items: center; }
+  .nav { display: flex; align-items: center; gap: clamp(22px, 2.6vw, 40px); }
+  .nav a, .header .company { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; color: var(--muted-fg);
+    transition: color .2s ease; white-space: nowrap; }
+  .nav a:hover, .header .company:hover { color: var(--fg); }
+  .header-end { margin-left: auto; display: flex; align-items: center; gap: clamp(22px, 2.6vw, 40px); }
+  .menu-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--fg); }
+  .menu-btn .bars { width: 22px; height: 12px; position: relative; display: block; }
+  .menu-btn .bars::before, .menu-btn .bars::after { content: ""; position: absolute; left: 0; right: 0; height: 1.5px; background: currentColor; transition: transform .35s ease, top .35s ease, opacity .35s ease; }
+  .menu-btn .bars::before { top: 0; }
+  .menu-btn .bars::after { top: 10px; }
+  html.menu-open .menu-btn .bars::before { top: 5px; transform: rotate(45deg); }
+  html.menu-open .menu-btn .bars::after { top: 5px; transform: rotate(-45deg); }
+
+  /* full-screen menu */
+  .site-menu { position: fixed; inset: 0; z-index: 40; overflow-y: auto; overflow-x: hidden; background: rgba(5,6,7,.97);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    opacity: 0; pointer-events: none; transition: opacity .5s ease; }
+  .site-menu.open { opacity: 1; pointer-events: auto; }
+  .site-menu .container { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding-top: calc(var(--header-h) + 24px); padding-bottom: 48px; }
+  .site-menu ol { display: grid; gap: 6px; counter-reset: menu; }
+  .site-menu ol a { display: flex; align-items: baseline; gap: 22px; padding: 8px 0; font-weight: 800; font-stretch: 100%; text-transform: uppercase; letter-spacing: -.02em; line-height: 1;
+    font-size: clamp(22px, 5.6vw, 60px); color: var(--fg); transition: color .2s ease; }
+  .site-menu ol a:hover { color: var(--primary); }
+  .site-menu ol a .n { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .24em; color: var(--muted-fg); width: 32px; flex: none; }
+  .site-menu .menu-foot { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 16px 36px; align-items: center; }
+  html.menu-open { overflow: hidden; }
+
+  /* ---------------- HERO ---------------- */
+  .hero { position: relative; min-height: 100svh; width: 100%; overflow: hidden; background: var(--void); }
+  .hero-media { position: absolute; inset: 0; transform: translate3d(0,0,0); }
+  .hero-media img { position: absolute; top: 0; left: 0; width: 100%; height: 112%; object-fit: cover; object-position: 62% center; display: block;
+    transform-origin: 62% 50%; animation: drift 34s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes drift { from { scale: 1; } to { scale: 1.06; } }
+  .hero-media::after { content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(to top, var(--void) 0%, rgba(5,6,7,.78) 22%, rgba(5,6,7,.18) 56%, rgba(5,6,7,.08) 100%),
+      linear-gradient(to right, rgba(5,6,7,.55) 0%, rgba(5,6,7,0) 55%); }
+  .hero-in { position: relative; display: flex; min-height: 100svh; width: 100%; flex-direction: column; justify-content: flex-end;
+    padding-top: calc(var(--header-h) + 40px); padding-bottom: clamp(80px, 9vh, 112px); }
+  .hero h1 { font-size: clamp(46px, 7.2vw, 104px); max-width: 17ch; text-shadow: 0 2px 40px rgba(0,0,0,.35); }
+  .hero .lede { color: rgba(238,237,231,.86); max-width: 46ch; font-size: clamp(16px, 1.3vw, 18px); }
+  .hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 36px; margin-top: 40px; }
+
+  /* ---------------- SECTIONS ---------------- */
+  .section { position: relative; scroll-margin-top: 80px; padding: clamp(96px, 12vw, 160px) 0; }
+  .section.carbon { background: var(--carbon); }
+  .section.void { background: var(--void); overflow: hidden; }
+  .section-head { max-width: 900px; }
+  .grid { display: grid; gap: 20px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mt { margin-top: clamp(44px, 6vw, 72px); }
+
+  .card { background: var(--secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 26px;
+    display: flex; flex-direction: column; gap: 14px; transition: border-color .25s ease, transform .25s ease; }
+  .card:hover { border-color: rgba(255,255,255,.22); transform: translateY(-3px); }
+  .card .k { color: var(--muted-fg); }
+  .card h3 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+  .card p { color: var(--muted-fg); font-size: 15.5px; }
+  .section.void .card { background: rgba(11,13,16,.85); }
+
+  /* mission segments: a numbered ledger */
+  .ledger { border-top: 1px solid var(--border); }
+  .ledger > li { display: grid; grid-template-columns: 72px minmax(0, 1.05fr) minmax(0, 1.4fr); gap: 24px 32px; align-items: start;
+    padding: 30px 0; border-bottom: 1px solid var(--border); transition: background-color .25s ease; }
+  .ledger > li:hover { background: linear-gradient(90deg, rgba(35,206,240,.05), transparent 60%); }
+  .ledger .n { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .2em; color: var(--primary); padding-top: 8px; }
+  .ledger h3 { font-size: clamp(22px, 2.2vw, 30px); font-weight: 700; letter-spacing: -.015em; line-height: 1.08; text-wrap: balance; }
+  .ledger p { color: var(--muted-fg); font-size: 16px; }
+  .ledger .textlink { margin-top: 14px; }
+
+  /* flow rail (orchestration) */
+  .rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; position: relative; }
+  .rail::before { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 1px; background: var(--border); }
+  .rail li { position: relative; padding-top: 30px; }
+  .rail li::before { content: ""; position: absolute; left: 0; top: 0; width: 15px; height: 15px; border-radius: 50%; background: var(--carbon); border: 1.5px solid var(--primary); box-shadow: 0 0 0 4px var(--carbon); }
+  .rail .k { color: var(--primary); display: block; margin-bottom: 10px; }
+  .rail h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; line-height: 1.2; }
+  .rail p { color: var(--muted-fg); font-size: 15px; }
+
+  /* EDGE principles */
+  .principles { counter-reset: p; }
+  .principles li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 20px; padding: 26px 0; border-top: 1px solid var(--border); }
+  .principles li:last-child { border-bottom: 1px solid var(--border); }
+  .principles .n { font-family: var(--font-mono); font-size: 12px; letter-spacing: .2em; color: var(--primary); padding-top: 6px; }
+  .principles h3 { font-size: clamp(20px, 2vw, 26px); font-weight: 700; letter-spacing: -.015em; margin-bottom: 8px; }
+  .principles p { color: var(--muted-fg); max-width: 62ch; }
+
+  /* loop chips */
+  .loop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 34px; }
+  .loop .chip { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--fg);
+    border: 1px solid var(--input); border-radius: 999px; padding: 8px 14px; }
+  .loop .arr { color: var(--muted-fg); }
+
+  /* quote band */
+  .quote { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+  .quote blockquote { margin: 0; }
+  .quote blockquote p { font-weight: 800; font-stretch: 100%; text-transform: uppercase; letter-spacing: -.02em; line-height: .95; font-size: clamp(34px, 5vw, 72px); text-wrap: balance; }
+  .quote blockquote p em { font-style: normal; color: var(--primary); }
+  .promises li { padding: 16px 0; border-top: 1px solid var(--border); color: var(--muted-fg); font-size: 16.5px; }
+  .promises li:last-child { border-bottom: 1px solid var(--border); }
+  .promises li strong { color: var(--fg); font-weight: 500; }
+
+  /* proof */
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .stat { border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 26px; background: rgba(11,13,16,.85); }
+  .stat .v { font-family: var(--font-sans); font-weight: 800; font-stretch: 100%; letter-spacing: -.03em; line-height: 1; font-size: clamp(38px, 4.2vw, 56px); color: var(--fg); white-space: nowrap; }
+  .stat .v small { font-size: .5em; font-weight: 700; letter-spacing: 0; color: var(--primary); margin-left: 4px; }
+  .stat .l { color: var(--muted-fg); margin-top: 12px; font-size: 15.5px; }
+  .facts { margin-top: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .facts .card h3 { font-size: 18px; }
+
+  /* careers */
+  .split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+  .tags { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tags li { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted-fg); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; }
+
+  /* footer */
+  .footer { scroll-margin-top: 80px; background: var(--carbon); padding: 80px 0 56px; border-top: 1px solid var(--border); }
+  .footer .top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+  .footer .locations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 64px; }
+  .footer .loc h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .footer .loc p { color: var(--muted-fg); font-size: 14.5px; }
+  .footer .loc .k { color: var(--primary); display: block; margin-bottom: 10px; }
+  .footer .bottom { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between; }
+  .footer .bottom small { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-fg); }
+  .footer .bottom nav { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  .footer .bottom nav a { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-fg); }
+  .footer .bottom nav a:hover { color: var(--fg); }
+  .footer .logo img { height: 22px; width: auto; display: block; opacity: .9; }
+
+  /* reveal on scroll (js-gated so content is always visible without scripts) */
+  .reveal { transition: opacity .7s ease, translate .7s ease; }
+  html.js .reveal { opacity: 0; translate: 0 22px; }
+  html.js .reveal.in { opacity: 1; translate: none; }
+
+  /* ---------------- RESPONSIVE ---------------- */
+  @media (max-width: 1024px) {
+    .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; }
+    .rail::before { display: none; }
+    .stats, .facts, .footer .locations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quote, .split, .footer .top { grid-template-columns: 1fr; gap: 32px; }
+  }
+  @media (max-width: 900px) {
+    .nav { display: none; }
+    .header .company { display: none; }
+    .ledger > li { grid-template-columns: 56px minmax(0, 1fr); }
+    .ledger > li p, .ledger > li .more { grid-column: 2; }
+    .grid.three { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .grid.two, .grid.four, .stats, .facts, .footer .locations, .rail { grid-template-columns: 1fr; }
+    .hero h1 { font-size: clamp(40px, 12.5vw, 64px); }
+    h2.display { font-size: clamp(26px, 8.4vw, 44px); }
+    .quote blockquote p { font-size: clamp(30px, 9.5vw, 48px); }
+    .hero .cta { gap: 16px 28px; }
+    .btn { min-height: 48px; padding: 14px 20px; white-space: normal; text-align: center; line-height: 1.5; }
+    .ledger > li { grid-template-columns: 1fr; gap: 10px; }
+    .ledger .n { padding-top: 0; }
+    .section { padding: 80px 0; }
+    .wordmark { font-size: 14px; letter-spacing: .32em; }
+  }
+
+  /* ---------------- STILLNESS ---------------- */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1 !important; translate: none !important; }
+    .hero-media img { scale: 1 !important; transform: none !important; }
+  }
+  html.still { scroll-behavior: auto; }
+  html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
+  html.still .reveal { opacity: 1 !important; translate: none !important; }
+  html.still .hero-media img { scale: 1 !important; transform: none !important; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="header" id="header">
+  <div class="container header-in">
+    <a class="wordmark" href="#top" aria-label="Astrion, back to top">Astrion</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#missions">Missions</a>
+      <a href="#field-intelligence">Tech</a>
+      <a href="#orchestration">Orchestration</a>
+      <a href="#edge">Edge</a>
+    </nav>
+    <div class="header-end">
+      <a class="company" href="#proof">Company</a>
+      <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu"><span class="bars" aria-hidden="true"></span></button>
+    </div>
+  </div>
+</header>
+
+<div class="site-menu" id="site-menu" aria-hidden="true" inert>
+  <div class="container">
+    <nav aria-label="Site">
+      <ol>
+        <li><a href="#missions"><span class="n">01</span>Missions</a></li>
+        <li><a href="#field-intelligence"><span class="n">02</span>Tech</a></li>
+        <li><a href="#orchestration"><span class="n">03</span>Orchestration</a></li>
+        <li><a href="#edge"><span class="n">04</span>Edge</a></li>
+        <li><a href="#proof"><span class="n">05</span>Company</a></li>
+        <li><a href="#intelligence"><span class="n">06</span>Intelligence</a></li>
+        <li><a href="#careers"><span class="n">07</span>Careers</a></li>
+      </ol>
+    </nav>
+    <div class="menu-foot">
+      <a class="btn" href="#contact">Request a brief</a>
+      <a class="textlink" href="https://astrion.us">astrion.us <span class="arr" aria-hidden="true">&rarr;</span></a>
+    </div>
+  </div>
+</div>
+
+<main id="main">
+  <section id="top" class="hero">
+    <div class="hero-media" id="hero-media" aria-hidden="true">
+      <img src="assets/hero.jpg" alt="" width="1920" height="1080" decoding="async" fetchpriority="high">
+    </div>
+    <div class="container hero-in">
+      <h1 class="display">Missions are won at the seams.</h1>
+      <p class="lede">Astrion turns field intelligence into tested, integrated, and trusted capability from Orchestration to Edge, making complex National Security systems work as one.</p>
+      <div class="cta">
+        <a class="btn" href="#contact">Request a brief</a>
+        <a class="textlink" href="#careers">Join the mission <span class="arr" aria-hidden="true">&rarr;</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section id="problem" class="section carbon">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">01</span>The problem</p>
+        <h2 class="display">Complex systems fail where they meet.</h2>
+        <p class="lede">Sensors, platforms, software, and services each work on their own. The mission depends on the seams between them: the handoffs, interfaces, and integrations that no single program owns. <strong>That is where capability is lost, and where Astrion works.</strong></p>
+      </div>
+      <ul class="grid four mt reveal">
+        <li class="card"><span class="label k">De-risking innovation</span><h3>Advanced technology that performs in real-world conditions.</h3><p>Proven before it is fielded, not after.</p></li>
+        <li class="card"><span class="label k">Speed with certainty</span><h3>Rapid delivery paired with disciplined engineering.</h3><p>No trade-off between speed and rigor.</p></li>
+        <li class="card"><span class="label k">Mission assurance</span><h3>Validation when lives and national security are at stake.</h3><p>Evidence the operator can trust on day one.</p></li>
+        <li class="card"><span class="label k">Sustained value</span><h3>Applied insight that endures.</h3><p>As threats, technologies, and budgets change, the capability keeps working.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="missions" class="section void">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">02</span>Missions</p>
+        <h2 class="display">Six mission segments. One engineering discipline.</h2>
+        <p class="lede">Each segment stands on its own program record. What connects them is one discipline: prove a capability under conditions that mirror the mission before it is fielded.</p>
+      </div>
+      <ol class="ledger mt reveal">
+        <li id="iamd"><span class="n">01</span><h3>Integrated Air and Missile Defense</h3><p>The integration of capabilities to defend the homeland, the joint force, and allies against the full spectrum of air and missile threats, including ballistic missiles, cruise missiles, hypersonic weapons, and unmanned aircraft systems.</p></li>
+        <li id="lifecycle-cyber"><span class="n">02</span><h3>Lifecycle Management and Cyber Warfare</h3><p>The integrated planning and execution of weapon system testing and lifecycle management. The integrated employment of offensive and defensive cyberspace operations, and cryptologic capabilities.</p></li>
+        <li id="ldawif"><span class="n">03</span><h3>Layered Defense, Autonomous Warfare &amp; Integrated Fires</h3><div><p>The synchronized detection, identification, tracking, and defeat capabilities. Integrated employment of multi-domain autonomous systems.</p><a class="textlink more" href="../astrion-division/ldawif/">Explore the division <span class="arr" aria-hidden="true">&rarr;</span></a></div></li>
+        <li id="space"><span class="n">04</span><h3>Space Warfighting</h3><p>The integrated employment of military spacepower to achieve and sustain space superiority: the freedom of movement and action in, from, and to space for the United States and its allies while denying the same to adversaries.</p></li>
+        <li id="cip"><span class="n">05</span><h3>Critical Infrastructure Protection</h3><p>The integrated capabilities required to identify, assess, prevent, detect, respond to, mitigate, and recover from threats and hazards to the U.S. Homeland.</p></li>
+        <li id="lunar"><span class="n">06</span><h3>Exploration and Lunar Presence</h3><p>The integration of transportation, power, communications, mobility, habitation, autonomy, and in-situ resource utilization required to establish and sustain an enduring human and robotic presence on and around the Moon, creating the foundation for expansion deeper into the solar system.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="field-intelligence" class="section void">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">03</span>Tech</p>
+        <h2 class="display">Field intelligence, engineered in.</h2>
+        <p class="lede">What we learn in the lab, on the range, and in operations feeds directly back into design, test, and sustainment. <strong>Innovation fuels it. Engineering proves it. Astrion makes it mission-ready.</strong></p>
+        <ul class="loop" aria-label="Evaluation loop">
+          <li class="chip">Lab</li><li class="arr" aria-hidden="true">&rarr;</li>
+          <li class="chip">Range</li><li class="arr" aria-hidden="true">&rarr;</li>
+          <li class="chip">Field</li><li class="arr" aria-hidden="true">&rarr;</li>
+          <li class="chip">Measure</li><li class="arr" aria-hidden="true">&rarr;</li>
+          <li class="chip">Improve</li>
+        </ul>
+      </div>
+      <ul class="grid four mt reveal">
+        <li class="card"><span class="label k">Test and evaluation</span><h3>Validated in the lab, on the range, and in the field.</h3><p>Hybrid digital and live evaluation under conditions that mirror the fight, so what works in the lab works in the field.</p></li>
+        <li class="card"><span class="label k">Digital engineering</span><h3>Models, interfaces, and open architectures.</h3><p>Requirements, architecture, and digital models built against the mission, with modular open systems so pieces stay interchangeable.</p></li>
+        <li class="card"><span class="label k">AI and ModelOps</span><h3>Models that stay valid after they are deployed.</h3><p>Data pipelines, evaluation, monitoring, and retraining so decision support performs the way it was tested.</p></li>
+        <li class="card"><span class="label k">Cyber and cryptologic</span><h3>Offensive and defensive cyberspace operations.</h3><p>Weapon system testing, lifecycle management, and cryptologic capability employed as one.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="orchestration" class="section carbon">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">04</span>Orchestration</p>
+        <h2 class="display">Orchestration makes the pieces one system.</h2>
+        <p class="lede">Integration without friction: proven playbooks that simplify complexity, reduce technical debt, and keep systems interoperable across domains and services, from the first model to the last mile.</p>
+      </div>
+      <ol class="rail mt reveal">
+        <li><span class="label k">01</span><h3>Understand the mission</h3><p>Start from the operator's outcome and the conditions they will face, not the demo.</p></li>
+        <li><span class="label k">02</span><h3>Engineer and model</h3><p>Requirements, architecture, and digital models built outward from mission need.</p></li>
+        <li><span class="label k">03</span><h3>Integrate across domains</h3><p>Sensors, effectors, software, and platforms brought together across services and domains.</p></li>
+        <li><span class="label k">04</span><h3>Prove under real conditions</h3><p>Lab, range, and field evaluation that measures what matters, when it matters.</p></li>
+        <li><span class="label k">05</span><h3>Deliver and sustain at the edge</h3><p>Fielded, monitored, and kept current as threats, data, and missions change.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="edge" class="section void">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">05</span>Edge</p>
+        <h2 class="display">Astrion EDGE&trade;. Engineering Delivered, Guaranteed Excellence.</h2>
+        <p class="lede">EDGE is how we work on every engagement: a cultural contract of accountability, craftsmanship, and continuous improvement, from the program office to the point of use.</p>
+      </div>
+      <ol class="principles mt reveal">
+        <li><span class="n">01</span><div><h3>Engineering built for the mission</h3><p>Design outward from mission needs to deliver solutions that work on day one.</p></div></li>
+        <li><span class="n">02</span><div><h3>Speed with assurance</h3><p>Rapid delivery paired with disciplined engineering. No trade-offs between speed and rigor.</p></div></li>
+        <li><span class="n">03</span><div><h3>Integration without friction</h3><p>Proven playbooks that simplify complexity, reduce technical debt, and ensure seamless interoperability.</p></div></li>
+        <li><span class="n">04</span><div><h3>Innovation you can trust</h3><p>Practical, testable innovation, moving proven ideas quickly into the field.</p></div></li>
+        <li><span class="n">05</span><div><h3>Excellence guaranteed</h3><p>A cultural contract of accountability, craftsmanship, and continuous improvement in every engagement.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section carbon" aria-labelledby="promise-heading">
+    <div class="container">
+      <div class="quote reveal">
+        <blockquote>
+          <p id="promise-heading">We deliver <em>proof</em>, not promises.</p>
+        </blockquote>
+        <ul class="promises">
+          <li><strong>We are the bridge</strong> between innovation and operational reality.</li>
+          <li><strong>We make sure</strong> what works in the lab works in the field.</li>
+          <li><strong>We validate</strong> not just what is, but what's next.</li>
+          <li><strong>We don't just support the mission.</strong> We make the mission possible.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="proof" class="section void">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">06</span>Company</p>
+        <h2 class="display">Engineered for mission advantage. Proven at scale.</h2>
+        <p class="lede">Formed from ERC and Oasis Systems, joined by Axient in 2024. Headquartered in Huntsville, Alabama, with Centers of Excellence there, in Washington, DC, and in Burlington, Massachusetts.</p>
+      </div>
+      <!-- Sources: astrion.us/our-story (headquarters, more than 6,000 employees, ERC + Oasis Systems in 2023, Axient in 2024);
+           the December 2023 launch release (three Centers of Excellence); the brand standards' verified metrics for programs,
+           footprint, clearances, and certifications. -->
+      <ul class="stats mt reveal">
+        <li class="stat"><div class="v">6,000<small>+</small></div><p class="l">People serving customers across the U.S. and overseas</p></li>
+        <li class="stat"><div class="v">~150</div><p class="l">Programs supported across defense, space, intelligence, cyber, and civil missions</p></li>
+        <li class="stat"><div class="v">36<small>+NL</small></div><p class="l">U.S. states where Astrion operates, plus the Netherlands</p></li>
+        <li class="stat"><div class="v">71<small>%</small></div><p class="l">Cleared workforce, with 25% holding Top Secret or higher</p></li>
+        <li class="stat"><div class="v">ML3</div><p class="l">CMMI-DEV Maturity Level 3 appraisal</p></li>
+        <li class="stat"><div class="v">AS9100</div><p class="l">AS9100 and ISO 9001 quality certification</p></li>
+      </ul>
+      <ul class="facts reveal">
+        <li class="card"><span class="label k">Headquarters</span><h3>Huntsville, Alabama</h3><p>Headquarters and one of three Centers of Excellence.</p></li>
+        <li class="card"><span class="label k">Center of Excellence</span><h3>Washington, DC</h3><p>Closest to the program offices and policy decisions that shape the mission.</p></li>
+        <li class="card"><span class="label k">Center of Excellence</span><h3>Burlington, Massachusetts</h3><p>One of three Centers of Excellence, with Huntsville and Washington, DC.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="intelligence" class="section carbon">
+    <div class="container">
+      <div class="section-head reveal">
+        <p class="label eyebrow"><span class="n">07</span>Intelligence</p>
+        <h2 class="display">The AI Weekly Intelligence Brief.</h2>
+        <p class="lede">A weekly read for defense and federal leaders on where AI is going, what it means for the mission, and how contractors should adapt.</p>
+      </div>
+      <ul class="grid three mt reveal">
+        <li class="card"><span class="label k">Section 01</span><h3>AI development and tactical use</h3><p>What is moving from research to the field, and where it is already changing operations.</p></li>
+        <li class="card"><span class="label k">Section 02</span><h3>AI security and threat landscape</h3><p>How adversaries and defenders are using AI, and what that demands of the systems we build.</p></li>
+        <li class="card"><span class="label k">Section 03</span><h3>Strategic adaptation for contractors</h3><p>What the shifts mean for programs, proposals, and the engineering behind them.</p></li>
+      </ul>
+      <p class="mt" style="margin-top: 36px"><a class="textlink" href="#contact">Request the brief <span class="arr" aria-hidden="true">&rarr;</span></a></p>
+    </div>
+  </section>
+
+  <section id="careers" class="section void">
+    <div class="container">
+      <div class="split reveal">
+        <div class="section-head">
+          <p class="label eyebrow"><span class="n">08</span>Careers</p>
+          <h2 class="display">Join the mission.</h2>
+          <p class="lede">Engineers, analysts, testers, and operators who want their work to matter where it counts. Cleared work across 36 states and the Netherlands, on programs that reach the field.</p>
+          <p style="margin-top: 32px"><a class="btn primary" href="https://astrion.us">Explore careers at astrion.us</a></p>
+        </div>
+        <ul class="tags" aria-label="Where our people work">
+          <li>Systems engineering</li><li>Test and evaluation</li><li>Software</li><li>AI and ModelOps</li><li>Cyber</li><li>Space</li><li>Program management</li><li>Digital engineering</li><li>Field support</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="contact" class="footer">
+  <div class="container">
+    <div class="top reveal">
+      <div class="section-head">
+        <p class="label eyebrow"><span class="n">09</span>Contact</p>
+        <h2 class="display">Request a brief.</h2>
+        <p class="lede">Program offices, primes, and technology partners: tell us where you need capability proven, and we will bring the people who have done it.</p>
+      </div>
+      <div>
+        <a class="btn primary" href="https://astrion.us">Request a brief at astrion.us</a>
+      </div>
+    </div>
+    <ul class="locations reveal">
+      <li class="loc"><span class="label k">Headquarters</span><h3>Huntsville, AL</h3><p>Headquarters and Center of Excellence</p></li>
+      <li class="loc"><span class="label k">Center of Excellence</span><h3>Washington, DC</h3><p>Program offices and policy</p></li>
+      <li class="loc"><span class="label k">Center of Excellence</span><h3>Burlington, MA</h3><p>Engineering and integration</p></li>
+    </ul>
+    <div class="bottom">
+      <a class="logo" href="#top" aria-label="Astrion, back to top"><img src="assets/astrion-logo-white.png" alt="" width="1000" height="170"></a>
+      <nav aria-label="Footer">
+        <a href="#missions">Missions</a><a href="#field-intelligence">Tech</a><a href="#orchestration">Orchestration</a><a href="#edge">Edge</a><a href="#proof">Company</a><a href="#intelligence">Intelligence</a><a href="#careers">Careers</a><a href="../astrion-division/ldawif/">LDAWIF division</a><a href="https://astrion.us">astrion.us</a>
+      </nav>
+      <small>&copy; <span id="yr">2026</span> Astrion &middot; Team review build</small>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var still = document.documentElement.classList.contains('still');
+
+  // header: transparent over the hero, solid once the page scrolls
+  var header = document.getElementById('header');
+  function onScroll(){ header.classList.toggle('scrolled', window.scrollY > 24); }
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+
+  // full-screen menu
+  var menu = document.getElementById('site-menu'), menuBtn = document.getElementById('menu-btn'), lastFocus = null;
+  function setMenu(open){
+    document.documentElement.classList.toggle('menu-open', open);
+    menu.classList.toggle('open', open);
+    menu.setAttribute('aria-hidden', String(!open));
+    if (open) { menu.removeAttribute('inert'); } else { menu.setAttribute('inert', ''); }
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    if (open) { lastFocus = document.activeElement; var first = menu.querySelector('a'); if (first) first.focus(); }
+    else if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+  }
+  menuBtn.addEventListener('click', function(){ setMenu(!menu.classList.contains('open')); });
+  menu.addEventListener('click', function(e){ if (e.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && menu.classList.contains('open')) setMenu(false); });
+
+  // scroll reveals, gated on the js class so content stays visible without scripts
+  var els = document.querySelectorAll('.reveal');
+  if (still || !('IntersectionObserver' in window)) {
+    els.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  // hero: the media sits 12% taller than the frame and eases upward as the page scrolls
+  var media = document.getElementById('hero-media');
+  if (media && !still) {
+    var ticking = false;
+    function parallax(){
+      ticking = false;
+      var y = Math.min(window.scrollY, window.innerHeight);
+      media.style.transform = 'translate3d(0,' + Math.round(y * -0.12) + 'px,0)';
+    }
+    window.addEventListener('scroll', function(){ if (!ticking) { ticking = true; requestAnimationFrame(parallax); } }, { passive: true });
+  }
+</script>
+</body>
+</html>
