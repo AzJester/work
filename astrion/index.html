@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Astrion · Defend This World. Build the Next.</title>
-<meta name="description" content="Astrion engineers, integrates, and proves mission systems across six mission segments: Integrated Air and Missile Defense; Lifecycle Management and Cyber Warfare; Layered Defense, Autonomous Warfare &amp; Integrated Fires; Space Warfighting; Critical Infrastructure Protection; Exploration and Lunar Presence.">
+<meta name="description" content="Astrion engineers, integrates, and proves mission systems across six mission segments, from integrated air and missile defense to exploration and lunar presence.">
 <meta name="theme-color" content="#101820">
 <!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
 <meta name="robots" content="noindex">
@@ -14,6 +14,7 @@
 <link rel="canonical" href="https://azjester.github.io/work/astrion/">
 <link rel="preload" href="assets/fonts/Archivo-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Archivo-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Archivo-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Astrion">
 <meta property="og:title" content="Astrion · Defend This World. Build the Next.">
@@ -23,7 +24,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script>document.documentElement.classList.add('js');</script>
+<script>(function(){var h=document.documentElement;h.classList.add('js');try{var m=localStorage.getItem('astrion-motion');if(m==='still'||(!m&&matchMedia('(prefers-reduced-motion: reduce)').matches))h.classList.add('still');else if(m==='motion')h.classList.add('motion');}catch(e){}})();</script>
 <style>
   /* ============================================================
      ASTRION COMPANY LANDING: technical / futuristic HUD skin
@@ -37,7 +38,6 @@
      ============================================================ */
 
   @font-face { font-family: "Archivo"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/Archivo-Regular.woff2") format("woff2"); }
-  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 500; font-display: swap; src: url("assets/fonts/Archivo-Medium.woff2") format("woff2"); }
   @font-face { font-family: "Archivo"; font-style: normal; font-weight: 600; font-display: swap; src: url("assets/fonts/Archivo-SemiBold.woff2") format("woff2"); }
   @font-face { font-family: "Archivo"; font-style: normal; font-weight: 700; font-display: swap; src: url("assets/fonts/Archivo-Bold.woff2") format("woff2"); }
 
@@ -83,7 +83,7 @@
   }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
   body {
@@ -114,6 +114,7 @@
 
   .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--sky); color: #04222f; padding: 10px 16px; font-weight: 600; }
   .skip:focus { left: 12px; top: 12px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
 
   /* notched HUD panel with masked 1px glow edge.
@@ -152,7 +153,7 @@
   /* white logo is the 2026 default treatment; clear space = logotype x-height */
   .logo img { height: 30px; width: auto; display: block; }
   .nav-links { margin-left: auto; display: flex; align-items: center; gap: 28px; }
-  .nav-links a.link { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
+  .nav-links a.link { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; white-space: nowrap; }
   .nav-links a.link:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
 
   .status { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--mono-dim);
@@ -164,8 +165,10 @@
   @keyframes ping { 0%{box-shadow:0 0 0 0 var(--refraction-glow);} 70%{box-shadow:0 0 0 7px rgba(30,216,114,0);} 100%{box-shadow:0 0 0 0 rgba(30,216,114,0);} }
 
   .btn { font-family: var(--mono); font-weight: bold; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase;
-    padding: 12px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
     clip-path: var(--notch-sm); transition: transform .15s ease, filter .15s ease, background .15s ease, color .15s ease; }
+  button.btn { border: 0; }
+  .btn .short { display: none; }
   .btn-primary { background: var(--sky); color: #04222f; filter: drop-shadow(0 0 13px rgba(41,170,225,.4)); }
   .btn-primary:hover { transform: translateY(-1px); filter: drop-shadow(0 0 20px rgba(41,170,225,.6)); }
   .btn-ghost { position: relative; background: transparent; color: var(--ink); }
@@ -211,7 +214,7 @@
       linear-gradient(180deg, var(--deep), var(--bg));
     border-bottom: 1px solid var(--line); }
 
-  .hero-in { position: relative; z-index: 1; padding: clamp(66px, 12vh, 128px) 0 clamp(56px, 9vh, 96px); }
+  .hero-in { position: relative; z-index: 1; padding-top: clamp(66px, 12vh, 128px); padding-bottom: clamp(56px, 9vh, 96px); }
   .hero h1 { font-size: clamp(34px, 5vw, 62px); line-height: 1; letter-spacing: -.01em; text-transform: uppercase;
     margin: 8px 0 22px; max-width: 14ch; text-shadow: 0 0 40px rgba(41,170,225,.12); }
   .hero h1 .hl { color: var(--sky); text-shadow: 0 0 26px var(--sky-glow); }
@@ -264,7 +267,7 @@
   .node .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--mono-dim); display: block; margin-bottom: 6px; }
   .node .nh { display: block; margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .01em; }
   .node p { margin: 0; font-size: 13px; color: var(--ink-dim); max-width: 26ch; }
-  .node .spine { display: inline-block; margin-top: 9px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+  .node .spine { display: inline-block; margin-top: 9px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; white-space: nowrap;
     color: var(--supernova); border: 1px solid rgba(255,175,46,.4); padding: 3px 8px; clip-path: var(--notch-sm); }
   .node .spine:hover { color: var(--ink); border-color: var(--supernova); }
 
@@ -275,15 +278,21 @@
     mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%);
     -webkit-mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%); }
   .hero-terrain canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .terrain-hint { position: absolute; right: 6%; bottom: 9%; font-family: var(--mono); font-size: 10px;
-    letter-spacing: .18em; text-transform: uppercase; color: var(--sky); opacity: .55;
+  .terrain-hint { position: absolute; right: 6%; top: 16%; display: none; font-family: var(--mono); font-size: 10px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--sky); opacity: .85;
     transition: opacity .6s ease; }
   .terrain-hint.off { opacity: 0; }
-  @media (min-width: 941px) { .hero-terrain canvas { pointer-events: auto; cursor: crosshair; } }
-  @media (max-width: 940px) { .terrain-hint { display: none; } }
-  /* let clicks in the empty hero regions fall through to the field */
+  /* the survey needs a fine pointer that can hover: a touch pan on a wide tablet must scroll, not drop a fix */
+  @media (min-width: 941px) and (hover: hover) and (pointer: fine) {
+    .hero-terrain canvas { pointer-events: auto; cursor: crosshair; }
+    .terrain-hint { display: block; }
+  }
+  /* let clicks in the empty hero regions fall through to the field; the CTA row and the
+     lifecycle track capture the pointer only on their actual controls */
   .hero-in { pointer-events: none; }
   .hero-in > * { pointer-events: auto; }
+  .hero-in .cta-row, .hero-in .track { pointer-events: none; }
+  .hero-in .cta-row > *, .hero-in .node { pointer-events: auto; }
 
   /* ---------------- SECTION SHELL ---------------- */
   section { padding: clamp(66px, 10vh, 112px) 0; position: relative; }
@@ -326,7 +335,8 @@
   .segment .glyph .fill { fill: currentColor; stroke: none; }
   .segment .glyph .faint { opacity: .45; }
   .seglink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
-    color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); padding: 5px 10px; clip-path: var(--notch-sm); }
+    color: var(--accent); border: 1px solid currentColor; padding: 5px 10px; clip-path: var(--notch-sm); }
+  @supports (color: color-mix(in srgb, red 45%, transparent)) { .seglink { border-color: color-mix(in srgb, var(--accent) 45%, transparent); } }
   .seglink:hover { color: var(--ink); border-color: var(--accent); }
   .seglink .arr { display: inline-block; transition: transform .15s ease; }
   .seglink:hover .arr { transform: translateX(3px); }
@@ -386,11 +396,11 @@
     19%, 100% { color: var(--silver); border-color: rgba(241,233,219,.28); } }
 
   /* cross-links between the lifecycle rail's PROVE node and this section */
-  .chainlink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px;
+  .chainlink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px; white-space: nowrap;
     letter-spacing: .12em; text-transform: uppercase; color: var(--supernova);
     border: 1px solid rgba(255,175,46,.45); padding: 5px 10px; clip-path: var(--notch-sm); }
   .chainlink:hover { color: var(--ink); border-color: var(--supernova); }
-  #chain { scroll-margin-top: 90px; }
+  .chainlink .short { display: none; }
 
   /* ---------------- PROOF ---------------- */
   .proof { background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -403,7 +413,7 @@
   .stat:nth-child(2) .accent { background: var(--refraction); color: var(--refraction); }
   .stat:nth-child(3) .accent { background: var(--supernova); color: var(--supernova); }
   .stat:nth-child(4) .accent { background: var(--zenith); color: var(--zenith); }
-  .stat .num { font-family: var(--mono); font-size: clamp(28px, 3.8vw, 42px); font-weight: bold; letter-spacing: -.01em;
+  .stat .num { font-family: var(--mono); font-size: clamp(28px, 3.3vw, 42px); white-space: nowrap; font-weight: bold; letter-spacing: -.01em;
     line-height: 1; color: var(--ink); text-shadow: 0 0 22px rgba(41,170,225,.18); }
   .stat .lbl { font-size: 12.5px; color: var(--ink-dim); margin-top: 10px; }
 
@@ -456,10 +466,11 @@
   .foot-in small b { font-weight: normal; color: var(--ink-dim); }
   .foot-links { display: flex; flex-wrap: wrap; gap: 22px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
   .foot-links a:hover { color: var(--sky); }
+  .foot-in .btn { padding: 8px 14px; font-size: 11px; }
 
   /* ---------------- RESPONSIVE ---------------- */
   /* stage the nav down so it never overflows: status first, then section links; CTA always stays */
-  @media (max-width: 1040px) {
+  @media (max-width: 1060px) {
     .status { display: none; }
     .nav-links { gap: 20px; }
   }
@@ -493,25 +504,43 @@
     .segment { grid-template-columns: 1fr; }
     .segment .glyph { order: -1; width: 84px; height: 84px; }
   }
+  @media (max-width: 480px) {
+    .nodes { grid-template-columns: 1fr; }
+    .nav .btn .long { display: none; }
+    .nav .btn .short { display: inline; }
+  }
   @media (max-width: 420px) {
     .nav-in { gap: 14px; }
     .logo img { height: 24px; }
     .nav .btn { padding: 11px 14px; font-size: 11.5px; letter-spacing: .06em; }
     .nav .btn .arr { display: none; }
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .rail .pulse, .status .dot { animation: none; }
-    .rail .pulse { left: 100%; background: var(--zenith); }
-    .reveal { opacity: 1 !important; transform: none !important; }
-    .btn::after, .card::after, .segment::after, .cap::after, .node .dot, .telem em, .cap, .segment, .card { transition: none; animation: none; }
-    .lifecycle .lc { animation: none; }
-    .terrain-hint { display: none; }
+  @media (max-width: 400px) {
+    .chainlink .long { display: none; }
+    .chainlink .short { display: inline; }
   }
-  /* hidden state gated on the js class so content stays visible without JavaScript */
-  .reveal { transition: opacity .6s ease, transform .6s ease; }
-  html.js .reveal { opacity: 0; transform: translateY(18px); }
-  html.js .reveal.in { opacity: 1; transform: none; }
+
+  /* hidden state gated on the js class so content stays visible without JavaScript;
+     the reveal uses the translate property so hover lifts on transform still apply */
+  .reveal { transition: opacity .6s ease, translate .6s ease, transform .18s ease; }
+  html.js .reveal { opacity: 0; translate: 0 18px; }
+  html.js .reveal.in { opacity: 1; translate: none; }
+
+  /* still scenes: the OS reduced-motion setting, and the page's own pause control (html.still) */
+  /* html.motion marks an explicit in-page resume, which lifts the OS-level stillness */
+  @media (prefers-reduced-motion: reduce) {
+    html:not(.motion) *, html:not(.motion) *::before, html:not(.motion) *::after { animation: none !important; transition: none !important; }
+    html:not(.motion) .rail .pulse { left: 100%; background: var(--zenith); }
+    html:not(.motion) .reveal { opacity: 1 !important; translate: none !important; }
+    html:not(.motion) .terrain-hint { display: none; }
+    html:not(.motion) .hero-terrain canvas { pointer-events: none; cursor: default; }
+  }
+  html.still { scroll-behavior: auto; }
+  html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
+  html.still .rail .pulse { left: 100%; background: var(--zenith); }
+  html.still .reveal { opacity: 1 !important; translate: none !important; }
+  html.still .terrain-hint { display: none; }
+  html.still .hero-terrain canvas { pointer-events: none; cursor: default; }
 </style>
 </head>
 <body>
@@ -529,7 +558,7 @@
       <a class="link" href="#approach">Approach</a>
       <a class="link" href="#company">Company</a>
       <span class="status" aria-hidden="true"><span class="dot"></span><b>SECURE</b><span class="clk" id="navclk">--:--:--</span></span>
-      <a href="#contact" class="btn btn-primary">Start a conversation <span class="arr">&rarr;</span></a>
+      <a href="#contact" class="btn btn-primary"><span class="long">Start a conversation</span><span class="short">Contact</span> <span class="arr" aria-hidden="true">&rarr;</span></a>
     </nav>
   </div>
 </header>
@@ -545,7 +574,7 @@
       <h1>Built for the <span class="hl">outcome.</span></h1>
       <p class="lede">We build technology that protects our nation and its allies. Across six mission segments, Astrion engineers, integrates, and proves the systems that warfighters and operators depend on, under the conditions they will face, before those systems reach the field.</p>
       <div class="cta-row">
-        <a href="#segments" class="btn btn-primary">See the mission segments <span class="arr">&rarr;</span></a>
+        <a href="#segments" class="btn btn-primary">See the mission segments <span class="arr" aria-hidden="true">&rarr;</span></a>
         <a href="#approach" class="btn btn-ghost">How we work</a>
       </div>
       <div class="telem" aria-hidden="true">
@@ -564,7 +593,7 @@
           <ol class="nodes">
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">01 · ENGINEER</span><span class="nh">Design and model</span><p>Requirements, architecture, and digital models built against the mission, not the demo.</p></li>
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">02 · INTEGRATE</span><span class="nh">Systems and terrain</span><p>Sensors, effectors, software, and platforms brought together across domains and services.</p></li>
-            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">03 · PROVE</span><span class="nh">Test and evaluation</span><p>Validated in the lab, on the range, and in the field under conditions that mirror the fight.<a class="spine" href="#approach">HOW WE PROVE IT &darr;</a></p></li>
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">03 · PROVE</span><span class="nh">Test and evaluation</span><p>Validated in the lab, on the range, and in the field under conditions that mirror the fight.<a class="spine" href="#approach">HOW WE PROVE IT <span aria-hidden="true">&darr;</span></a></p></li>
             <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">04 · SUSTAIN</span><span class="nh">Lifecycle and modernization</span><p>Kept current as threats, data, and missions change.</p></li>
           </ol>
         </div>
@@ -607,7 +636,7 @@
             <span class="snum">SEGMENT 02</span>
             <h3>Lifecycle Management and Cyber Warfare</h3>
             <p class="desc">The integrated planning and execution of weapon system testing and lifecycle management. The integrated employment of offensive and defensive cyberspace operations, and cryptologic capabilities.</p>
-            <ul class="foci"><li>Weapon system testing</li><li>Lifecycle</li><li>Cyberspace ops</li><li>Cryptologic</li></ul>
+            <ul class="foci"><li>Weapon system testing</li><li>Lifecycle</li><li>Cyberspace operations</li><li>Cryptologic</li></ul>
           </div>
           <div class="glyph" aria-hidden="true">
             <svg viewBox="0 0 120 120">
@@ -628,7 +657,7 @@
             <h3>Layered Defense, Autonomous Warfare &amp; Integrated Fires</h3>
             <p class="desc">The synchronized detection, identification, tracking, and defeat capabilities. Integrated employment of multi-domain autonomous systems.</p>
             <ul class="foci"><li>Detect</li><li>Identify</li><li>Track</li><li>Defeat</li><li>Autonomy</li></ul>
-            <a class="seglink" href="../astrion-division/ldawif/">Explore the division <span class="arr">&rarr;</span></a>
+            <a class="seglink" href="../astrion-division/ldawif/">Explore the division <span class="arr" aria-hidden="true">&rarr;</span></a>
           </div>
           <div class="glyph" aria-hidden="true">
             <svg viewBox="0 0 120 120">
@@ -718,21 +747,21 @@
         <div class="reveal">
           <p class="eyebrow">How we work</p>
           <h2>We deliver proof, not promises.</h2>
-          <p>Astrion stands where innovation meets operational reality. We combine engineering discipline, software, AI, and mission expertise to validate what is next and protect what matters, so a capability performs in the field the way it performed in test.</p>
-          <p class="mono-note">// Decide + Detect + Deliver</p>
+          <p>Astrion stands at the intersection of innovation and operational reality. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed. Engineering discipline, software, AI, and mission expertise combine so a capability performs in the field the way it performed in test.</p>
+          <p class="mono-note">// Innovation fuels it. Engineering proves it. Astrion makes it mission-ready.</p>
           <div class="lifecycle" role="img" aria-label="Evaluation loop: lab, range, field, measure, improve, and back around">
-            <span class="lc">Lab</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Range</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Field</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Measure</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc">Improve</span><span class="lca loop" aria-hidden="true">&#10227;</span>
+            <span class="lc" aria-hidden="true">Lab</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Range</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Field</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Measure</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Improve</span><span class="lca loop" aria-hidden="true">&#10227;</span>
           </div>
-          <a class="chainlink" href="#chain">&uarr; See where proving sits in the lifecycle</a>
+          <a class="chainlink" href="#chain"><span aria-hidden="true">&uarr;</span> <span class="long">See where proving sits in the lifecycle</span><span class="short">Proving in the lifecycle</span></a>
         </div>
         <div class="capcol reveal">
           <div class="eval hud" role="img" aria-label="Simulated hybrid evaluation console: a digital model predicts system performance, a live test run measures it, the residual between them shrinks run by run, and the model is marked validated.">
-            <div class="eval-bar">
+            <div class="eval-bar" aria-hidden="true">
               <span>HYBRID EVALUATION · DIGITAL + LIVE</span>
               <span id="eval-run">RUN 01</span>
             </div>
-            <div class="eval-scope"><canvas id="eval"></canvas></div>
-            <div class="eval-foot">
+            <div class="eval-scope" aria-hidden="true"><canvas id="eval"></canvas></div>
+            <div class="eval-foot" aria-hidden="true">
               <span class="mchip state-info" id="eval-state">CALIBRATING</span>
               <span class="mchip"><span class="k">RESIDUAL </span><span id="eval-res">--</span></span>
               <span class="mchip">OPERATOR-INFORMED</span>
@@ -755,7 +784,7 @@
     <div class="wrap">
       <div class="proof-label reveal">// Track record</div>
       <div class="stats">
-        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">~6,000</div><div class="lbl">People across defense, space, and intelligence missions</div></div>
+        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">6,000+</div><div class="lbl">People serving customers across the U.S. and overseas</div></div>
         <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">~150</div><div class="lbl">Programs supported across defense, space, intelligence, cyber, and civil</div></div>
         <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">36+NL</div><div class="lbl">U.S. states where Astrion operates, plus the Netherlands</div></div>
         <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">CMMI-DEV</div><div class="lbl">Appraised at Maturity Level 3, with AS9100 and ISO 9001 quality certification</div></div>
@@ -769,8 +798,11 @@
       <div class="sec-head reveal">
         <p class="eyebrow">Who we are</p>
         <h2>An engineering and test and evaluation firm built around the mission.</h2>
-        <p>Formed from ERC and Oasis Systems. Headquartered in Washington, DC, with Centers of Excellence in Huntsville, Alabama and Burlington, Massachusetts, and teams in 36 states and the Netherlands.</p>
+        <p>Formed from ERC and Oasis Systems, joined by Axient in 2024. Headquartered in Huntsville, Alabama, with Centers of Excellence there, in Washington, DC, and in Burlington, Massachusetts, and teams in 36 states and the Netherlands.</p>
       </div>
+      <!-- Company facts: astrion.us/our-story (headquarters in Huntsville, more than 6,000 employees, ERC + Oasis Systems in 2023
+           and Axient in 2024, Dr. Wu) and the December 2023 launch release (Centers of Excellence in Washington, DC, Huntsville,
+           and Burlington). Program count, footprint, and certifications follow the brand standards' verified metrics. -->
 
       <div class="co-featured hud reveal"><span class="fbar" aria-hidden="true"></span>
         <div class="avatar" aria-hidden="true">ERC</div>
@@ -785,28 +817,28 @@
       <div class="co-grid">
         <article class="card hud reveal">
           <span class="ctag">// HEADQUARTERS</span>
-          <h3>Washington, DC</h3>
+          <h3>Huntsville, AL</h3>
           <p class="role">Corporate headquarters</p>
-          <p>Closest to the program offices and policy decisions that shape the mission.</p>
+          <p>Headquarters and one of three Centers of Excellence, with Washington, DC, and Burlington, Massachusetts.</p>
         </article>
         <article class="card hud reveal">
           <span class="ctag">// CENTER OF EXCELLENCE</span>
-          <h3>Huntsville, AL</h3>
+          <h3>Washington, DC</h3>
           <p class="role">Center of Excellence</p>
-          <p>One of two Centers of Excellence, alongside Burlington, Massachusetts.</p>
+          <p>Closest to the program offices and policy decisions that shape the mission.</p>
         </article>
         <article class="card hud reveal">
           <span class="ctag">// CENTER OF EXCELLENCE</span>
           <h3>Burlington, MA</h3>
           <p class="role">Center of Excellence</p>
-          <p>One of two Centers of Excellence, alongside Huntsville, Alabama.</p>
+          <p>One of three Centers of Excellence, with Huntsville, Alabama, and Washington, DC.</p>
         </article>
-        <a class="card linkcard hud reveal" href="../astrion-division/ldawif/">
+        <a class="card linkcard hud reveal" href="../astrion-division/ldawif/" aria-labelledby="ldawif-card-title ldawif-card-cta">
           <span class="ctag">// DIVISION PAGE</span>
-          <h3>LDAWIF</h3>
+          <h3 id="ldawif-card-title">LDAWIF</h3>
           <p class="role">Layered Defense, Autonomous Warfare &amp; Integrated Fires</p>
           <p>The division landing page: mission areas, the AI and ModelOps spine, and the leaders accountable for the work.</p>
-          <span class="owner">OPEN THE DIVISION PAGE &rarr;</span>
+          <span class="owner" id="ldawif-card-cta">OPEN THE DIVISION PAGE <span aria-hidden="true">&rarr;</span></span>
         </a>
       </div>
     </div>
@@ -821,7 +853,7 @@
           <h2>Bring us a hard mission problem.</h2>
           <p>Program offices, primes, and technology partners: start with a conversation about where you need capability proven, not just promised.</p>
           <div class="cta-row">
-            <a href="https://astrion.us" class="btn btn-primary" target="_blank" rel="noopener noreferrer">Visit astrion.us <span class="arr">&rarr;</span></a>
+            <a href="https://astrion.us" class="btn btn-primary">Visit astrion.us <span class="arr" aria-hidden="true">&rarr;</span></a>
             <a href="../astrion-division/ldawif/" class="btn btn-ghost">Explore the LDAWIF division</a>
           </div>
         </div>
@@ -830,7 +862,7 @@
           <div class="row"><span class="k">FOR</span><span class="v">Customers &amp; teaming partners</span></div>
           <div class="row"><span class="k">SEGMENTS</span><span class="v">Six, from air defense to the Moon</span></div>
           <div class="row"><span class="k">FOOTPRINT</span><span class="v">36 states &middot; the Netherlands</span></div>
-          <div class="row"><span class="k">WEB</span><span class="v"><a href="https://astrion.us" target="_blank" rel="noopener noreferrer">astrion.us</a></span></div>
+          <div class="row"><span class="k">WEB</span><span class="v"><a href="https://astrion.us">astrion.us</a></span></div>
         </div>
       </div>
     </div>
@@ -844,6 +876,7 @@
       &copy; <span id="yr">2026</span> ASTRION &middot; <b>Defend This World. Build the Next.</b><br>
       TEAM REVIEW BUILD
     </small>
+    <button type="button" class="btn btn-ghost" id="motion-toggle">Pause motion</button>
     <nav class="foot-links" aria-label="Footer">
       <a href="#segments">Mission segments</a><a href="#approach">Approach</a><a href="#company">Company</a><a href="https://astrion.us">astrion.us</a>
     </nav>
@@ -853,9 +886,33 @@
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  // live UTC telemetry clock (nav + hero); idle while the tab is hidden
-  function tick(){
-    if (document.hidden) return;
+  // motion control: the OS reduced-motion setting is the default, and the page carries its own
+  // pause / resume control (WCAG 2.2.2); an explicit choice persists per browser
+  var motion = (function(){
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var stored = null;
+    try { stored = window.localStorage.getItem('astrion-motion'); } catch (e) {}
+    var still = stored ? stored === 'still' : mq.matches;
+    var subs = [], btn = document.getElementById('motion-toggle');
+    function apply(){
+      document.documentElement.classList.toggle('still', still);
+      document.documentElement.classList.toggle('motion', !still && stored === 'motion');
+      if (btn) btn.textContent = still ? 'Resume motion' : 'Pause motion';
+      subs.forEach(function(fn){ fn(still); });
+    }
+    if (btn) btn.addEventListener('click', function(){
+      still = !still; stored = still ? 'still' : 'motion';
+      try { window.localStorage.setItem('astrion-motion', stored); } catch (e) {}
+      apply();
+    });
+    if (mq.addEventListener) mq.addEventListener('change', function(e){ if (!stored) { still = e.matches; apply(); } });
+    apply();
+    return { still: function(){ return still; }, explicit: function(){ return stored === 'still'; }, onChange: function(fn){ subs.push(fn); } };
+  })();
+
+  // live UTC telemetry clock (nav + hero); idle while the tab is hidden or the page's own pause is on
+  function tick(force){
+    if (!force && (document.hidden || (motion.still() && motion.explicit()))) return;
     var d = new Date();
     var s = String(d.getUTCHours()).padStart(2,'0') + ':' +
             String(d.getUTCMinutes()).padStart(2,'0') + ':' +
@@ -863,13 +920,13 @@
     var a = document.getElementById('navclk'); if (a) a.textContent = s;
     var b = document.getElementById('heroclk'); if (b) b.textContent = s;
   }
-  tick(); setInterval(tick, 1000);
-  document.addEventListener('visibilitychange', tick);
+  tick(true); setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function(){ tick(); });
+  motion.onChange(function(){ tick(true); });
 
-  // scroll reveals, honored against reduced-motion
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // scroll reveals, honored against reduced motion and the pause control
   var els = document.querySelectorAll('.reveal');
-  if (reduce || !('IntersectionObserver' in window)) {
+  if (motion.still() || !('IntersectionObserver' in window)) {
     els.forEach(function(el){ el.classList.add('in'); });
   } else {
     var io = new IntersectionObserver(function(entries){
@@ -881,7 +938,7 @@
   // lifecycle trace: flash ENGINEER > INTEGRATE > PROVE > SUSTAIN in sequence
   var chainDots = document.querySelectorAll('.nodes .dot'), lastChain = 0;
   function chainPulse(){
-    if(!chainDots.length) return;
+    if(!chainDots.length || motion.still()) return;
     var n = performance.now();
     if(n - lastChain < 1100) return;
     lastChain = n;
@@ -899,9 +956,8 @@
     if(!canvas) return;
     var ctx = canvas.getContext('2d');
     var wrap = canvas.parentElement;
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var W=1,H=1,DPR=1, CELL=18, cols=0, rows=0, field=null;
-    var mx=null, my=null, pings=[], fixes=0;
+    var mx=null, my=null, pings=[], fixes=0, T=0, cached=null, moved=false;
     var fixEl = document.getElementById('cf-fix'), hint = document.getElementById('terrainhint');
 
     // static value-noise lattice (seeded, so the terrain is the same on every visit)
@@ -922,6 +978,10 @@
            + vnoise(nx*4.3-t*0.06+2.2, ny*4.3+11)*0.11
            + 0.05*Math.sin(cx*0.11+t*0.4)*Math.cos(cy*0.09-t*0.23);
     }
+    function compute(t){
+      for(var r=0;r<rows;r++) for(var c=0;c<cols;c++) field[r*cols+c]=height(c,r,t);
+      cached = null;
+    }
     function resize(){
       DPR = Math.min(window.devicePixelRatio||1, 1.5); // hero-sized canvas: keep the pixel count sane
       var r = wrap.getBoundingClientRect();
@@ -931,11 +991,6 @@
       cols = Math.ceil(W/CELL)+2; rows = Math.ceil(H/CELL)+2;
       field = new Float32Array(cols*rows);
       compute(T); draw();
-    }
-    var T = 0, cached = null;
-    function compute(t){
-      for(var r=0;r<rows;r++) for(var c=0;c<cols;c++) field[r*cols+c]=height(c,r,t);
-      cached = null;
     }
     // marching squares: corner bits p0=1 (x,y) p1=2 (x+1,y) p2=4 (x+1,y+1) p3=8 (x,y+1); edges 0 top,1 right,2 bottom,3 left
     var SEG = [null,[[3,0]],[[0,1]],[[3,1]],[[1,2]],[[3,0],[1,2]],[[0,2]],[[3,2]],[[2,3]],[[0,2]],[[0,1],[2,3]],[[1,2]],[[1,3]],[[0,1]],[[3,0]],null];
@@ -975,7 +1030,7 @@
         ctx.stroke(ps[i]);
       }
       // survey lens: contours brighten in Astrion Sky under the pointer
-      if(mx!==null && !reduce){
+      if(mx!==null && !motion.still()){
         var R=Math.min(W,H)*0.16;
         ctx.save(); ctx.beginPath(); ctx.arc(mx,my,R,0,Math.PI*2); ctx.clip();
         for(var j=0;j<ps.length;j++){ ctx.lineWidth = (j%4===0)?1.4:1; ctx.strokeStyle=(j%4===0)?'rgba(41,170,225,0.85)':'rgba(41,170,225,0.45)'; ctx.stroke(ps[j]); }
@@ -1009,35 +1064,38 @@
       if(hint) hint.classList.add('off');
       chainPulse();
     }
+    // the survey is a mouse / pen interaction: a touch that starts on the field is a page scroll
+    function fine(e){ return e.pointerType !== 'touch'; }
     canvas.addEventListener('pointermove', function(e){
-      var r=canvas.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top;
+      if(!fine(e)) return;
+      var r=canvas.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top; moved=true;
     });
-    canvas.addEventListener('pointerleave', function(){ mx=null; });
+    canvas.addEventListener('pointerleave', function(){ mx=null; moved=true; });
     canvas.addEventListener('pointerdown', function(e){
-      if(reduce) return;
+      if(motion.still() || !fine(e) || e.button!==0) return;
       var r=canvas.getBoundingClientRect();
       drop(e.clientX-r.left, e.clientY-r.top);
     });
 
-    if(reduce){ return; } // static contours, redrawn only on resize
-
-    var last=performance.now(), acc=0, running=false, raf;
+    var last=performance.now(), acc=0, running=false, raf, visible=false;
     function step(now){
       if(!running) return;
       var dt=Math.min(0.05,(now-last)/1000); last=now;
       T+=dt; acc+=dt;
+      var dirty = moved || pings.length>0; moved=false;
       for(var q=pings.length-1;q>=0;q--){ pings[q].r+=dt*60; pings[q].a-=dt*0.55; if(pings[q].a<=0) pings.splice(q,1); }
-      // recompute the field at ~30 fps; the pointer lens and pings ride on every frame
-      if(acc>0.033){ acc=0; compute(T); }
-      draw();
+      // the field advances at ~30 fps; the lens and pings redraw only while they are changing
+      if(acc>0.033){ acc=0; compute(T); dirty=true; }
+      if(dirty) draw();
       raf=requestAnimationFrame(step);
     }
-    // run the loop only while the hero is actually on screen
-    var start=function(){ if(!running){ running=true; last=performance.now(); raf=requestAnimationFrame(step); } };
+    // run the loop only while the hero is on screen and motion is allowed
+    var start=function(){ if(!running && visible && !motion.still()){ running=true; last=performance.now(); raf=requestAnimationFrame(step); } };
     var stop=function(){ if(running){ running=false; cancelAnimationFrame(raf); } };
+    motion.onChange(function(still){ if(still){ stop(); mx=null; draw(); } else { start(); } });
     if('IntersectionObserver' in window){
-      new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting?start():stop(); }); }).observe(wrap);
-    } else { start(); }
+      new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting; visible?start():stop(); }); }).observe(wrap);
+    } else { visible=true; start(); }
   })();
 
   /* ---- hybrid evaluation console: digital prediction vs live measurement, converging run by run ---- */
@@ -1046,20 +1104,21 @@
     if(!canvas) return;
     var ctx = canvas.getContext('2d');
     var wrap = canvas.parentElement;
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var W=1,H=1,DPR=1;
-    var N=110, model=[], live=[];
+    var N=110, DT=0.085, model=[], live=[];
     var stateEl=document.getElementById('eval-state'), runEl=document.getElementById('eval-run'), resEl=document.getElementById('eval-res');
-    var run=1, t=0, bias=0.14, runT=0, validated=false, residual=0.14;
+    var run=1, t=0, bias=0.14, runT=0, validated=false, armed=false, residual=0.14;
     function pred(x){ return 0.62+0.16*Math.sin(x*0.9)+0.07*Math.sin(x*2.3+1.2); }
-    for(var i=0;i<N;i++){ var x=(i/N)*9; model.push(pred(x)); live.push(pred(x)+bias*Math.sin(x*1.3)+0.01*(Math.random()-0.5)); }
+    function gap(x,b){ return b*Math.sin(x*1.3+0.4); }
+    // seed the window on the same clock the ticks use, so the trace is continuous from the first frame
+    for(var i=0;i<N;i++){ var x0=((i-N+1)*DT)*0.9; model.push(pred(x0)); live.push(pred(x0)+gap(x0,bias)+0.01*(Math.random()-0.5)); }
     function setState(txt, cls){ if(stateEl){ stateEl.textContent=txt; stateEl.className='mchip '+cls; } }
     function tickSim(dt){
       t+=dt; runT+=dt;
       var x=t*0.9;
       var m=pred(x);
       // the live signal tracks the prediction more closely as the run matures
-      var l=m+bias*Math.sin(x*1.3+0.4)+0.012*(Math.random()-0.5);
+      var l=m+gap(x,bias)+0.012*(Math.random()-0.5);
       model.push(m); live.push(l);
       if(model.length>N){ model.shift(); live.shift(); }
       bias=Math.max(0.012, bias-dt*0.02);
@@ -1067,9 +1126,15 @@
       var sum=0; for(var i=0;i<model.length;i++) sum+=Math.abs(model[i]-live[i])/model[i];
       residual=sum/model.length;
       if(resEl) resEl.textContent=(residual*100).toFixed(1)+'%';
-      if(!validated && residual<0.02){ validated=true; setState('VALIDATED','state-ok'); chainPulse(); }
-      else if(!validated && residual<0.05 && stateEl && stateEl.textContent!=='CONVERGING'){ setState('CONVERGING','state-warn'); }
-      if(validated && runT>9){ run++; runT=0; bias=0.11+Math.random()*0.05; validated=false;
+      // a run has to diverge before it can converge: arm once the window shows the new run's gap,
+      // or once the window holds only this run's samples
+      if(!armed){ if(residual>0.05 || runT>N*DT) armed=true; }
+      else if(!validated){
+        if(residual<0.02){ validated=true; runT=0; setState('VALIDATED','state-ok'); chainPulse(); }
+        else if(residual<0.05 && stateEl && stateEl.textContent!=='CONVERGING'){ setState('CONVERGING','state-warn'); }
+      }
+      // hold the validated state, then start the next run with a fresh offset
+      if(validated && runT>9){ run++; runT=0; bias=0.11+Math.random()*0.05; validated=false; armed=false;
         if(runEl) runEl.textContent='RUN '+String(run).padStart(2,'0'); setState('CALIBRATING','state-info'); }
     }
     function yOf(v){ return H-12-((v-0.3)/0.6)*(H-24); }
@@ -1105,60 +1170,72 @@
     }
     if(window.ResizeObserver){ new ResizeObserver(resize).observe(wrap); }
     else { window.addEventListener('resize', resize); }
-    if(reduce){
+    if(motion.still()){
       // static scene: a validated run, counters describe the drawn picture
-      bias=0.012; for(var k=0;k<N;k++){ var xx=(k/N)*9; live[k]=pred(xx)+0.012*Math.sin(xx*1.3); }
-      validated=true; residual=0.011; if(resEl) resEl.textContent='1.1%'; if(runEl) runEl.textContent='RUN 07';
-      setState('VALIDATED','state-ok'); resize(); return;
+      bias=0.012; for(var k=0;k<N;k++){ var xk=((k-N+1)*DT)*0.9; model[k]=pred(xk); live[k]=pred(xk)+gap(xk,bias); }
+      run=7; validated=true; armed=true; residual=0.011;
+      if(resEl) resEl.textContent='1.1%'; if(runEl) runEl.textContent='RUN 07';
+      setState('VALIDATED','state-ok');
     }
     resize();
-    var last=performance.now(), acc=0, running=false, raf;
+    var last=performance.now(), acc=0, running=false, raf, visible=false;
     function step(now){
       if(!running) return;
       var dt=Math.min(0.06,(now-last)/1000); last=now;
       acc+=dt;
-      while(acc>0.085){ tickSim(0.085); acc-=0.085; }
-      draw();
+      var ticked=false;
+      while(acc>DT){ tickSim(DT); acc-=DT; ticked=true; }
+      // the picture only changes when the simulation advances
+      if(ticked) draw();
       raf=requestAnimationFrame(step);
     }
-    var start=function(){ if(!running){ running=true; last=performance.now(); raf=requestAnimationFrame(step); } };
+    var start=function(){ if(!running && visible && !motion.still()){ running=true; last=performance.now(); acc=0; raf=requestAnimationFrame(step); } };
     var stop=function(){ if(running){ running=false; cancelAnimationFrame(raf); } };
+    motion.onChange(function(still){ if(still){ stop(); } else { start(); } });
     if('IntersectionObserver' in window){
-      new IntersectionObserver(function(es){ es.forEach(function(e){ e.isIntersecting?start():stop(); }); }).observe(wrap);
-    } else { start(); }
+      new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting; visible?start():stop(); }); }).observe(wrap);
+    } else { visible=true; start(); }
   })();
 
   /* ---- reveal-time flourishes: stat count-ups + heading decrypt ---- */
   (function(){
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || !('IntersectionObserver' in window)) return; // static HTML already shows final values
+    if (motion.still() || !('IntersectionObserver' in window)) return; // static HTML already shows final values
 
     var GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/|+=*#';
+    // animate a stand-in: the real text stays in the DOM for assistive technology while an
+    // aria-hidden twin carries the scramble or the count, so nothing false reaches the accessibility tree
+    function stage(elm){
+      var final = elm.textContent;
+      var sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = final;
+      var vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true'); vis.textContent = final;
+      elm.textContent = ''; elm.appendChild(sr); elm.appendChild(vis);
+      return { final: final, vis: vis, done: function(){ elm.textContent = final; } };
+    }
     function decrypt(elm, dur){
-      var final = elm.textContent, n = final.length, t0 = null;
-      elm.setAttribute('aria-label', final);
+      if (motion.still()) return;
+      var s = stage(elm), n = s.final.length, t0 = null;
       function frame(ts){
         if(!t0) t0 = ts;
         var p = Math.min(1, (ts - t0) / dur), keep = Math.floor(n * p), out = '';
         for(var i = 0; i < n; i++){
-          var ch = final[i];
+          var ch = s.final[i];
           out += (i < keep || ch === ' ') ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
         }
-        elm.textContent = out;
-        if(p < 1){ requestAnimationFrame(frame); }
-        else { elm.textContent = final; elm.removeAttribute('aria-label'); }
+        s.vis.textContent = out;
+        if(p < 1 && !motion.still()){ requestAnimationFrame(frame); } else { s.done(); }
       }
       requestAnimationFrame(frame);
     }
     function countUp(elm, target, prefix, suffix, dur, fmt){
-      var t0 = null;
+      if (motion.still()) return;
+      var s = stage(elm), t0 = null;
       function frame(ts){
         if(!t0) t0 = ts;
         var p = Math.min(1, (ts - t0) / dur);
         p = 1 - (1 - p) * (1 - p);
         var v = Math.round(target * p);
-        elm.textContent = prefix + (fmt ? fmt(v) : v) + suffix;
-        if(p < 1) requestAnimationFrame(frame);
+        s.vis.textContent = prefix + (fmt ? fmt(v) : v) + suffix;
+        if(p < 1 && !motion.still()){ requestAnimationFrame(frame); } else { s.done(); }
       }
       requestAnimationFrame(frame);
     }
@@ -1177,7 +1254,7 @@
           if(!e.isIntersecting) return;
           io2.disconnect();
           var nums = stats.querySelectorAll('.num');
-          if(nums[0]) countUp(nums[0], 6000, '~', '', 900, thousands);
+          if(nums[0]) countUp(nums[0], 6000, '', '+', 900, thousands);
           if(nums[1]) countUp(nums[1], 150, '~', '', 900);
           if(nums[2]) countUp(nums[2], 36, '', '+NL', 900);
           if(nums[3]) decrypt(nums[3], 700);

@@ -577,7 +577,8 @@ The segment names match the canonical list in `solutions-architect/engine.js`, a
 an ambient, surveyable terrain contour field in the hero, the engineer-to-sustain
 lifecycle rail, a simulated hybrid digital-plus-live evaluation console, company proof
 points, locations, and a contact panel. One page plus local `astrion/assets/`, zero
-external dependencies, reduced-motion aware.
+external dependencies, reduced-motion aware, with an in-page pause control for the ambient
+motion. The division page links back to it from its footer.
 
 ### → https://azjester.github.io/work/astrion/
 
