@@ -185,7 +185,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -- *.html *.png *.gif *.webmanifest sw.js _site/
-          cp -R assets astrion-division LDAWIF geopresence black-hat-agent solutions-architect _site/
+          cp -R assets astrion astrion-division LDAWIF geopresence black-hat-agent solutions-architect _site/
           touch _site/.nojekyll
 
       - name: Upload site artifact

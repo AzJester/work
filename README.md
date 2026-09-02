@@ -557,6 +557,32 @@ The page loads the pinned, repository-owned `assets/vendor/supabase-js-2.110.2.u
 The template, form, import, backup, and export paths remain usable from the cached offline shell;
 cloud sync, public browsing, and AI features naturally require the network.
 
+## Astrion Company Landing Page (team review build)
+
+A company-level landing page built in the same technical HUD design as the division
+page below, carried onto the 2026 Brand Evolution (self-hosted Archivo type, the
+dark-first Astrion Black / Midnight / Deep Space palette, Astrion Sky for interaction,
+and the Refraction to Daylight to Zenith gradient as thin rules). It presents the six
+company mission segments as its centerpiece:
+
+1. Integrated Air and Missile Defense
+2. Lifecycle Management and Cyber Warfare
+3. Layered Defense, Autonomous Warfare & Integrated Fires (links to the division page)
+4. Space Warfighting
+5. Critical Infrastructure Protection
+6. Exploration and Lunar Presence
+
+The segment names match the canonical list in `solutions-architect/engine.js`, and
+`tests/astrion-landing.test.mjs` fails if the two drift apart. Around the segments:
+an ambient, surveyable terrain contour field in the hero, the engineer-to-sustain
+lifecycle rail, a simulated hybrid digital-plus-live evaluation console, company proof
+points, locations, and a contact panel. One page plus local `astrion/assets/`, zero
+external dependencies, reduced-motion aware.
+
+### → https://azjester.github.io/work/astrion/
+
+Marked `noindex` while under review.
+
 ## Astrion Division Landing Page (team review build)
 
 A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` — same
@@ -696,6 +722,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | File | Purpose |
 |------|---------|
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
+| `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
 | `black-hat-agent/` | Public, no-sign-in Black Hat Agent competitive-analysis workspace with local persistence, Excel/CSV and JSON import, evidence and competitor tracking, accessible native charts and diagrams, versioned report visuals, multi-format exports, recovery, and complete documentation. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
