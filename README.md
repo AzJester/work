@@ -563,7 +563,7 @@ cloud sync, public browsing, and AI features naturally require the network.
 company site design: a fixed transparent header that solidifies on scroll, a full-screen
 menu, a full-viewport photographic hero ("Missions are won at the seams."), then
 alternating near-black and carbon bands for the problem, the six mission segments, field
-intelligence, orchestration, Astrion EDGE, proof points and company facts, the AI Weekly
+intelligence, orchestration, capability at the edge, proof points and company facts, the AI Weekly
 Intelligence Brief, careers, and a request-a-brief footer. Type is Archivo (variable,
 width and weight axes) with JetBrains Mono labels; the palette is the reference's oklch
 tokens with hex fallbacks. One page plus local `astrion-site/assets/`, zero external

@@ -110,8 +110,9 @@ test("the design tokens are the reference's", () => {
   assert.doesNotMatch(page, /—|&mdash;|&#(?:8212|x2014);/i, "no em dashes");
 });
 
-test("brand copy follows the standards: EDGE spelled out with its mark, approved statements verbatim, sourced facts", () => {
-  assert.match(page, /Astrion EDGE&trade;\. Engineering Delivered, Guaranteed Excellence\./);
+test("brand copy follows the standards: no Astrion EDGE tagline, approved statements verbatim, sourced facts", () => {
+  assert.doesNotMatch(page, /Astrion EDGE|EDGE&trade;|Engineering Delivered, Guaranteed Excellence/, "the EDGE tagline is not used on this page");
+  assert.match(page, /<h2 class="display">Capability that holds at the edge\.<\/h2>/);
   for (const statement of [
     "We deliver <em>proof</em>, not promises.",
     "Innovation fuels it. Engineering proves it. Astrion makes it mission-ready.",
