@@ -14,6 +14,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/",
   "https://azjester.github.io/work/astrion-division/ldawif/",
   "https://azjester.github.io/work/astrion/",
+  "https://azjester.github.io/work/astrion-site/",
   "https://azjester.github.io/work/black-hat-agent/",
   "https://azjester.github.io/work/solutions-architect/",
   "https://azjester.github.io/work/dashboard.html",
@@ -58,6 +59,7 @@ const exactWorkSourceUrls = [
   "https://github.com/AzJester/work/blob/main/radar-signal-chain.html",
   "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
   "https://github.com/AzJester/work/tree/main/astrion",
+  "https://github.com/AzJester/work/tree/main/astrion-site",
 ];
 
 test("application hub publishes at a stable root HTML route", () => {
@@ -79,10 +81,10 @@ test("social metadata uses the dedicated published application-library card", ()
   assert.match(hub, /name="twitter:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
 });
 
-test("curated catalog contains all 32 identified applications", () => {
+test("curated catalog contains all 33 identified applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const appCount = [...catalogBlock.matchAll(/\n\s{10}title: "/g)].length;
-  assert.equal(appCount, 32);
+  assert.equal(appCount, 33);
   assert.match(hub, /One launch point for every public AzJester application/);
 });
 

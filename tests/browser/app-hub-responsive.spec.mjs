@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-async function openHub(page, baseURL, query = "", expectedCount = 32) {
+async function openHub(page, baseURL, query = "", expectedCount = 33) {
   await page.route("https://api.github.com/**", route => route.fulfill({
     status: 200,
     contentType: "application/json",
