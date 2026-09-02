@@ -12,6 +12,7 @@ const page = readFileSync(resolve(root, "astrion/index.html"), "utf8");
 const hub = readFileSync(resolve(root, "apps.html"), "utf8");
 const readme = readFileSync(resolve(root, "README.md"), "utf8");
 const pagesWorkflow = readFileSync(resolve(root, ".github/workflows/pages.yml"), "utf8");
+const division = readFileSync(resolve(root, "astrion-division/ldawif/index.html"), "utf8");
 
 const decode = value => value
   .replace(/&amp;/g, "&")
@@ -66,14 +67,22 @@ test("the page is self-contained: local assets exist and nothing loads from a CD
     ...[...page.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)].map(match => match[1]),
     ...[...page.matchAll(/url\("(assets\/[^"]+)"\)/g)].map(match => match[1]),
   ])];
-  assert.ok(assetRefs.length >= 7, "expected the logo, icons, and web fonts to be referenced");
+  assert.ok(assetRefs.length >= 6, "expected the logo, icons, and web fonts to be referenced");
   for (const ref of assetRefs) assert.ok(existsSync(resolve(root, "astrion", ref)), `missing asset ${ref}`);
-  for (const weight of ["Regular", "Medium", "SemiBold", "Bold"]) {
+  for (const weight of ["Regular", "SemiBold", "Bold"]) {
     assert.ok(page.includes(`assets/fonts/Archivo-${weight}.woff2`), `Archivo ${weight} is self-hosted`);
+    assert.match(page, new RegExp(`<link rel="preload" href="assets/fonts/Archivo-${weight}\\.woff2" as="font" type="font/woff2" crossorigin>`),
+      `Archivo ${weight} is preloaded: every weight the first screen uses`);
   }
+  assert.doesNotMatch(page, /Archivo-Medium|font-weight: 500/, "only the weights the page uses ship");
   assert.doesNotMatch(page, /<script[^>]+src=/, "no external scripts");
   assert.doesNotMatch(page, /<link[^>]+href="https?:\/\/(?!azjester\.github\.io\/work\/astrion\/")/, "no external stylesheets or fonts");
   assert.doesNotMatch(page, /fonts\.googleapis|fonts\.gstatic|cdn\./i);
+  // every absolute or protocol-relative URL anywhere in the document (attributes, CSS url(), imports)
+  const allowedUrl = url => url.startsWith("https://azjester.github.io/work/astrion/") || /^https:\/\/astrion\.us\/?$/.test(url);
+  const withoutDataUris = page.replace(/url\("data:[^"]*"\)/g, "");
+  for (const [url] of withoutDataUris.matchAll(/(?:https?:)?\/\/(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[:/][^"'\s)]*)?/gi)) assert.ok(allowedUrl(url), `remote reference ${url}`);
+  assert.doesNotMatch(page, /@import/, "no CSS imports");
 
   const external = [...new Set([...page.matchAll(/href="(https?:\/\/[^"]+)"/g)].map(match => match[1]))]
     .filter(url => !url.startsWith("https://azjester.github.io/work/astrion/"));
@@ -90,15 +99,17 @@ test("the page is self-contained: local assets exist and nothing loads from a CD
 test("the page follows the 2026 brand standards", () => {
   assert.match(page, /<p class="eyebrow">Defend This World\. Build the Next\.<\/p>/, "slogan used verbatim");
   assert.match(page, /<h1>Built for the <span class="hl">outcome\.<\/span><\/h1>/, "approved campaign headline");
-  assert.equal((page.match(/@font-face \{ font-family: "Archivo"/g) || []).length, 4);
+  assert.equal((page.match(/@font-face \{ font-family: "Archivo"/g) || []).length, 3);
   assert.match(page, /--font: "Archivo", Arial, Helvetica, sans-serif;/);
   assert.doesNotMatch(page, /Verdana|Obvia/i, "retired typefaces");
   assert.doesNotMatch(page, /442c81/i, "Astrion Force is logo-only under the 2026 standards");
-  assert.doesNotMatch(page, /—/, "no em dashes in brand copy");
+  assert.doesNotMatch(page, /—|&mdash;|&#(?:8212|x2014);/i, "no em dashes in brand copy");
   assert.doesNotMatch(page, /Be the Difference|Results with Impact|Always On/, "retired taglines");
-  for (const hex of ["#101820", "#222230", "#1E2436", "#F1E9DB", "#DDDDDD", "#BDBDBD", "#FC5442", "#FFAF2E", "#29AAE1", "#1ED872", "#4DD3F7", "#9382F9"]) {
-    assert.ok(page.includes(hex), `palette color ${hex} is defined`);
-  }
+  const palette = [["--black", "#101820"], ["--midnight", "#222230"], ["--deep", "#1E2436"], ["--alabaster", "#F1E9DB"], ["--platinum", "#DDDDDD"], ["--silver", "#BDBDBD"],
+    ["--twilight", "#FC5442"], ["--supernova", "#FFAF2E"], ["--sky", "#29AAE1"], ["--refraction", "#1ED872"], ["--daylight", "#4DD3F7"], ["--zenith", "#9382F9"]];
+  for (const [token, hex] of palette) assert.ok(page.includes(`${token}: ${hex};`), `palette token ${token} is bound to ${hex}`);
+  assert.match(page, /<p class="mono-note">\/\/ Innovation fuels it\. Engineering proves it\. Astrion makes it mission-ready\.<\/p>/, "approach note is an approved statement");
+  assert.match(page, /Astrion stands at the intersection of innovation and operational reality\. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed\./, "positioning statement verbatim");
   assert.match(page, /--gradient: linear-gradient\(90deg, var\(--refraction\) 0%, var\(--daylight\) 50%, var\(--zenith\) 100%\);/);
   assert.match(page, /<img src="assets\/astrion-logo-white\.png" alt="Astrion" width="176" height="30"/, "white logo is the default on dark");
 });
@@ -108,8 +119,15 @@ test("accessibility and motion affordances match the division page", () => {
   assert.match(page, /<a class="skip" href="#main">Skip to content<\/a>/);
   assert.match(page, /<main id="main">/);
   assert.match(page, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(page, /html\.js \.reveal \{ opacity: 0; transform: translateY\(18px\); \}/,
+  assert.match(page, /html\.js \.reveal \{ opacity: 0; translate: 0 18px; \}/,
     "reveal hiding is gated on JavaScript so content stays visible without it");
+  assert.match(page, /html \{ scroll-behavior: smooth; scroll-padding-top: 84px; \}/, "focus and anchor targets clear the sticky nav");
+  assert.match(page, /\.sr-only \{ position: absolute; width: 1px; height: 1px;/);
+  assert.doesNotMatch(page, /<span class="arr">/, "decorative arrows are hidden from assistive technology");
+  assert.match(page, /<a class="card linkcard hud reveal" href="\.\.\/astrion-division\/ldawif\/" aria-labelledby="ldawif-card-title ldawif-card-cta">/);
+  for (const part of ["eval-bar", "eval-scope", "eval-foot"]) assert.match(page, new RegExp(`<div class="${part}" aria-hidden="true">`), `${part} is presentational inside the role=img console`);
+  assert.equal((page.match(/<span class="lc" aria-hidden="true">/g) || []).length, 5, "lifecycle chips are presentational inside the role=img loop");
+  assert.doesNotMatch(page, /target="_blank"/, "every astrion.us link behaves the same: same tab, like the division page");
   assert.match(page, /<div class="hero-terrain" aria-hidden="true">/);
   assert.match(page, /<div class="eval hud" role="img" aria-label="/);
   const anchors = [...new Set([...page.matchAll(/href="#([^"]+)"/g)].map(match => match[1]))];
@@ -129,4 +147,29 @@ test("the landing page is cataloged in the application library and README", () =
   assert.match(hub, /title: "Astrion · Mission Segments",[\s\S]{0,800}repoUrl: "https:\/\/github\.com\/AzJester\/work\/tree\/main\/astrion"/);
   assert.match(readme, /## Astrion Company Landing Page/);
   assert.match(readme, /https:\/\/azjester\.github\.io\/work\/astrion\//);
+});
+
+test("motion can be paused on the page, not only through the OS setting", () => {
+  assert.match(page, /<button type="button" class="btn btn-ghost" id="motion-toggle">Pause motion<\/button>/, "a plain action button whose label carries the state");
+  assert.doesNotMatch(page, /aria-pressed/, "no second state channel that could contradict the label");
+  assert.match(page, /html\.still \{ scroll-behavior: auto; \}/);
+  assert.match(page, /classList\.add\('still'\)/, "a stored pause lands before first paint");
+  assert.match(page, /if\(!armed\)\{ if\(residual>0\.05 \|\| runT>N\*DT\) armed=true; \}/, "every run arms on time as well as on level");
+  assert.match(page, /html\.still \*, html\.still \*::before, html\.still \*::after \{ animation: none !important; transition: none !important; \}/);
+  assert.match(page, /@media \(prefers-reduced-motion: reduce\) \{\s*html:not\(\.motion\) \*, html:not\(\.motion\) \*::before, html:not\(\.motion\) \*::after \{ animation: none !important; transition: none !important; \}/,
+    "the OS setting silences every animation and transition unless the visitor explicitly resumes");
+  assert.match(page, /html\.still \.hero-terrain canvas \{ pointer-events: none; cursor: default; \}/);
+  assert.match(page, /@media \(min-width: 941px\) and \(hover: hover\) and \(pointer: fine\) \{/, "the survey field is only interactive for a fine pointer that can hover");
+  assert.match(page, /if\(motion\.still\(\) \|\| !fine\(e\) \|\| e\.button!==0\) return;/, "touch pans and secondary buttons never drop a survey fix");
+});
+
+test("company facts match Astrion's own published wording", () => {
+  assert.match(page, /Headquartered in Huntsville, Alabama, with Centers of Excellence there, in Washington, DC, and in Burlington, Massachusetts/);
+  assert.match(page, /<div class="num">6,000\+<\/div>/, "headcount follows the source: more than 6,000");
+  assert.doesNotMatch(page, /Headquartered in Washington/);
+  assert.doesNotMatch(page, /One of two Centers of Excellence/);
+  assert.match(page, /<span class="ctag">\/\/ HEADQUARTERS<\/span>\s*<h3>Huntsville, AL<\/h3>/);
+  assert.match(page, /Formed from ERC and Oasis Systems, joined by Axient in 2024\./);
+  assert.match(page, /<!-- Company facts: astrion\.us\/our-story/, "sources are recorded next to the copy");
+  assert.match(division, /<a href="\.\.\/\.\.\/astrion\/">Company<\/a>/, "the division page routes back to the company page");
 });
