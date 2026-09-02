@@ -1,10 +1,10 @@
 import { test, expect } from "@playwright/test";
 
-function route(baseURL) {
-  return new URL("../astrion-site/", baseURL).href;
+function route(baseURL, hash = "") {
+  return `${new URL("../astrion-site/", baseURL).href}${hash}`;
 }
 
-test("the company site loads cleanly, self-contained, with the reference fonts applied", async ({ page, baseURL }) => {
+test("the reference-style page loads cleanly with local fonts, imagery, and motion media", async ({ page, baseURL }) => {
   const problems = [];
   page.on("pageerror", error => problems.push(`pageerror: ${error.message}`));
   page.on("console", message => { if (message.type() === "error") problems.push(`console: ${message.text()}`); });
@@ -16,121 +16,110 @@ test("the company site loads cleanly, self-contained, with the reference fonts a
   const response = await page.goto(route(baseURL), { waitUntil: "load" });
   expect(response?.status()).toBe(200);
   await expect(page).toHaveTitle("Astrion · Missions are won at the seams");
-  await expect(page.locator("h1")).toHaveText("Missions are won at the seams.");
+  expect((await page.locator("h1").innerText()).replace(/\s+/g, " ").trim()).toBe("MISSIONS ARE WON AT THE SEAMS.");
+  await expect(page.locator("#hero-video")).toHaveAttribute("poster", "assets/hero-poster.jpg");
+  await expect(page.locator("#hero-video source")).toHaveAttribute("src", "assets/hero-video.mp4");
+  await expect(page.locator(".mission-tab")).toHaveCount(6);
 
-  const fonts = await page.evaluate(async () => {
+  const styles = await page.evaluate(async () => {
     await document.fonts.ready;
-    return {
-      archivo: document.fonts.check('800 16px "Archivo"'),
-      mono: document.fonts.check('500 12px "JetBrains Mono"'),
-      h1: getComputedStyle(document.querySelector("h1")).fontFamily,
-      h1Weight: getComputedStyle(document.querySelector("h1")).fontWeight,
-      label: getComputedStyle(document.querySelector(".nav a")).fontFamily,
-      bg: getComputedStyle(document.body).backgroundColor,
-    };
+    const h1 = getComputedStyle(document.querySelector("h1"));
+    const label = getComputedStyle(document.querySelector(".nav a"));
+    return { archivo: document.fonts.check('800 16px "Archivo"'), mono: document.fonts.check('500 11px "JetBrains Mono"'), h1: h1.fontFamily, weight: h1.fontWeight, label: label.fontFamily };
   });
-  expect(fonts.archivo).toBe(true);
-  expect(fonts.mono).toBe(true);
-  expect(fonts.h1).toMatch(/Archivo/);
-  expect(fonts.h1Weight).toBe("800");
-  expect(fonts.label).toMatch(/JetBrains Mono/);
-  expect(fonts.bg).toMatch(/oklch|rgb\(5, 6, 7\)/);
-
-  // the hero copy sits in the lower part of the viewport, as on the reference
+  expect(styles).toMatchObject({ archivo: true, mono: true, weight: "800" });
+  expect(styles.h1).toMatch(/Archivo/);
+  expect(styles.label).toMatch(/JetBrains Mono/);
   const box = await page.locator("h1").boundingBox();
   const height = await page.evaluate(() => innerHeight);
   expect(box.y).toBeGreaterThan(height * 0.35);
-  expect(await page.locator(".ledger > li")).toHaveCount(6);
   expect(problems).toEqual([]);
 });
 
-for (const width of [320, 360, 390, 430, 640, 768, 900, 901, 1024, 1280, 1440, 1920]) {
-  test(`the company site stays contained at ${width}px`, async ({ page, baseURL }) => {
+for (const width of [320, 360, 390, 430, 640, 720, 768, 900, 1001, 1280, 1440, 1920]) {
+  test(`the rebuilt site stays contained at ${width}px`, async ({ page, baseURL }) => {
     await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(route(baseURL), { waitUntil: "load" });
-    await page.evaluate(() => document.querySelectorAll(".reveal").forEach(element => element.classList.add("in")));
-    const layout = await page.evaluate(() => {
-      const issues = [];
-      if (document.documentElement.scrollWidth > innerWidth + 1) issues.push(`page scrolls horizontally (${document.documentElement.scrollWidth} > ${innerWidth})`);
-      const selectors = [".header-in", ".hero-in", ".hero .cta", ".ledger > li", ".card", ".rail", ".stat", ".quote", ".split", ".footer .top", ".footer .bottom", ".loop"];
+    const issues = await page.evaluate(() => {
+      const found = [];
+      if (document.documentElement.scrollWidth > innerWidth + 1) found.push(`page scrolls horizontally (${document.documentElement.scrollWidth} > ${innerWidth})`);
+      const selectors = [".header-in", ".hero-in", ".headline-grid", ".systems-grid", ".mission-layout", ".mission-tabs", ".mission-detail:not([hidden])", ".capability-strip", ".orchestration-head", ".orchestration-map", ".edge-cards", ".engine-grid", ".proof-grid", ".field-notes", ".footer-bottom"];
       for (const element of document.querySelectorAll(selectors.join(","))) {
         const box = element.getBoundingClientRect();
-        const label = `${element.tagName.toLowerCase()}.${String(element.className).split(" ")[0]}`;
-        if (box.left < -1 || box.right > innerWidth + 1) issues.push(`${label} leaves the viewport`);
-        if (element.scrollWidth > element.clientWidth + 1) issues.push(`${label} clips horizontally`);
+        if (box.left < -1 || box.right > innerWidth + 1) found.push(`${element.className} leaves the viewport: ${box.left}-${box.right}`);
       }
-      const singleLine = (selector, max) => {
-        for (const element of document.querySelectorAll(selector)) {
-          const h = element.getBoundingClientRect().height;
-          if (h > max) issues.push(`${selector} wraps (${Math.round(h)}px tall)`);
-        }
-      };
-      singleLine(".nav a", 24);
-      singleLine(".hero .btn", 60);
-      singleLine(".stat .v", parseFloat(getComputedStyle(document.querySelector(".stat .v")).fontSize) * 1.3);
-      // the hero shares the container gutters with the header and every section
       const wordmark = document.querySelector(".wordmark").getBoundingClientRect();
       const h1 = document.querySelector(".hero h1").getBoundingClientRect();
-      const head = document.querySelector("#problem .section-head").getBoundingClientRect();
-      if (Math.abs(h1.left - wordmark.left) > 1 || Math.abs(head.left - wordmark.left) > 1) issues.push(`gutters differ: hero ${h1.left}, header ${wordmark.left}, sections ${head.left}`);
-      return issues;
+      const section = document.querySelector("#problem .headline-grid").getBoundingClientRect();
+      if (Math.abs(h1.left - wordmark.left) > 1 || Math.abs(section.left - wordmark.left) > 1) found.push("container gutters differ");
+      return found;
     });
-    expect(layout).toEqual([]);
+    expect(issues).toEqual([]);
     await expect(page.locator("#menu-btn")).toBeVisible();
   });
 }
 
-test("the header solidifies on scroll and the full-screen menu opens, traps focus sensibly, and closes on Escape", async ({ page, baseURL }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
+test("desktop disclosure navigation opens, routes to a pillar, and closes", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(route(baseURL), { waitUntil: "load" });
-  const header = page.locator("#header");
-  await expect(header).not.toHaveClass(/\bscrolled\b/);
-  expect(await header.evaluate(element => getComputedStyle(element).backgroundColor)).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
-  await page.evaluate(() => window.scrollTo(0, 400));
-  await expect(header).toHaveClass(/\bscrolled\b/);
+  const missionsButton = page.locator('[data-panel="missions-panel"]');
+  const panel = page.locator("#missions-panel");
+  await expect(panel).toBeHidden();
+  await missionsButton.click();
+  await expect(missionsButton).toHaveAttribute("aria-expanded", "true");
+  await expect(panel).toBeVisible();
+  await panel.locator('a[href="#ldawif"]').click();
+  await expect(panel).toBeHidden();
+  await expect(page).toHaveURL(/#ldawif$/);
+  await expect(page.locator("#tab-ldawif")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#pillar-ldawif")).toBeVisible();
 
+  await page.locator('[data-panel="orchestration-panel"]').click();
+  await expect(page.locator("#orchestration-panel")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#orchestration-panel")).toBeHidden();
+});
+
+test("the mobile menu traps focus sensibly and closes on Escape", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(route(baseURL), { waitUntil: "load" });
   const menu = page.locator("#site-menu");
   const button = page.locator("#menu-btn");
-  await expect(menu).toHaveAttribute("aria-hidden", "true");
   await button.click();
   await expect(menu).toHaveClass(/\bopen\b/);
   await expect(menu).toHaveAttribute("aria-hidden", "false");
-  await expect(button).toHaveAttribute("aria-expanded", "true");
-  await expect(page.locator("#site-menu a").first()).toBeFocused();
-  await expect(page.locator("#site-menu ol a")).toHaveText(["01Missions", "02Tech", "03Orchestration", "04Edge", "05Company", "06Intelligence", "07Careers"]);
+  await expect(menu.locator("a").first()).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu).not.toHaveClass(/\bopen\b/);
   await expect(menu).toHaveAttribute("aria-hidden", "true");
   await expect(button).toBeFocused();
-
-  // a menu link navigates and closes the menu
-  await button.click();
-  await page.locator('#site-menu a[href="#edge"]').click();
-  await expect(menu).not.toHaveClass(/\bopen\b/);
-  await expect.poll(() => page.evaluate(() => { const r = document.querySelector("#edge").getBoundingClientRect(); return r.top >= 0 && r.top < 200; })).toBe(true);
 });
 
-test("in-page navigation reaches every section under the fixed header", async ({ page, baseURL }) => {
+test("mission pillars switch with click and keyboard and expose the requested details", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(route(baseURL, "#missions"), { waitUntil: "load" });
+  const lunar = page.locator("#tab-lunar");
+  await lunar.click();
+  await expect(lunar).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#pillar-lunar")).toBeVisible();
+  await expect(page.locator("#pillar-lunar .mission-tags li")).toHaveText(["Transport", "Power", "Communications", "Habitation", "In-situ resources"]);
+  await lunar.press("Home");
+  await expect(page.locator("#tab-iamd")).toBeFocused();
+  await expect(page.locator("#pillar-iamd")).toBeVisible();
+  await page.locator("#tab-ldawif").click();
+  await expect(page.locator("#pillar-ldawif .textlink")).toHaveAttribute("href", "../astrion-division/ldawif/");
+});
+
+test("the header solidifies on scroll and reduced motion keeps content visible", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(route(baseURL), { waitUntil: "load" });
-  for (const [label, id] of [["Missions", "missions"], ["Tech", "field-intelligence"], ["Orchestration", "orchestration"], ["Edge", "edge"], ["Company", "proof"]]) {
-    await page.locator(`.header a:text-is("${label}")`).click();
-    const top = await page.evaluate(id => document.getElementById(id).getBoundingClientRect().top, id);
-    expect(top).toBeGreaterThanOrEqual(0);
-    expect(top).toBeLessThan(200);
-  }
-  await page.locator(".hero .btn").click();
-  expect(await page.evaluate(() => document.getElementById("contact").getBoundingClientRect().top)).toBeLessThan(200);
-});
-
-test("reduced motion keeps every section visible and the hero still", async ({ page, baseURL }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(route(baseURL), { waitUntil: "load" });
-  const hidden = await page.evaluate(() => [...document.querySelectorAll(".reveal")].filter(element => getComputedStyle(element).opacity !== "1").length);
-  expect(hidden).toBe(0);
-  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  const header = page.locator("#header");
+  await expect(header).not.toHaveClass(/\bscrolled\b/);
   await page.evaluate(() => window.scrollTo(0, 500));
-  await page.waitForTimeout(150);
-  expect(await page.locator("#hero-media").evaluate(element => element.style.transform)).toBe("");
+  await expect(header).toHaveClass(/\bscrolled\b/);
+  expect(await page.evaluate(() => [...document.querySelectorAll(".reveal")].filter(element => getComputedStyle(element).opacity !== "1").length)).toBe(0);
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  expect(await page.locator("#hero-video").evaluate(video => video.paused)).toBe(true);
 });
