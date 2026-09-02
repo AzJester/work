@@ -132,6 +132,10 @@ test("deep-linked filters and application links resolve visibly and correctly", 
   const astrionLdawif = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Astrion Division · LDAWIF", exact: true }) });
   await expect(astrionLdawif.getByRole("link", { name: /^View source:/ })).toHaveAttribute("href", "https://github.com/AzJester/work/tree/main/astrion-division/ldawif");
 
+  const astrionLanding = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Astrion · Mission Segments", exact: true }) });
+  await expect(astrionLanding.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://azjester.github.io/work/astrion/");
+  await expect(astrionLanding.getByRole("link", { name: /^View source:/ })).toHaveAttribute("href", "https://github.com/AzJester/work/tree/main/astrion");
+
   const skills = page.locator('[data-resource="claude-skills"]');
   await expect(skills.getByRole("link", { name: /Browse Claude and AI Agent Skills/ })).toHaveAttribute("href", "https://github.com/AzJester/skills");
 

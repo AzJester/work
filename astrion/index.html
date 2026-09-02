@@ -23,6 +23,7 @@
 <meta property="og:image" content="https://azjester.github.io/work/astrion/assets/og-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Astrion. Defend This World. Build the Next. Six mission segments, from integrated air and missile defense to exploration and lunar presence.">
 <meta name="twitter:card" content="summary_large_image">
 <script>(function(){var h=document.documentElement;h.classList.add('js');try{var m=localStorage.getItem('astrion-motion');if(m==='still'||(!m&&matchMedia('(prefers-reduced-motion: reduce)').matches))h.classList.add('still');else if(m==='motion')h.classList.add('motion');}catch(e){}})();</script>
 <style>
@@ -61,14 +62,14 @@
     --gradient: linear-gradient(90deg, var(--refraction) 0%, var(--daylight) 50%, var(--zenith) 100%);
 
     --bg: var(--black);
-    --bg-2: #141b26;
+    --bg-2: rgba(30,36,54,.5);        /* Deep Space tint over Astrion Black for the proof band */
     --panel: rgba(30,36,54,.62);      /* Deep Space, translucent, over Astrion Black */
     --panel-2: rgba(30,36,54,.9);
 
     --ink: var(--alabaster);
     --ink-body: var(--platinum);
     --ink-dim: var(--silver);
-    --mono-dim: #8b93a7; /* >=4.5:1 on --bg for the small mono labels */
+    --mono-dim: rgba(189,189,189,.72); /* Silver at alpha: >=4.5:1 on --bg and Midnight for the small mono labels */
     --edge: rgba(189,189,189,.22);
     --edge-hot: rgba(41,170,225,.65);
     --line: rgba(241,233,219,.09);
@@ -112,7 +113,7 @@
   a { color: inherit; text-decoration: none; }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
 
-  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--sky); color: #04222f; padding: 10px 16px; font-weight: 600; }
+  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--sky); color: var(--black); padding: 10px 16px; font-weight: 600; }
   .skip:focus { left: 12px; top: 12px; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
@@ -169,7 +170,7 @@
     clip-path: var(--notch-sm); transition: transform .15s ease, filter .15s ease, background .15s ease, color .15s ease; }
   button.btn { border: 0; }
   .btn .short { display: none; }
-  .btn-primary { background: var(--sky); color: #04222f; filter: drop-shadow(0 0 13px rgba(41,170,225,.4)); }
+  .btn-primary { background: var(--sky); color: var(--black); filter: drop-shadow(0 0 13px rgba(41,170,225,.4)); }
   .btn-primary:hover { transform: translateY(-1px); filter: drop-shadow(0 0 20px rgba(41,170,225,.6)); }
   .btn-ghost { position: relative; background: transparent; color: var(--ink); }
   .btn-ghost::before { content:""; position:absolute; inset:0; padding:1px; background: var(--edge-hot);
@@ -249,7 +250,7 @@
     box-shadow: 0 0 20px 5px var(--refraction-glow); animation: run 4.6s cubic-bezier(.5,0,.5,1) infinite; }
   @keyframes run { 0%{left:0%; background:var(--refraction); box-shadow:0 0 20px 5px var(--refraction-glow);}
     50%{background:var(--daylight); box-shadow:0 0 20px 5px rgba(77,211,247,.6);}
-    100%{left:100%; background:var(--zenith); box-shadow:0 0 20px 5px rgba(147,130,249,.6);} }
+    100%{left:calc(100% - 14px); background:var(--zenith); box-shadow:0 0 20px 5px rgba(147,130,249,.6);} }
   .nodes { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
     list-style: none; margin: 0; padding: 0; }
   .node { position: relative; padding-top: 40px; }
@@ -278,8 +279,8 @@
     mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%);
     -webkit-mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%); }
   .hero-terrain canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .terrain-hint { position: absolute; right: 6%; top: 16%; display: none; font-family: var(--mono); font-size: 10px;
-    letter-spacing: .18em; text-transform: uppercase; color: var(--sky); opacity: .85;
+  .terrain-hint { position: absolute; right: 6%; top: 16%; z-index: 1; display: none; pointer-events: none; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--daylight); opacity: 1;
     transition: opacity .6s ease; }
   .terrain-hint.off { opacity: 0; }
   /* the survey needs a fine pointer that can hover: a touch pan on a wide tablet must scroll, not drop a fix */
@@ -342,7 +343,7 @@
   .seglink:hover .arr { transform: translateX(3px); }
 
   /* ---------------- APPROACH BAND ---------------- */
-  .approach { background: linear-gradient(120deg, var(--midnight), #262a3d 52%, var(--deep)); overflow: hidden; }
+  .approach { background: linear-gradient(120deg, var(--midnight), var(--deep)); overflow: hidden; }
   /* terrain pattern: Alabaster contours on Midnight, kept low so it stays texture */
   .approach::after { content:""; position:absolute; inset:0; opacity:.14; pointer-events:none; z-index:0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23F1E9DB' stroke-width='1'%3E%3Cpath d='M-20 60c40-30 80-30 120 0s80 30 120 0 80-30 120 0'/%3E%3Cpath d='M-20 100c40-26 80-26 120 0s80 26 120 0 80-26 120 0'/%3E%3Cpath d='M-20 140c40-22 80-22 120 0s80 22 120 0 80-22 120 0'/%3E%3Cpath d='M-20 180c40-18 80-18 120 0s80 18 120 0 80-18 120 0'/%3E%3Cpath d='M-20 220c40-24 80-24 120 0s80 24 120 0 80-24 120 0'/%3E%3Cpath d='M-20 260c40-30 80-30 120 0s80 30 120 0 80-30 120 0'/%3E%3Cpath d='M-20 300c40-26 80-26 120 0s80 26 120 0 80-26 120 0'/%3E%3Cpath d='M-20 20c40-20 80-20 120 0s80 20 120 0 80-20 120 0'/%3E%3C/g%3E%3C/svg%3E");
@@ -404,8 +405,9 @@
 
   /* ---------------- PROOF ---------------- */
   .proof { background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .proof-label { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; color: var(--mono-dim);
-    text-transform: uppercase; margin-bottom: 28px; }
+  .proof-label { font-family: var(--mono); font-size: 11px; font-weight: normal; letter-spacing: .22em; color: var(--mono-dim);
+    text-transform: uppercase; margin: 0 0 28px; }
+  .proof-label::before { content: "// "; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
   .stat { padding: 20px 20px; background: var(--panel); }
   .stat .accent { position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; box-shadow: 0 0 10px currentColor; }
@@ -451,8 +453,7 @@
   .contact h2 { font-size: clamp(28px, 4.1vw, 46px); line-height: 1.1; margin: 8px 0 16px; letter-spacing: -.015em; }
   .contact p { color: var(--ink-dim); font-size: 17px; margin: 0 0 26px; max-width: 48ch; }
   .contact .panel { background: var(--panel); padding: 28px; }
-  .contact .panel .mark { display: block; width: 176px; height: auto; margin: 0 auto 22px;
-    filter: drop-shadow(0 0 18px rgba(41,170,225,.18)); }
+  .contact .panel .mark { display: block; width: 176px; height: auto; margin: 0 auto 22px; }
   .contact .panel .row { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .contact .panel .row:last-child { border-bottom: none; }
   .contact .panel .k { color: var(--mono-dim); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
@@ -479,6 +480,8 @@
   }
   @media (max-width: 1080px) {
     .co-grid { grid-template-columns: repeat(2, 1fr); }
+    .segment { gap: 18px; }
+    .segment .glyph { width: 96px; height: 96px; }
   }
   @media (max-width: 940px) {
     .segments { grid-template-columns: 1fr; }
@@ -510,6 +513,8 @@
     .nav .btn .short { display: inline; }
   }
   @media (max-width: 420px) {
+    .co-featured { grid-template-columns: 1fr; gap: 16px; padding: 22px 20px; }
+    .co-featured .who h3 { font-size: 21px; }
     .nav-in { gap: 14px; }
     .logo img { height: 24px; }
     .nav .btn { padding: 11px 14px; font-size: 11.5px; letter-spacing: .06em; }
@@ -530,14 +535,14 @@
   /* html.motion marks an explicit in-page resume, which lifts the OS-level stillness */
   @media (prefers-reduced-motion: reduce) {
     html:not(.motion) *, html:not(.motion) *::before, html:not(.motion) *::after { animation: none !important; transition: none !important; }
-    html:not(.motion) .rail .pulse { left: 100%; background: var(--zenith); }
+    html:not(.motion) .rail .pulse { left: calc(100% - 14px); background: var(--zenith); }
     html:not(.motion) .reveal { opacity: 1 !important; translate: none !important; }
     html:not(.motion) .terrain-hint { display: none; }
     html:not(.motion) .hero-terrain canvas { pointer-events: none; cursor: default; }
   }
   html.still { scroll-behavior: auto; }
   html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
-  html.still .rail .pulse { left: 100%; background: var(--zenith); }
+  html.still .rail .pulse { left: calc(100% - 14px); background: var(--zenith); }
   html.still .reveal { opacity: 1 !important; translate: none !important; }
   html.still .terrain-hint { display: none; }
   html.still .hero-terrain canvas { pointer-events: none; cursor: default; }
@@ -551,7 +556,7 @@
   <div class="wrap nav-in">
     <!-- Official Astrion wordmark, white treatment (the 2026 default on dark). Keep clear space = logotype x-height. -->
     <a class="logo" href="https://astrion.us" aria-label="Astrion home">
-      <img src="assets/astrion-logo-white.png" alt="Astrion" width="176" height="30" decoding="async">
+      <img src="assets/astrion-logo-white.png" alt="Astrion" width="1000" height="170" decoding="async">
     </a>
     <nav class="nav-links" aria-label="Primary">
       <a class="link" href="#segments">Mission segments</a>
@@ -568,7 +573,8 @@
   <!-- HERO -->
   <section class="hero">
     <!-- ambient terrain field; surveyable on pointer widths -->
-    <div class="hero-terrain" aria-hidden="true"><canvas id="terrain"></canvas><span class="terrain-hint" id="terrainhint">// Survey the field · drop a fix</span></div>
+    <div class="hero-terrain" aria-hidden="true"><canvas id="terrain"></canvas></div>
+    <span class="terrain-hint" id="terrainhint" aria-hidden="true">// Survey the field · drop a fix</span>
     <div class="wrap hero-in">
       <p class="eyebrow">Defend This World. Build the Next.</p>
       <h1>Built for the <span class="hl">outcome.</span></h1>
@@ -782,7 +788,7 @@
   <!-- PROOF -->
   <section class="proof">
     <div class="wrap">
-      <div class="proof-label reveal">// Track record</div>
+      <h2 class="proof-label reveal">Track record</h2>
       <div class="stats">
         <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">6,000+</div><div class="lbl">People serving customers across the U.S. and overseas</div></div>
         <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">~150</div><div class="lbl">Programs supported across defense, space, intelligence, cyber, and civil</div></div>
@@ -1172,7 +1178,7 @@
     else { window.addEventListener('resize', resize); }
     if(motion.still()){
       // static scene: a validated run, counters describe the drawn picture
-      bias=0.012; for(var k=0;k<N;k++){ var xk=((k-N+1)*DT)*0.9; model[k]=pred(xk); live[k]=pred(xk)+gap(xk,bias); }
+      bias=0.0107; for(var k=0;k<N;k++){ var xk=((k-N+1)*DT)*0.9; model[k]=pred(xk); live[k]=pred(xk)+gap(xk,bias); }
       run=7; validated=true; armed=true; residual=0.011;
       if(resEl) resEl.textContent='1.1%'; if(runEl) runEl.textContent='RUN 07';
       setState('VALIDATED','state-ok');
