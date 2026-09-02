@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astrion · Defend This World. Build the Next.</title>
+<meta name="description" content="Astrion engineers, integrates, and proves mission systems across six mission segments, from integrated air and missile defense to exploration and lunar presence.">
+<meta name="theme-color" content="#101820">
+<!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="canonical" href="https://azjester.github.io/work/astrion/">
+<link rel="preload" href="assets/fonts/Archivo-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Archivo-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Archivo-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Astrion">
+<meta property="og:title" content="Astrion · Defend This World. Build the Next.">
+<meta property="og:description" content="Built for the outcome. Six mission segments, one engineering discipline: capabilities proven under real conditions before they reach the field.">
+<meta property="og:url" content="https://azjester.github.io/work/astrion/">
+<meta property="og:image" content="https://azjester.github.io/work/astrion/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script>(function(){var h=document.documentElement;h.classList.add('js');try{var m=localStorage.getItem('astrion-motion');if(m==='still'||(!m&&matchMedia('(prefers-reduced-motion: reduce)').matches))h.classList.add('still');else if(m==='motion')h.classList.add('motion');}catch(e){}})();</script>
+<style>
+  /* ============================================================
+     ASTRION COMPANY LANDING: technical / futuristic HUD skin
+     Same design system as the LDAWIF division page, carried onto
+     the 2026 Brand Evolution: Archivo type (self-hosted), a
+     dark-first palette built on Astrion Black, Midnight, and Deep
+     Space, Astrion Sky for interaction, Supernova for callouts,
+     and the Refraction > Daylight > Zenith gradient as thin rules.
+     Astrion Force purple is logo-only under the 2026 standards and
+     does not appear here. Self-contained page + local assets/.
+     ============================================================ */
+
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 400; font-display: swap; src: url("assets/fonts/Archivo-Regular.woff2") format("woff2"); }
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 600; font-display: swap; src: url("assets/fonts/Archivo-SemiBold.woff2") format("woff2"); }
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 700; font-display: swap; src: url("assets/fonts/Archivo-Bold.woff2") format("woff2"); }
+
+  :root {
+    /* 2026 palette */
+    --black: #101820;
+    --midnight: #222230;
+    --deep: #1E2436;
+    --alabaster: #F1E9DB;
+    --platinum: #DDDDDD;
+    --silver: #BDBDBD;
+    --twilight: #FC5442;
+    --supernova: #FFAF2E;
+    --sky: #29AAE1;
+    --refraction: #1ED872;
+    --daylight: #4DD3F7;
+    --zenith: #9382F9;
+
+    --sky-glow: rgba(41,170,225,.55);
+    --refraction-glow: rgba(30,216,114,.5);
+    --gradient: linear-gradient(90deg, var(--refraction) 0%, var(--daylight) 50%, var(--zenith) 100%);
+
+    --bg: var(--black);
+    --bg-2: #141b26;
+    --panel: rgba(30,36,54,.62);      /* Deep Space, translucent, over Astrion Black */
+    --panel-2: rgba(30,36,54,.9);
+
+    --ink: var(--alabaster);
+    --ink-body: var(--platinum);
+    --ink-dim: var(--silver);
+    --mono-dim: #8b93a7; /* >=4.5:1 on --bg for the small mono labels */
+    --edge: rgba(189,189,189,.22);
+    --edge-hot: rgba(41,170,225,.65);
+    --line: rgba(241,233,219,.09);
+
+    --font: "Archivo", Arial, Helvetica, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, "Cascadia Code", monospace;
+
+    --maxw: 1180px;
+    --pad: clamp(20px, 5vw, 66px);
+    --notch: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
+    --notch-sm: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--ink-body);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* ambient console grid over the whole page, very faint */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .04;
+    background-image:
+      linear-gradient(rgba(241,233,219,.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(241,233,219,.6) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at 50% 0%, #000, transparent 85%);
+    -webkit-mask-image: radial-gradient(circle at 50% 0%, #000, transparent 85%);
+  }
+  body > * { position: relative; z-index: 1; }
+
+  h1, h2, h3 { color: var(--ink); font-weight: 700; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+
+  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--sky); color: #04222f; padding: 10px 16px; font-weight: 600; }
+  .skip:focus { left: 12px; top: 12px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
+
+  /* notched HUD panel with masked 1px glow edge.
+     Standard mask longhands accompany the -webkit- ones so the
+     ring renders as a ring (not a filled overlay) in every engine. */
+  .hud { position: relative; clip-path: var(--notch); }
+  .hud::before {
+    content: ""; position: absolute; inset: 0; padding: 1px; background: var(--edge);
+    clip-path: var(--notch); pointer-events: none;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    mask-clip: content-box, border-box;
+    mask-composite: exclude;
+    transition: background .2s ease;
+  }
+  .hud:hover::before { background: var(--edge-hot); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--sky); margin: 0 0 16px; display: inline-flex; align-items: center; gap: 11px;
+  }
+  .eyebrow::before { content: "";
+    width: 8px; height: 8px; background: var(--sky); box-shadow: 0 0 10px var(--sky-glow);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); display: inline-block; flex: none; }
+
+  /* ---------------- NAV ---------------- */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(16,24,32,.74);
+    backdrop-filter: saturate(150%) blur(12px); -webkit-backdrop-filter: saturate(150%) blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-in { display: flex; align-items: center; gap: 22px; height: 68px; }
+  .logo { display: inline-flex; align-items: center; }
+  /* white logo is the 2026 default treatment; clear space = logotype x-height */
+  .logo img { height: 30px; width: auto; display: block; }
+  .nav-links { margin-left: auto; display: flex; align-items: center; gap: 28px; }
+  .nav-links a.link { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; white-space: nowrap; }
+  .nav-links a.link:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
+
+  .status { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--mono-dim);
+    display: inline-flex; align-items: center; gap: 12px; padding-left: 6px; }
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--refraction);
+    box-shadow: 0 0 0 0 var(--refraction-glow); animation: ping 2.6s ease-out infinite; }
+  .status b { color: var(--refraction); font-weight: normal; }
+  .status .clk { color: var(--sky); }
+  @keyframes ping { 0%{box-shadow:0 0 0 0 var(--refraction-glow);} 70%{box-shadow:0 0 0 7px rgba(30,216,114,0);} 100%{box-shadow:0 0 0 0 rgba(30,216,114,0);} }
+
+  .btn { font-family: var(--mono); font-weight: bold; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase;
+    padding: 12px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+    clip-path: var(--notch-sm); transition: transform .15s ease, filter .15s ease, background .15s ease, color .15s ease; }
+  button.btn { border: 0; }
+  .btn .short { display: none; }
+  .btn-primary { background: var(--sky); color: #04222f; filter: drop-shadow(0 0 13px rgba(41,170,225,.4)); }
+  .btn-primary:hover { transform: translateY(-1px); filter: drop-shadow(0 0 20px rgba(41,170,225,.6)); }
+  .btn-ghost { position: relative; background: transparent; color: var(--ink); }
+  .btn-ghost::before { content:""; position:absolute; inset:0; padding:1px; background: var(--edge-hot);
+    clip-path: var(--notch-sm);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+    mask-clip: content-box, border-box;
+    mask-composite: exclude; }
+  .btn-ghost:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
+
+  /* target-lock brackets: corner marks snap onto interactive elements on hover.
+     At rest the marks sit inside the box (a scaled rest state would count as scrollable
+     overflow); the snap-in runs as a hover keyframe instead of a transition. */
+  .btn { position: relative; }
+  .btn::after, .card::after, .segment::after, .cap::after { content: ""; position: absolute; inset: 5px;
+    pointer-events: none; opacity: 0;
+    transition: opacity .16s ease;
+    background:
+      linear-gradient(currentColor, currentColor) left top / 13px 2px no-repeat,
+      linear-gradient(currentColor, currentColor) left top / 2px 13px no-repeat,
+      linear-gradient(currentColor, currentColor) right bottom / 13px 2px no-repeat,
+      linear-gradient(currentColor, currentColor) right bottom / 2px 13px no-repeat; }
+  .card::after { color: var(--sky); }
+  .segment::after { color: var(--accent, var(--sky)); }
+  .cap::after { color: rgba(241,233,219,.9); }
+  .btn:hover::after, .btn:focus-visible::after,
+  .card:hover::after, .segment:hover::after, .cap:hover::after { opacity: .85; animation: lock .16s ease; }
+  @keyframes lock { from { transform: scale(1.15); } to { transform: none; } }
+  /* outlines are clipped away by clip-path, so focus rings go inset on every notched control */
+  .btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px currentColor; }
+  .seglink:focus-visible, .chainlink:focus-visible, .node .spine:focus-visible { outline: none; box-shadow: inset 0 0 0 2px currentColor; }
+  .card.linkcard:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px var(--sky); }
+  .btn .arr { transition: transform .15s ease; }
+  .btn:hover .arr { transform: translateX(3px); }
+
+  /* ---------------- HERO ---------------- */
+  .hero { position: relative; overflow: hidden; padding: 0;
+    background:
+      radial-gradient(1200px 560px at 80% -12%, rgba(147,130,249,.16), transparent 62%),
+      radial-gradient(760px 440px at 4% 8%, rgba(41,170,225,.14), transparent 58%),
+      linear-gradient(180deg, var(--deep), var(--bg));
+    border-bottom: 1px solid var(--line); }
+
+  .hero-in { position: relative; z-index: 1; padding-top: clamp(66px, 12vh, 128px); padding-bottom: clamp(56px, 9vh, 96px); }
+  .hero h1 { font-size: clamp(34px, 5vw, 62px); line-height: 1; letter-spacing: -.01em; text-transform: uppercase;
+    margin: 8px 0 22px; max-width: 14ch; text-shadow: 0 0 40px rgba(41,170,225,.12); }
+  .hero h1 .hl { color: var(--sky); text-shadow: 0 0 26px var(--sky-glow); }
+  .hero h1::after { content: ""; display: block; width: 92px; height: 3px; margin-top: 22px; background: var(--gradient);
+    box-shadow: 0 0 14px rgba(77,211,247,.35); }
+  .lede { font-size: clamp(16px, 2.1vw, 20px); color: var(--ink-dim); max-width: 62ch; margin: 0 0 30px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+
+  /* HUD telemetry strip (decorative) */
+  .telem { position: relative; margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; color: var(--mono-dim);
+    padding: 12px 20px; }
+  .telem::before, .telem::after { content:""; position:absolute; width:11px; height:11px; }
+  .telem::before { top:0; left:0; border-top:1.5px solid var(--sky); border-left:1.5px solid var(--sky); }
+  .telem::after { bottom:0; right:0; border-bottom:1.5px solid var(--sky); border-right:1.5px solid var(--sky); }
+  .telem em { font-style: normal; color: var(--refraction); }
+  .telem .clk { color: var(--sky); }
+  .telem .amber { font-style: normal; color: var(--supernova); }
+  .telem .skyv { font-style: normal; color: var(--sky); }
+  .telem .sep { color: rgba(241,233,219,.18); }
+  .telem em { display: inline-block; transition: transform .15s ease; }
+  .telem em.bump { transform: scale(1.35); }
+
+  /* signature: the lifecycle we cover end to end */
+  .track { margin-top: clamp(46px, 8vh, 84px); }
+  .track-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--mono-dim);
+    text-transform: uppercase; margin-bottom: 20px; }
+  .rail { position: relative; }
+  .rail .line { position: absolute; left: 0; right: 0; top: 15px; height: 2px;
+    background: var(--gradient); opacity: .55; box-shadow: 0 0 14px rgba(77,211,247,.35); }
+  .rail .pulse { position: absolute; top: 9px; width: 14px; height: 14px; border-radius: 50%; background: var(--refraction);
+    box-shadow: 0 0 20px 5px var(--refraction-glow); animation: run 4.6s cubic-bezier(.5,0,.5,1) infinite; }
+  @keyframes run { 0%{left:0%; background:var(--refraction); box-shadow:0 0 20px 5px var(--refraction-glow);}
+    50%{background:var(--daylight); box-shadow:0 0 20px 5px rgba(77,211,247,.6);}
+    100%{left:100%; background:var(--zenith); box-shadow:0 0 20px 5px rgba(147,130,249,.6);} }
+  .nodes { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    list-style: none; margin: 0; padding: 0; }
+  .node { position: relative; padding-top: 40px; }
+  .node .dot { position: absolute; top: 7px; left: 0; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--deep); border: 2px solid var(--refraction); box-shadow: 0 0 14px var(--refraction-glow);
+    transition: transform .18s ease, background .18s ease; }
+  .node:nth-child(2) .dot { border-color: var(--daylight); box-shadow: 0 0 14px rgba(77,211,247,.5); }
+  .node:nth-child(3) .dot { border-color: var(--sky); box-shadow: 0 0 14px var(--sky-glow); }
+  .node:nth-child(4) .dot { border-color: var(--zenith); box-shadow: 0 0 14px rgba(147,130,249,.5); }
+  /* lifecycle trace: nodes flash in sequence when a live run validates */
+  .node .dot.hit { transform: scale(1.55); background: var(--refraction); }
+  .node:nth-child(2) .dot.hit { background: var(--daylight); }
+  .node:nth-child(3) .dot.hit { background: var(--sky); }
+  .node:nth-child(4) .dot.hit { background: var(--zenith); }
+  .node .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--mono-dim); display: block; margin-bottom: 6px; }
+  .node .nh { display: block; margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .01em; }
+  .node p { margin: 0; font-size: 13px; color: var(--ink-dim); max-width: 26ch; }
+  .node .spine { display: inline-block; margin-top: 9px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; white-space: nowrap;
+    color: var(--supernova); border: 1px solid rgba(255,175,46,.4); padding: 3px 8px; clip-path: var(--notch-sm); }
+  .node .spine:hover { color: var(--ink); border-color: var(--supernova); }
+
+  /* hero: the terrain field (systems + terrain) drifts ambiently behind the copy and is
+     surveyable: on pointer-capable widths the field brightens under the cursor and accepts
+     clicks that drop a survey fix */
+  .hero-terrain { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .9;
+    mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%);
+    -webkit-mask-image: radial-gradient(at 72% 50%, #000 0 34%, transparent 82%); }
+  .hero-terrain canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .terrain-hint { position: absolute; right: 6%; top: 16%; display: none; font-family: var(--mono); font-size: 10px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--sky); opacity: .85;
+    transition: opacity .6s ease; }
+  .terrain-hint.off { opacity: 0; }
+  /* the survey needs a fine pointer that can hover: a touch pan on a wide tablet must scroll, not drop a fix */
+  @media (min-width: 941px) and (hover: hover) and (pointer: fine) {
+    .hero-terrain canvas { pointer-events: auto; cursor: crosshair; }
+    .terrain-hint { display: block; }
+  }
+  /* let clicks in the empty hero regions fall through to the field; the CTA row and the
+     lifecycle track capture the pointer only on their actual controls */
+  .hero-in { pointer-events: none; }
+  .hero-in > * { pointer-events: auto; }
+  .hero-in .cta-row, .hero-in .track { pointer-events: none; }
+  .hero-in .cta-row > *, .hero-in .node { pointer-events: auto; }
+
+  /* ---------------- SECTION SHELL ---------------- */
+  section { padding: clamp(66px, 10vh, 112px) 0; position: relative; }
+  .sec-head { max-width: 68ch; margin-bottom: clamp(36px, 5vh, 58px); }
+  .sec-head h2 { font-size: clamp(26px, 3.7vw, 42px); line-height: 1.08; margin: 0 0 14px; letter-spacing: -.015em; }
+  .sec-head p { margin: 0; font-size: 17px; color: var(--ink-dim); }
+
+  .gridbg::after { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.05;
+    background-image: linear-gradient(rgba(41,170,225,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(41,170,225,.6) 1px, transparent 1px);
+    background-size: 40px 40px; mask-image: radial-gradient(circle at 20% 0%, #000, transparent 70%);
+    -webkit-mask-image: radial-gradient(circle at 20% 0%, #000, transparent 70%); }
+  .gridbg .wrap { position: relative; z-index: 1; }
+
+  /* ---------------- MISSION SEGMENTS ---------------- */
+  .segments { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; list-style: none; margin: 0; padding: 0; }
+  .segment { background: var(--panel); padding: 30px 26px 26px 30px; display: grid; grid-template-columns: 1fr auto; gap: 22px;
+    align-items: start; transition: transform .18s ease; --accent: var(--sky); }
+  .segment:hover { transform: translateY(-5px); }
+  .segment .bar { position: absolute; left: 0; top: 26px; bottom: 26px; width: 3px; z-index: 2;
+    background: var(--accent); color: var(--accent); box-shadow: 0 0 12px currentColor; }
+  .segment.s1 { --accent: var(--sky); }
+  .segment.s2 { --accent: var(--supernova); }
+  .segment.s3 { --accent: var(--refraction); }
+  .segment.s4 { --accent: var(--zenith); }
+  .segment.s5 { --accent: var(--twilight); }
+  .segment.s6 { --accent: var(--daylight); }
+  .segment .snum { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--mono-dim); display: block; }
+  .segment h3 { font-size: 22px; line-height: 1.15; margin: 12px 0 10px; letter-spacing: -.01em; text-wrap: balance; }
+  .segment .desc { color: var(--ink-body); font-size: 15px; margin: 0 0 18px; }
+  .segment .foci { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; gap: 8px 14px; }
+  .segment .foci li { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-dim);
+    position: relative; padding-left: 14px; }
+  .segment .foci li::before { content:""; position:absolute; left:0; top:6px; width:6px; height:6px;
+    border-right:1.5px solid var(--accent); border-bottom:1.5px solid var(--accent); transform: rotate(-45deg); }
+  .segment .glyph { width: 132px; height: 132px; color: var(--accent); flex: none;
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 35%, transparent)); }
+  .segment .glyph svg { width: 100%; height: 100%; display: block; fill: none; stroke: currentColor; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .segment .glyph .fill { fill: currentColor; stroke: none; }
+  .segment .glyph .faint { opacity: .45; }
+  .seglink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid currentColor; padding: 5px 10px; clip-path: var(--notch-sm); }
+  @supports (color: color-mix(in srgb, red 45%, transparent)) { .seglink { border-color: color-mix(in srgb, var(--accent) 45%, transparent); } }
+  .seglink:hover { color: var(--ink); border-color: var(--accent); }
+  .seglink .arr { display: inline-block; transition: transform .15s ease; }
+  .seglink:hover .arr { transform: translateX(3px); }
+
+  /* ---------------- APPROACH BAND ---------------- */
+  .approach { background: linear-gradient(120deg, var(--midnight), #262a3d 52%, var(--deep)); overflow: hidden; }
+  /* terrain pattern: Alabaster contours on Midnight, kept low so it stays texture */
+  .approach::after { content:""; position:absolute; inset:0; opacity:.14; pointer-events:none; z-index:0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23F1E9DB' stroke-width='1'%3E%3Cpath d='M-20 60c40-30 80-30 120 0s80 30 120 0 80-30 120 0'/%3E%3Cpath d='M-20 100c40-26 80-26 120 0s80 26 120 0 80-26 120 0'/%3E%3Cpath d='M-20 140c40-22 80-22 120 0s80 22 120 0 80-22 120 0'/%3E%3Cpath d='M-20 180c40-18 80-18 120 0s80 18 120 0 80-18 120 0'/%3E%3Cpath d='M-20 220c40-24 80-24 120 0s80 24 120 0 80-24 120 0'/%3E%3Cpath d='M-20 260c40-30 80-30 120 0s80 30 120 0 80-30 120 0'/%3E%3Cpath d='M-20 300c40-26 80-26 120 0s80 26 120 0 80-26 120 0'/%3E%3Cpath d='M-20 20c40-20 80-20 120 0s80 20 120 0 80-20 120 0'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 320px 320px;
+    mask-image: radial-gradient(circle at 72% 40%, #000, transparent 72%);
+    -webkit-mask-image: radial-gradient(circle at 72% 40%, #000, transparent 72%); }
+  .approach .wrap { position: relative; z-index: 1; }
+  .approach-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 42px; align-items: center; }
+  .approach h2 { font-size: clamp(26px, 3.5vw, 40px); line-height: 1.1; margin: 8px 0 14px; letter-spacing: -.015em; }
+  .approach p { color: var(--platinum); font-size: 16px; margin: 0 0 8px; max-width: 52ch; }
+  .approach .eyebrow { color: var(--supernova); }
+  .approach .eyebrow::before { background: var(--supernova); box-shadow: 0 0 10px rgba(255,175,46,.6); }
+  .caps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cap { background: rgba(16,24,32,.42); padding: 16px; transition: transform .18s ease; }
+  .cap:hover { transform: translateY(-4px); }
+  .cap.hud::before { background: rgba(241,233,219,.22); }
+  .cap b { display: block; font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; margin-bottom: 5px; color: var(--ink); }
+  .cap span { font-size: 12.5px; color: var(--silver); }
+  .approach .mono-note { color: var(--supernova); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; margin-top: 16px; }
+
+  /* hybrid evaluation console: digital prediction vs live measurement converging run by run */
+  .eval { background: rgba(16,24,32,.6); padding: 14px 14px 10px; margin-bottom: 12px; }
+  .eval.hud::before { background: rgba(241,233,219,.25); }
+  .eval-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: .16em; color: var(--ink); text-transform: uppercase;
+    padding-bottom: 8px; border-bottom: 1px solid rgba(241,233,219,.14); }
+  .eval-bar #eval-run { color: var(--supernova); white-space: nowrap; }
+  .eval-scope { position: relative; height: 108px; margin: 10px 0 8px; }
+  .eval-scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .eval-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(241,233,219,.14); }
+  .mchip { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 4px 9px; color: var(--silver); border: 1px solid rgba(241,233,219,.28); clip-path: var(--notch-sm); }
+  .mchip.state-ok { color: var(--refraction); border-color: rgba(30,216,114,.55); }
+  .mchip.state-warn { color: var(--supernova); border-color: rgba(255,175,46,.6); }
+  .mchip.state-info { color: var(--daylight); border-color: rgba(77,211,247,.6); }
+  .mchip .k { color: var(--mono-dim); }
+
+  /* evaluation loop */
+  .lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 18px; }
+  .lifecycle .lc { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--silver); border: 1px solid rgba(241,233,219,.28); padding: 4px 9px; clip-path: var(--notch-sm);
+    animation: lcpulse 10s linear infinite; }
+  .lifecycle .lc:nth-child(1) { animation-delay: 0s; }
+  .lifecycle .lc:nth-child(3) { animation-delay: 2s; }
+  .lifecycle .lc:nth-child(5) { animation-delay: 4s; }
+  .lifecycle .lc:nth-child(7) { animation-delay: 6s; }
+  .lifecycle .lc:nth-child(9) { animation-delay: 8s; }
+  .lifecycle .lca { color: rgba(241,233,219,.4); font-size: 12px; }
+  .lifecycle .lca.loop { color: var(--supernova); font-size: 15px; }
+  @keyframes lcpulse { 0%, 15% { color: var(--ink); border-color: var(--supernova); }
+    19%, 100% { color: var(--silver); border-color: rgba(241,233,219,.28); } }
+
+  /* cross-links between the lifecycle rail's PROVE node and this section */
+  .chainlink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px; white-space: nowrap;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--supernova);
+    border: 1px solid rgba(255,175,46,.45); padding: 5px 10px; clip-path: var(--notch-sm); }
+  .chainlink:hover { color: var(--ink); border-color: var(--supernova); }
+  .chainlink .short { display: none; }
+
+  /* ---------------- PROOF ---------------- */
+  .proof { background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .proof-label { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; color: var(--mono-dim);
+    text-transform: uppercase; margin-bottom: 28px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  .stat { padding: 20px 20px; background: var(--panel); }
+  .stat .accent { position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; box-shadow: 0 0 10px currentColor; }
+  .stat:nth-child(1) .accent { background: var(--sky); color: var(--sky); }
+  .stat:nth-child(2) .accent { background: var(--refraction); color: var(--refraction); }
+  .stat:nth-child(3) .accent { background: var(--supernova); color: var(--supernova); }
+  .stat:nth-child(4) .accent { background: var(--zenith); color: var(--zenith); }
+  .stat .num { font-family: var(--mono); font-size: clamp(28px, 3.3vw, 42px); white-space: nowrap; font-weight: bold; letter-spacing: -.01em;
+    line-height: 1; color: var(--ink); text-shadow: 0 0 22px rgba(41,170,225,.18); }
+  .stat .lbl { font-size: 12.5px; color: var(--ink-dim); margin-top: 10px; }
+
+  /* ---------------- COMPANY ---------------- */
+  .co-featured { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center;
+    background: var(--panel); padding: 26px 28px; margin-bottom: 22px; }
+  .co-featured .fbar { position:absolute; left:0; top:0; bottom:0; width:4px;
+    background: var(--gradient); box-shadow: 0 0 14px rgba(77,211,247,.4); z-index:2; }
+  .avatar { width: 90px; height: 90px; flex: none; display: grid; place-items: center; clip-path: var(--notch-sm);
+    font-family: var(--mono); font-weight: bold; font-size: 26px; color: var(--black); letter-spacing: .04em;
+    background: var(--alabaster); }
+  .co-featured .who h3 { margin: 0 0 5px; font-size: 24px; }
+  .co-featured .who .role { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--sky); text-transform: uppercase; margin: 0 0 8px; }
+  .co-featured .who p { margin: 0; color: var(--ink-dim); font-size: 15px; max-width: 60ch; }
+  .rankchip { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--mono-dim);
+    padding: 8px 12px; white-space: nowrap; }
+  .rankchip.hud::before { background: var(--edge); }
+
+  .co-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .card { background: var(--panel); padding: 24px 22px; transition: transform .18s ease; display: block; }
+  .card:hover { transform: translateY(-5px); }
+  .card .ctag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--mono-dim); display: block; margin-bottom: 14px; }
+  .card h3 { margin: 0 0 5px; font-size: 18px; }
+  .card .role { font-family: var(--mono); font-size: 11px; letter-spacing: .07em; color: var(--sky); text-transform: uppercase; margin: 0 0 10px; line-height: 1.4; }
+  .card p { margin: 0; font-size: 13px; color: var(--ink-dim); }
+  .card .owner { display:block; margin-top:12px; font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--mono-dim); }
+  .card.linkcard .owner { color: var(--sky); }
+  .card.linkcard:hover .owner { text-shadow: 0 0 12px var(--sky-glow); }
+
+  /* ---------------- CONTACT ---------------- */
+  .contact { background:
+      radial-gradient(760px 400px at 82% 0%, rgba(41,170,225,.2), transparent 62%),
+      linear-gradient(180deg, var(--deep), var(--bg)); }
+  .contact-in { display: grid; grid-template-columns: 1.2fr 1fr; gap: 42px; align-items: center; }
+  .contact h2 { font-size: clamp(28px, 4.1vw, 46px); line-height: 1.1; margin: 8px 0 16px; letter-spacing: -.015em; }
+  .contact p { color: var(--ink-dim); font-size: 17px; margin: 0 0 26px; max-width: 48ch; }
+  .contact .panel { background: var(--panel); padding: 28px; }
+  .contact .panel .mark { display: block; width: 176px; height: auto; margin: 0 auto 22px;
+    filter: drop-shadow(0 0 18px rgba(41,170,225,.18)); }
+  .contact .panel .row { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .contact .panel .row:last-child { border-bottom: none; }
+  .contact .panel .k { color: var(--mono-dim); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
+  .contact .panel .v { color: var(--ink); text-align: right; }
+  .contact .panel .v a:hover { color: var(--sky); }
+
+  /* ---------------- FOOTER ---------------- */
+  footer { background: var(--bg); border-top: 1px solid var(--line); padding: 36px 0 42px; }
+  .foot-in { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+  .foot-in small { color: var(--mono-dim); font-size: 12px; line-height: 1.7; font-family: var(--mono); letter-spacing: .02em; }
+  .foot-in small b { font-weight: normal; color: var(--ink-dim); }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 22px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
+  .foot-links a:hover { color: var(--sky); }
+  .foot-in .btn { padding: 8px 14px; font-size: 11px; }
+
+  /* ---------------- RESPONSIVE ---------------- */
+  /* stage the nav down so it never overflows: status first, then section links; CTA always stays */
+  @media (max-width: 1060px) {
+    .status { display: none; }
+    .nav-links { gap: 20px; }
+  }
+  @media (max-width: 860px) {
+    .nav-links a.link { display: none; }
+  }
+  @media (max-width: 1080px) {
+    .co-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 940px) {
+    .segments { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .approach-grid, .contact-in { grid-template-columns: 1fr; gap: 30px; }
+    .nodes { grid-template-columns: repeat(2, 1fr); row-gap: 28px; }
+    .rail .line, .rail .pulse { display: none; }
+    .node { padding-top: 0; padding-left: 28px; }
+    .node .dot { top: 2px; }
+    .hero-terrain { opacity: .45;
+      mask-image: radial-gradient(at 50% 42%, rgba(0,0,0,.95) 0 36%, transparent 76%);
+      -webkit-mask-image: radial-gradient(at 50% 42%, rgba(0,0,0,.95) 0 36%, transparent 76%); }
+  }
+  @media (max-width: 640px) {
+    .stats, .caps { grid-template-columns: 1fr; }
+    .co-featured { grid-template-columns: auto 1fr; }
+    .co-featured .rankchip { display: none; }
+    .hero h1 { max-width: 100%; }
+    .segment .glyph { width: 96px; height: 96px; }
+  }
+  @media (max-width: 520px) {
+    .co-grid { grid-template-columns: 1fr; }
+    .segment { grid-template-columns: 1fr; }
+    .segment .glyph { order: -1; width: 84px; height: 84px; }
+  }
+  @media (max-width: 480px) {
+    .nodes { grid-template-columns: 1fr; }
+    .nav .btn .long { display: none; }
+    .nav .btn .short { display: inline; }
+  }
+  @media (max-width: 420px) {
+    .nav-in { gap: 14px; }
+    .logo img { height: 24px; }
+    .nav .btn { padding: 11px 14px; font-size: 11.5px; letter-spacing: .06em; }
+    .nav .btn .arr { display: none; }
+  }
+  @media (max-width: 400px) {
+    .chainlink .long { display: none; }
+    .chainlink .short { display: inline; }
+  }
+
+  /* hidden state gated on the js class so content stays visible without JavaScript;
+     the reveal uses the translate property so hover lifts on transform still apply */
+  .reveal { transition: opacity .6s ease, translate .6s ease, transform .18s ease; }
+  html.js .reveal { opacity: 0; translate: 0 18px; }
+  html.js .reveal.in { opacity: 1; translate: none; }
+
+  /* still scenes: the OS reduced-motion setting, and the page's own pause control (html.still) */
+  /* html.motion marks an explicit in-page resume, which lifts the OS-level stillness */
+  @media (prefers-reduced-motion: reduce) {
+    html:not(.motion) *, html:not(.motion) *::before, html:not(.motion) *::after { animation: none !important; transition: none !important; }
+    html:not(.motion) .rail .pulse { left: 100%; background: var(--zenith); }
+    html:not(.motion) .reveal { opacity: 1 !important; translate: none !important; }
+    html:not(.motion) .terrain-hint { display: none; }
+    html:not(.motion) .hero-terrain canvas { pointer-events: none; cursor: default; }
+  }
+  html.still { scroll-behavior: auto; }
+  html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
+  html.still .rail .pulse { left: 100%; background: var(--zenith); }
+  html.still .reveal { opacity: 1 !important; translate: none !important; }
+  html.still .terrain-hint { display: none; }
+  html.still .hero-terrain canvas { pointer-events: none; cursor: default; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <!-- Official Astrion wordmark, white treatment (the 2026 default on dark). Keep clear space = logotype x-height. -->
+    <a class="logo" href="https://astrion.us" aria-label="Astrion home">
+      <img src="assets/astrion-logo-white.png" alt="Astrion" width="176" height="30" decoding="async">
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="link" href="#segments">Mission segments</a>
+      <a class="link" href="#approach">Approach</a>
+      <a class="link" href="#company">Company</a>
+      <span class="status" aria-hidden="true"><span class="dot"></span><b>SECURE</b><span class="clk" id="navclk">--:--:--</span></span>
+      <a href="#contact" class="btn btn-primary"><span class="long">Start a conversation</span><span class="short">Contact</span> <span class="arr" aria-hidden="true">&rarr;</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="hero">
+    <!-- ambient terrain field; surveyable on pointer widths -->
+    <div class="hero-terrain" aria-hidden="true"><canvas id="terrain"></canvas><span class="terrain-hint" id="terrainhint">// Survey the field · drop a fix</span></div>
+    <div class="wrap hero-in">
+      <p class="eyebrow">Defend This World. Build the Next.</p>
+      <h1>Built for the <span class="hl">outcome.</span></h1>
+      <p class="lede">We build technology that protects our nation and its allies. Across six mission segments, Astrion engineers, integrates, and proves the systems that warfighters and operators depend on, under the conditions they will face, before those systems reach the field.</p>
+      <div class="cta-row">
+        <a href="#segments" class="btn btn-primary">See the mission segments <span class="arr" aria-hidden="true">&rarr;</span></a>
+        <a href="#approach" class="btn btn-ghost">How we work</a>
+      </div>
+      <div class="telem" aria-hidden="true">
+        <span>SYS <em>NOMINAL</em></span><span class="sep">/</span>
+        <span>UTC <em class="clk" id="heroclk">--:--:--</em></span><span class="sep">/</span>
+        <span>SEGMENTS <em class="skyv">06</em></span><span class="sep">/</span>
+        <span>PROGRAMS <em class="amber">~150</em></span><span class="sep">/</span>
+        <span>FIXES <em id="cf-fix">0</em></span>
+      </div>
+
+      <!-- SIGNATURE: the lifecycle we cover (a real sequence, so it earns numbering) -->
+      <div class="track reveal" id="chain">
+        <div class="track-label">// Engineer to sustain · the lifecycle we cover end to end</div>
+        <div class="rail">
+          <span class="line" aria-hidden="true"></span><span class="pulse" aria-hidden="true"></span>
+          <ol class="nodes">
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">01 · ENGINEER</span><span class="nh">Design and model</span><p>Requirements, architecture, and digital models built against the mission, not the demo.</p></li>
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">02 · INTEGRATE</span><span class="nh">Systems and terrain</span><p>Sensors, effectors, software, and platforms brought together across domains and services.</p></li>
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">03 · PROVE</span><span class="nh">Test and evaluation</span><p>Validated in the lab, on the range, and in the field under conditions that mirror the fight.<a class="spine" href="#approach">HOW WE PROVE IT <span aria-hidden="true">&darr;</span></a></p></li>
+            <li class="node"><span class="dot" aria-hidden="true"></span><span class="tag">04 · SUSTAIN</span><span class="nh">Lifecycle and modernization</span><p>Kept current as threats, data, and missions change.</p></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION SEGMENTS -->
+  <section class="gridbg" id="segments">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">What Astrion does</p>
+        <h2>Six mission segments. One engineering discipline behind all of them.</h2>
+        <p>Each segment stands on its own program record. What connects them is one discipline: prove a capability under conditions that mirror the mission before it is fielded.</p>
+      </div>
+      <ol class="segments">
+        <li class="segment s1 hud reveal" id="iamd"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 01</span>
+            <h3>Integrated Air and Missile Defense</h3>
+            <p class="desc">The integration of capabilities to defend the homeland, the joint force, and allies against the full spectrum of air and missile threats, including ballistic missiles, cruise missiles, hypersonic weapons, and unmanned aircraft systems.</p>
+            <ul class="foci"><li>Ballistic</li><li>Cruise</li><li>Hypersonic</li><li>Unmanned aircraft</li></ul>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <path d="M10 92 A50 50 0 0 1 110 92"/>
+              <path class="faint" d="M28 92 A32 32 0 0 1 92 92"/>
+              <path class="faint" d="M46 92 A14 14 0 0 1 74 92"/>
+              <line x1="6" y1="92" x2="114" y2="92"/>
+              <path d="M114 26 Q88 38 68 68" stroke-dasharray="3 4"/>
+              <path d="M60 92 L67 69"/>
+              <circle class="fill" cx="67" cy="69" r="3.5"/>
+              <path d="M56 69 h5 M73 69 h5 M67 58 v5 M67 75 v5"/>
+              <path class="faint" d="M24 34 h3 M31 34 h9 M18 42 h6"/>
+            </svg>
+          </div>
+        </li>
+        <li class="segment s2 hud reveal" id="lifecycle-cyber"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 02</span>
+            <h3>Lifecycle Management and Cyber Warfare</h3>
+            <p class="desc">The integrated planning and execution of weapon system testing and lifecycle management. The integrated employment of offensive and defensive cyberspace operations, and cryptologic capabilities.</p>
+            <ul class="foci"><li>Weapon system testing</li><li>Lifecycle</li><li>Cyberspace operations</li><li>Cryptologic</li></ul>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <path d="M60 18 A42 42 0 1 1 18 60"/>
+              <path d="M60 102 A42 42 0 1 1 102 60"/>
+              <path d="M18 60 l-6 -8 M18 60 l6 -8"/>
+              <path d="M102 60 l-6 8 M102 60 l6 8"/>
+              <path d="M60 38 l18 10 v22 l-18 10 l-18 -10 v-22 z"/>
+              <rect class="fill" x="53" y="59" width="14" height="11" rx="1.5"/>
+              <path d="M55 59 v-4 a5 5 0 0 1 10 0 v4"/>
+              <path class="faint" d="M28 28 h6 M38 28 h3 M45 28 h6 M78 92 h3 M85 92 h6 M95 92 h3"/>
+            </svg>
+          </div>
+        </li>
+        <li class="segment s3 hud reveal" id="ldawif"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 03</span>
+            <h3>Layered Defense, Autonomous Warfare &amp; Integrated Fires</h3>
+            <p class="desc">The synchronized detection, identification, tracking, and defeat capabilities. Integrated employment of multi-domain autonomous systems.</p>
+            <ul class="foci"><li>Detect</li><li>Identify</li><li>Track</li><li>Defeat</li><li>Autonomy</li></ul>
+            <a class="seglink" href="../astrion-division/ldawif/">Explore the division <span class="arr" aria-hidden="true">&rarr;</span></a>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <circle class="faint" cx="60" cy="64" r="44"/>
+              <circle cx="60" cy="64" r="30" opacity=".7"/>
+              <circle cx="60" cy="64" r="16"/>
+              <path class="faint" d="M60 20 v-8 M60 108 v8 M16 64 h-8 M104 64 h8"/>
+              <path class="fill" d="M100 26 l-12 4 l12 4 l-3 -4 z"/>
+              <path d="M94 32 L66 58" stroke-dasharray="3 4"/>
+              <rect class="fill" x="56" y="60" width="8" height="8" transform="rotate(45 60 64)"/>
+              <path d="M60 64 L84 88"/>
+              <circle cx="87" cy="91" r="5"/>
+              <path class="faint" d="M22 96 h6 M32 96 h3"/>
+            </svg>
+          </div>
+        </li>
+        <li class="segment s4 hud reveal" id="space"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 04</span>
+            <h3>Space Warfighting</h3>
+            <p class="desc">The integrated employment of military spacepower to achieve and sustain space superiority: the freedom of movement and action in, from, and to space for the United States and its allies while denying the same to adversaries.</p>
+            <ul class="foci"><li>Space superiority</li><li>In, from, and to space</li><li>Freedom of action</li></ul>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <path class="faint" d="M12 104 A62 62 0 0 1 108 104"/>
+              <ellipse cx="60" cy="60" rx="46" ry="17" transform="rotate(-22 60 60)"/>
+              <ellipse class="faint" cx="60" cy="60" rx="46" ry="17" transform="rotate(32 60 60)"/>
+              <g transform="rotate(-22 92 44)">
+                <rect class="fill" x="88" y="40" width="8" height="8"/>
+                <path d="M86 44 h-10 M98 44 h10"/>
+              </g>
+              <circle class="fill" cx="22" cy="20" r="1.3"/>
+              <circle class="fill" cx="100" cy="16" r="1.3"/>
+              <circle class="fill" cx="44" cy="12" r="1"/>
+              <circle class="fill" cx="112" cy="70" r="1"/>
+            </svg>
+          </div>
+        </li>
+        <li class="segment s5 hud reveal" id="cip"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 05</span>
+            <h3>Critical Infrastructure Protection</h3>
+            <p class="desc">The integrated capabilities required to identify, assess, prevent, detect, respond to, mitigate, and recover from threats and hazards to the U.S. Homeland.</p>
+            <ul class="foci"><li>Identify</li><li>Prevent</li><li>Respond</li><li>Recover</li></ul>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <path d="M8 100 h104"/>
+              <path d="M16 100 v-24 h12 v24 M36 100 v-36 h12 v36 M56 100 v-18 h10 v18 M74 100 v-30 h16 v30 M96 100 v-20 h10 v20"/>
+              <path class="faint" d="M20 82 h4 M20 90 h4 M40 72 h4 M40 80 h4 M40 88 h4 M78 78 h4 M84 78 h2 M78 86 h4 M100 88 h2"/>
+              <path d="M60 10 l30 10 v20 c0 18 -14 30 -30 36 c-16 -6 -30 -18 -30 -36 v-20 z"/>
+              <path d="M40 44 h10 l4 -9 l6 18 l4 -9 h16"/>
+            </svg>
+          </div>
+        </li>
+        <li class="segment s6 hud reveal" id="lunar"><span class="bar" aria-hidden="true"></span>
+          <div>
+            <span class="snum">SEGMENT 06</span>
+            <h3>Exploration and Lunar Presence</h3>
+            <p class="desc">The integration of transportation, power, communications, mobility, habitation, autonomy, and in-situ resource utilization required to establish and sustain an enduring human and robotic presence on and around the Moon, creating the foundation for expansion deeper into the solar system.</p>
+            <ul class="foci"><li>Transport</li><li>Power</li><li>Communications</li><li>Habitation</li><li>In-situ resources</li></ul>
+          </div>
+          <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <circle cx="72" cy="58" r="34"/>
+              <circle class="faint" cx="60" cy="46" r="5"/>
+              <circle class="faint" cx="84" cy="66" r="7"/>
+              <circle class="faint" cx="88" cy="42" r="3"/>
+              <path class="faint" d="M2 114 A22 22 0 0 1 26 100"/>
+              <path d="M8 104 Q28 62 44 44" stroke-dasharray="3 4"/>
+              <circle class="fill" cx="44" cy="44" r="2"/>
+              <path d="M56 92 h16 M59 92 v-6 h10 v6 M64 86 v-5"/>
+              <rect class="fill" x="62" y="78" width="4" height="3"/>
+              <path d="M76 90 h10 M78 90 v-5 h6 v5"/>
+            </svg>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- APPROACH BAND -->
+  <section class="approach" id="approach">
+    <div class="wrap">
+      <div class="approach-grid">
+        <div class="reveal">
+          <p class="eyebrow">How we work</p>
+          <h2>We deliver proof, not promises.</h2>
+          <p>Astrion stands at the intersection of innovation and operational reality. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed. Engineering discipline, software, AI, and mission expertise combine so a capability performs in the field the way it performed in test.</p>
+          <p class="mono-note">// Innovation fuels it. Engineering proves it. Astrion makes it mission-ready.</p>
+          <div class="lifecycle" role="img" aria-label="Evaluation loop: lab, range, field, measure, improve, and back around">
+            <span class="lc" aria-hidden="true">Lab</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Range</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Field</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Measure</span><span class="lca" aria-hidden="true">&rarr;</span><span class="lc" aria-hidden="true">Improve</span><span class="lca loop" aria-hidden="true">&#10227;</span>
+          </div>
+          <a class="chainlink" href="#chain"><span aria-hidden="true">&uarr;</span> <span class="long">See where proving sits in the lifecycle</span><span class="short">Proving in the lifecycle</span></a>
+        </div>
+        <div class="capcol reveal">
+          <div class="eval hud" role="img" aria-label="Simulated hybrid evaluation console: a digital model predicts system performance, a live test run measures it, the residual between them shrinks run by run, and the model is marked validated.">
+            <div class="eval-bar" aria-hidden="true">
+              <span>HYBRID EVALUATION · DIGITAL + LIVE</span>
+              <span id="eval-run">RUN 01</span>
+            </div>
+            <div class="eval-scope" aria-hidden="true"><canvas id="eval"></canvas></div>
+            <div class="eval-foot" aria-hidden="true">
+              <span class="mchip state-info" id="eval-state">CALIBRATING</span>
+              <span class="mchip"><span class="k">RESIDUAL </span><span id="eval-res">--</span></span>
+              <span class="mchip">OPERATOR-INFORMED</span>
+              <span class="mchip">AUDIT READY</span>
+            </div>
+          </div>
+          <div class="caps">
+            <div class="cap hud"><b>TECHNOLOGY-AGNOSTIC</b><span>The right tools and methods for the operational problem, not the newest ones.</span></div>
+            <div class="cap hud"><b>DIGITAL + PHYSICAL</b><span>Designed and modeled in integrated digital environments, proven in real-world conditions.</span></div>
+            <div class="cap hud"><b>AI-ENABLED INSIGHT</b><span>Data that accelerates understanding, prediction, and performance decisions across the lifecycle.</span></div>
+            <div class="cap hud"><b>MISSION-FOCUSED T&amp;E</b><span>Test what matters, when it matters, under the conditions operators will face.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROOF -->
+  <section class="proof">
+    <div class="wrap">
+      <div class="proof-label reveal">// Track record</div>
+      <div class="stats">
+        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">6,000+</div><div class="lbl">People serving customers across the U.S. and overseas</div></div>
+        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">~150</div><div class="lbl">Programs supported across defense, space, intelligence, cyber, and civil</div></div>
+        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">36+NL</div><div class="lbl">U.S. states where Astrion operates, plus the Netherlands</div></div>
+        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">CMMI-DEV</div><div class="lbl">Appraised at Maturity Level 3, with AS9100 and ISO 9001 quality certification</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPANY -->
+  <section class="gridbg" id="company">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="eyebrow">Who we are</p>
+        <h2>An engineering and test and evaluation firm built around the mission.</h2>
+        <p>Formed from ERC and Oasis Systems, joined by Axient in 2024. Headquartered in Huntsville, Alabama, with Centers of Excellence there, in Washington, DC, and in Burlington, Massachusetts, and teams in 36 states and the Netherlands.</p>
+      </div>
+      <!-- Company facts: astrion.us/our-story (headquarters in Huntsville, more than 6,000 employees, ERC + Oasis Systems in 2023
+           and Axient in 2024, Dr. Wu) and the December 2023 launch release (Centers of Excellence in Washington, DC, Huntsville,
+           and Burlington). Program count, footprint, and certifications follow the brand standards' verified metrics. -->
+
+      <div class="co-featured hud reveal"><span class="fbar" aria-hidden="true"></span>
+        <div class="avatar" aria-hidden="true">ERC</div>
+        <div class="who">
+          <h3>Dr. Y.C.L. Susan Wu</h3>
+          <p class="role">Founder · ERC</p>
+          <p>The first woman to earn a Ph.D. in aeronautical engineering from Caltech. Her company, ERC, combined with Oasis Systems to form Astrion.</p>
+        </div>
+        <span class="rankchip hud">LEGACY</span>
+      </div>
+
+      <div class="co-grid">
+        <article class="card hud reveal">
+          <span class="ctag">// HEADQUARTERS</span>
+          <h3>Huntsville, AL</h3>
+          <p class="role">Corporate headquarters</p>
+          <p>Headquarters and one of three Centers of Excellence, with Washington, DC, and Burlington, Massachusetts.</p>
+        </article>
+        <article class="card hud reveal">
+          <span class="ctag">// CENTER OF EXCELLENCE</span>
+          <h3>Washington, DC</h3>
+          <p class="role">Center of Excellence</p>
+          <p>Closest to the program offices and policy decisions that shape the mission.</p>
+        </article>
+        <article class="card hud reveal">
+          <span class="ctag">// CENTER OF EXCELLENCE</span>
+          <h3>Burlington, MA</h3>
+          <p class="role">Center of Excellence</p>
+          <p>One of three Centers of Excellence, with Huntsville, Alabama, and Washington, DC.</p>
+        </article>
+        <a class="card linkcard hud reveal" href="../astrion-division/ldawif/" aria-labelledby="ldawif-card-title ldawif-card-cta">
+          <span class="ctag">// DIVISION PAGE</span>
+          <h3 id="ldawif-card-title">LDAWIF</h3>
+          <p class="role">Layered Defense, Autonomous Warfare &amp; Integrated Fires</p>
+          <p>The division landing page: mission areas, the AI and ModelOps spine, and the leaders accountable for the work.</p>
+          <span class="owner" id="ldawif-card-cta">OPEN THE DIVISION PAGE <span aria-hidden="true">&rarr;</span></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <div class="contact-in">
+        <div class="reveal">
+          <p class="eyebrow">Work with Astrion</p>
+          <h2>Bring us a hard mission problem.</h2>
+          <p>Program offices, primes, and technology partners: start with a conversation about where you need capability proven, not just promised.</p>
+          <div class="cta-row">
+            <a href="https://astrion.us" class="btn btn-primary">Visit astrion.us <span class="arr" aria-hidden="true">&rarr;</span></a>
+            <a href="../astrion-division/ldawif/" class="btn btn-ghost">Explore the LDAWIF division</a>
+          </div>
+        </div>
+        <div class="panel hud reveal">
+          <img class="mark" src="assets/astrion-logo-white.png" alt="" width="1000" height="170" loading="lazy" decoding="async">
+          <div class="row"><span class="k">FOR</span><span class="v">Customers &amp; teaming partners</span></div>
+          <div class="row"><span class="k">SEGMENTS</span><span class="v">Six, from air defense to the Moon</span></div>
+          <div class="row"><span class="k">FOOTPRINT</span><span class="v">36 states &middot; the Netherlands</span></div>
+          <div class="row"><span class="k">WEB</span><span class="v"><a href="https://astrion.us">astrion.us</a></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <small>
+      &copy; <span id="yr">2026</span> ASTRION &middot; <b>Defend This World. Build the Next.</b><br>
+      TEAM REVIEW BUILD
+    </small>
+    <button type="button" class="btn btn-ghost" id="motion-toggle">Pause motion</button>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="#segments">Mission segments</a><a href="#approach">Approach</a><a href="#company">Company</a><a href="https://astrion.us">astrion.us</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // motion control: the OS reduced-motion setting is the default, and the page carries its own
+  // pause / resume control (WCAG 2.2.2); an explicit choice persists per browser
+  var motion = (function(){
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var stored = null;
+    try { stored = window.localStorage.getItem('astrion-motion'); } catch (e) {}
+    var still = stored ? stored === 'still' : mq.matches;
+    var subs = [], btn = document.getElementById('motion-toggle');
+    function apply(){
+      document.documentElement.classList.toggle('still', still);
+      document.documentElement.classList.toggle('motion', !still && stored === 'motion');
+      if (btn) btn.textContent = still ? 'Resume motion' : 'Pause motion';
+      subs.forEach(function(fn){ fn(still); });
+    }
+    if (btn) btn.addEventListener('click', function(){
+      still = !still; stored = still ? 'still' : 'motion';
+      try { window.localStorage.setItem('astrion-motion', stored); } catch (e) {}
+      apply();
+    });
+    if (mq.addEventListener) mq.addEventListener('change', function(e){ if (!stored) { still = e.matches; apply(); } });
+    apply();
+    return { still: function(){ return still; }, explicit: function(){ return stored === 'still'; }, onChange: function(fn){ subs.push(fn); } };
+  })();
+
+  // live UTC telemetry clock (nav + hero); idle while the tab is hidden or the page's own pause is on
+  function tick(force){
+    if (!force && (document.hidden || (motion.still() && motion.explicit()))) return;
+    var d = new Date();
+    var s = String(d.getUTCHours()).padStart(2,'0') + ':' +
+            String(d.getUTCMinutes()).padStart(2,'0') + ':' +
+            String(d.getUTCSeconds()).padStart(2,'0');
+    var a = document.getElementById('navclk'); if (a) a.textContent = s;
+    var b = document.getElementById('heroclk'); if (b) b.textContent = s;
+  }
+  tick(true); setInterval(tick, 1000);
+  document.addEventListener('visibilitychange', function(){ tick(); });
+  motion.onChange(function(){ tick(true); });
+
+  // scroll reveals, honored against reduced motion and the pause control
+  var els = document.querySelectorAll('.reveal');
+  if (motion.still() || !('IntersectionObserver' in window)) {
+    els.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  // lifecycle trace: flash ENGINEER > INTEGRATE > PROVE > SUSTAIN in sequence
+  var chainDots = document.querySelectorAll('.nodes .dot'), lastChain = 0;
+  function chainPulse(){
+    if(!chainDots.length || motion.still()) return;
+    var n = performance.now();
+    if(n - lastChain < 1100) return;
+    lastChain = n;
+    Array.prototype.forEach.call(chainDots, function(d, i){
+      setTimeout(function(){
+        d.classList.add('hit');
+        setTimeout(function(){ d.classList.remove('hit'); }, 420);
+      }, i*150);
+    });
+  }
+
+  /* ---- terrain field: drifting topographic contours (systems + terrain), marching squares ---- */
+  (function(){
+    var canvas = document.getElementById('terrain');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var wrap = canvas.parentElement;
+    var W=1,H=1,DPR=1, CELL=18, cols=0, rows=0, field=null;
+    var mx=null, my=null, pings=[], fixes=0, T=0, cached=null, moved=false;
+    var fixEl = document.getElementById('cf-fix'), hint = document.getElementById('terrainhint');
+
+    // static value-noise lattice (seeded, so the terrain is the same on every visit)
+    var LN=64, lat=new Float32Array(LN*LN), seed=1337;
+    for(var i=0;i<LN*LN;i++){ seed=(seed*1664525+1013904223)>>>0; lat[i]=(seed>>>8)/16777216; }
+    function sm(t){ return t*t*(3-2*t); }
+    function vnoise(x,y){
+      var xi=Math.floor(x), yi=Math.floor(y), fx=sm(x-xi), fy=sm(y-yi);
+      var x0=xi&63, x1=(xi+1)&63, y0=(yi&63)*LN, y1=((yi+1)&63)*LN;
+      var a=lat[y0+x0], b=lat[y0+x1], c=lat[y1+x0], d=lat[y1+x1];
+      var top=a+(b-a)*fx, bot=c+(d-c)*fx;
+      return top+(bot-top)*fy;
+    }
+    function height(cx,cy,t){
+      var nx=cx*0.055, ny=cy*0.055;
+      return vnoise(nx+t*0.045, ny+3.1)*0.56
+           + vnoise(nx*2.1+7.3, ny*2.1-t*0.03)*0.28
+           + vnoise(nx*4.3-t*0.06+2.2, ny*4.3+11)*0.11
+           + 0.05*Math.sin(cx*0.11+t*0.4)*Math.cos(cy*0.09-t*0.23);
+    }
+    function compute(t){
+      for(var r=0;r<rows;r++) for(var c=0;c<cols;c++) field[r*cols+c]=height(c,r,t);
+      cached = null;
+    }
+    function resize(){
+      DPR = Math.min(window.devicePixelRatio||1, 1.5); // hero-sized canvas: keep the pixel count sane
+      var r = wrap.getBoundingClientRect();
+      W = Math.max(1, r.width); H = Math.max(1, r.height);
+      canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      cols = Math.ceil(W/CELL)+2; rows = Math.ceil(H/CELL)+2;
+      field = new Float32Array(cols*rows);
+      compute(T); draw();
+    }
+    // marching squares: corner bits p0=1 (x,y) p1=2 (x+1,y) p2=4 (x+1,y+1) p3=8 (x,y+1); edges 0 top,1 right,2 bottom,3 left
+    var SEG = [null,[[3,0]],[[0,1]],[[3,1]],[[1,2]],[[3,0],[1,2]],[[0,2]],[[3,2]],[[2,3]],[[0,2]],[[0,1],[2,3]],[[1,2]],[[1,3]],[[0,1]],[[3,0]],null];
+    var LEVELS = [0.30,0.36,0.42,0.48,0.54,0.60,0.66,0.72];
+    var ex=new Float64Array(4), ey=new Float64Array(4);
+    function paths(){
+      var out=[];
+      for(var li=0;li<LEVELS.length;li++){
+        var L=LEVELS[li], p=new Path2D();
+        for(var r=0;r<rows-1;r++){
+          var y=r*CELL;
+          for(var c=0;c<cols-1;c++){
+            var x=c*CELL, i=r*cols+c;
+            var v0=field[i], v1=field[i+1], v2=field[i+cols+1], v3=field[i+cols];
+            var idx=(v0>L?1:0)|(v1>L?2:0)|(v2>L?4:0)|(v3>L?8:0);
+            var segs=SEG[idx]; if(!segs) continue;
+            // interpolated crossing on each edge
+            ex[0]=x+CELL*((L-v0)/(v1-v0)); ey[0]=y;
+            ex[1]=x+CELL; ey[1]=y+CELL*((L-v1)/(v2-v1));
+            ex[2]=x+CELL*((L-v3)/(v2-v3)); ey[2]=y+CELL;
+            ex[3]=x; ey[3]=y+CELL*((L-v0)/(v3-v0));
+            for(var s=0;s<segs.length;s++){ var a=segs[s][0], b=segs[s][1]; p.moveTo(ex[a],ey[a]); p.lineTo(ex[b],ey[b]); }
+          }
+        }
+        out.push(p);
+      }
+      return out;
+    }
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      var ps = cached || (cached = paths());
+      // Alabaster contours on the dark ground, index lines every fourth level
+      for(var i=0;i<ps.length;i++){
+        var index = (i%4===0);
+        ctx.lineWidth = index?1.2:0.8;
+        ctx.strokeStyle = index?'rgba(241,233,219,0.34)':'rgba(241,233,219,0.16)';
+        ctx.stroke(ps[i]);
+      }
+      // survey lens: contours brighten in Astrion Sky under the pointer
+      if(mx!==null && !motion.still()){
+        var R=Math.min(W,H)*0.16;
+        ctx.save(); ctx.beginPath(); ctx.arc(mx,my,R,0,Math.PI*2); ctx.clip();
+        for(var j=0;j<ps.length;j++){ ctx.lineWidth = (j%4===0)?1.4:1; ctx.strokeStyle=(j%4===0)?'rgba(41,170,225,0.85)':'rgba(41,170,225,0.45)'; ctx.stroke(ps[j]); }
+        ctx.restore();
+        ctx.strokeStyle='rgba(41,170,225,0.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(mx,my,R,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mx-14,my); ctx.lineTo(mx-5,my); ctx.moveTo(mx+5,my); ctx.lineTo(mx+14,my);
+        ctx.moveTo(mx,my-14); ctx.lineTo(mx,my-5); ctx.moveTo(mx,my+5); ctx.lineTo(mx,my+14); ctx.stroke();
+        var h=height(mx/CELL,my/CELL,T);
+        ctx.font='9px monospace'; ctx.fillStyle='#29AAE1';
+        ctx.fillText('ELEV '+Math.round(h*1000)+' · '+Math.round(mx)+','+Math.round(my), mx+R*0.72, my-R*0.72);
+      }
+      // dropped fixes: expanding rings with a Supernova marker
+      for(var q=0;q<pings.length;q++){
+        var pg=pings[q], a=Math.max(0,pg.a);
+        ctx.beginPath(); ctx.arc(pg.x,pg.y,pg.r,0,Math.PI*2);
+        ctx.strokeStyle='rgba(255,175,46,'+a.toFixed(3)+')'; ctx.lineWidth=1.4; ctx.stroke();
+        ctx.fillStyle='rgba(255,175,46,'+Math.min(1,a*1.6).toFixed(3)+')';
+        ctx.save(); ctx.translate(pg.x,pg.y); ctx.rotate(Math.PI/4); ctx.fillRect(-3,-3,6,6); ctx.restore();
+        if(pg.label && a>0.3){ ctx.font='9px monospace'; ctx.fillStyle='rgba(255,175,46,'+a.toFixed(3)+')'; ctx.fillText(pg.label, pg.x+10, pg.y-8); }
+      }
+    }
+
+    resize();
+    if(window.ResizeObserver){ new ResizeObserver(resize).observe(wrap); }
+    else { window.addEventListener('resize', resize); }
+
+    function drop(x,y){
+      fixes++;
+      pings.push({x:x,y:y,r:4,a:1,label:'FIX '+String(fixes).padStart(2,'0')});
+      if(fixEl){ fixEl.textContent=fixes; fixEl.classList.add('bump'); setTimeout(function(){ fixEl.classList.remove('bump'); }, 220); }
+      if(hint) hint.classList.add('off');
+      chainPulse();
+    }
+    // the survey is a mouse / pen interaction: a touch that starts on the field is a page scroll
+    function fine(e){ return e.pointerType !== 'touch'; }
+    canvas.addEventListener('pointermove', function(e){
+      if(!fine(e)) return;
+      var r=canvas.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top; moved=true;
+    });
+    canvas.addEventListener('pointerleave', function(){ mx=null; moved=true; });
+    canvas.addEventListener('pointerdown', function(e){
+      if(motion.still() || !fine(e) || e.button!==0) return;
+      var r=canvas.getBoundingClientRect();
+      drop(e.clientX-r.left, e.clientY-r.top);
+    });
+
+    var last=performance.now(), acc=0, running=false, raf, visible=false;
+    function step(now){
+      if(!running) return;
+      var dt=Math.min(0.05,(now-last)/1000); last=now;
+      T+=dt; acc+=dt;
+      var dirty = moved || pings.length>0; moved=false;
+      for(var q=pings.length-1;q>=0;q--){ pings[q].r+=dt*60; pings[q].a-=dt*0.55; if(pings[q].a<=0) pings.splice(q,1); }
+      // the field advances at ~30 fps; the lens and pings redraw only while they are changing
+      if(acc>0.033){ acc=0; compute(T); dirty=true; }
+      if(dirty) draw();
+      raf=requestAnimationFrame(step);
+    }
+    // run the loop only while the hero is on screen and motion is allowed
+    var start=function(){ if(!running && visible && !motion.still()){ running=true; last=performance.now(); raf=requestAnimationFrame(step); } };
+    var stop=function(){ if(running){ running=false; cancelAnimationFrame(raf); } };
+    motion.onChange(function(still){ if(still){ stop(); mx=null; draw(); } else { start(); } });
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting; visible?start():stop(); }); }).observe(wrap);
+    } else { visible=true; start(); }
+  })();
+
+  /* ---- hybrid evaluation console: digital prediction vs live measurement, converging run by run ---- */
+  (function(){
+    var canvas = document.getElementById('eval');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var wrap = canvas.parentElement;
+    var W=1,H=1,DPR=1;
+    var N=110, DT=0.085, model=[], live=[];
+    var stateEl=document.getElementById('eval-state'), runEl=document.getElementById('eval-run'), resEl=document.getElementById('eval-res');
+    var run=1, t=0, bias=0.14, runT=0, validated=false, armed=false, residual=0.14;
+    function pred(x){ return 0.62+0.16*Math.sin(x*0.9)+0.07*Math.sin(x*2.3+1.2); }
+    function gap(x,b){ return b*Math.sin(x*1.3+0.4); }
+    // seed the window on the same clock the ticks use, so the trace is continuous from the first frame
+    for(var i=0;i<N;i++){ var x0=((i-N+1)*DT)*0.9; model.push(pred(x0)); live.push(pred(x0)+gap(x0,bias)+0.01*(Math.random()-0.5)); }
+    function setState(txt, cls){ if(stateEl){ stateEl.textContent=txt; stateEl.className='mchip '+cls; } }
+    function tickSim(dt){
+      t+=dt; runT+=dt;
+      var x=t*0.9;
+      var m=pred(x);
+      // the live signal tracks the prediction more closely as the run matures
+      var l=m+gap(x,bias)+0.012*(Math.random()-0.5);
+      model.push(m); live.push(l);
+      if(model.length>N){ model.shift(); live.shift(); }
+      bias=Math.max(0.012, bias-dt*0.02);
+      // residual: mean absolute gap over the visible window, as a share of the prediction
+      var sum=0; for(var i=0;i<model.length;i++) sum+=Math.abs(model[i]-live[i])/model[i];
+      residual=sum/model.length;
+      if(resEl) resEl.textContent=(residual*100).toFixed(1)+'%';
+      // a run has to diverge before it can converge: arm once the window shows the new run's gap,
+      // or once the window holds only this run's samples
+      if(!armed){ if(residual>0.05 || runT>N*DT) armed=true; }
+      else if(!validated){
+        if(residual<0.02){ validated=true; runT=0; setState('VALIDATED','state-ok'); chainPulse(); }
+        else if(residual<0.05 && stateEl && stateEl.textContent!=='CONVERGING'){ setState('CONVERGING','state-warn'); }
+      }
+      // hold the validated state, then start the next run with a fresh offset
+      if(validated && runT>9){ run++; runT=0; bias=0.11+Math.random()*0.05; validated=false; armed=false;
+        if(runEl) runEl.textContent='RUN '+String(run).padStart(2,'0'); setState('CALIBRATING','state-info'); }
+    }
+    function yOf(v){ return H-12-((v-0.3)/0.6)*(H-24); }
+    function line(buf, color, dash){
+      ctx.setLineDash(dash||[]); ctx.lineWidth=1.6; ctx.beginPath();
+      for(var i=0;i<buf.length;i++){ var x=i*(W/(N-1)), y=yOf(buf[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+      ctx.strokeStyle=color; ctx.shadowColor=color; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0; ctx.setLineDash([]);
+    }
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle='rgba(241,233,219,0.10)'; ctx.lineWidth=1;
+      for(var g=0;g<3;g++){ var gy=8+g*(H-18)/2; ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+      // residual band between prediction and measurement
+      ctx.beginPath();
+      for(var i=0;i<model.length;i++){ var x=i*(W/(N-1)); i?ctx.lineTo(x,yOf(model[i])):ctx.moveTo(x,yOf(model[i])); }
+      for(var j=live.length-1;j>=0;j--){ ctx.lineTo(j*(W/(N-1)), yOf(live[j])); }
+      ctx.closePath(); ctx.fillStyle = validated?'rgba(30,216,114,0.14)':'rgba(255,175,46,0.14)'; ctx.fill();
+      line(model,'#4DD3F7',[5,4]);
+      line(live, validated?'#1ED872':'#FFAF2E');
+      var cur=live[live.length-1];
+      ctx.beginPath(); ctx.arc(W-2,yOf(cur),2.5,0,Math.PI*2); ctx.fillStyle=validated?'#1ED872':'#FFAF2E'; ctx.fill();
+      ctx.font='9px monospace'; ctx.fillStyle='#4DD3F7'; ctx.fillText('MODEL', 6, 11);
+      ctx.fillStyle=validated?'#1ED872':'#FFAF2E'; ctx.fillText('LIVE', 44, 11);
+      ctx.fillStyle='rgba(241,233,219,0.8)'; ctx.fillText('RESIDUAL '+(residual*100).toFixed(1)+'%', 6, H-6);
+    }
+    function resize(){
+      DPR=Math.min(window.devicePixelRatio||1,2);
+      var r=wrap.getBoundingClientRect();
+      W=Math.max(1,r.width); H=Math.max(1,r.height);
+      canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      draw();
+    }
+    if(window.ResizeObserver){ new ResizeObserver(resize).observe(wrap); }
+    else { window.addEventListener('resize', resize); }
+    if(motion.still()){
+      // static scene: a validated run, counters describe the drawn picture
+      bias=0.012; for(var k=0;k<N;k++){ var xk=((k-N+1)*DT)*0.9; model[k]=pred(xk); live[k]=pred(xk)+gap(xk,bias); }
+      run=7; validated=true; armed=true; residual=0.011;
+      if(resEl) resEl.textContent='1.1%'; if(runEl) runEl.textContent='RUN 07';
+      setState('VALIDATED','state-ok');
+    }
+    resize();
+    var last=performance.now(), acc=0, running=false, raf, visible=false;
+    function step(now){
+      if(!running) return;
+      var dt=Math.min(0.06,(now-last)/1000); last=now;
+      acc+=dt;
+      var ticked=false;
+      while(acc>DT){ tickSim(DT); acc-=DT; ticked=true; }
+      // the picture only changes when the simulation advances
+      if(ticked) draw();
+      raf=requestAnimationFrame(step);
+    }
+    var start=function(){ if(!running && visible && !motion.still()){ running=true; last=performance.now(); acc=0; raf=requestAnimationFrame(step); } };
+    var stop=function(){ if(running){ running=false; cancelAnimationFrame(raf); } };
+    motion.onChange(function(still){ if(still){ stop(); } else { start(); } });
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting; visible?start():stop(); }); }).observe(wrap);
+    } else { visible=true; start(); }
+  })();
+
+  /* ---- reveal-time flourishes: stat count-ups + heading decrypt ---- */
+  (function(){
+    if (motion.still() || !('IntersectionObserver' in window)) return; // static HTML already shows final values
+
+    var GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/|+=*#';
+    // animate a stand-in: the real text stays in the DOM for assistive technology while an
+    // aria-hidden twin carries the scramble or the count, so nothing false reaches the accessibility tree
+    function stage(elm){
+      var final = elm.textContent;
+      var sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = final;
+      var vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true'); vis.textContent = final;
+      elm.textContent = ''; elm.appendChild(sr); elm.appendChild(vis);
+      return { final: final, vis: vis, done: function(){ elm.textContent = final; } };
+    }
+    function decrypt(elm, dur){
+      if (motion.still()) return;
+      var s = stage(elm), n = s.final.length, t0 = null;
+      function frame(ts){
+        if(!t0) t0 = ts;
+        var p = Math.min(1, (ts - t0) / dur), keep = Math.floor(n * p), out = '';
+        for(var i = 0; i < n; i++){
+          var ch = s.final[i];
+          out += (i < keep || ch === ' ') ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        }
+        s.vis.textContent = out;
+        if(p < 1 && !motion.still()){ requestAnimationFrame(frame); } else { s.done(); }
+      }
+      requestAnimationFrame(frame);
+    }
+    function countUp(elm, target, prefix, suffix, dur, fmt){
+      if (motion.still()) return;
+      var s = stage(elm), t0 = null;
+      function frame(ts){
+        if(!t0) t0 = ts;
+        var p = Math.min(1, (ts - t0) / dur);
+        p = 1 - (1 - p) * (1 - p);
+        var v = Math.round(target * p);
+        s.vis.textContent = prefix + (fmt ? fmt(v) : v) + suffix;
+        if(p < 1 && !motion.still()){ requestAnimationFrame(frame); } else { s.done(); }
+      }
+      requestAnimationFrame(frame);
+    }
+    function thousands(v){ return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+    var heads = document.querySelectorAll('.sec-head h2, .approach h2, .contact h2');
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ decrypt(e.target, 650); io.unobserve(e.target); } });
+    }, { threshold: .35 });
+    heads.forEach(function(h){ io.observe(h); });
+
+    var stats = document.querySelector('.stats');
+    if(stats){
+      var io2 = new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          if(!e.isIntersecting) return;
+          io2.disconnect();
+          var nums = stats.querySelectorAll('.num');
+          if(nums[0]) countUp(nums[0], 6000, '', '+', 900, thousands);
+          if(nums[1]) countUp(nums[1], 150, '~', '', 900);
+          if(nums[2]) countUp(nums[2], 36, '', '+NL', 900);
+          if(nums[3]) decrypt(nums[3], 700);
+        });
+      }, { threshold: .3 });
+      io2.observe(stats);
+    }
+  })();
+</script>
+</body>
+</html>
