@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.2.3**
+Version: **3.3.0**
 
 Created by **Dr. Shane Turner**
 
@@ -24,6 +24,7 @@ The hosted application is the simplest way to use it. For local development, ser
 - fans different pin types around a shared or dense anchor and connects displaced pins with leader lines
 - separates pin groups across nearby but distinct anchors with one deterministic global collision layout
 - adapts pin outlines for light, dark, and transparent destinations; the legend renders identical complete pins, includes only categories used on the map, and wraps automatically
+- applies the 2026 Astrion brand palette to the editor, pin categories, map themes, and exported graphics; Astrion Force purple is logo-only and never appears
 - protects state abbreviations and counts as reserved zones so pins, callouts, connectors, and place labels do not cover them
 - warns when dense layout requires a fallback label, hides a label, fits long heading text, or cannot fully separate a marker group
 - offers fit, zoom-in, zoom-out, and full-screen preview controls for desktop and mobile use
@@ -68,6 +69,23 @@ The interior symbol communicates the current location category:
 When an anchor contains multiple records of one category, one pin carries a numeric count badge. When an anchor contains different categories, their pins fan apart and use leader lines to preserve the common geographic anchor. The same fanning and global collision pass also respects nearby independent anchors and the protected rectangles around state abbreviations and state counts.
 
 Pin outlines adapt to the light, dark, clean, and transparent destination treatment. Legend entries call the same pin renderer as map locations, so silhouette, interior symbol, category color, outline, and visual weight remain identical. The legend includes only types currently used on the map and wraps automatically when several are present. All eleven built-in categories are available in the location editor, and the metadata-driven pin renderer can accept additional categories in a future release without redesigning the placement system.
+
+## Brand palette
+
+Map Builder uses the 2026 Astrion brand palette. Astrion Black (`#101820`), Midnight (`#222230`), and Deep Space (`#1E2436`) are the neutrals, Astrion Sky (`#29AAE1`) is the interaction color for buttons, links, and focus, Supernova (`#FFAF2E`) and Twilight (`#FC5442`) mark warnings and errors, and the Refraction to Daylight to Zenith gradient appears only as the header rule and the brand mark. Astrion Force purple is logo-only under the 2026 standards and does not appear in the editor, the heading-accent choices, or exported graphics. Projects saved with the retired Force or Water accents open with Astrion Sky.
+
+Location categories are colored by brand family so a legend reads the same way on every theme:
+
+| Family | Categories | Light and clean themes | Dark theme and dark destinations |
+| --- | --- | --- | --- |
+| Zenith | Headquarters, Regional headquarters | deep and mid Zenith shades | Zenith and a Zenith tint |
+| Sky | Site, Operations center | mid and deep Sky shades | Sky and a Sky tint |
+| Refraction | Contract site, Test or range site | mid and deep Refraction shades | Refraction and a Refraction tint |
+| Supernova | Program office | Supernova shade | Supernova |
+| Twilight | Customer site, Partner site | mid and deep Twilight shades | Twilight and a Twilight tint |
+| Neutral | Future site, Manufacturing facility | Silver shade, Astrion Black | Platinum, Astrion Black tint |
+
+Light-theme pins are brand shades because every pin must hold 4.5:1 contrast against its white plate and 4:1 against Platinum state fills. Dark-theme pins use the exact brand colors, or a tint for the second category in a family, at the same contrast against Astrion Black plates and Deep Space states. Pin glyphs are white on the light-theme shades and Astrion Black on the lighter dark-theme fills.
 
 ## Project safety and portability
 

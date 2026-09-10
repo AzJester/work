@@ -4,6 +4,26 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.3.0] - 2026-09-10
+
+### Changed
+
+- moved the editor and every exported graphic onto the 2026 Astrion brand palette: Astrion Black, Midnight, and Deep Space neutrals, Astrion Sky for buttons, links, and focus, Supernova and Twilight for warnings and errors, and the Refraction to Daylight to Zenith gradient as the header rule and brand mark
+- retired Astrion Force purple and Astrion Water from the editor, the heading-accent choices, and saved projects; Force is logo-only under the 2026 standards, and projects that stored either color now open with Astrion Sky
+- recolored the eleven location categories by brand family: Zenith for headquarters, Sky for sites and operations centers, Refraction for contract and test sites, Supernova for program offices, Twilight for customer and partner sites, and Astrion Black, Silver, and Platinum for manufacturing and future sites
+- rebuilt the light, dark, and clean map themes from the palette: Platinum states with Astrion Black text on light canvases, and Deep Space states on an Astrion Black canvas for dark graphics
+- offered Refraction, Daylight, Zenith, Supernova, and Twilight as heading accents alongside Sky and Midnight
+
+### Fixed
+
+- drew each category's dark-destination color on the dark theme and on dark transparent destinations; the renderer previously used the light-theme shade everywhere, so pins lost contrast on dark surfaces
+- switched pin glyphs to Astrion Black on the lighter dark-theme fills so the interior symbols stay readable on Platinum, Supernova, and Daylight pins
+
+### Preserved
+
+- kept every light-theme pin at 4.5:1 or better against white plates and 4:1 against state fills, and every dark-theme pin at 4.5:1 against its plate and 4:1 against Deep Space states
+- kept Verdana as the editor and export typeface; this release changes colors only
+
 ## [3.2.3] - 2026-07-14
 
 ### Fixed

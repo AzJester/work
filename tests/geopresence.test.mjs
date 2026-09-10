@@ -56,6 +56,12 @@ function contrastRatio(first, second) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
+function themePalettes() {
+  const paletteSource = sectionFromLast("function palette()", "\n");
+  const paletteFor = theme => vm.runInNewContext(`let model={theme:${JSON.stringify(theme)}};${paletteSource};palette()`);
+  return { light: paletteFor("light"), clean: paletteFor("clean"), dark: paletteFor("dark") };
+}
+
 test("map builder application parses as JavaScript", () => {
   assert.ok(scriptMatch, "inline application script was not found");
   assert.doesNotThrow(() => new vm.Script(inlineScript, { filename: "map-builder-inline.js" }));
@@ -89,8 +95,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.3"/);
-  assert.match(html, /Version 3\.2\.3/);
+  assert.match(inlineScript, /const APP_VERSION="3\.3\.0"/);
+  assert.match(html, /Version 3\.3\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -278,15 +284,54 @@ test("site categories retain distinct pin interiors and accessible contrast", ()
   for (const [value, meta] of Object.entries(expectedTypes)) {
     assert.match(typeSelector, new RegExp(`<option\\s+value="${value}"[^>]*>\\s*${meta.label}\\s*</option>`, "i"));
   }
+  const markerStyleSource = sectionFromLast("function markerStyle(", "\n");
+  const darkPlate = markerStyleSource.match(/plate:isDark\?"(#[a-f\d]{6})"/i)?.[1];
+  assert.ok(darkPlate, "dark marker plate color was not found");
+  assert.match(markerStyleSource, /color:\(isDark\?meta\.darkColor:meta\.color\)/,
+    "dark themes and dark transparent destinations must draw each category's dark color");
+  const { light, clean, dark } = themePalettes();
   for (const [type, meta] of Object.entries(types)) {
-    assert.ok(contrastRatio(meta.color, "#ffffff") >= 4.5, `${type} light marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.color, "#dfe3e8") >= 4, `${type} light marker must contrast with light land`);
-    assert.ok(contrastRatio(meta.darkColor, "#171722") >= 4.5, `${type} dark marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.darkColor, "#3c3852") >= 4, `${type} dark marker must contrast with dark land`);
+    assert.ok(contrastRatio(meta.color, light.panel) >= 4.5, `${type} light marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.color, light.land) >= 4, `${type} light marker must contrast with light land`);
+    assert.ok(contrastRatio(meta.color, clean.land) >= 4, `${type} light marker must contrast with clean land`);
+    assert.ok(contrastRatio(meta.darkColor, darkPlate) >= 4.5, `${type} dark marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.darkColor, dark.land) >= 4, `${type} dark marker must contrast with dark land`);
   }
   assert.match(inlineScript, /function markerToken\(meta,cx,cy,size,p\)/);
   assert.match(inlineScript, /class="[^"]*\bmarker-pin\b[^"]*"/);
   assert.doesNotMatch(inlineScript, /class="marker-backplate"/);
+});
+
+test("the editor and exported graphics follow the 2026 Astrion brand palette", () => {
+  assert.doesNotMatch(html, /442c81|307eef/i, "Astrion Force is logo-only under the 2026 standards and Astrion Water is retired");
+  const palette = [["--black", "#101820"], ["--midnight", "#222230"], ["--deep", "#1e2436"], ["--alabaster", "#f1e9db"], ["--platinum", "#dddddd"], ["--silver", "#bdbdbd"],
+    ["--twilight", "#fc5442"], ["--supernova", "#ffaf2e"], ["--sky", "#29aae1"], ["--refraction", "#1ed872"], ["--daylight", "#4dd3f7"], ["--zenith", "#9382f9"]];
+  for (const [token, hex] of palette) assert.ok(styles.includes(`${token}:${hex};`), `palette token ${token} is bound to ${hex}`);
+  assert.match(styles, /--gradient:linear-gradient\(90deg,var\(--refraction\) 0%,var\(--daylight\) 50%,var\(--zenith\) 100%\)/);
+  assert.match(styles, /\.btn\{[^}]*color:var\(--black\);background:var\(--sky\)/, "primary actions use Astrion Sky with Astrion Black text");
+  assert.match(html, /<meta name="theme-color" content="#101820">/);
+  for (const [token, hex] of [["--sky-deep", "#1c759b"], ["--supernova-deep", "#94651b"], ["--twilight-deep", "#c04032"], ["--muted", "#585d63"]]) {
+    assert.ok(styles.includes(`${token}:${hex};`), `${token} is bound to ${hex}`);
+    assert.ok(contrastRatio(hex, "#ffffff") >= 4.5, `${token} keeps 4.5:1 on white`);
+  }
+  const accentSelect = html.match(/<select\b[^>]*id="accent"[^>]*>([\s\S]*?)<\/select>/i)?.[1] || "";
+  const accentValues = [...accentSelect.matchAll(/value="(#[a-f\d]{6})"/gi)].map(match => match[1].toLowerCase());
+  assert.deepEqual(accentValues, ["#29aae1", "#1ed872", "#4dd3f7", "#9382f9", "#ffaf2e", "#fc5442", "#222230"]);
+  const accentOptions = vm.runInNewContext(assignmentSource("ACCENT_OPTIONS"));
+  assert.deepEqual([...accentOptions], accentValues, "saved-project accent validation matches the heading-accent choices");
+  const defaults = vm.runInNewContext(`(${assignmentSource("defaults")})`, { MODEL_SCHEMA_VERSION: 3, APP_VERSION: "test" });
+  assert.equal(defaults.accent, "#29aae1", "new maps start with Astrion Sky");
+  assert.match(inlineScript, /out\.accent=ACCENT_OPTIONS\.has\(String\(raw\.accent\|\|""\)\.toLowerCase\(\)\)\?/,
+    "retired Force and Water accents in saved projects fall back to the default accent");
+  const { light, clean, dark } = themePalettes();
+  assert.deepEqual([light.text, clean.text, dark.text], ["#101820", "#101820", "#ffffff"]);
+  assert.deepEqual([dark.bg, dark.land, dark.panel], ["#101820", "#1e2436", "#222230"], "dark graphics use Astrion Black, Deep Space, and Midnight");
+  assert.equal(light.land, "#dddddd", "light graphics use Platinum states");
+  for (const theme of [light, clean, dark]) {
+    assert.ok(contrastRatio(theme.text, theme.land) >= 4.5, "map text must contrast with state fills");
+    assert.ok(contrastRatio(theme.text, theme.panel) >= 4.5, "label text must contrast with label plates");
+    assert.ok(contrastRatio(theme.muted, theme.bg) >= 4.5, "subtitle text must contrast with the canvas");
+  }
 });
 
 test("co-located tokens and globally nearby locations share collision occupancy", () => {
