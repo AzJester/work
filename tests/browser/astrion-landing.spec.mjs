@@ -69,6 +69,8 @@ test("the Astrion page loads cleanly and renders all six mission segments", asyn
 
 test("every rendered color comes from the 2026 palette, with no shadows and square corners", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
+  // freeze transitions and keyframes first, so the sweep reads resting colors rather than an interpolation in flight
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(route(baseURL), { waitUntil: "load" });
   const issues = await page.evaluate(palette => {
     const ok = new Set([...palette, "rgba(0, 0, 0, 0)"]);
@@ -141,6 +143,25 @@ for (const width of [320, 360, 390, 430, 460, 640, 680, 681, 768, 920, 921, 1024
     await expect(page.locator(".nav .logo img")).toBeVisible();
   });
 }
+
+test("printing shows every section, even ones the visitor never scrolled to", async ({ page, baseURL }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(route(baseURL), { waitUntil: "load" });
+  await page.emulateMedia({ media: "print" });
+  const hidden = await page.evaluate(() => [...document.querySelectorAll(".reveal")]
+    .filter(element => getComputedStyle(element).opacity !== "1").length);
+  expect(hidden).toBe(0);
+});
+
+test("a malformed hash in a shared link does not stop the page scripts", async ({ page, baseURL }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(route(baseURL) + "#100%", { waitUntil: "load" });
+  await page.locator(".eval").scrollIntoViewIfNeeded();
+  await expect(page.locator("#eval-res")).not.toHaveText("--");
+  expect(errors).toEqual([]);
+});
 
 test("the nav sits clear over the hero photograph and turns solid once the page moves", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 900 });

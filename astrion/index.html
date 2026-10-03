@@ -168,9 +168,8 @@
   .strip > div { padding: var(--space-3) var(--space-5) 0 0; margin-right: var(--space-5); }
   .strip > div + div { padding-left: var(--space-5); border-left: 1px solid var(--border-hairline); }
   .strip b { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 20px; line-height: 26px; color: var(--ink); }
-  .strip span { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); }
-  .hero .scroll { display: none; }
-  @media (min-width: 761px) and (min-aspect-ratio: 4/3) {
+  .strip span { display: block; font-family: var(--font-mono); font-size: 11px; line-height: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); }
+  @media (min-width: 961px) and (min-aspect-ratio: 4/3) {
     .hero { min-height: clamp(600px, 100svh, 1040px); display: flex; align-items: flex-end; }
     .hero-media { position: absolute; inset: 0; aspect-ratio: auto; }
     .hero-media img { object-position: 50% 58%; }
@@ -179,9 +178,6 @@
     .hero .strip { border-top-color: var(--steel); }
     .hero .strip > div + div { border-left-color: var(--steel); }
     .hero .strip span { color: var(--bone); }
-    .hero .scroll { display: inline-flex; position: absolute; right: var(--pad); bottom: clamp(48px, 9vh, 104px); align-items: center; gap: 10px;
-      font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--bone); }
-    .hero .scroll .icon { width: 16px; height: 16px; }
   }
 
   /* ---------------- SECTIONS ---------------- */
@@ -196,8 +192,8 @@
   .segment { position: relative; display: flex; flex-direction: column; padding: var(--space-6); border-right: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); }
   .seg-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-7); }
   .seg-top .snum { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-subtle); }
-  .seg-top .icon { color: var(--ink-muted); }
-  .segment h3 { font-size: 24px; line-height: 28px; font-weight: 700; letter-spacing: -.005em; min-height: 56px; text-wrap: balance; }
+  .seg-top .icon { color: var(--ink); }
+  .segment h3 { font-size: 24px; line-height: 28px; font-weight: 700; letter-spacing: -.005em; min-height: 84px; text-wrap: balance; }
   .segment .desc { margin-top: var(--space-4); font-size: 14px; line-height: 21px; color: var(--ink-muted); }
   .seg-sols { margin-top: auto; padding-top: var(--space-6); }
   .seg-sols .k { display: block; padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-hairline); }
@@ -229,18 +225,20 @@
 
   .pf-group + .pf-group { margin-top: var(--space-8); }
   .pf-group[hidden] { display: none; }
-  .pf-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-5); align-items: baseline; padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink); }
+  .pf-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-5); row-gap: var(--space-3); align-items: baseline; padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink); }
+  .pf-head .pf-num { grid-column: 1; grid-row: 1; }
+  .pf-head .pf-count { grid-column: 2; grid-row: 1; justify-self: end; }
+  .pf-head h3 { grid-column: 1 / -1; grid-row: 2; }
   .pf-head .pf-num { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-subtle); }
   .pf-head h3 { font-size: clamp(22px, 2.2vw, 28px); line-height: 1.05; font-weight: 800; letter-spacing: -.01em; text-transform: uppercase; }
-  .pf-head .pf-tag { grid-column: 2; margin-top: -8px; color: var(--ink-muted); font-size: 14px; line-height: 21px; }
-  .pf-head .pf-count { grid-column: 3; grid-row: 1; }
+  .pf-head .pf-tag { grid-column: 1 / -1; grid-row: 3; color: var(--ink-muted); font-size: 14px; line-height: 21px; }
 
   .sol { position: relative; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); gap: var(--space-7);
     padding: var(--space-6) 0 var(--space-6); border-bottom: 1px solid var(--border-hairline); }
   .sol::before { content: ""; position: absolute; left: calc(-1 * var(--space-5)); top: var(--space-6); bottom: var(--space-6); width: 2px; background: var(--accent); opacity: 0; transition: opacity .3s ease; }
   /* the one accent in this region: the row a visitor just navigated to */
   .sol:target::before { opacity: 1; }
-  .sol-code { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; color: var(--ink-subtle); margin-bottom: var(--space-3); }
+  .sol-code { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-subtle); margin-bottom: var(--space-3); }
   .sol h4 { font-size: 24px; line-height: 28px; font-weight: 700; letter-spacing: -.005em; color: var(--ink); text-wrap: balance; }
   .sol-tag { margin-top: var(--space-2); font-size: 14px; line-height: 21px; color: var(--ink-muted); max-width: 36ch; }
   .sol .k { display: block; margin-bottom: var(--space-2); }
@@ -255,7 +253,7 @@
   .ap-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-8); align-items: start; }
   .ap-copy .lead { margin-top: var(--space-5); }
   .ap-copy .body { margin-top: var(--space-4); color: var(--ink-muted); max-width: 56ch; }
-  .ap-copy .statement { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-hairline); font-size: 18px; line-height: 26px; font-weight: 600; color: var(--ink); max-width: 34ch; }
+  .ap-copy .statement { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-hairline); font-size: 18px; line-height: 26px; font-weight: 500; color: var(--ink); max-width: 34ch; }
 
   .loop { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: var(--space-6); }
   .loop .lc { font-family: var(--font-mono); font-size: 11px; line-height: 14px; letter-spacing: .1em; text-transform: uppercase;
@@ -299,7 +297,7 @@
   .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--border-hairline); }
   .stat { padding: var(--space-6) var(--space-5) 0 0; }
   .stat + .stat { padding-left: var(--space-5); border-left: 1px solid var(--border-hairline); }
-  .stat .num { font-family: var(--font-mono); font-weight: 300; font-size: clamp(30px, 3.4vw, 44px); line-height: 1.05; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; }
+  .stat .num { font-family: var(--font-mono); font-weight: 400; font-size: clamp(30px, 3.4vw, 44px); line-height: 1.05; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; }
   .stat .lbl { margin-top: var(--space-4); font-size: 14px; line-height: 21px; color: var(--ink-muted); max-width: 28ch; }
 
   /* ---------------- COMPANY ---------------- */
@@ -344,13 +342,14 @@
   .foot-links a:hover { color: var(--ink); }
   /* running footer, as the guide sets its own: label, rule, year, rule, folio */
   .runner { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-7); }
-  .runner .rule { flex: 1; height: 1px; background: var(--border-hairline); }
+  .runner .rule { flex: 1; min-width: var(--space-4); height: 1px; background: var(--border-hairline); }
   .fine { margin-top: var(--space-4); font-size: 13px; line-height: 18px; color: var(--ink-muted); max-width: 90ch; }
 
   /* ---------------- RESPONSIVE ---------------- */
   @media (max-width: 1080px) {
     .nav-links { gap: var(--space-5); }
     .segments { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .segment h3 { min-height: 56px; }
     .sol { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-5) var(--space-7); }
     .sol .sol-plays { grid-column: 2; }
     .co-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -358,15 +357,23 @@
     .co-grid .card:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stats .stat:nth-child(3) { padding-left: 0; border-left: none; }
-    .stats .stat:nth-child(n+3) { margin-top: var(--space-6); border-top: 1px solid var(--border-hairline); }
+    .stats .stat:nth-child(-n+2) { padding-bottom: var(--space-6); }
+    .stats .stat:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
   }
   @media (max-width: 920px) {
     .nav-links a.link { display: none; }
     .head, .pf-intro, .ap-grid, .ap-lower, .contact-in { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
     .lifecycle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .lifecycle li:nth-child(3) { padding-left: 0; border-left: none; }
-    .lifecycle li:nth-child(n+3) { margin-top: var(--space-5); border-top: 1px solid var(--border-hairline); }
+    .lifecycle li:nth-child(-n+2) { padding-bottom: var(--space-5); }
+    .lifecycle li:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
     .founder { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  }
+  @media (max-width: 800px) {
+    .strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .strip > div, .strip > div + div { margin: 0; padding: var(--space-3) var(--space-4) var(--space-3) 0; border-left: none; }
+    .strip > div:nth-child(even) { padding-left: var(--space-4); border-left: 1px solid var(--border-hairline); }
+    .strip > div:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
   }
   @media (max-width: 680px) {
     .segments { grid-template-columns: minmax(0, 1fr); }
@@ -375,23 +382,19 @@
     .sol { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
     .sol .sol-plays { grid-column: auto; }
     .sol::before { left: -10px; }
-    .pf-head { grid-template-columns: auto minmax(0, 1fr); }
-    .pf-head .pf-count { grid-column: 2; grid-row: auto; }
     .co-grid, .stats { grid-template-columns: minmax(0, 1fr); }
     .co-grid .card, .stats .stat { padding-left: 0; border-left: none; }
     .co-grid .card + .card { border-top: 1px solid var(--border-hairline); }
     .stats .stat + .stat { margin-top: var(--space-6); border-top: 1px solid var(--border-hairline); }
+    .stats .stat:nth-child(-n+2) { padding-bottom: 0; }
     .cap { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
-    .strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .strip > div, .strip > div + div { margin: 0; padding: var(--space-3) var(--space-4) var(--space-3) 0; border-left: none; }
-    .strip > div:nth-child(even) { padding-left: var(--space-4); border-left: 1px solid var(--border-hairline); }
-    .strip > div:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
   }
   @media (max-width: 520px) {
     .lifecycle { grid-template-columns: minmax(0, 1fr); }
     .lifecycle li, .lifecycle li + li { padding-left: 0; border-left: none; }
     .lifecycle li + li { margin-top: var(--space-5); border-top: 1px solid var(--border-hairline); }
-    .runner .mid { display: none; }
+    .lifecycle li:nth-child(-n+2) { padding-bottom: 0; }
+    .runner .mid, .runner .mid + .rule { display: none; }
   }
   @media (max-width: 480px) {
     .nav-in { gap: var(--space-4); }
@@ -416,6 +419,10 @@
   html.still { scroll-behavior: auto; }
   html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
   html.still .reveal { opacity: 1 !important; translate: none !important; }
+  @media print {
+    html.js .reveal { opacity: 1 !important; translate: none !important; transition: none !important; }
+    html.js .nav { position: absolute; }
+  }
 </style>
 </head>
 <body>
@@ -428,7 +435,6 @@
   <symbol id="ast-secure-facility" viewBox="0 0 24 24"><path d="M2.5 21h19M4.5 21V8l7.5-4.5L19.5 8v13"/><rect x="8.5" y="13.5" width="7" height="6"/><path d="M10.0 13.5v-1.5a2 2 0 0 1 4 0V13.5"/></symbol>
   <symbol id="ast-lunar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="9" cy="9.5" r="2"/><circle cx="14.5" cy="14.5" r="2.5"/><circle cx="15" cy="7.5" r="1"/></symbol>
   <symbol id="ast-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15.5M14 6l6 6-6 6"/></symbol>
-  <symbol id="ast-arrow-down" viewBox="0 0 24 24"><path d="M12 4v15.5M6 14l6 6 6-6"/></symbol>
   <symbol id="ast-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M20.5 4v3.5H17"/></symbol>
 </svg>
 
@@ -467,7 +473,6 @@
         <div><b>6,000+</b><span>People</span></div>
         <div><b>HSV</b><span>Huntsville, AL</span></div>
       </div>
-      <a class="scroll" href="#segments">Scroll <svg class="icon" aria-hidden="true"><use href="#ast-arrow-down"/></svg></a>
     </div>
   </section>
 
@@ -705,7 +710,7 @@
               <p class="promise">Deliver smart and independent capability to the fighting edge.</p>
               <div class="purpose"><span class="k">Purpose</span><p>Enable modern autonomous warfare through intelligent systems, resilient communications, and robust system design.</p></div>
             </div>
-            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>All-domain autonomy</li><li>Tactical edge integration of platforms</li><li>Orchestration of the autonomous battlespace</li></ul></div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>All-domain autonomy</li></ul></div>
           </li>
           <li class="sol reveal" id="sol-integrated-fires">
             <div class="sol-id"><span class="sol-code">LDAWIF / 03</span><h4>Integrated Fires</h4><p class="sol-tag">Connecting the battlefield.</p></div>
@@ -714,7 +719,7 @@
               <p class="promise">Deliver precision targeting and rapid counter-barrage capability that closes the sensor-to-shooter gap across every echelon.</p>
               <div class="purpose"><span class="k">Purpose</span><p>Fuse targeting, sensor, and fires data into a single engagement picture, enabling precision strikes and rapid counter-battery response at the point of contact.</p></div>
             </div>
-            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Create the combat information layer</li><li>Link sensors, shooters, and command nodes</li></ul></div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Create the combat information layer</li></ul></div>
           </li>
         </ol>
       </div>
@@ -823,7 +828,7 @@
             <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Flight safety tools: ORCA and FAWS</li><li>Multi-vendor mission integration built on terrestrial capabilities</li></ul></div>
           </li>
           <li class="sol reveal" id="sol-lunar-construction">
-            <div class="sol-id"><span class="sol-code">E&amp;LP / 02</span><h4>Lunar Construction &amp; Surface Infrastructure</h4><p class="sol-tag">Prepared sites, pads, roads, power, and comms for a shared Moon base.</p></div>
+            <div class="sol-id"><span class="sol-code">E&amp;LP / 02</span><h4>Lunar Construction &amp; Surface Infrastructure</h4><p class="sol-tag">Safe habitation and expansion on the Moon and beyond.</p></div>
             <div class="sol-body">
               <span class="k">Strategic promise</span>
               <p class="promise">Safely site, operate, and protect infrastructure on the Moon.</p>
@@ -838,7 +843,7 @@
               <p class="promise">Operate the Moon as a managed system-of-systems.</p>
               <div class="purpose"><span class="k">Purpose</span><p>Coordinate crewed and uncrewed assets, landing zones, hazard areas, traffic routes, power and comms nodes, logistics, and sustainment using bounded autonomy and trusted operational data.</p></div>
             </div>
-            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Situational awareness across crewed and uncrewed vehicles</li><li>Coordinated surface operations</li><li>UAS survey of landing areas, nodes, and routes</li></ul></div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Situational awareness across crewed and uncrewed vehicles</li></ul></div>
           </li>
           <li class="sol reveal" id="sol-tmsma">
             <div class="sol-id"><span class="sol-code">E&amp;LP / 04</span><h4>Testing, Modeling, Simulation &amp; Mission Assurance</h4><p class="sol-tag">Assurance for building the next world.</p></div>
@@ -1091,11 +1096,14 @@
     // so the browser's own jump lands on a visible row
     function openFor(hash){
       if (!hash || hash.length < 2) return;
-      var target = document.getElementById(decodeURIComponent(hash.slice(1)));
+      var id = hash.slice(1);
+      try { id = decodeURIComponent(id); } catch (e) {}
+      var target = document.getElementById(id);
       var group = target && target.closest('.pf-group');
       if (group && group.hidden) set(group.getAttribute('data-seg'));
     }
     document.addEventListener('click', function(e){
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest('a[href^="#"]');
       if (a) openFor(a.getAttribute('href'));
     });
