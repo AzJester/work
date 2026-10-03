@@ -573,34 +573,21 @@ dependencies, reduced-motion aware. It does not replace `astrion/`; both publish
 
 ## Astrion Company Landing Page (team review build)
 
-The company page, rebuilt on the Astrion Brand Guide 2026 (Volume 01): Carbon through
-Bone carry the page, Ion Cyan marks one moment per region (the business-card edge on the
-contact panel, the validated trace in the evaluation console, the row a visitor jumps to),
-Archivo for display and text, JetBrains Mono for labels and data, square corners, 1px
-hairlines, and no shadows or gradients. The prior brand colors and gradients are sunset and
-do not appear. The logo is the supplied Bone lockup SVG, photography comes from the approved
-2026 library, and the segment icons come from the provisional Astrion icon set (flagged as
-provisional in the footer).
-
-It presents the six company mission segments and, beneath them, the 21 solution areas from
-the Mission Solutions Portfolio (16 Sep 2026), each with its tagline, strategic promise,
-purpose, and ways to play. The one-pagers' internal objectives are left off this public page.
-
-1. Integrated Air and Missile Defense (BMC2, Sensors & Sensor Fusion, Effector Solutions)
-2. Lifecycle Management and Cyber Warfare (Cyber Warfare; Test, Evaluation & Training; Sustainment & Modernization; Next Generation Weapon Systems)
-3. Layered Defense, Autonomous Warfare & Integrated Fires (links to the division page)
-4. Space Warfighting (Global Mission Operations, Space Control, Space Access, Space Energy & Wargaming)
-5. Critical Infrastructure Protection (Transportation, Energy, Defense Industrial Base)
-6. Exploration and Lunar Presence (Launch, Landing & Mission Readiness; Lunar Construction; Lunar Autonomy; Testing, Modeling, Simulation & Mission Assurance)
+The company page, laid out after the Astrion site direction (the astrion3 reference) and built
+to the Astrion Brand Guide 2026 (Volume 01): a full-height typographic hero with no
+photograph, six mission cards with photography, the 21 solution areas of the Mission
+Solutions Portfolio (16 Sep 2026) with a segment filter and deep links, a split approach band,
+a light Bone lifecycle band, a call to action, and a ruled footer with the headquarters
+address. Carbon through Bone carry the page, Ion Cyan marks one moment per region, Archivo for
+display and text, JetBrains Mono for labels, square corners, 1px hairlines, no shadows or
+gradients. The Bone wordmark SVG is placed, not redrawn. The one-pagers' internal objectives
+are left off this public page.
 
 The segment names match the canonical list in `solutions-architect/engine.js`, and
 `tests/astrion-landing.test.mjs` fails if the two drift apart, if any color outside the ten
-palette values appears, or if a shadow, gradient, or rounded corner creeps back in. Around the
-portfolio: a segment filter with deep links to every solution row, the engineer-to-sustain
-lifecycle, a simulated hybrid digital-plus-live evaluation console, company proof points,
-locations, and a contact panel. One page plus local `astrion/assets/`, zero external
-dependencies, reduced-motion aware, with an in-page pause control for the ambient motion. The
-division page links back to it from its footer.
+palette values appears, if a shadow, gradient, or rounded corner creeps back in, or if a
+photograph returns to the hero. One page plus local `astrion/assets/`, zero external
+dependencies, reduced-motion aware.
 
 ### → https://azjester.github.io/work/astrion/
 

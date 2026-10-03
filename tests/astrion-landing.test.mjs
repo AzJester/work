@@ -30,12 +30,12 @@ const PALETTE = {
   "--steel": "#7F848E", "--muted-gray": "#8E8E8D", "--bone": "#E7E5DF",
 };
 
-const segmentBlock = page.match(/<ol class="segments">([\s\S]*?)<\/ol>\s*<\/div>\s*<\/section>/)[1];
-const segmentCards = segmentBlock.split(/<li class="segment reveal" /).slice(1).map(chunk => ({
+const segmentBlock = page.match(/<ol class="missions" id="segments">([\s\S]*?)<\/ol>/)[1];
+const segmentCards = segmentBlock.split(/<li class="mission reveal" /).slice(1).map(chunk => ({
   id: chunk.match(/^id="([^"]+)"/)[1],
+  href: chunk.match(/<a href="#([^"]+)">/)[1],
   name: decode(chunk.match(/<h3>([\s\S]*?)<\/h3>/)[1]),
   body: chunk,
-  links: [...chunk.matchAll(/<a href="#(sol-[^"]+)">([^<]+)</g)].map(([, id, label]) => ({ id, label: decode(label) })),
 }));
 
 const groups = page.split(/<div class="pf-group" /).slice(1).map(chunk => {
@@ -64,30 +64,17 @@ test("the company page publishes at a stable directory route", () => {
     "the Pages artifact must copy the astrion/ directory");
 });
 
-test("the six company mission segments appear in canonical order with their descriptions", () => {
+test("the six company mission segments appear as photo cards in canonical order", () => {
   assert.deepEqual(segmentCards.map(card => card.name), MISSION_SEGMENTS.map(segment => segment.name));
   assert.deepEqual(segmentCards.map(card => card.id), ["iamd", "lifecycle-cyber", "ldawif", "space", "cip", "lunar"]);
-
-  const descriptions = [
-    "against the full spectrum of air and missile threats, including ballistic missiles, cruise missiles, hypersonic weapons, and unmanned aircraft systems",
-    "weapon system testing and lifecycle management. The integrated employment of offensive and defensive cyberspace operations, and cryptologic capabilities",
-    "synchronized detection, identification, tracking, and defeat capabilities. Integrated employment of multi-domain autonomous systems",
-    "freedom of movement and action in, from, and to space for the United States and its allies while denying the same to adversaries",
-    "identify, assess, prevent, detect, respond to, mitigate, and recover from threats and hazards to the U.S. Homeland",
-    "enduring human and robotic presence on and around the Moon, creating the foundation for expansion deeper into the solar system"
-  ];
-  const icons = ["air-defense", "cyber-shield", "counter-drone", "satellite", "secure-facility", "lunar"];
+  assert.deepEqual(segmentCards.map(card => card.href), ["pf-iamd", "pf-lcmcw", "pf-ldawif", "pf-space", "pf-cip", "pf-elp"]);
   segmentCards.forEach((card, index) => {
-    assert.ok(card.body.includes(descriptions[index]), `${card.name} description drifted`);
-    assert.match(card.body, new RegExp(`<span class="snum">SEGMENT 0${index + 1}</span>`));
-    assert.match(card.body, new RegExp(`<svg class="icon icon-24" aria-hidden="true"><use href="#ast-${icons[index]}"/></svg>`));
-    assert.match(card.body, new RegExp(`<span class="k">0${card.links.length} solution areas</span>`), `${card.name} counts its solution areas`);
+    assert.match(card.body, new RegExp(`<span class="snum">0${index + 1}</span>`));
+    assert.match(card.body, /<div class="ph"><img src="assets\/img\/[a-z-]+\.jpg" alt="[^"]{20,}"/, `${card.name} carries a described photograph`);
+    assert.match(card.body, /<p>[^<]{40,}<svg class="icon" aria-hidden="true">/, `${card.name} has a one-line description`);
   });
-
-  const ldawif = segmentCards.find(card => card.id === "ldawif");
-  assert.match(ldawif.body, /<a class="btn seglink" href="\.\.\/astrion-division\/ldawif\/">Explore the division/);
-  assert.match(page, /<h2 class="display">Six mission segments\. One engineering discipline behind all of them\.<\/h2>/);
-  assert.match(page, /<a class="link" href="#segments">Segments<\/a>/);
+  assert.match(page, /<h2 class="display">From air defense to lunar operations\.<\/h2>/);
+  assert.match(page, /<nav class="nav-links" aria-label="Primary">\s*<a href="#missions">Missions<\/a>/);
 });
 
 test("the portfolio carries all 21 solution areas from the Mission Solutions Portfolio", () => {
@@ -108,9 +95,8 @@ test("the portfolio carries all 21 solution areas from the Mission Solutions Por
     const chip = page.match(new RegExp(`<button type="button" class="chip" data-filter="${group.seg}" aria-pressed="false">[^<]+<span class="n">(\\d\\d)</span></button>`));
     assert.ok(chip, `${group.name} has a filter chip`);
     assert.equal(Number(chip[1]), group.rows.length, `${group.name} chip count matches its rows`);
-    // the segment overview links every solution area, in order, to its row in this group
-    assert.deepEqual(segmentCards[index].links.map(link => link.id), group.rows.map(row => row.id));
-    assert.deepEqual(segmentCards[index].links.map(link => link.label), group.rows.map(row => row.title));
+    assert.equal(segmentCards[index].href, group.id, `${group.name} card opens its group`);
+    assert.match(segmentCards[index].body, new RegExp(`<span class="k count">0${group.rows.length} solution areas</span>`));
     for (const row of group.rows) {
       assert.match(row.body, /<span class="k">Strategic promise<\/span>\s*<p class="promise">[^<]{20,}<\/p>/, `${row.title} states its promise`);
       assert.match(row.body, /<div class="purpose"><span class="k">Purpose<\/span><p>[^<]{60,}<\/p><\/div>/, `${row.title} states its purpose`);
@@ -179,20 +165,22 @@ test("the page follows the Astrion Brand Guide 2026", () => {
   assert.doesNotMatch(page, /Archivo Display|Verdana|Obvia/i);
   assert.match(style, /\.display \{ font-weight: 800; text-transform: uppercase;/, "headlines are Archivo 800, uppercase");
   // the logo is the supplied Bone lockup, placed, never redrawn
-  assert.match(page, /<img src="assets\/astrion-logo-bone\.svg" alt="Astrion" width="159" height="24"/);
-  const logo = readFileSync(resolve(root, "astrion/assets/astrion-logo-bone.svg"), "utf8");
+  assert.match(page, /<img src="assets\/astrion-wordmark-bone\.svg" alt="Astrion" width="99" height="15"/);
+  const logo = readFileSync(resolve(root, "astrion/assets/astrion-wordmark-bone.svg"), "utf8");
   assert.match(logo, /fill="#E7E5DF"/);
   // photography from the approved library only, and never both littoral frames on one page
   const photos = [...new Set([...page.matchAll(/src="assets\/img\/([^"]+)"/g)].map(match => match[1]))];
-  assert.deepEqual(photos.sort(), ["desert-ground-station.jpg", "flight-line-night.jpg", "littoral-radar-night.jpg"]);
-  assert.doesNotMatch(page, /littoral-radar-station/);
+  assert.deepEqual(photos.sort(), ["desert-ground-station.jpg", "field-test-desert-dusk.jpg", "flight-line-night.jpg", "iamd-radar.jpg", "lunar-surface.jpg", "space-orbit.jpg", "sustainment-crew.jpg"]);
+  // the hero is typographic: no photograph, and no vessel imagery anywhere on the page
+  assert.doesNotMatch(page.match(/<section class="hero"[\s\S]*?<\/section>/)[0], /<img/);
+  assert.doesNotMatch(page, /littoral-radar|system-platform/);
   // voice
   assert.match(page, /<h1 class="display" id="hero-title">Missions are won at the seams\.<\/h1>/);
   assert.doesNotMatch(page, /—|–|&mdash;|&ndash;|&#(?:8212|8211|x2014|x2013);/i, "no em or en dashes in brand copy");
   assert.doesNotMatch(page, /Be the Difference|Always On/, "retired taglines");
   assert.match(page, /Astrion stands at the intersection of innovation and operational reality\. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed\./, "positioning statement verbatim");
   // the icon set is not part of the guide, so the page says so
-  assert.match(page, /Icons on this page are a provisional set pending Astrion approval\./);
+  assert.match(page, /Icons provisional pending Astrion approval/);
 });
 
 test("accessibility and motion affordances", () => {
@@ -200,20 +188,18 @@ test("accessibility and motion affordances", () => {
   assert.match(page, /<a class="skip" href="#main">Skip to content<\/a>/);
   assert.match(page, /<main id="main">/);
   assert.match(page, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(page, /html\.js \.reveal \{ opacity: 0; translate: 0 12px; \}/,
+  assert.match(page, /html\.js \.reveal \{ opacity: 0; translate: 0 16px; \}/,
     "reveal hiding is gated on JavaScript so content stays visible without it");
   assert.match(page, /html\.js \.filter \{ display: flex; \}/, "the filter only appears when it can work");
   assert.match(page, /html \{ scroll-behavior: smooth; scroll-padding-top: 88px; \}/, "anchor targets clear the fixed nav");
   assert.match(page, /:focus-visible \{ outline: 2px solid var\(--focus-ring\); outline-offset: 2px; \}/, "focus is a solid ring, not a glow");
   assert.match(page, /\.sr-only \{ position: absolute; width: 1px; height: 1px;/);
   for (const [svg] of page.matchAll(/<svg class="icon[^"]*"[^>]*>/g)) assert.match(svg, /aria-hidden="true"/, "decorative icons are hidden from assistive technology");
-  assert.match(page, /<a class="card linkcard reveal" href="\.\.\/astrion-division\/ldawif\/" aria-labelledby="ldawif-card-title ldawif-card-cta">/);
-  for (const part of ["eval-bar", "eval-scope", "eval-foot"]) assert.match(page, new RegExp(`<div class="${part}" aria-hidden="true">`), `${part} is presentational inside the role=img console`);
-  assert.equal((page.match(/<span class="lc" aria-hidden="true">/g) || []).length, 5, "loop chips are presentational inside the role=img loop");
+  assert.match(page, /<span class="ghost" aria-hidden="true">seams<\/span>/, "the hero's ghost word is decoration only");
   assert.doesNotMatch(page, /target="_blank"/, "every astrion.us link behaves the same: same tab, like the division page");
   for (const [, alt] of page.matchAll(/<img src="assets\/img\/[^"]+" alt="([^"]*)"/g)) assert.ok(alt.length > 20, "photographs carry a description");
   const anchors = [...new Set([...page.matchAll(/href="#([^"]+)"/g)].map(match => match[1]))];
-  assert.ok(anchors.includes("segments") && anchors.includes("contact") && anchors.includes("portfolio"));
+  assert.ok(anchors.includes("missions") && anchors.includes("contact") && anchors.includes("portfolio"));
   for (const id of anchors) assert.ok(page.includes(`id="${id}"`), `in-page link target #${id} exists`);
   assert.equal((page.match(/<h1[ >]/g) || []).length, 1);
 });
@@ -230,24 +216,16 @@ test("the landing page is cataloged in the application library and README", () =
   assert.match(readme, /https:\/\/azjester\.github\.io\/work\/astrion\//);
 });
 
-test("motion can be paused on the page, not only through the OS setting", () => {
-  assert.match(page, /<button type="button" class="btn btn-ghost" id="motion-toggle">Pause motion<\/button>/, "a plain action button whose label carries the state");
-  assert.doesNotMatch(page, /id="motion-toggle"[^>]*aria-pressed/, "no second state channel that could contradict the label");
-  assert.match(page, /html\.still \{ scroll-behavior: auto; \}/);
-  assert.match(page, /classList\.add\('still'\)/, "a stored pause lands before first paint");
-  assert.match(page, /if\(!armed\)\{ if\(residual>0\.05 \|\| runT>N\*DT\) armed=true; \}/, "every run arms on time as well as on level");
+test("motion follows the OS reduced-motion setting and the page prints whole", () => {
+  assert.match(page, /if\(matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\)h\.classList\.add\('still'\);/, "stillness lands before first paint");
   assert.match(page, /html\.still \*, html\.still \*::before, html\.still \*::after \{ animation: none !important; transition: none !important; \}/);
-  assert.match(page, /@media \(prefers-reduced-motion: reduce\) \{\s*html:not\(\.motion\) \*, html:not\(\.motion\) \*::before, html:not\(\.motion\) \*::after \{ animation: none !important; transition: none !important; \}/,
-    "the OS setting silences every animation and transition unless the visitor explicitly resumes");
+  assert.match(page, /@media print \{\s*html\.js \.reveal \{ opacity: 1 !important;/);
+  assert.doesNotMatch(page, /autoplay|<video|<canvas/, "no ambient media that would need a pause control");
 });
 
-test("company facts match Astrion's own published wording", () => {
-  assert.match(page, /Headquartered in Huntsville, Alabama, with Centers of Excellence there, in Washington, DC, and in Burlington, Massachusetts/);
-  assert.match(page, /<div class="num">6,000\+<\/div>/, "headcount follows the source: more than 6,000");
-  assert.doesNotMatch(page, /Headquartered in Washington/);
-  assert.doesNotMatch(page, /One of two Centers of Excellence/);
-  assert.match(page, /<span class="k">Headquarters<\/span>\s*<h3>Huntsville, AL<\/h3>/);
-  assert.match(page, /Formed from ERC and Oasis Systems, joined by Axient in 2024\./);
-  assert.match(page, /<!-- Company facts: astrion\.us\/our-story/, "sources are recorded next to the copy");
-  assert.match(division, /<a href="\.\.\/\.\.\/astrion\/">Company<\/a>/, "the division page routes back to the company page");
+test("the company section is gone and the footer carries the headquarters", () => {
+  assert.doesNotMatch(page, /id="company"|Susan Wu|Center of Excellence|astrion-division\/ldawif/, "company and division blocks are not shown");
+  assert.match(page, /<address>1100 Redstone Gateway<br>Suite 300<br>Huntsville, AL 35808<br><a href="tel:\+12566506263">256-650-6263<\/a><\/address>/);
+  assert.match(page, /&copy; <span id="yr">2026<\/span> Astrion\. Defend This World\. Build the Next\./, "approved slogan in the footer");
+  assert.match(division, /<a href="\.\.\/\.\.\/astrion\/">Company<\/a>/, "the division page still routes back to the company page");
 });
