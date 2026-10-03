@@ -427,6 +427,8 @@ test("Details progressively discloses lanes while preserving direct item editing
 });
 
 test("Executive view presents one derived decision band without the old duplicate summaries", async ({ page }) => {
+  // "upcoming" is relative to today, so pin the clock to the fixture's own timeline (Gate 1 is 2026-09-15)
+  await page.clock.setFixedTime(new Date("2026-08-21T12:00:00.000Z"));
   await openRoadmap(page, { store: ownerStore({ roadmapView: "executive" }) });
   await activateView(page, "executive");
 
