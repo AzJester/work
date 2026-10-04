@@ -102,6 +102,7 @@ Then open `http://localhost:8000/black-hat-agent/`.
 - [Deployment and operations](docs/DEPLOYMENT.md)
 - [Security and data handling](docs/SECURITY.md)
 - [Product requirements and design decisions](docs/PRODUCT_SPEC.md)
+- [Independent audit](docs/AUDIT.md)
 
 ## Data handling
 
