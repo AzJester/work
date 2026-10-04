@@ -88,13 +88,13 @@ test("transparent exports use a high-contrast header and legend text tone for ev
   await (await revealControl(page, "#cleanSvg")).uncheck();
 
   const cases = [
-    { preview: "light", tone: "auto", expected: "#20202e" },
-    { preview: "checker", tone: "auto", expected: "#20202e" },
+    { preview: "light", tone: "auto", expected: "#101820" },
+    { preview: "checker", tone: "auto", expected: "#101820" },
     { preview: "dark", tone: "auto", expected: "#ffffff" },
     { preview: "custom", backdrop: "#111111", tone: "auto", expected: "#ffffff" },
-    { preview: "custom", backdrop: "#ffffff", tone: "auto", expected: "#20202e" },
+    { preview: "custom", backdrop: "#ffffff", tone: "auto", expected: "#101820" },
     { preview: "light", tone: "light", expected: "#ffffff" },
-    { preview: "dark", tone: "dark", expected: "#20202e" },
+    { preview: "dark", tone: "dark", expected: "#101820" },
   ];
 
   for (const scenario of cases) {
@@ -137,9 +137,9 @@ test("map-surface labels retain contrast across every theme and transparent text
   await (await revealControl(page, "#showCounts")).check();
 
   const themes = [
-    { value: "light", text: "#20202e", land: "#dfe3e8", panel: "#ffffff" },
-    { value: "dark", text: "#ffffff", land: "#3c3852", panel: "#2f2c43" },
-    { value: "clean", text: "#20202e", land: "#f1f2f5", panel: "#ffffff" },
+    { value: "light", text: "#101820", land: "#dddddd", panel: "#ffffff" },
+    { value: "dark", text: "#ffffff", land: "#1e2436", panel: "#222230" },
+    { value: "clean", text: "#101820", land: "#eeeeee", panel: "#ffffff" },
   ];
   const presentations = [
     { name: "opaque", transparent: false },

@@ -66,7 +66,7 @@ Start locally from the repository root with `python -m http.server 8000`, then o
 
 ## Map Builder
 
-A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.2.3**, created by **Dr. Shane Turner**:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.3.0**, created by **Dr. Shane Turner**:
 
 ### [Open Map Builder](https://azjester.github.io/work/geopresence/)
 
