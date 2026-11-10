@@ -301,15 +301,19 @@ const AstrionScore = (() => {
     sc.pump(from + AHEAD);
     const timer = setInterval(() => sc.pump(ctx.currentTime - T0 + from + AHEAD), 200);
     const lag = () => Math.min(0.25, ctx.outputLatency || ctx.baseLatency || 0);
-    const data = new Float32Array(analyser.fftSize);
+    const data = new Float32Array(analyser.fftSize); let off = null;
     return {
       ctx, master, T0, from,
       // The context clock only advances once per audio callback, which would make the picture step.
-      // The output timestamp pairs it with the performance clock, so film time can be read between callbacks.
+      // So film time runs on the performance clock, pulled gently toward the audio output timestamp:
+      // motion is even from frame to frame, and picture and sound still cannot drift apart.
       time: () => {
-        let ct = ctx.currentTime;
-        if (ctx.state === 'running' && ctx.getOutputTimestamp) { const o = ctx.getOutputTimestamp(); if (o && o.performanceTime > 0) return o.contextTime + Math.min(0.25, Math.max(0, (performance.now() - o.performanceTime) / 1000)) - T0 + from; }
-        return ct - T0 + from - lag();
+        if (ctx.state !== 'running') { off = null; return ctx.currentTime - T0 + from - lag(); }
+        const now = performance.now() / 1000; let a = ctx.currentTime - T0 + from - lag();
+        if (ctx.getOutputTimestamp) { const o = ctx.getOutputTimestamp(); if (o && o.performanceTime > 0) a = o.contextTime + Math.min(0.25, Math.max(0, now - o.performanceTime / 1000)) - T0 + from; }
+        const target = a - now;
+        if (off === null || Math.abs(target - off) > 0.08) off = target; else off += (target - off) * 0.02;
+        return now + off;
       },
       level: () => { analyser.getFloatTimeDomainData(data); let e = 0; for (let i = 0; i < data.length; i++) e += data[i] * data[i]; return Math.sqrt(e / data.length); },
       stop: () => { clearInterval(timer); try { ctx.close(); } catch (e) { /* already closed */ } }

@@ -208,16 +208,18 @@ const AstrionFilm = (() => {
       let sa = 0, sc = null;
       for (const c of CUES) {
         const o = sm(c.tin, c.tin + c.fi, t) * (1 - sm(c.tout, c.tout + c.fo, t));
-        if (o !== c.o) {
-          c.o = o;
-          const st = c.el.style;
-          st.opacity = o.toFixed(3); st.visibility = o > 0.001 ? 'visible' : 'hidden';
+        const st = c.el.style;
+        if (o !== c.o) { c.o = o; st.opacity = o.toFixed(3); st.visibility = o > 0.001 ? 'visible' : 'hidden'; }
+        if (o > 0.001) {                               // motion is updated on every frame the element is on screen
           if (c.kind === 'logo') {
             const w = sm(c.tin, c.tin + 1.9, t), life = clamp((t - c.tin) / (c.tout + c.fo - c.tin), 0, 1);
-            const m = 'linear-gradient(90deg,#000 ' + (w * 150 - 50).toFixed(2) + '%,rgba(0,0,0,0) ' + (w * 150).toFixed(2) + '%)';
+            const m = 'linear-gradient(90deg,#000 ' + (w * 150 - 50).toFixed(3) + '%,rgba(0,0,0,0) ' + (w * 150).toFixed(3) + '%)';
             st.webkitMaskImage = m; st.maskImage = m;
-            st.transform = 'translate3d(0,0,0) scale(' + (0.972 + 0.050 * life).toFixed(5) + ')';
-          } else st.transform = o > 0.001 && o < 1 ? 'translate3d(0,' + ((1 - sm(c.tin, c.tin + c.fi + 0.2, t)) * 16 * u).toFixed(2) + 'px,0)' : 'none';
+            st.transform = 'translate3d(0,0,0) scale(' + (0.972 + 0.050 * life).toFixed(6) + ')';
+          } else {
+            const rise = (1 - sm(c.tin, c.tin + c.fi, t)) * 16 * u;
+            st.transform = rise > 0.01 ? 'translate3d(0,' + rise.toFixed(3) + 'px,0)' : 'none';
+          }
         }
         if (o > sa && c.card && L.edges.has(c.card)) { sa = o; sc = c.card; }
       }

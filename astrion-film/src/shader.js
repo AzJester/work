@@ -694,13 +694,13 @@ vec3 stack(vec2 p, vec4 A, vec4 B){
   if(k < 0. || k > 5.) return vec3(.00010,.00013,.00016);
   float v = f - k - .5, ly = -v*.28;
   vec2 q = vec2(p.x, ly); vec4 Z = vec4(0.); vec3 col;
-  if(k < .5) col = planet(q + vec2(0., -.25), vec4(0., -2.95, 2.7, .5 + A.z*.012), vec4(.12, -.238, 1., .5), vec4(.02, .08, -1., 1.));
+  if(k < .5) col = planet(q + vec2(0., -.25), vec4(0., -2.95, 2.7, .5 + A.z*.012), vec4(.50, -.280, 1., .5), vec4(.06, .08, -1., 1.));
   else if(k < 1.5) col = deck(q + vec2(0., .10), vec4(0., 3.4, A.z*.8, -.30), Z, vec4(.035, 0., 0., 0.));
   else if(k < 2.5) col = dusk(q + vec2(0., .10), vec4(3.5, 3.0, 8. + A.z*.2, -.24), vec4(.12, 1., 2.4, 0.), vec4(.028, 0., -.25, 0.), Z, Z, 0.);
   else if(k < 3.5) col = dusk(q + vec2(0., -.02), vec4(-4.5, .5, A.z*.2, -.03), vec4(.12, 1., 2.4, 0.), vec4(.028, 0., -.25, 0.), Z, Z, 0.);
   else if(k < 4.5) col = sea(q + vec2(0., .10), vec4(1.2, .18, 10., 0.), Z, vec4(1., 0., 0., 0.));
   else col = sea(q + vec2(0., -.05), vec4(8.9, -.30, 10., 1.), Z, vec4(1., 0., 0., 0.));
-  col *= mix(1., mix(.10, 1., smoothstep(.12, .36, abs(p.x))), B.x);
+  col = mix(col, mix(min(col, vec3(.010)), col, smoothstep(.15, .40, abs(p.x))), B.x);
   float edge = (.5 - abs(v))*.14*(1. - c);
   col = col*A.w*(1. + 2.2*c*c) + vec3(.14,.80,.94)*exp(-pow(edge/.0016, 2.))*(.55 + .45*c)*A.w;
   return col;

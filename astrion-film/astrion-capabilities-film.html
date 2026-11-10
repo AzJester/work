@@ -848,13 +848,13 @@ vec3 stack(vec2 p, vec4 A, vec4 B){
   if(k < 0. || k > 5.) return vec3(.00010,.00013,.00016);
   float v = f - k - .5, ly = -v*.28;
   vec2 q = vec2(p.x, ly); vec4 Z = vec4(0.); vec3 col;
-  if(k < .5) col = planet(q + vec2(0., -.25), vec4(0., -2.95, 2.7, .5 + A.z*.012), vec4(.12, -.238, 1., .5), vec4(.02, .08, -1., 1.));
+  if(k < .5) col = planet(q + vec2(0., -.25), vec4(0., -2.95, 2.7, .5 + A.z*.012), vec4(.50, -.280, 1., .5), vec4(.06, .08, -1., 1.));
   else if(k < 1.5) col = deck(q + vec2(0., .10), vec4(0., 3.4, A.z*.8, -.30), Z, vec4(.035, 0., 0., 0.));
   else if(k < 2.5) col = dusk(q + vec2(0., .10), vec4(3.5, 3.0, 8. + A.z*.2, -.24), vec4(.12, 1., 2.4, 0.), vec4(.028, 0., -.25, 0.), Z, Z, 0.);
   else if(k < 3.5) col = dusk(q + vec2(0., -.02), vec4(-4.5, .5, A.z*.2, -.03), vec4(.12, 1., 2.4, 0.), vec4(.028, 0., -.25, 0.), Z, Z, 0.);
   else if(k < 4.5) col = sea(q + vec2(0., .10), vec4(1.2, .18, 10., 0.), Z, vec4(1., 0., 0., 0.));
   else col = sea(q + vec2(0., -.05), vec4(8.9, -.30, 10., 1.), Z, vec4(1., 0., 0., 0.));
-  col *= mix(1., mix(.10, 1., smoothstep(.12, .36, abs(p.x))), B.x);
+  col = mix(col, mix(min(col, vec3(.010)), col, smoothstep(.15, .40, abs(p.x))), B.x);
   float edge = (.5 - abs(v))*.14*(1. - c);
   col = col*A.w*(1. + 2.2*c*c) + vec3(.14,.80,.94)*exp(-pow(edge/.0016, 2.))*(.55 + .45*c)*A.w;
   return col;
@@ -1089,16 +1089,18 @@ const AstrionFilm = (() => {
       let sa = 0, sc = null;
       for (const c of CUES) {
         const o = sm(c.tin, c.tin + c.fi, t) * (1 - sm(c.tout, c.tout + c.fo, t));
-        if (o !== c.o) {
-          c.o = o;
-          const st = c.el.style;
-          st.opacity = o.toFixed(3); st.visibility = o > 0.001 ? 'visible' : 'hidden';
+        const st = c.el.style;
+        if (o !== c.o) { c.o = o; st.opacity = o.toFixed(3); st.visibility = o > 0.001 ? 'visible' : 'hidden'; }
+        if (o > 0.001) {                               // motion is updated on every frame the element is on screen
           if (c.kind === 'logo') {
             const w = sm(c.tin, c.tin + 1.9, t), life = clamp((t - c.tin) / (c.tout + c.fo - c.tin), 0, 1);
-            const m = 'linear-gradient(90deg,#000 ' + (w * 150 - 50).toFixed(2) + '%,rgba(0,0,0,0) ' + (w * 150).toFixed(2) + '%)';
+            const m = 'linear-gradient(90deg,#000 ' + (w * 150 - 50).toFixed(3) + '%,rgba(0,0,0,0) ' + (w * 150).toFixed(3) + '%)';
             st.webkitMaskImage = m; st.maskImage = m;
-            st.transform = 'translate3d(0,0,0) scale(' + (0.972 + 0.050 * life).toFixed(5) + ')';
-          } else st.transform = o > 0.001 && o < 1 ? 'translate3d(0,' + ((1 - sm(c.tin, c.tin + c.fi + 0.2, t)) * 16 * u).toFixed(2) + 'px,0)' : 'none';
+            st.transform = 'translate3d(0,0,0) scale(' + (0.972 + 0.050 * life).toFixed(6) + ')';
+          } else {
+            const rise = (1 - sm(c.tin, c.tin + c.fi, t)) * 16 * u;
+            st.transform = rise > 0.01 ? 'translate3d(0,' + rise.toFixed(3) + 'px,0)' : 'none';
+          }
         }
         if (o > sa && c.card && L.edges.has(c.card)) { sa = o; sc = c.card; }
       }
@@ -1471,15 +1473,19 @@ const AstrionScore = (() => {
     sc.pump(from + AHEAD);
     const timer = setInterval(() => sc.pump(ctx.currentTime - T0 + from + AHEAD), 200);
     const lag = () => Math.min(0.25, ctx.outputLatency || ctx.baseLatency || 0);
-    const data = new Float32Array(analyser.fftSize);
+    const data = new Float32Array(analyser.fftSize); let off = null;
     return {
       ctx, master, T0, from,
       // The context clock only advances once per audio callback, which would make the picture step.
-      // The output timestamp pairs it with the performance clock, so film time can be read between callbacks.
+      // So film time runs on the performance clock, pulled gently toward the audio output timestamp:
+      // motion is even from frame to frame, and picture and sound still cannot drift apart.
       time: () => {
-        let ct = ctx.currentTime;
-        if (ctx.state === 'running' && ctx.getOutputTimestamp) { const o = ctx.getOutputTimestamp(); if (o && o.performanceTime > 0) return o.contextTime + Math.min(0.25, Math.max(0, (performance.now() - o.performanceTime) / 1000)) - T0 + from; }
-        return ct - T0 + from - lag();
+        if (ctx.state !== 'running') { off = null; return ctx.currentTime - T0 + from - lag(); }
+        const now = performance.now() / 1000; let a = ctx.currentTime - T0 + from - lag();
+        if (ctx.getOutputTimestamp) { const o = ctx.getOutputTimestamp(); if (o && o.performanceTime > 0) a = o.contextTime + Math.min(0.25, Math.max(0, now - o.performanceTime / 1000)) - T0 + from; }
+        const target = a - now;
+        if (off === null || Math.abs(target - off) > 0.08) off = target; else off += (target - off) * 0.02;
+        return now + off;
       },
       level: () => { analyser.getFloatTimeDomainData(data); let e = 0; for (let i = 0; i < data.length; i++) e += data[i] * data[i]; return Math.sqrt(e / data.length); },
       stop: () => { clearInterval(timer); try { ctx.close(); } catch (e) { /* already closed */ } }
