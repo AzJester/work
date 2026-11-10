@@ -1,12 +1,12 @@
 // Verification run for the Astrion capabilities film.
-//   node verify.mjs [--out <dir>] [--skip-play] [--skip-4k]
+//   node verify.mjs [--out <dir>] [--viewports 1920x1080,390x844] [--skip-4k] [--skip-score] [--skip-play] [--merge]
 // Renders every shot headless at each viewport, compares the bounding boxes of all visible text
 // (watermark included) on a dense time sweep, samples contrast behind the text, analyses the
 // rendered score, and plays the film through once to check that sound starts, holds sync and ends.
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('@playwright/test')); }
@@ -15,7 +15,9 @@ const arg = n => { const i = process.argv.indexOf(n); return i > 0 ? process.arg
 const has = n => process.argv.includes(n);
 const outDir = arg('--out') || join(root, 'verify-out');
 const url = pathToFileURL(join(root, 'astrion-capabilities-film.html')).href;
-const VIEWPORTS = [[1920, 1080], [1366, 768], [390, 844]].concat(has('--skip-4k') ? [] : [[3840, 2160]]);
+const pick = arg('--viewports');
+const VIEWPORTS = [[1920, 1080], [1366, 768], [390, 844]].concat(has('--skip-4k') ? [] : [[3840, 2160]]).filter(([w, h]) => !pick || pick.split(',').includes(w + 'x' + h));
+const sections = [];        // what this run covered, for --merge
 const MIN = { headline: 64, support: 28, label: 20 };          // design pixels at 1920 by 1080
 const failures = [], report = { file: url, generated: new Date().toISOString(), viewports: {}, timeline: {}, score: null, playback: null, failures };
 const fail = (where, msg) => { failures.push(where + ': ' + msg); };
@@ -59,6 +61,7 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 async function open(w, h, extra = {}) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, ...extra });
   const page = await ctx.newPage(), log = { errors: [], warnings: [], external: [] };
+  page.setDefaultTimeout(300000);
   page.on('console', m => { if (m.type() === 'error') log.errors.push(m.text()); else if (m.type() === 'warning') log.warnings.push(m.text()); });
   page.on('pageerror', e => log.errors.push('pageerror: ' + e.message));
   page.on('request', r => { if (!/^(file|data|blob|about):/.test(r.url())) log.external.push(r.url()); });
@@ -87,7 +90,7 @@ async function backgrounds(ctx, png, boxes) {
 /* ---------- 1. every shot at every viewport ---------- */
 let film = null;
 for (const [w, h] of VIEWPORTS) {
-  const key = w + 'x' + h, dir = join(outDir, key); mkdirSync(dir, { recursive: true });
+  const key = w + 'x' + h, dir = join(outDir, key); mkdirSync(dir, { recursive: true }); sections.push(key);
   const { ctx, page, log } = await open(w, h);
   film = film || await page.evaluate(() => ({ DUR: __film.DUR, BEAT: __film.BEAT, BEATS: __film.BEATS, MASTER: __film.MASTER, scenes: __film.scenes, shots: __film.shots, cues: __film.cues, cutBeats: __film.cutBeats }));
   const vp = report.viewports[key] = { shots: [], sweep: null, gate: null, controls: null, console: log };
@@ -159,7 +162,9 @@ for (const [w, h] of VIEWPORTS) {
 }
 
 /* ---------- 2. the timeline itself ---------- */
+if (!film) { const { ctx, page } = await open(640, 360); film = await page.evaluate(() => ({ DUR: __film.DUR, BEAT: __film.BEAT, BEATS: __film.BEATS, MASTER: __film.MASTER, scenes: __film.scenes, shots: __film.shots, cues: __film.cues, cutBeats: __film.cutBeats })); await ctx.close(); }
 {
+  sections.push('timeline');
   const whole = v => Math.abs(v - Math.round(v)) < 1e-9, tl = report.timeline;
   tl.bpm = 60 / film.BEAT; tl.beats = film.BEATS; tl.seconds = film.DUR;
   tl.sceneCutsOnBeat = film.scenes.every(s => whole(s.b0) && whole(s.b1));
@@ -177,7 +182,8 @@ for (const [w, h] of VIEWPORTS) {
 }
 
 /* ---------- 3. the score, rendered offline at 48 kHz ---------- */
-{
+if (!has('--skip-score')) {
+  sections.push('score');
   const { ctx, page, log } = await open(1280, 720);
   const a = await page.evaluate(() => __film.renderScore());
   report.score = a;
@@ -192,6 +198,7 @@ for (const [w, h] of VIEWPORTS) {
 
 /* ---------- 4. play it: controls, then the whole film once ---------- */
 if (!has('--skip-play')) {
+  sections.push('playback');
   const { ctx, page, log } = await open(640, 360);
   const pb = report.playback = {};
   const st = () => page.evaluate(() => __film.state());
@@ -237,7 +244,7 @@ if (!has('--skip-play')) {
   const end = await page.evaluate(() => ({ st: __film.state(), ui: __film.ui(), label: document.getElementById('gate-play-text').textContent }));
   pb.audioClosedAtEnd = end.st.audio === null; pb.replayOffered = end.ui.gate.visible && end.label === 'Replay'; pb.playedSilent = end.st.silent;
   if (!pb.ended) fail('playback', 'film did not reach its end');
-  if (Math.abs(pb.pictureTimeAtEnd - film.DUR) > 1e-6) fail('playback', 'picture ended at ' + pb.pictureTimeAtEnd);
+  if (Math.abs(last.t - film.DUR) > 1e-6) fail('playback', 'picture ended at ' + last.t + 's, film is ' + film.DUR + 's');
   if (pb.playedSilent) fail('playback', 'film fell back to silent playback');
   if (Math.max(...drift.map(Math.abs)) > 0.25) fail('playback', 'audio clock drifted ' + JSON.stringify(pb.audioClockDriftSeconds) + ' against the wall clock');
   if (pb.fractionOfSamplesWithSound < 0.9) fail('playback', 'sound present in only ' + pb.fractionOfSamplesWithSound + ' of samples');
@@ -251,6 +258,14 @@ if (!has('--skip-play')) {
 await browser.close();
 
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(root, 'verify-report.json'), JSON.stringify(report, null, 1));
+const reportPath = join(root, 'verify-report.json');
+if (has('--merge') && existsSync(reportPath)) {       // fold this run into the earlier report, section by section
+  const old = JSON.parse(readFileSync(reportPath, 'utf8')), mine = t => sections.some(k => t.startsWith(k + ' ') || t.startsWith(k + ':'));
+  report.viewports = { ...old.viewports, ...report.viewports };
+  if (!sections.includes('score')) report.score = old.score;
+  if (!sections.includes('playback')) report.playback = old.playback;
+  const kept = (old.failures || []).filter(t => !mine(t)); failures.unshift(...kept);
+}
+writeFileSync(reportPath, JSON.stringify(report, null, 1));
 console.log(failures.length ? '\nFAILED: ' + failures.length + '\n' + failures.slice(0, 60).join('\n') : '\nPASS: no overlap, zone, size, contrast, console or audio failures');
 process.exit(failures.length ? 1 : 0);

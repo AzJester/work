@@ -1,6 +1,6 @@
 {
  "file": "file:///home/user/work/astrion-film/astrion-capabilities-film.html",
- "generated": "2026-11-10T20:02:18.186Z",
+ "generated": "2026-11-10T20:16:49.298Z",
  "viewports": {
   "1920x1080": {
    "shots": [
@@ -3718,6 +3718,39 @@
    }
   ]
  },
- "playback": null,
+ "playback": {
+  "audioStarted": true,
+  "sampleRate": 44100,
+  "pauseHolds": true,
+  "resumes": true,
+  "mute": {
+   "levelBefore": 0.073,
+   "levelMuted": 0,
+   "pressed": "true"
+  },
+  "samples": 373,
+  "audioClockDriftSeconds": {
+   "min": -0.025,
+   "max": 0.017
+  },
+  "pictureBehindAudioSeconds": {
+   "median": 0.046,
+   "max": 0.85,
+   "note": "picture time is read from the audio clock on every frame; the offset seen here is the age of the last painted frame in a software renderer"
+  },
+  "fractionOfSamplesWithSound": 1,
+  "lastAudioTime": 93.53,
+  "filmSeconds": 93.714,
+  "ended": true,
+  "pictureTimeAtEnd": 93.714,
+  "audioClosedAtEnd": true,
+  "replayOffered": true,
+  "playedSilent": false,
+  "console": {
+   "errors": [],
+   "warnings": [],
+   "external": []
+  }
+ },
  "failures": []
 }
