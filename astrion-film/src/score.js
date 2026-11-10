@@ -304,7 +304,13 @@ const AstrionScore = (() => {
     const data = new Float32Array(analyser.fftSize);
     return {
       ctx, master, T0, from,
-      time: () => ctx.currentTime - T0 + from - lag(),
+      // The context clock only advances once per audio callback, which would make the picture step.
+      // The output timestamp pairs it with the performance clock, so film time can be read between callbacks.
+      time: () => {
+        let ct = ctx.currentTime;
+        if (ctx.state === 'running' && ctx.getOutputTimestamp) { const o = ctx.getOutputTimestamp(); if (o && o.performanceTime > 0) return o.contextTime + Math.min(0.25, Math.max(0, (performance.now() - o.performanceTime) / 1000)) - T0 + from; }
+        return ct - T0 + from - lag();
+      },
       level: () => { analyser.getFloatTimeDomainData(data); let e = 0; for (let i = 0; i < data.length; i++) e += data[i] * data[i]; return Math.sqrt(e / data.length); },
       stop: () => { clearInterval(timer); try { ctx.close(); } catch (e) { /* already closed */ } }
     };

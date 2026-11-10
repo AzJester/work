@@ -223,6 +223,33 @@ if (!has('--skip-play')) {
   await page.click('#b-mute'); await page.waitForTimeout(200);
   await page.mouse.move(326, 186); await page.click('#b-restart');
   await page.waitForFunction(() => { const q = __film.state(); return q.state === 'playing' && q.audio && q.audio.ctx === 'running' && q.t > 0.2 && q.t < 3; }, null, { timeout: 8000 }).catch(() => fail('playback', 'restart did not return to the start'));
+  // smoothness: every animation frame of the open, where the logo comes up
+  {
+    const fr = await page.evaluate(() => new Promise(res => {
+      const out = [], logo = document.getElementById('t-logoA');
+      const tick = () => {
+        const c = __film.clock(), m = logo.style.maskImage || logo.style.webkitMaskImage || '', sc = /scale\(([\d.]+)\)/.exec(logo.style.transform || '');
+        out.push([performance.now(), c, parseFloat(logo.style.opacity || '0'), sc ? +sc[1] : 0, parseFloat((/([-\d.]+)%/.exec(m) || [0, -999])[1])]);
+        if (c < 6.3 && out.length < 4000) requestAnimationFrame(tick); else res(out);
+      };
+      requestAnimationFrame(tick);
+    }));
+    const dev = [], iv = []; let stalls = 0, back = 0, logoStalls = 0, logoBack = 0, logoFrames = 0;
+    for (let i = 1; i < fr.length; i++) {
+      const dw = fr[i][0] - fr[i - 1][0], df = (fr[i][1] - fr[i - 1][1]) * 1000;
+      dev.push(Math.abs(df - dw)); iv.push(dw);
+      if (df < 0) back++; else if (df < 0.5 && dw > 4) stalls++;
+      const on = fr[i][2] > 0.001 && fr[i - 1][2] > 0.001;
+      if (on) { logoFrames++; if (fr[i][3] < fr[i - 1][3] - 1e-9 || fr[i][4] < fr[i - 1][4] - 1e-6) logoBack++; else if (df > 4 && fr[i][3] === fr[i - 1][3]) logoStalls++; }
+    }
+    dev.sort((a, b) => a - b); iv.sort((a, b) => a - b);
+    pb.smoothness = { frames: fr.length, frameIntervalMs: { median: +iv[Math.floor(iv.length / 2)].toFixed(1), p95: +iv[Math.floor(iv.length * 0.95)].toFixed(1), max: +iv[iv.length - 1].toFixed(1) },
+      clockVersusWallPerFrameMs: { median: +dev[Math.floor(dev.length / 2)].toFixed(2), p95: +dev[Math.floor(dev.length * 0.95)].toFixed(2), max: +dev[dev.length - 1].toFixed(2) },
+      framesWhereTimeStoodStill: stalls, framesWhereTimeWentBack: back, logo: { framesOnScreen: logoFrames, framesWithoutMovement: logoStalls, framesMovingBackwards: logoBack } };
+    if (back || stalls) fail('playback', 'film clock is not smooth: ' + stalls + ' stalled and ' + back + ' backward frames');
+    if (dev[Math.floor(dev.length * 0.95)] > 12) fail('playback', 'film clock deviates from the frame clock by ' + dev[Math.floor(dev.length * 0.95)].toFixed(1) + ' ms at the 95th percentile');
+    if (logoFrames < 30 || logoStalls || logoBack) fail('playback', 'logo reveal is not continuous: ' + JSON.stringify(pb.smoothness.logo));
+  }
   // full run, sampled from inside the page
   const samples = await page.evaluate(() => new Promise(res => {
     const out = [], t0 = performance.now();

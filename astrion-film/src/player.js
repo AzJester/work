@@ -128,6 +128,7 @@
       state: () => ({ state, t, muted, silent, scale: film.getScale(), gl: film.hasGL(), audio: audio ? { ctx: audio.ctx.state, ctxTime: audio.ctx.currentTime, filmTime: audio.time(), level: audio.level(), sampleRate: audio.ctx.sampleRate } : null }),
       frame: (nt, opt) => { gate.style.transition = 'none'; if (state === 'playing') pause(); stopAudio(); if (state === 'gate' || state === 'ended') setState('paused'); base = t = nt; film.draw(t, opt); progFill.style.width = (t / DUR * 100).toFixed(2) + '%'; return film.boxes(); },
       boxes: () => film.boxes(),
+      clock: () => (state === 'playing' ? clock() : t),
       hideText: v => { $('text').style.opacity = v ? '0' : ''; $('wm').style.opacity = v ? '0' : ''; },
       lockScale: v => { lockScale = v; if (v) film.setScale(1); },
       ui: () => ({ controls: rect($('controls')), buttons: [...document.querySelectorAll('#controls button')].map(rect), progress: rect(prog), idle: stage.classList.contains('idle'), controlsOpacity: +getComputedStyle($('controls')).opacity,
