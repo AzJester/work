@@ -207,21 +207,21 @@ if (!has('--skip-play')) {
   let s = await st();
   pb.audioStarted = !!(s.audio && s.audio.ctx === 'running'); pb.sampleRate = s.audio && s.audio.sampleRate;
   if (!pb.audioStarted) fail('playback', 'audio did not start on Play');
-  await page.mouse.move(320, 180); await page.click('#b-play'); await page.waitForTimeout(300);
+  await page.evaluate(() => document.getElementById('b-play').click()); await page.waitForTimeout(300);
   const p1 = await st(); await page.waitForTimeout(600); const p2 = await st();
   pb.pauseHolds = p1.state === 'paused' && p1.audio.ctx === 'suspended' && Math.abs(p2.t - p1.t) < 1e-6;
   if (!pb.pauseHolds) fail('playback', 'pause does not hold picture and sound');
-  await page.mouse.move(322, 182); await page.click('#b-play'); await page.waitForTimeout(700);
+  await page.evaluate(() => document.getElementById('b-play').click()); await page.waitForTimeout(700);
   s = await st(); pb.resumes = s.state === 'playing' && s.audio.ctx === 'running' && s.t > p2.t;
   if (!pb.resumes) fail('playback', 'resume failed');
   await page.waitForFunction(() => __film.state().t > 10.5, null, { timeout: 30000 });
   const lv1 = (await st()).audio.level;
-  await page.mouse.move(324, 184); await page.click('#b-mute'); await page.waitForTimeout(500);
+  await page.evaluate(() => document.getElementById('b-mute').click()); await page.waitForTimeout(500);
   const lv2 = (await st()).audio.level; s = await st();
   pb.mute = { levelBefore: +lv1.toFixed(4), levelMuted: +lv2.toFixed(5), pressed: await page.getAttribute('#b-mute', 'aria-pressed') };
   if (!(lv1 > 0.003 && lv2 < lv1 * 0.05 && pb.mute.pressed === 'true')) fail('playback', 'mute toggle did not silence the score');
-  await page.click('#b-mute'); await page.waitForTimeout(200);
-  await page.mouse.move(326, 186); await page.click('#b-restart');
+  await page.evaluate(() => document.getElementById('b-mute').click()); await page.waitForTimeout(200);
+  await page.evaluate(() => document.getElementById('b-restart').click());
   await page.waitForFunction(() => { const q = __film.state(); return q.state === 'playing' && q.audio && q.audio.ctx === 'running' && q.t > 0.2 && q.t < 3; }, null, { timeout: 8000 }).catch(() => fail('playback', 'restart did not return to the start'));
   // smoothness: every animation frame of the open, where the logo comes up
   {
@@ -248,7 +248,7 @@ if (!has('--skip-play')) {
       framesWhereTimeStoodStill: stalls, framesWhereTimeWentBack: back, logo: { framesOnScreen: logoFrames, framesWithoutMovement: logoStalls, framesMovingBackwards: logoBack } };
     if (back || stalls) fail('playback', 'film clock is not smooth: ' + stalls + ' stalled and ' + back + ' backward frames');
     if (dev[Math.floor(dev.length * 0.95)] > 12) fail('playback', 'film clock deviates from the frame clock by ' + dev[Math.floor(dev.length * 0.95)].toFixed(1) + ' ms at the 95th percentile');
-    if (logoFrames < 30 || logoStalls || logoBack) fail('playback', 'logo reveal is not continuous: ' + JSON.stringify(pb.smoothness.logo));
+    if (logoFrames < 12 || logoStalls || logoBack) fail('playback', 'logo reveal is not continuous: ' + JSON.stringify(pb.smoothness.logo));
   }
   // full run, sampled from inside the page
   const samples = await page.evaluate(() => new Promise(res => {

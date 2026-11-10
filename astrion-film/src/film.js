@@ -83,8 +83,8 @@ const AstrionFilm = (() => {
       case 'm4': return { m: 7, P: FLAT, E: [b, 0, 0, 0] };
       case 'm5': return { m: 1, P: orbit(0.25, t, 1), D: [0.44 - 0.035 * b / 12, 0.13 + 0.02 * b / 12, 0.135, 0.6 + s * 0.06], E: [b, 0, 0.40, sm(0, 0.8, b)] };
       case 'm6': return { m: 5, P: { A: [0, 1.7, s * 0.25, -0.15], B: [0.25, 0.60, 0.30, 0.045], C: Z4 }, D: [3.6, 5 * Math.pow(1 - clamp((b - 1) / 7, 0, 1), 2.2), 6.8, 1], E: [b, 0, 0, 0] };
-      case 'tech': return { m: 6, P: FLAT, E: [b, 2, 0, 0] };
-      case 'orch': { const o = L.orch || { cx: 1100, cy: 540, dy: 230, a: 380 }; return { m: 6, P: FLAT, D: [(o.cx - 960) / 1080, (540 - o.cy) / 1080, o.dy / 1080, o.a / 1080], E: [b, 3, 0, 0] }; }
+      case 'tech': return { m: 9, P: FLAT, E: [b, 2, 0, 0] };
+      case 'orch': { const o = L.orch || { cx: 1100, cy: 540, dy: 230, a: 380 }; return { m: 10, P: FLAT, D: [(o.cx - 960) / 1080, (540 - o.cy) / 1080, o.dy / 1080, o.a / 1080], E: [b, 3, 0, 0] }; }
       case 'edge': return { m: 3, P: { A: [3.6, 3.5, 20 + s * 0.30, -0.24], B: [0.10, 1.0, 15.7, 0], C: [0.026, 0, -0.20, 0] }, D: [5.9, 0, 27.8, 0.4], E: [b, 4, 0, 0] };
       case 'close':
         if (b < 8) return { m: 8, P: { A: [Math.pow(clamp((b - 4.6) / 3.4, 0, 1), 2.4), 0.5 - L.seamY / 1080, t, sm(0, 1.2, b)], B: [sm(0, 0.7, b) * (1 - sm(3.9, 4.6, b)), 0, 0, 0], C: Z4 } };
@@ -96,24 +96,25 @@ const AstrionFilm = (() => {
     const $ = id => document.getElementById(id);
     const glc = $('gl'), cv = $('fx'), scrim = $('scrim');
     const g = cv.getContext('2d');
-    let gl = null, U = {};
+    let gl = null; const PROG = {};
     try {
       gl = glc.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
       if (gl) {
         const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
-        const prog = gl.createProgram();
-        gl.attachShader(prog, sh(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}'));
-        gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, ASTRION_FRAG));
-        gl.linkProgram(prog);
-        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
-        gl.useProgram(prog);
+        const vs = sh(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
         gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-        const loc = gl.getAttribLocation(prog, 'a');
-        gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-        for (const n of ['uRes', 'uT', 'uMode', 'uMode2', 'uMix', 'uA', 'uB', 'uC', 'uA2', 'uB2', 'uC2', 'uD', 'uE', 'uFx']) U[n] = gl.getUniformLocation(prog, n);
+        for (const mode of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {       // one small program per renderer
+          const prog = gl.createProgram();
+          gl.attachShader(prog, vs); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, ASTRION_FRAG.replace('#version 300 es', '#version 300 es\n#define MODE ' + mode)));
+          gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog);
+          if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+          const U = {}; for (const n of ['uRes', 'uT', 'uObj', 'uA', 'uB', 'uC', 'uD', 'uE', 'uFx']) U[n] = gl.getUniformLocation(prog, n);
+          PROG[mode] = { prog, U };
+        }
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       }
-    } catch (e) { gl = null; console.warn('Shader plate unavailable, line work only.', e && e.message); }
+    } catch (e) { gl = null; console.warn('Shader plate unavailable.', e && e.message); }
 
     for (const c of CUES) { c.el = $('t-' + c.id); c.card = c.el.closest('.card'); c.o = -1; }
     const logoSrc = $('gate-logo').src; $('t-logoA').src = logoSrc; $('t-logoB').src = logoSrc;
@@ -225,19 +226,27 @@ const AstrionFilm = (() => {
     }
 
     /* ---------- one frame ---------- */
+    function pass(mode, P, D, E, obj, t, fx) {
+      const { prog, U } = PROG[mode]; gl.useProgram(prog);
+      gl.uniform2f(U.uRes, glc.width, glc.height); gl.uniform1f(U.uT, t); gl.uniform1f(U.uObj, obj);
+      gl.uniform4fv(U.uA, P.A); gl.uniform4fv(U.uB, P.B); gl.uniform4fv(U.uC, P.C); gl.uniform4fv(U.uD, D || Z4); gl.uniform4fv(U.uE, E || Z4);
+      gl.uniform4fv(U.uFx, fx);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
     function plate(t, sc, s, dur) {
-      const cut = sc.id === 'open' ? 0 : 0.085 * Math.exp(-s / 0.09), q = shot(sc.id, s, t, L), P = q.P, P2 = q.P2 || FLAT;
+      const cut = sc.id === 'open' ? 0 : 0.085 * Math.exp(-s / 0.09), q = shot(sc.id, s, t, L);
       let fade = 1 - 0.30 * sm(dur - 0.26, dur, s), flash = cut;
       const exp = 1 + 0.25 * Math.exp(-s / 0.22);
       if (sc.id === 'descent') fade *= sm(0, 0.5, s);
       if (sc.id === 'close') { const k = s - B(8); flash = k >= 0 ? 0.42 * Math.exp(-k / 0.16) : 0; fade = 1; }
-      gl.uniform2f(U.uRes, glc.width, glc.height); gl.uniform1f(U.uT, t);
-      gl.uniform1f(U.uMode, q.m); gl.uniform1f(U.uMode2, q.m2 || 0); gl.uniform1f(U.uMix, q.mix || 0);
-      gl.uniform4fv(U.uA, P.A); gl.uniform4fv(U.uB, P.B); gl.uniform4fv(U.uC, P.C);
-      gl.uniform4fv(U.uA2, P2.A); gl.uniform4fv(U.uB2, P2.B); gl.uniform4fv(U.uC2, P2.C);
-      gl.uniform4fv(U.uD, q.D || Z4); gl.uniform4fv(U.uE, q.E || Z4);
-      gl.uniform4f(U.uFx, fade, flash, 0.02, exp);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      const fx = [fade, flash, 0.02, exp];
+      gl.disable(gl.BLEND);
+      pass(q.m, q.P, q.D, q.E, 1, t, fx);
+      if (q.mix > 0.002) {                              // a transition: the next renderer laid over this one
+        gl.enable(gl.BLEND); gl.blendColor(0, 0, 0, q.mix); gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+        pass(q.m2, q.P2, null, null, 0, t, fx);
+        gl.disable(gl.BLEND);
+      }
     }
     function draw(t, opt = {}) {
       t = clamp(t, 0, DUR);

@@ -1,12 +1,13 @@
-/* The picture. One fragment shader with seven renderers, all computed per pixel:
-   1 planet from orbit, 2 cloud deck at dusk, 3 terrain and ocean at dusk, 4 underwater and seabed,
-   5 lunar surface, 6 studio, 7 night rain. Two renderers can be mixed for a transition. */
+/* The picture. One source, compiled once per renderer with MODE defined, so each program holds only what it draws:
+   1 planet from orbit, 2 cloud deck, 3 terrain and ocean at dusk, 4 underwater and seabed, 5 lunar surface,
+   6 hardware on a bench, 7 night rain, 8 the six domains stacked, 9 spacecraft being built, 10 planes of glass.
+   A transition is two programs drawn one over the other. */
 const ASTRION_FRAG = `#version 300 es
 precision highp float;
 out vec4 outColor;
 uniform vec2 uRes; uniform float uT;
-uniform float uMode, uMode2, uMix;
-uniform vec4 uA, uB, uC, uA2, uB2, uC2;
+uniform float uObj;
+uniform vec4 uA, uB, uC;
 uniform vec4 uD, uE;   // the scene's object and its clock: see each renderer
 uniform vec4 uFx;     // fade, flash, grain, exposure
 const mat2 M2 = mat2(1.6, 1.2, -1.2, 1.6);
@@ -116,7 +117,7 @@ float terrainH(vec2 x, vec3 T, int oct){
 float cloudH(vec2 x){ float b = fbm(x*.13 + vec2(0., uT*.012)); return b*b*4.6 - 1.8 + .34*fbm(x*.62 + 4.) + .12*fbm2(x*2.4); }
 float lunarH(vec2 x, int oct){
   float h = 0.;
-  for(int s = 0; s < 2; s++){
+  for(int s = 0; s < (oct > 3 ? 2 : 1); s++){       // small craters only shape the light, not the silhouette
     float sc = s == 0 ? .085 : .31, amp = s == 0 ? 2.4 : .55;
     vec2 y = x*sc + float(s)*17., i = floor(y), f = fract(y);
     for(int a = -1; a <= 1; a++) for(int b = -1; b <= 1; b++){
@@ -591,12 +592,14 @@ vec3 glassScene(vec2 p, vec4 D, vec4 E){
   }
   return col;
 }
-vec3 studio(vec2 p, vec4 D, vec4 E, float obj){
-  float v = obj*E.y;
-  if(v < .5) return studioBg(p);
-  if(v < 1.5) return rackScene(p, E);
-  if(v < 2.5) return techScene(p, E);
+vec3 studio(vec2 p, vec4 D, vec4 E){
+#if MODE == 6
+  return rackScene(p, E);
+#elif MODE == 9
+  return techScene(p, E);
+#else
   return glassScene(p, D, E);
+#endif
 }
 
 float seg2(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; return length(pa - ba*clamp(dot(pa, ba)/dot(ba, ba), 0., 1.)); }
@@ -665,16 +668,26 @@ vec3 satOver(vec3 col, vec2 p, vec4 D, vec4 E){     // D: x, y, scale, yaw. E.z 
   }
   return col;
 }
-vec3 render(float m, vec2 p, vec4 A, vec4 B, vec4 C, vec4 D, vec4 E, float obj){
-  if(m < .5) return vec3(.00010,.00013,.00016);
-  if(m < 1.5){ vec3 c = planet(p, A, B, C); return obj > .5 ? satOver(c, p, D, E) : c; }
-  if(m < 2.5) return deck(p, A, B, C);
-  if(m < 3.5) return dusk(p, A, B, C, D, E, obj);
-  if(m < 4.5) return sea(p, A, B, C);
-  if(m < 5.5) return lunar(p, A, B, obj > .5 ? D : vec4(0.));
-  if(m < 6.5) return studio(p, D, E, obj);
+vec3 render(vec2 p, vec4 A, vec4 B, vec4 C, vec4 D, vec4 E, float obj){
+#if MODE == 1
+  vec3 c = planet(p, A, B, C); return obj > .5 ? satOver(c, p, D, E) : c;
+#elif MODE == 2
+  return deck(p, A, B, C);
+#elif MODE == 3
+  return dusk(p, A, B, C, D, E, obj);
+#elif MODE == 4
+  return sea(p, A, B, C);
+#elif MODE == 5
+  return lunar(p, A, B, obj > .5 ? D : vec4(0.));
+#elif MODE == 6 || MODE == 9 || MODE == 10
+  return studio(p, D, E);
+#elif MODE == 7
   return night(p, E);
+#else
+  return vec3(.00010,.00013,.00016);
+#endif
 }
+#if MODE == 8
 // The close: the six domains as six strips, falling into one seam. A: convergence, seam y, time, fade. B.x: how far to dim under the labels
 vec3 stack(vec2 p, vec4 A, vec4 B){
   float c = A.x, u = (p.y - A.y)/max(1. - c, .004) + A.y, f = (.42 - u)/.14, k = floor(f);
@@ -692,11 +705,15 @@ vec3 stack(vec2 p, vec4 A, vec4 B){
   col = col*A.w*(1. + 2.2*c*c) + vec3(.14,.80,.94)*exp(-pow(edge/.0016, 2.))*(.55 + .45*c)*A.w;
   return col;
 }
+#endif
 
 void main(){
   vec2 p = (gl_FragCoord.xy - .5*uRes)/uRes.y;
-  vec3 col = uMode > 7.5 ? stack(p, uA, uB) : render(uMode, p, uA, uB, uC, uD, uE, 1.);
-  if(uMix > .002) col = mix(col, render(uMode2, p, uA2, uB2, uC2, vec4(0.), vec4(0.), 0.), uMix);
+#if MODE == 8
+  vec3 col = stack(p, uA, uB);
+#else
+  vec3 col = render(p, uA, uB, uC, uD, uE, uObj);
+#endif
   col *= uFx.w;
   col = 1. - exp(-col*1.7);
   col = pow(col, vec3(1./2.2));
