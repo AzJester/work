@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Astrion Capabilities Film</title>
+<meta name="description" content="A fully coded film of Astrion mission areas, from orbit to seabed. Picture and score are computed live in the browser.">
+<meta name="theme-color" content="#050607">
+<link rel="icon" type="image/png" href="data:image/png;base64,__ICON__">
+<style>
+__CSS__
+</style>
+</head>
+<body>
+<main id="stage" class="gated idle" aria-label="Astrion capabilities film">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div id="scrim" aria-hidden="true"></div>
+  <canvas id="fx" role="img" aria-label="Computed picture. A descent from orbit to the seabed, six mission scenes, how Astrion works, and the Astrion logo."></canvas>
+  <div id="corner" aria-hidden="true"></div>
+
+  <div id="text">
+    <div class="card center"><img class="logo cue" id="t-logoA" alt="Astrion"></div>
+    <div class="card center"><h1 class="hl hero cue" id="t-hero">Missions are won<br>at the seams.</h1></div>
+
+    <div class="card left"><h2 class="hl domain cue" id="t-d0">Orbital</h2></div>
+    <div class="card left"><h2 class="hl domain cue" id="t-d1">Atmosphere</h2></div>
+    <div class="card left"><h2 class="hl domain cue" id="t-d2">Terrain</h2></div>
+    <div class="card left"><h2 class="hl domain cue" id="t-d3">Maritime</h2></div>
+    <div class="card left"><h2 class="hl domain cue" id="t-d4">Subsea</h2></div>
+    <div class="card left"><h2 class="hl domain cue" id="t-d5">Cyber</h2></div>
+
+    <div class="card left"><h2 class="hl cue" id="t-m1h">Layered Defense,<br>Autonomous Warfare<br>+ Integrated Fires</h2><p class="sup cue" id="t-m1s">Coordinate autonomous platforms, sensors and fires across a layered defense.</p></div>
+    <div class="card left"><h2 class="hl cue" id="t-m2h">Integrated Air<br>+ Missile Defense</h2><p class="sup cue" id="t-m2s">Connect sensors, battle management and effectors against air and missile threats.</p></div>
+    <div class="card left"><h2 class="hl cue" id="t-m3h">Lifecycle Management<br>+ Cyber Warfare</h2><p class="sup cue" id="t-m3s">Test, modernize and sustain critical systems as technology and cyber threats change.</p></div>
+    <div class="card left"><h2 class="hl cue" id="t-m4h">Critical Infrastructure<br>Resilience</h2><p class="sup cue" id="t-m4s">Strengthen the energy, transportation and industrial systems missions depend on.</p></div>
+    <div class="card left"><h2 class="hl cue" id="t-m5h">Space Warfighting</h2><p class="sup cue" id="t-m5s">Support mission operations, space access and control in contested environments.</p></div>
+    <div class="card left"><h2 class="hl cue" id="t-m6h">Exploration<br>+ Lunar Presence</h2><p class="sup cue" id="t-m6s">Advance launch readiness, mission assurance and infrastructure for sustained lunar operations.</p></div>
+
+    <div class="card left"><p class="kick cue" id="t-techk">Tech</p><h2 class="hl cue" id="t-techh">From digital models<br>to working systems.</h2></div>
+    <div class="card left"><p class="kick cue" id="t-orchk">Orchestration</p><h2 class="hl cue" id="t-orchh">Change the technology.<br>Preserve the mission.</h2></div>
+    <p class="lbl cue" id="t-lc">Context</p>
+    <p class="lbl cue" id="t-lr">Reasoning</p>
+    <p class="lbl cue" id="t-la">Action</p>
+    <div class="card left"><p class="kick cue" id="t-edgek">Edge</p><h2 class="hl cue" id="t-edgeh">Trust your information<br>at point of use.</h2></div>
+
+    <p class="lbl cue" id="t-z0">Orbital</p>
+    <p class="lbl cue" id="t-z1">Atmosphere</p>
+    <p class="lbl cue" id="t-z2">Terrain</p>
+    <p class="lbl cue" id="t-z3">Maritime</p>
+    <p class="lbl cue" id="t-z4">Subsea</p>
+    <p class="lbl cue" id="t-z5">Cyber</p>
+    <div class="card center" id="close-card"><img class="logo cue" id="t-logoB" alt="Astrion"><h2 class="hl tag cue" id="t-tag">Defend this world.<br>Build the next.<sup>&trade;</sup></h2></div>
+  </div>
+
+  <p id="wm">Shane Turner, DBA</p>
+
+  <div id="gate">
+    <img class="logo" id="gate-logo" alt="Astrion" src="data:image/png;base64,__LOGO__">
+    <div class="rule" aria-hidden="true"></div>
+    <p class="lbl" id="gate-label">Capabilities film</p>
+    <button class="cta" id="gate-play" type="button"><span class="tri" aria-hidden="true"></span><span id="gate-play-text">Play</span></button>
+  </div>
+
+  <div id="prog" aria-hidden="true"><i></i><b></b></div>
+  <div id="controls" role="group" aria-label="Film controls">
+    <button id="b-play" type="button" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="i-play" class="solid" d="M7 4.5v15l12.5-7.5z" hidden/><path id="i-pause" d="M8 5v14M16 5v14"/></svg></button>
+    <button id="b-restart" type="button" aria-label="Restart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4 4v4.2h4.2"/></svg></button>
+    <button id="b-mute" type="button" aria-label="Mute" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path id="i-wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.6 7.6 0 0 1 0 11"/><path id="i-x" d="M15.5 9.5l5 5M20.5 9.5l-5 5" hidden/></svg></button>
+    <button id="b-fs" type="button" aria-label="Full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"/></svg></button>
+  </div>
+  <p class="sr" id="status" aria-live="polite"></p>
+</main>
+<script>
+__JS__
+</script>
+</body>
+</html>
