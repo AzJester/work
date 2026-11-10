@@ -1,6 +1,6 @@
 {
  "file": "file:///home/user/work/astrion-film/astrion-capabilities-film.html",
- "generated": "2026-11-10T20:59:27.906Z",
+ "generated": "2026-11-10T21:05:00.896Z",
  "viewports": {
   "1920x1080": {
    "shots": [
@@ -919,7 +919,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 3.44
+       "contrast": 12.26
       },
       {
        "id": "z1",
@@ -933,7 +933,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 11.36
+       "contrast": 12.22
       },
       {
        "id": "z2",
@@ -947,7 +947,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 11.84
+       "contrast": 12.22
       },
       {
        "id": "z3",
@@ -961,7 +961,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 8.7
+       "contrast": 12.22
       },
       {
        "id": "z4",
@@ -975,7 +975,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 9.9
+       "contrast": 12.22
       },
       {
        "id": "z5",
@@ -989,7 +989,7 @@
         26.4
        ],
        "opacity": 1,
-       "contrast": 13.99
+       "contrast": 12.26
       },
       {
        "id": "watermark",
@@ -1112,7 +1112,7 @@
        "text": "",
        "fontPx": 16,
        "box": [
-        455.4,
+        455.3,
         350.1,
         454.6,
         67.7
@@ -2010,7 +2010,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 3.66
+       "contrast": 12.26
       },
       {
        "id": "z1",
@@ -2024,7 +2024,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 11.49
+       "contrast": 12.22
       },
       {
        "id": "z2",
@@ -2038,7 +2038,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 12.01
+       "contrast": 12.22
       },
       {
        "id": "z3",
@@ -2052,7 +2052,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 8.83
+       "contrast": 12.22
       },
       {
        "id": "z4",
@@ -2066,7 +2066,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 9.93
+       "contrast": 12.22
       },
       {
        "id": "z5",
@@ -2080,7 +2080,7 @@
         18.8
        ],
        "opacity": 1,
-       "contrast": 13.97
+       "contrast": 12.26
       },
       {
        "id": "watermark",
@@ -3729,37 +3729,37 @@
    "pressed": "true"
   },
   "smoothness": {
-   "frames": 358,
+   "frames": 354,
    "frameIntervalMs": {
     "median": 16.7,
-    "p95": 17.3,
-    "max": 55.3
+    "p95": 17.6,
+    "max": 56.4
    },
    "clockVersusWallPerFrameMs": {
-    "median": 3.02,
-    "p95": 9.15,
-    "max": 13.96
+    "median": 0.09,
+    "p95": 0.29,
+    "max": 3.31
    },
-   "framesWhereTimeStoodStill": 1,
+   "framesWhereTimeStoodStill": 0,
    "framesWhereTimeWentBack": 0,
    "logo": {
     "framesOnScreen": 162,
-    "framesWithoutMovement": 51,
+    "framesWithoutMovement": 0,
     "framesMovingBackwards": 0
    }
   },
-  "samples": 349,
+  "samples": 347,
   "audioClockDriftSeconds": {
    "min": -0.001,
-   "max": 0.046
+   "max": 0.024
   },
   "pictureBehindAudioSeconds": {
-   "median": 0.025,
-   "max": 1.328,
+   "median": 0.022,
+   "max": 1.352,
    "note": "picture time is read from the audio clock on every frame; the offset seen here is the age of the last painted frame in a software renderer"
   },
   "fractionOfSamplesWithSound": 1,
-  "lastAudioTime": 93.57,
+  "lastAudioTime": 93.59,
   "filmSeconds": 93.714,
   "ended": true,
   "pictureTimeAtEnd": 93.714,
@@ -3772,10 +3772,5 @@
    "external": []
   }
  },
- "failures": [
-  "1920x1080 close-domains: z0 contrast 3.44:1 against its brightest background pixel",
-  "1366x768 close-domains: z0 contrast 3.66:1 against its brightest background pixel",
-  "playback: film clock is not smooth: 1 stalled and 0 backward frames",
-  "playback: logo reveal is not continuous: {\"framesOnScreen\":162,\"framesWithoutMovement\":51,\"framesMovingBackwards\":0}"
- ]
+ "failures": []
 }
