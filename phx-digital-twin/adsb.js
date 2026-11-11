@@ -135,6 +135,15 @@ export function operatorOf(flight, reg, mil) {
 }
 
 // Rough test for "which way is the airport landing": descending traffic near the field on a runway heading.
+// Phase of a live aircraft from one report. Transponders often keep the airborne bit set through the takeoff roll and for
+// the first seconds after touchdown, so an aircraft moving fast within a few metres of a runway surface counts as on the
+// runway even when the report says airborne. onRunway is a function so the lookup only runs when it can matter.
+export function livePhase(rep, altAgl, onRunway) {
+  if (rep.ground) return rep.gs < 1.2 ? 'stop' : rep.gs > 18 && onRunway() ? 'roll' : 'taxi';
+  if (altAgl < 12 && Math.abs(rep.vs) <= 1.2 && rep.gs > 18 && onRunway()) return 'roll';
+  return rep.vs < -1.2 ? 'arr' : rep.vs > 1.2 ? 'climb' : 'lvl';
+}
+
 export function flowVote(rep) {
   if (rep.ground || rep.alt < 60 || rep.alt > 1400 || rep.vs > -0.4 || Math.hypot(rep.x, rep.n) > 18000) return null;
   const d = (h) => Math.abs(((rep.track - h + 540) % 360) - 180);

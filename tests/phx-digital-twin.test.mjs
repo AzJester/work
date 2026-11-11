@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
-  FIELD, FT, estimateQnhOffset, flowVote, llToLocal, modelKey, nToIcao, normalize, operatorOf, predict,
+  FIELD, FT, estimateQnhOffset, flowVote, livePhase, llToLocal, modelKey, nToIcao, normalize, operatorOf, predict,
 } from "../phx-digital-twin/adsb.js";
 import { buildIndex } from "../phx-digital-twin/tools/build_index.mjs";
 import {
@@ -108,6 +108,22 @@ test("runway flow is inferred only from low descending traffic on a runway headi
   assert.equal(flowVote({ ...base, vs: 6 }), null, "departures do not vote");
   assert.equal(flowVote({ ...base, alt: 3000 }), null);
   assert.equal(flowVote({ ...base, ground: true }), null);
+});
+
+test("an aircraft rolling on a runway is on the runway even while its transponder still says airborne", () => {
+  const on = () => true, off = () => false;
+  assert.equal(livePhase({ ground: false, gs: 72, vs: -0.9 }, 2, on), "roll", "touchdown, airborne bit not yet cleared");
+  assert.equal(livePhase({ ground: false, gs: 40, vs: 0 }, 0, on), "roll", "takeoff roll reported as airborne");
+  assert.equal(livePhase({ ground: false, gs: 72, vs: -3.5 }, 8, on), "arr", "still descending over the threshold");
+  assert.equal(livePhase({ ground: false, gs: 80, vs: 6 }, 5, on), "climb", "lifted off");
+  assert.equal(livePhase({ ground: false, gs: 60, vs: 0 }, 300, on), "lvl", "level flight above the field");
+  assert.equal(livePhase({ ground: false, gs: 60, vs: 0 }, 5, off), "lvl", "low and level but not over a runway");
+  assert.equal(livePhase({ ground: true, gs: 30, vs: 0 }, 0, on), "roll");
+  assert.equal(livePhase({ ground: true, gs: 8, vs: 0 }, 0, off), "taxi");
+  assert.equal(livePhase({ ground: true, gs: 0.4, vs: 0 }, 0, off), "stop");
+  let calls = 0;
+  livePhase({ ground: false, gs: 120, vs: -4 }, 900, () => { calls += 1; return true; });
+  assert.equal(calls, 0, "the runway lookup is skipped when it cannot change the answer");
 });
 
 test("relay only reaches fixed upstreams for one fixed area", () => {

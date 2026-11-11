@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { nToIcao, hex6, normalize, estimateQnhOffset, predict, modelKey, operatorOf, flowVote } from './adsb.js';
+import { nToIcao, hex6, normalize, estimateQnhOffset, predict, modelKey, operatorOf, flowVote, livePhase } from './adsb.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -1481,8 +1481,7 @@ function liveStep(dt) {
       const rate = r.ground ? 40 : 8, dh = clamp(angDiff(ac.hdg, r.hdg), -rate * dt, rate * dt);
       ac.yawRate = lerp(ac.yawRate, dt > 0 ? dh / dt : 0, 0.08); ac.hdg = (ac.hdg + dh + 360) % 360;
     } else ac.yawRate *= 0.9;
-    if (r.ground) ac.phase = r.gs < 1.2 ? 'stop' : (r.gs > 18 && rwyAt(ac.x, ac.n, 4) >= 0 ? 'roll' : 'taxi');
-    else ac.phase = r.vs < -1.2 ? 'arr' : r.vs > 1.2 ? 'climb' : 'lvl';
+    ac.phase = livePhase(r, ac.alt, () => rwyAt(ac.x, ac.n, r.ground ? 4 : 8) >= 0);
     ac.engines = !(r.ground && r.gs < 1.2);
   }
 }
@@ -1547,7 +1546,7 @@ function updateAircraftVisual(ac, dtR) {
   const bank = ac.grounded ? 0 : clamp(Math.atan(ac.v * ac.yawRate * DEG / 9.81) / DEG, -27, 27);
   ac.bank = lerp(ac.bank, bank, clamp(dtR * 2, 0, 1));
   o.rotation.set(ac.pitch * DEG, -ac.hdg * DEG, -ac.bank * DEG);
-  ac.gearMesh.visible = ac.grounded || (ac.phase === 'arr' && ac.alt < 650) || (ac.phase === 'climb' && ac.alt < 70);
+  ac.gearMesh.visible = ac.grounded || ac.phase === 'roll' || (ac.phase === 'arr' && ac.alt < 650) || (ac.phase === 'climb' && ac.alt < 70);
 }
 
 // ---------------------------------------------------------------- selection, labels, UI
