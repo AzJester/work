@@ -1,9 +1,9 @@
 # PHX Sky Harbor digital twin
 
-Browser-based 3D twin of Phoenix Sky Harbor International (KPHX), modeled on the Unreal-style airport flyover with floating ADS-B tags.
+Browser-based 3D twin of Phoenix Sky Harbor International (KPHX), modeled on the Unreal-style airport flyover with floating ADS-B tags. Real aerial photography, real airfield geometry, live aircraft.
 
-- **Public page (after this folder is on `main`):** `https://azjester.github.io/work/phx-digital-twin/`. This copy can show live ADS-B traffic.
-- **claude.ai artifact preview:** same scene, simulated traffic only. The artifact sandbox blocks all outside data calls, so live traffic cannot run there.
+- **Public page:** `https://azjester.github.io/work/phx-digital-twin/` (live ADS-B capable).
+- **claude.ai artifact preview:** same scene with simulated traffic only. The artifact sandbox blocks all outside data calls.
 - **Local:** serve the repo root with any static server and open `/phx-digital-twin/`.
 
 Unofficial visualization. Not for navigation or operational use.
@@ -12,45 +12,53 @@ Unofficial visualization. Not for navigation or operational use.
 
 | Layer | Source | Fidelity |
 |---|---|---|
-| Runways, displaced thresholds, approach lights, PAPIs, windsocks, beacon | X-Plane Scenery Gateway airport data for KPHX (distributed with FlightGear, GPL) | Survey-grade positions, matches FAA runway lengths within a few feet |
-| 614 pavement polygons, 6,449 painted lines, taxiway light strings, 132 gates | Same source | Real layout as of the 2023 dataset. Terminal 2 gates removed (demolished) |
-| Imagery | Copernicus Sentinel-2 L2A, three passes from June 2025, 10 m/px, 30 x 30 km | Correct colors and layout; blurry below ~300 m altitude |
-| Terrain | AWS Terrain Tiles (SRTM/USGS 3DEP), 60 m inner grid, 120 km outer ring | South Mountain, Camelback, Papago Buttes in the right places |
-| Buildings | Overture Maps 2026-10 release (OSM footprints, USGS lidar heights) | 3,900 buildings, heights mostly lidar-derived; ATC tower modeled by hand at 326 ft |
-| PHX Sky Train | Overture transportation segments | Alignment is real; guideway heights are estimated |
-| Aircraft, **Live ADS-B** mode | Community ADS-B receivers via the relay (default upstream adsb.lol, ODbL) | Real positions, identities and altitudes, refreshed every 2 s and dead-reckoned in between. See limits below |
+| Airfield photography | USDA NAIP aerial imagery flown 2023-09-17, public domain, via the Interior GeoPlatform image service | 30 cm detail tiles loaded around the view, 0.65 m across the whole field. Shows the airport as it was that day, including aircraft at gates |
+| Metro photography | Same NAIP flight | 3 m per pixel over a 12.3 km square |
+| Regional imagery | Copernicus Sentinel-2 L2A, June 2025, 10 m | 30 x 30 km, toned to match the aerial photos |
+| Terrain | AWS Terrain Tiles (SRTM/USGS 3DEP) | 60 m inner grid, 120 km outer ring |
+| Buildings | Overture Maps 2026-10 (OSM footprints, USGS lidar heights) | 3,900 extruded footprints with roofs textured from the photos; flat roofs, generic walls. ATC tower modeled by hand at 326 ft |
+| Runway and taxiway lights, PAPIs, gates, taxi routing graph | X-Plane Scenery Gateway data for KPHX (via FlightGear, GPL) | Survey-grade positions; they line up with the photography |
+| PHX Sky Train | Overture transportation segments | Real alignment, estimated heights |
+| Aircraft, **Live ADS-B** mode | Community receivers through the relay | Real positions and identities every 2 s, dead-reckoned in between. See limits |
 | Aircraft, **Simulated** mode | Rules-based simulator in `app.js` | Plausible, not observed |
-| Aircraft 3D models and paint | Procedural, generic color schemes by operator | Right size and layout class per type; not airline artwork |
+| Aircraft 3D models | Procedural, generic color schemes by operator | Right size and layout class per type; not airline artwork |
+
+When the photo files are missing the page falls back to a painted airfield built from the X-Plane pavement polygons and markings.
 
 ## Live ADS-B
 
-The page starts in live mode whenever a feed answers and falls back to the simulator when none does. In live mode nothing on screen is invented: the simulator is off, sim speed and the time slider are locked to now, and runway flow is inferred from landing traffic instead of set by hand.
+The page starts in live mode whenever a feed answers and falls back to the simulator when none does. In live mode nothing is invented: the simulator is off, speed and the time slider are locked to now, and runway flow is inferred from landing traffic.
 
-**Data path.** Public ADS-B APIs do not send CORS headers, so a browser cannot call them directly. `supabase/functions/adsb-relay` is a small Edge Function that fetches one fixed area (40 NM around KPHX) server-side, trims the payload and returns it to the Pages origin. It holds no secrets, takes no parameters, caches for 1.5 s so upstream sees at most one request per 1.5 s regardless of viewers, and is deployed by the Pages workflow. Settings (all optional Supabase secrets): `ADSB_RELAY_ALLOWED_ORIGINS`, `ADSB_RELAY_UPSTREAMS` (ordered subset of `adsb.lol`, `airplanes.live`, `adsb.fi`), `ADSB_RELAY_CACHE_MS`, `ADSB_RELAY_TIMEOUT_MS`.
+**Data path.** Public ADS-B APIs send no CORS headers, so a browser cannot call them. `supabase/functions/adsb-relay` fetches one fixed area (40 NM around KPHX) server-side, trims the payload and returns it to the Pages origin. No secrets, no request parameters, 2 s cache. It tries `adsb.lol` then `adsb.fi` and keeps using whichever answered.
 
-**Other feeds.** Append `?feed=<url>` to point the page at any endpoint that returns readsb/tar1090 JSON (`{"ac":[...]}` or a receiver's `aircraft.json` with `{"aircraft":[...]}`) and allows the page's origin. A local receiver (readsb or dump1090-fa with an antenna that can see the ramp) is the best source for surface traffic.
+**What the feeds actually did** (probe from a GitHub-hosted runner, 2026-11-11):
 
-**How reports become aircraft** (`adsb.js`, covered by `tests/phx-digital-twin.test.mjs`):
-- Position: WGS84 to the twin's grid with the same transverse Mercator used for the airfield data (checked against runway ends to 6 cm).
-- Altitude: geometric altitude when present (ellipsoid height corrected by the local geoid, about -30 m). Otherwise pressure altitude plus a correction estimated each poll from aircraft that report both. `alt_baro: "ground"` pins the aircraft to the surface.
-- Heading: track in the air; reported true heading on the ground, because course over ground is noise below a few knots.
-- Model: ICAO type designator mapped to one of 37 procedural models, falling back to the emitter category.
-- Dropped: TIS-B tracks without an ICAO address (they duplicate real targets) and surface vehicles.
+| Feed | Result | Terms |
+|---|---|---|
+| adsb.lol | No answer (connection failed) | Open data (ODbL); has said an API key from feeders may become required |
+| airplanes.live | 403, access by arrangement | Non-commercial |
+| adsb.fi | 221 aircraft, 219 accepted by the parser, 65 on the ground, 43 within 6 km of the field | Personal, non-commercial use; 1 request per second; credit with a link (the page does this) |
 
-**Limits you should expect.**
-- Aircraft with transponders off (most aircraft parked at gates) do not appear. The ramp will look emptier than it is.
-- Surface coverage depends on which volunteer receivers can see the airfield. MLAT does not work on the ground.
-- ADS-B carries no origin, destination or gate. The detail panel shows the nearest stand for stopped aircraft as an inference.
-- Free community APIs have no SLA. adsb.lol has said it may require an API key from feeders in future; the other two free sources restrict commercial use. For anything beyond a demo, use a contracted feed or FAA SWIM (STDDS/SMES gives ASDE-X surface tracks, which is what a real surface twin needs).
-- No ADS-B host was reachable from the build environment, so the live path was verified against a mock feed in the exact relay format, not against adsb.lol itself. The first real check is after deploy.
+So today the live traffic most likely comes from adsb.fi. That is fine for a personal demo and not for company or commercial use. For that, use a contracted feed, your own receiver, or FAA SWIM (STDDS/SMES carries ASDE-X surface tracks, which is what a real surface twin needs). Restrict the relay with the Supabase secret `ADSB_RELAY_UPSTREAMS` (for example `adsb.lol`); other settings are `ADSB_RELAY_ALLOWED_ORIGINS`, `ADSB_RELAY_CACHE_MS`, `ADSB_RELAY_TIMEOUT_MS`.
 
-## Simulated traffic model
+**Other feeds.** Append `?feed=<url>` to use any endpoint that returns readsb/tar1090 JSON (`{"ac":[...]}` or a receiver's `aircraft.json`) and allows the page's origin.
 
-- West flow (default): arrivals 25L and 26, departures 25R and 26. East flow mirrors it on 7R/8 and 7L/8.
-- Arrivals spawn 40 km out on the bearing of their origin airport, fly a downwind if needed, join a 3-degree glidepath, land, exit and taxi to a gate assigned by airline.
-- Departures push back, start, taxi along the painted centerlines to the shorter-queue runway, hold short until released first-come-first-served, line up and wait, then climb out toward the destination bearing. Runway crossings get priority between departures.
-- Soak test over one simulated hour: 58 departures, 45 arrivals, longest single hold 7 minutes, no deadlocks.
-- ICAO 24-bit addresses for US registrations use the FAA N-number allocation (N327QS maps to A389C0, as in the reference video).
+**How reports become aircraft** (`adsb.js`, covered by tests):
+- Position: WGS84 to the twin's grid with the same transverse Mercator as the airfield data (checked against runway ends to 6 cm).
+- Altitude: geometric altitude when present, corrected by the local geoid; otherwise pressure altitude plus a correction estimated each poll from aircraft reporting both. `alt_baro: "ground"` pins the aircraft to the surface.
+- Heading: track in the air; reported true heading on the ground.
+- Model: ICAO type designator mapped to one of 37 procedural models, falling back to emitter category.
+- Dropped: TIS-B tracks without an ICAO address and surface vehicles.
+
+**Limits.**
+- Aircraft with transponders off (most aircraft parked at gates) do not appear. Aircraft visible at gates in the photography are from September 2023, not now.
+- Surface coverage depends on which volunteer receivers can see the airfield.
+- ADS-B carries no origin, destination or gate. The nearest stand shown for a stopped aircraft is an inference.
+- Free community feeds have no SLA.
+
+## Graphics limits
+
+The ground is a photograph, so it looks right from above and flat from low angles: there is no 3D photogrammetry. Buildings are extruded footprints. Getting textured 3D buildings and terrain needs Google Photorealistic 3D Tiles (API key with billing) or an Unreal Engine build.
 
 ## Controls
 
@@ -58,15 +66,18 @@ Orbit, Flyover and Tower views; click any aircraft or list row to inspect and fo
 
 ## Files
 
-- `phx-twin.html`: the page as published to claude.ai artifacts (which add their own document wrapper). Edit this.
-- `index.html`: standalone build for static hosting. Generated: `node phx-digital-twin/tools/build_index.mjs`. A test fails if it is out of date.
+- `phx-twin.html`: the page as published to claude.ai artifacts. Edit this.
+- `index.html`: standalone build for static hosting. Generated by `node phx-digital-twin/tools/build_index.mjs`; a test fails if it is stale.
 - `app.js`: renderer, simulator, live-feed client. `adsb.js`: pure ADS-B helpers shared with the tests.
-- `data/`: airfield JSON, imagery, terrain and buildings (binary grids are base64 text because artifact hosting serves web types only).
-- `tools/`: preprocessing scripts (Python 3 with numpy, rasterio, shapely, pyproj, pyarrow, fsspec). Run from a scratch `build/` directory.
-  1. `parse_apt.py` extracts KPHX from FlightGear's `apt.dat` into local meters.
-  2. `s2.py` mosaics Sentinel-2 true color; `terrain.py` reprojects elevation tiles; `overture_bldg.py` range-reads Overture parquet from S3 for a bounding box.
-  3. `build_data.py` packs imagery, terrain and buildings; `route_graph.py` builds the taxi graph; `gate_links.py` links gates and finds runway exits.
+- `data/`: `photo_tiles/` (40 tiles, 26 MB), `photo_airfield.jpg`, `photo_metro.jpg`, Sentinel-2 base, terrain, buildings, airfield JSON.
+- `tools/fetch_imagery.py`: fetches and bakes the aerial photography. It needs the open internet, so it runs in GitHub Actions (`.github/workflows/phx-twin-data.yml`) and commits the result. `tools/imagery_report.json` records the source, flight date and exposure.
+- `tools/probe_feeds.mjs`, `tools/check_deployment.mjs`: report what the ADS-B feeds return and whether the deployed page and relay work. Run from Actions: PHX twin data, Run workflow.
+- Other `tools/*.py`: preprocessing for airfield, terrain, buildings and taxi graph (Python 3 with numpy, rasterio, shapely, pyproj, pyarrow, fsspec).
+
+## Simulated traffic model
+
+West flow (default): arrivals 25L and 26, departures 25R and 26; east flow mirrors it. Arrivals fly a 3-degree glidepath, exit and taxi to airline-appropriate gates along the painted centerlines; departures push back, hold short, are released first-come-first-served, and crossings get priority between departures. One simulated hour: 58 departures, 45 arrivals, longest hold 7 minutes, no deadlocks.
 
 ## Attribution
 
-Airfield data: X-Plane Scenery Gateway contributors (GPL v2+, via FlightGear fgdata). Imagery: contains modified Copernicus Sentinel data 2025. Terrain: Mapzen/AWS Terrain Tiles. Buildings and rail: Overture Maps Foundation (ODbL for OpenStreetMap-derived features, USGS lidar heights). Live traffic: adsb.lol contributors (ODbL). Liveries are generic color schemes, not airline artwork.
+Aerial photography: USDA Farm Production and Conservation, National Agriculture Imagery Program (public domain), served by the USFS Geospatial Technology and Applications Center and the Interior GeoPlatform. Regional imagery: contains modified Copernicus Sentinel data 2025. Terrain: Mapzen/AWS Terrain Tiles. Buildings and rail: Overture Maps Foundation (ODbL for OpenStreetMap-derived features, USGS lidar heights). Airfield data: X-Plane Scenery Gateway contributors (GPL v2+, via FlightGear). Live traffic: adsb.fi and adsb.lol community receivers. Liveries are generic color schemes, not airline artwork.

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -151,6 +152,28 @@ test("the hosted page is generated from the artifact page and deployed with its 
   assert.match(workflow, /cp -R[^\n]*phx-digital-twin\/index\.html[^\n]*phx-digital-twin\/adsb\.js[^\n]*phx-digital-twin\/data[^\n]*_site\/phx-digital-twin\//);
   assert.match(workflow, /supabase functions deploy adsb-relay [^\n]*--no-verify-jwt/);
   assert.match(app, /functions\/v1\/adsb-relay/);
+});
+
+test("aerial photography is baked, described and matches the script that fetches it", () => {
+  const info = JSON.parse(read("phx-digital-twin/data/photo_tiles/index.json"));
+  const report = JSON.parse(read("phx-digital-twin/tools/imagery_report.json"));
+  assert.equal(info.cols * info.rows, 40);
+  assert.equal(info.x0, airport.meta.plane[0]);
+  assert.equal(info.n1, airport.meta.plane[3]);
+  assert.ok(Math.abs(info.cols * info.tile_m - (airport.meta.plane[1] - airport.meta.plane[0])) < 1e-6, "tiles span the airfield plane exactly");
+  assert.equal(info.s2_match.gain.length, 3);
+  assert.match(info.flown, /^\d{4}-\d{2}-\d{2}$/);
+  for (let r = 0; r < info.rows; r++) for (let c = 0; c < info.cols; c++) assert.ok(existsSync(resolve(root, `phx-digital-twin/data/photo_tiles/${r}_${c}.jpg`)), `tile ${r}_${c} is missing`);
+  for (const f of ["photo_airfield.jpg", "photo_airfield_4k.jpg", "photo_metro.jpg"]) assert.ok(existsSync(resolve(root, "phx-digital-twin/data", f)), `${f} is missing`);
+  assert.ok(report.airfield_clip_pct < 1 && report.metro_clip_pct < 1, "photos must not be blown out");
+  // The pull-request job skips the bake when this matches; a script edit without a re-bake would leave stale imagery.
+  const sha = createHash("sha256").update(readFileSync(resolve(root, "phx-digital-twin/tools/fetch_imagery.py"))).update(readFileSync(resolve(root, "phx-digital-twin/tools/imagery.config.json"))).digest("hex").slice(0, 16);
+  assert.equal(report.inputs_sha, sha, "fetch_imagery.py or its config changed since the imagery was baked");
+  assert.match(app, /function paintAirfield\(\)/, "the painted airfield stays as the fallback when photos are missing");
+  const dataWorkflow = read(".github/workflows/phx-twin-data.yml");
+  assert.match(dataWorkflow, /check-deployment/);
+  assert.match(dataWorkflow, /FORCE_BAKE/);
+  assert.doesNotMatch(dataWorkflow, /paths:[\s\S]*phx-twin-data\.yml/, "editing the workflow must not trigger a re-bake");
 });
 
 test("zoom and data-source controls exist and the page states what it is", () => {

@@ -573,6 +573,22 @@ const STATIC_PTS = pointsFrom(staticLights); scene.add(STATIC_PTS);
 
 // ---------------------------------------------------------------- buildings (Overture footprints, lidar heights)
 const bldShader = { ref: null };
+// Ground color under a point, from the sharpest imagery available there. Used to tie building walls to their photographed roofs.
+const groundColor = (() => {
+  const mk = (img, w) => {
+    if (!img) return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = Math.round(img.height * w / img.width);
+    const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, c.width, c.height);
+    return { d: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height };
+  };
+  const air = mk(D.photoAir, 2048), mid = mk(D.photoMetro, 1536), s2 = mk(baseImg, 1024);
+  const at = (L, u, v) => { const i = (clamp(Math.floor(v * L.h), 0, L.h - 1) * L.w + clamp(Math.floor(u * L.w), 0, L.w - 1)) * 4; return [L.d[i], L.d[i + 1], L.d[i + 2]]; };
+  return (x, n) => {
+    if (air && x > PX0 && x < PX1 && n > PN0 && n < PN1) return at(air, (x - PX0) / (PX1 - PX0), (PN1 - n) / (PN1 - PN0));
+    if (mid && Math.abs(x) < METRO_HALF && Math.abs(n) < METRO_HALF) return at(mid, (x + METRO_HALF) / (2 * METRO_HALF), (METRO_HALF - n) / (2 * METRO_HALF));
+    return at(s2, (x + 15360) / 30720, (15360 - n) / 30720);
+  };
+})();
 function buildBuildings(buf) {
   const dv = new DataView(buf), count = dv.getUint32(0, true);
   let off = 4;
@@ -593,6 +609,10 @@ function buildBuildings(buf) {
     cx /= nv; cn /= nv;
     const base = terrainH(cx, cn) - 0.6, y0 = base + mh, y1 = base + Math.max(h, 2.5);
     col.set(pick(PAL[kind] || PAL[0]));
+    if (D.photoMetro || D.photoAir) { // walls take most of their color from the roof in the photo, a little darker
+      const rc = groundColor(cx, cn), pc = new THREE.Color().setRGB(rc[0] / 255 * 0.78, rc[1] / 255 * 0.78, rc[2] / 255 * 0.78, THREE.SRGBColorSpace);
+      col.lerp(pc, kind === 4 ? 0.35 : 0.7);
+    }
     let u = 0;
     for (let i = 0; i < nv; i++) {
       const [ax, an] = pts[i], [bx, bn] = pts[(i + 1) % nv];
@@ -646,7 +666,7 @@ function buildBuildings(buf) {
         float aa = 1.0 - smoothstep(0.2, 0.55, max(fq.x, fq.y));
         float has = (vKind > 1.5 && vKind < 2.5) || vWP.y < 1.5 ? 0.0 : 1.0;
         vec3 glass = vKind > 3.5 && vKind < 4.5 ? vec3(0.16, 0.22, 0.28) : vec3(0.09, 0.11, 0.13);
-        diffuseColor.rgb = mix(diffuseColor.rgb, glass, has * (win * 0.85 * aa + (1.0 - aa) * 0.3 * (hi - lo)));
+        diffuseColor.rgb = mix(diffuseColor.rgb, glass, has * mix(1.0, 0.62, max(uPhoto.x, uPhoto.y)) * (win * 0.85 * aa + (1.0 - aa) * 0.3 * (hi - lo)));
         win *= has;
         float id = floor(vWP.y / fh) * 157.0 + floor(vWU / cw) * 13.17 + floor(vWP.x * 0.01) * 3.1;
         winLit = win * step(0.52, fract(sin(id) * 43758.5453));
