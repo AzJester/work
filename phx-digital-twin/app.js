@@ -30,7 +30,7 @@ const isNarrow = () => innerWidth <= 760;
 //   window.__TWIN_CAPTURE = { epoch: ms }  frame-by-frame mode for recording: nothing advances until __twin.step(dt) is called,
 //                                         and every clock in the page reads the stepped time instead of the wall clock.
 const OPTS = window.__TWIN_OPTS || {};
-const CAP = window.__TWIN_CAPTURE ? { t: 0, epoch: window.__TWIN_CAPTURE.epoch || Date.now() } : null;
+const CAP = window.__TWIN_CAPTURE ? { t: 0, draw: true, epoch: window.__TWIN_CAPTURE.epoch || Date.now() } : null;
 const nowMs = () => (CAP ? CAP.t : performance.now());
 const wallMs = () => (CAP ? CAP.epoch + CAP.t : Date.now());
 
@@ -1879,13 +1879,12 @@ function frame(now) {
     const hh = t.getUTCHours() + t.getUTCMinutes() / 60; if (document.activeElement !== tod) tod.value = String(Math.round(hh * 4) / 4);
     $('#todv').textContent = `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}`;
   }
-  renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
+  if (!CAP || CAP.draw) { renderer.render(scene, camera); labelRenderer.render(scene, camera); }
   if (!CAP) requestAnimationFrame(frame);
 }
 if (CAP) frame(0); else requestAnimationFrame((t) => { last = t; frame(t); });
 setTimeout(() => { $('#loading').hidden = true; }, 150);
 if (!isNarrow()) $('#traffic').classList.remove('closed');
-// capture mode: advance the whole page by dt seconds and render exactly one frame
-const step = CAP ? (dt) => { CAP.t += dt * 1000; frame(CAP.t); } : null;
+// capture mode: advance the whole page by dt seconds and render exactly one frame (draw = false advances without rendering)
+const step = CAP ? (dt, draw = true) => { CAP.t += dt * 1000; CAP.draw = draw; frame(CAP.t); } : null;
 window.__twin = { SIM, LIVE, DETAIL, renderer, scene, step, startLive, syncModeUi, centerOn, tourState: () => tourT, setTour: (v) => { tourT = v; }, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };

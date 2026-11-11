@@ -24,7 +24,8 @@ const REC = JSON.parse(zlib.gunzipSync(fs.readFileSync(here("./_recording/feed.j
 const REC_EPOCH = Date.parse(REC.recorded);
 const recIdx = (sec) => Math.max(0, Math.min(REC.frames.length - 1, Math.floor(sec * 1000 / REC.interval_ms)));
 const recFrame = (sec) => REC.frames[recIdx(sec)];
-const recLabel = new Date(REC_EPOCH - 7 * 3600e3).toISOString().replace("T", " ").slice(0, 16) + " MST";
+const mst = new Date(REC_EPOCH - 7 * 3600e3);
+const recLabel = `${mst.toISOString().slice(11, 16)} MST on ${mst.getUTCDate()} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][mst.getUTCMonth()]} ${mst.getUTCFullYear()}`;
 
 const [sceneId, outDir] = process.argv.slice(2);
 fs.mkdirSync(outDir, { recursive: true });
@@ -35,19 +36,19 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const SCENES = {
   A: { rec: 4, dur: 7, captions: [[0.4, 6.8, "Phoenix Sky Harbor · 3D digital twin", "Real aerial photography · live ADS-B traffic · runs in a browser"]],
     cam: (t) => { const k = ease(t / 7); return { pos: [lerp(3300, 2700, k), lerp(5600, 1450, k), lerp(7200, 2900, k)], tgt: [300, 0, -80] }; } },
-  B: { rec: 30.5, dur: 9.5, captions: [[0.3, 9.2, "Every tagged aircraft is real", `Live ADS-B positions, recorded ${recLabel}. Here American 543 departs runway 7L.`]],
-    track: { callsign: "AAL543", back: 210, side: 150, up: 60, lead: 60 } },
-  C: { rec: 34.5, dur: 11.5, captions: [[0.3, 11.2, "Click any aircraft", "Registration, ICAO address, altitude, speed and position source. American 2121 lands on runway 8."]],
-    cam: (t) => (t < 1.55 ? { pos: [-2300, 900, 900], tgt: [-900, 0, -500] } : null),
-    events: [{ t: 0.5, move: { row: "AAL2121" }, dur: 0.9 }, { t: 1.6, click: true }, { t: 2.3, move: "#d-follow", dur: 0.8 }, { t: 3.3, click: true }, { t: 3.8, move: [760, 520], dur: 0.8 }],
-    follow: { from: 3.4, back: 150, side: -110, up: 48 } },
+  B: { rec: 33.5, dur: 8.5, captions: [[0.3, 8.2, "Every tagged aircraft is real", `Live ADS-B positions, recorded ${recLabel}. American 543 departs runway 7L.`]],
+    track: { callsign: "AAL543", back: 130, side: 100, up: 34, lead: 50 } },
+  C: { rec: 42, dur: 9.5, captions: [[0.3, 9.2, "Tower cab view", "Looking out from the 326 ft control tower as American 2121 lands on runway 8."]],
+    cam: (t) => (t < 0.9 ? { pos: [980, 190, 330], tgt: [553, 85, -122] } : null),
+    events: [{ t: 0.15, move: '[data-cam="tower"]', dur: 0.6 }, { t: 0.9, click: true }, { t: 1.4, move: [640, 470], dur: 0.8 }],
+    tower: { from: 0.95, callsign: "AAL2121", fov: 7 } },
   D: { rec: 96, dur: 9.5, captions: [[0.3, 9.2, "Zoom in anywhere", "30 cm aerial photography loads around the view. Tagged aircraft at the gates are live."]],
     cam: (t) => (t < 1.0 ? { pos: [1950, 900, 1150], tgt: [1060, 0, 110] } : { orbit: 4.4 / FPS }),
     events: [{ t: 0.3, move: "#zin", dur: 0.6 }, { t: 1.0, click: true }, { t: 1.6, click: true }, { t: 2.2, click: true }, { t: 2.8, click: true }, { t: 3.4, click: true }, { t: 4.2, move: [700, 430], dur: 0.9 }] },
-  E: { rec: 139.5, dur: 9.5, captions: [[0.3, 9.2, "Tower cab view", "Looking out from the 326 ft control tower as Southwest 3828 lands on runway 8."]],
-    cam: (t) => (t < 1.3 ? { pos: [980, 190, 330], tgt: [553, 85, -122] } : null),
-    events: [{ t: 0.3, move: '[data-cam="tower"]', dur: 0.7 }, { t: 1.3, click: true }, { t: 1.8, move: [640, 470], dur: 0.8 }],
-    tower: { from: 1.35, callsign: "SWA3828", fov: 9 } },
+  E: { rec: 132.5, dur: 13, captions: [[0.3, 12.7, "Click any aircraft", "Identity, altitude, speed and position source. Follow keeps the camera on Southwest 3828 as it lands on runway 8."]],
+    cam: (t) => (t < 2.9 ? { pos: [-1900, 420, 300], tgt: [-1700, 0, -720] } : null),
+    events: [{ t: 0.4, move: { tag: "SWA3828" }, dur: 0.9 }, { t: 1.5, click: true }, { t: 1.9, move: "#d-follow", dur: 0.8 }, { t: 2.9, click: true }, { t: 3.3, move: [700, 500], dur: 0.8 }],
+    follow: { from: 2.95, back: 150, side: 110, up: 48 } },
   F: { rec: 160, dur: 14, captions: [[0.3, 9.4, "Simulated traffic for any time of day", "Switch from live to the built-in simulator, set the clock, and the airfield lights come on."], [9.9, 13.8, "azjester.github.io/work/phx-digital-twin", "Unofficial visualization · imagery USDA NAIP · traffic adsb.lol community receivers"]],
     cam: (t) => (t < 6.2 ? { pos: [2500, 700, 1700], tgt: [700, 0, -50] } : null),
     events: [{ t: 0.3, move: "#mode-sim", dur: 0.7 }, { t: 1.1, click: true }, { t: 1.6, move: { slider: 12.25 }, dur: 0.6 }, { t: 2.3, drag: [12.25, 20.25], dur: 2.6 },
@@ -87,7 +88,7 @@ await page.waitForFunction(() => document.querySelector("#loading")?.hidden === 
 await page.addStyleTag({ content: `
   .panel{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(9,17,21,.9)!important}
   .chip::before{animation:none!important}
-  #demo-cap{position:absolute;left:50%;bottom:86px;transform:translateX(-50%);z-index:20;text-align:center;padding:10px 22px 11px;border-radius:6px;background:rgba(6,12,15,.86);border:1px solid rgba(242,181,58,.5);max-width:760px;pointer-events:none}
+  #demo-cap{position:absolute;left:626px;bottom:86px;transform:translateX(-50%);z-index:20;text-align:center;padding:10px 20px 11px;border-radius:6px;background:rgba(6,12,15,.88);border:1px solid rgba(242,181,58,.5);width:max-content;max-width:588px;box-sizing:border-box;pointer-events:none}
   #demo-cap b{display:block;font:700 27px/1.1 'Barlow Condensed','Arial Narrow',sans-serif;color:#fff;letter-spacing:.01em}
   #demo-cap span{display:block;margin-top:4px;font:500 15px/1.3 'Barlow',system-ui,sans-serif;color:#d5dde1}
   #demo-cur{position:absolute;left:0;top:0;width:26px;height:26px;z-index:30;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
@@ -119,11 +120,12 @@ await page.evaluate(() => {
       if (ac) { const d = ac.obj.position.clone().sub(ctl.target); d.y += 4; d.normalize();
         if (!st.dir) st.dir = d.clone(); st.dir.lerp(d, K(0.1)).normalize();
         cam.position.copy(ctl.target).addScaledVector(st.dir, -0.8);
-        cam.fov += (o.tower.fov - cam.fov) * K(0.06); cam.updateProjectionMatrix(); }
+        cam.fov += (o.tower.fov - cam.fov) * K(0.09); cam.updateProjectionMatrix(); }
     }
     if (o.slider !== undefined) { const tod = document.querySelector("#tod"); tod.value = String(o.slider); tod.dispatchEvent(new Event("input")); }
     if (o.feed) T.liveIngest(o.feed);
-    T.step(o.dt);
+    T.step(o.dt, o.draw !== false);
+    if (o.draw === false) return;
     const cap = document.querySelector("#demo-cap"); cap.style.opacity = o.cap ? o.cap[2] : 0;
     if (o.cap) { cap.children[0].textContent = o.cap[0]; cap.children[1].textContent = o.cap[1]; }
     const cur = document.querySelector("#demo-cur"), ring = document.querySelector("#demo-ring");
@@ -136,30 +138,44 @@ await page.evaluate(() => {
 await page.evaluate((f) => { const T = window.__twin; T.setCam("orbit"); T.startLive(f); T.syncModeUi(); }, { src: REC.source, ac: recFrame(S.rec - PRE).ac });
 let fed = recIdx(S.rec - PRE);
 const feedFor = (sec) => { const k = recIdx(sec); if (k === fed) return null; fed = k; return { src: REC.source, ac: REC.frames[k].ac }; };
-for (let t = -PRE; t < -1e-6; t += 0.25) await page.evaluate((o) => window.__demo(o), { dt: 0.25, feed: feedFor(S.rec + t + 0.25), cam: S.cam ? S.cam(0) : null, track: S.track });
+const tilesIdle = () => page.waitForFunction(() => window.__twin.DETAIL.busy === 0, null, { timeout: 60000 }); // photo tiles load in real time; let them land before the next frame
+for (let i = 0, n = Math.round(PRE / 0.05); i < n; i++) {
+  const t = -PRE + i * 0.05;
+  await page.evaluate((o) => window.__demo(o), { dt: 0.05, draw: i === n - 1, feed: feedFor(S.rec + t + 0.05), cam: S.cam ? S.cam(0) : null, track: S.track });
+  if (i % 4 === 3) await tilesIdle();
+}
 
 const center = async (sel) => page.evaluate((s) => {
   let el;
   if (typeof s === "string") el = document.querySelector(s);
   else if (s.row) el = [...document.querySelectorAll("#tlist li button")].find((b) => b.children[0].textContent === s.row);
+  else if (s.tag) el = window.__twin.SIM.ac.find((a) => a.callsign === s.tag)?.lblEl.querySelector(".cs"); // the aircraft's tag in the 3D view; it moves
   if (!el) return null;
-  el.scrollIntoView({ block: "nearest" });
-  const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2];
+  if (!s.tag) el.scrollIntoView({ block: "nearest" });
+  const r = el.getBoundingClientRect(); return r.width ? [r.left + r.width / 2, r.top + r.height / 2] : null;
 }, sel);
 const sliderX = async (v) => page.evaluate((val) => { const r = document.querySelector("#tod").getBoundingClientRect(); return [r.left + 8 + (r.width - 16) * val / 24, r.top + r.height / 2]; }, v);
 
-let cur = [W * 0.55, H * 0.6], showCur = (S.events || []).length > 0, move = null, drag = null, ring = null, tourOn = false;
+const target = async (m) => (Array.isArray(m) ? m : m.slider !== undefined ? sliderX(m.slider) : center(m));
+let lastSel = null, cur = [W * 0.55, H * 0.6], showCur = (S.events || []).length > 0, move = null, drag = null, ring = null, tourOn = false;
 const N = Math.round(S.dur * FPS), t0 = Date.now();
 for (let f = 0; f < N; f++) {
   const t = f / FPS;
   for (const ev of S.events || []) {
     if (ev.done || t < ev.t) continue;
     ev.done = true;
-    if (ev.move) { const to = Array.isArray(ev.move) ? ev.move : ev.move.slider !== undefined ? await sliderX(ev.move.slider) : await center(ev.move); if (to) move = { from: [...cur], to, t0: t, dur: ev.dur }; }
+    if (ev.move) { const to = await target(ev.move); if (to) { move = { from: [...cur], to, sel: ev.move, t0: t, dur: ev.dur }; lastSel = Array.isArray(ev.move) ? null : ev.move; } }
     if (ev.drag) drag = { ...ev, t0: t };
-    if (ev.click) { await page.mouse.click(cur[0], cur[1]); ring = { at: [...cur], t0: t }; if (ev.then === "tour") tourOn = true; }
+    if (ev.click) { // a click always lands on the target of the move before it, wherever that target is now
+      if (lastSel) cur = (await target(lastSel)) || cur;
+      move = null; await page.mouse.click(cur[0], cur[1]); ring = { at: [...cur], t0: t }; if (ev.then === "tour") tourOn = true;
+    }
   }
-  if (move) { const k = ease((t - move.t0) / move.dur); cur = [lerp(move.from[0], move.to[0], k), lerp(move.from[1], move.to[1], k)]; if (k >= 1) move = null; }
+  if (move) {
+    if (move.sel.tag) move.to = (await target(move.sel)) || move.to;
+    const k = ease((t - move.t0) / move.dur); cur = [lerp(move.from[0], move.to[0], k), lerp(move.from[1], move.to[1], k)];
+    if (k >= 1) move = null;
+  } else if (lastSel && lastSel.tag) cur = (await target(lastSel)) || cur; // rest on a moving tag
   let slider;
   if (drag) { const k = Math.min(1, (t - drag.t0) / drag.dur); slider = Math.round(lerp(drag.drag[0], drag.drag[1], ease(k)) * 4) / 4; cur = await sliderX(slider); if (k >= 1) drag = null; }
   const cap = (S.captions || []).find((c) => t >= c[0] && t <= c[1]);
@@ -171,6 +187,7 @@ for (let f = 0; f < N; f++) {
     cur: showCur ? cur : null,
     ring: ring && t - ring.t0 < 0.45 ? [ring.at[0], ring.at[1], 1 - (t - ring.t0) / 0.45, 0.35 + (t - ring.t0) * 2.2] : null,
   };
+  await tilesIdle();
   await page.evaluate((x) => window.__demo(x), o);
   await page.screenshot({ path: path.join(outDir, `${String(f).padStart(5, "0")}.jpg`), type: "jpeg", quality: 94, timeout: 180000 });
   if (f % FPS === 0) console.log(`scene ${sceneId}: frame ${f}/${N}, ${((Date.now() - t0) / 1000 / (f + 1)).toFixed(2)} s per frame`);
