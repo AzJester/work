@@ -19,7 +19,7 @@ const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const ROOT = here("../");
 const { chromium } = (await import(process.env.PLAYWRIGHT || "playwright")).default;
 const THREE_DIR = process.env.THREE_DIR, FONT_DIR = process.env.FONT_DIR;
-const FPS = +(process.env.FPS || 20), W = 1280, H = 720;
+const FPS = +(process.env.FPS || 20), W = 1600, H = 900, DSF = +(process.env.DSF || 1); // output is W x H times DSF
 const REC = JSON.parse(zlib.gunzipSync(fs.readFileSync(here("./_recording/feed.json.gz"))));
 const REC_EPOCH = Date.parse(REC.recorded);
 const recIdx = (sec) => Math.max(0, Math.min(REC.frames.length - 1, Math.floor(sec * 1000 / REC.interval_ms)));
@@ -40,19 +40,19 @@ const SCENES = {
     track: { callsign: "AAL543", back: 130, side: 100, up: 34, lead: 50 } },
   C: { rec: 42, dur: 9.5, captions: [[0.3, 9.2, "Tower cab view", "Looking out from the 326 ft control tower as American 2121 lands on runway 8."]],
     cam: (t) => (t < 0.9 ? { pos: [980, 190, 330], tgt: [553, 85, -122] } : null),
-    events: [{ t: 0.15, move: '[data-cam="tower"]', dur: 0.6 }, { t: 0.9, click: true }, { t: 1.4, move: [640, 470], dur: 0.8 }],
+    events: [{ t: 0.15, move: '[data-cam="tower"]', dur: 0.6 }, { t: 0.9, click: true }, { t: 1.4, move: [800, 590], dur: 0.8 }],
     tower: { from: 0.95, callsign: "AAL2121", fov: 7 } },
-  D: { rec: 96, dur: 9.5, captions: [[0.3, 9.2, "Zoom in anywhere", "30 cm aerial photography loads around the view. Tagged aircraft at the gates are live."]],
+  D: { rec: 96, dur: 9.5, captions: [[0.3, 9.2, "Zoom in anywhere", "30 cm aerial photography loads around the view. 3D aircraft are live; flat ones are in the 2023 photograph."]],
     cam: (t) => (t < 1.0 ? { pos: [1950, 900, 1150], tgt: [1060, 0, 110] } : { orbit: 4.4 / FPS }),
-    events: [{ t: 0.3, move: "#zin", dur: 0.6 }, { t: 1.0, click: true }, { t: 1.6, click: true }, { t: 2.2, click: true }, { t: 2.8, click: true }, { t: 3.4, click: true }, { t: 4.2, move: [700, 430], dur: 0.9 }] },
+    events: [{ t: 0.3, move: "#zin", dur: 0.6 }, { t: 1.0, click: true }, { t: 1.6, click: true }, { t: 2.2, click: true }, { t: 2.8, click: true }, { t: 3.4, click: true }, { t: 4.2, move: [880, 540], dur: 0.9 }] },
   E: { rec: 132.5, dur: 13, captions: [[0.3, 12.7, "Click any aircraft", "Identity, altitude, speed and position source. Follow keeps the camera on Southwest 3828 as it lands on runway 8."]],
     cam: (t) => (t < 2.9 ? { pos: [-1900, 420, 300], tgt: [-1700, 0, -720] } : null),
-    events: [{ t: 0.4, move: { tag: "SWA3828" }, dur: 0.9 }, { t: 1.5, click: true }, { t: 1.9, move: "#d-follow", dur: 0.8 }, { t: 2.9, click: true }, { t: 3.3, move: [700, 500], dur: 0.8 }],
+    events: [{ t: 0.4, move: { tag: "SWA3828" }, dur: 0.9 }, { t: 1.5, click: true }, { t: 1.9, move: "#d-follow", dur: 0.8 }, { t: 2.9, click: true }, { t: 3.3, move: [880, 620], dur: 0.8 }],
     follow: { from: 2.95, back: 150, side: 110, up: 48 } },
   F: { rec: 160, dur: 14, captions: [[0.3, 9.4, "Simulated traffic for any time of day", "Switch from live to the built-in simulator, set the clock, and the airfield lights come on."], [9.9, 13.8, "azjester.github.io/work/phx-digital-twin", "Unofficial visualization · imagery USDA NAIP · traffic adsb.lol community receivers"]],
     cam: (t) => (t < 6.2 ? { pos: [2500, 700, 1700], tgt: [700, 0, -50] } : null),
     events: [{ t: 0.3, move: "#mode-sim", dur: 0.7 }, { t: 1.1, click: true }, { t: 1.6, move: { slider: 12.25 }, dur: 0.6 }, { t: 2.3, drag: [12.25, 20.25], dur: 2.6 },
-      { t: 5.1, move: '[data-spd="4"]', dur: 0.5 }, { t: 5.7, click: true }, { t: 5.9, move: '[data-cam="tour"]', dur: 0.4 }, { t: 6.3, click: true, then: "tour" }, { t: 6.8, move: [820, 420], dur: 0.8 }] },
+      { t: 5.1, move: '[data-spd="4"]', dur: 0.5 }, { t: 5.7, click: true }, { t: 5.9, move: '[data-cam="tour"]', dur: 0.4 }, { t: 6.3, click: true, then: "tour" }, { t: 6.8, move: [1020, 520], dur: 0.8 }] },
 };
 const S = SCENES[sceneId];
 if (!S) throw new Error(`unknown scene ${sceneId}`);
@@ -63,7 +63,7 @@ const mime = (p) => (p.endsWith(".html") ? "text/html" : p.endsWith(".js") || p.
 const FONT_CSS = [["Barlow", "barlow", [400, 500, 600]], ["Barlow Condensed", "barlow-condensed", [500, 600, 700]], ["IBM Plex Mono", "ibm-plex-mono", [400, 500]]]
   .flatMap(([fam, pkg, ws]) => ws.map((w) => `@font-face{font-family:'${fam}';font-weight:${w};font-style:normal;src:url(http://twin.local/__fonts/${pkg}/files/${pkg}-latin-${w}-normal.woff2) format('woff2')}`)).join("\n");
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
-const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: DSF });
 await page.addInitScript((epoch) => {
   window.__TWIN_OPTS = { shadow: 2048, terrainStep: 2, aniso: 8, tiles: 8, air: "full" };
   window.__TWIN_CAPTURE = { epoch };
@@ -88,11 +88,11 @@ await page.waitForFunction(() => document.querySelector("#loading")?.hidden === 
 await page.addStyleTag({ content: `
   .panel{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(9,17,21,.9)!important}
   .chip::before{animation:none!important}
-  #demo-cap{position:absolute;left:626px;bottom:86px;transform:translateX(-50%);z-index:20;text-align:center;padding:10px 20px 11px;border-radius:6px;background:rgba(6,12,15,.88);border:1px solid rgba(242,181,58,.5);width:max-content;max-width:588px;box-sizing:border-box;pointer-events:none}
-  #demo-cap b{display:block;font:700 27px/1.1 'Barlow Condensed','Arial Narrow',sans-serif;color:#fff;letter-spacing:.01em}
-  #demo-cap span{display:block;margin-top:4px;font:500 15px/1.3 'Barlow',system-ui,sans-serif;color:#d5dde1}
-  #demo-cur{position:absolute;left:0;top:0;width:26px;height:26px;z-index:30;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
-  #demo-ring{position:absolute;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid #f2b53a;z-index:29;pointer-events:none;opacity:0}` });
+  #demo-cap{position:absolute;left:777px;bottom:88px;transform:translateX(-50%);z-index:20;text-align:center;padding:12px 26px 13px;border-radius:7px;background:rgba(6,12,15,.88);border:1px solid rgba(242,181,58,.5);width:max-content;max-width:820px;box-sizing:border-box;pointer-events:none}
+  #demo-cap b{display:block;font:700 32px/1.1 'Barlow Condensed','Arial Narrow',sans-serif;color:#fff;letter-spacing:.01em}
+  #demo-cap span{display:block;margin-top:5px;font:500 18px/1.3 'Barlow',system-ui,sans-serif;color:#d5dde1}
+  #demo-cur{position:absolute;left:0;top:0;width:30px;height:30px;z-index:30;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+  #demo-ring{position:absolute;left:0;top:0;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;border:3px solid #f2b53a;z-index:29;pointer-events:none;opacity:0}` });
 await page.evaluate(() => {
   const app = document.querySelector("#app");
   app.insertAdjacentHTML("beforeend", '<div id="demo-cap" style="opacity:0"><b></b><span></span></div><div id="demo-ring"></div><svg id="demo-cur" viewBox="0 0 24 24" style="opacity:0"><path d="M4 2l15 9-7 1.6L8.6 20z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>');
