@@ -5,6 +5,7 @@ name: PHX twin data
 #   imagery   - bakes public-domain NAIP aerial photography into phx-digital-twin/data
 #               and commits it back to the branch
 #   deployed  - checks the public page and the live ADS-B relay after a deploy
+#   record    - records a few minutes of the live relay for offline replay (demo capture)
 # On a pull request, feeds and imagery run when the fetch scripts change. Run it by hand
 # (Actions > PHX twin data > Run workflow) to check the deployment or to re-bake imagery.
 on:
@@ -22,6 +23,7 @@ on:
         options:
           - check-deployment
           - bake-imagery
+          - record-feed
 
 permissions:
   contents: write
@@ -84,3 +86,25 @@ jobs:
           node-version: 22
       - name: Check the public page and the live relay
         run: node phx-digital-twin/tools/check_deployment.mjs
+
+  record:
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'record-feed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record the live relay
+        run: node phx-digital-twin/tools/record_feed.mjs
+      - name: Commit the recording
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f phx-digital-twin/tools/_recording/feed.json.gz
+          git commit -m "PHX twin: recorded live ADS-B feed for demo capture"
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}"
