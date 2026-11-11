@@ -181,6 +181,10 @@ test("zoom and data-source controls exist and the page states what it is", () =>
     assert.match(fragment, new RegExp(`id="${id}"`), `#${id} is missing`);
   }
   assert.match(fragment, /aria-label="Zoom in"/);
+  // layout regressions seen on the live page: the flight card overlapped the clock panel, and tags painted over panels
+  assert.match(fragment, /<div id="rightcol">\s*<section id="ops"[\s\S]*?<\/section>\s*<section id="detail"/, "clock panel and flight card must share the stacking column");
+  assert.doesNotMatch(fragment, /#detail\{[^}]*top:calc\(160px/, "the flight card must not be pinned at a fixed offset");
+  assert.match(fragment, /#labels\{[^}]*isolation:isolate/);
   assert.match(fragment, /not for navigation or operational use/);
   assert.match(app, /addEventListener\('wheel'/);
 });
