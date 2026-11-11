@@ -1,0 +1,193 @@
+{
+ "generated": "2026-11-11T18:38:39Z",
+ "inputs_sha": "8b17b7c024f6555e",
+ "sources": [
+  {
+   "name": "DOI GeoPlatform NAIP Plus",
+   "url": "https://imagery.geoplatform.gov/iipp/rest/services/NAIP/NAIP_plus/ImageServer",
+   "meta": {
+    "pixelSizeX": 0.3,
+    "pixelSizeY": 0.3,
+    "bandCount": 4,
+    "maxImageWidth": 100000,
+    "maxImageHeight": 100000,
+    "pixelType": "U8",
+    "capabilities": "Image,Metadata,Catalog,Mensuration",
+    "copyrightText": "These datasets were provided by the USDA's Farm Production and Conservation office (FPAC) and are served by the U.S. Forest Service Geospatial Technology & Applications Center (GTAC), in cooperation with the U.S. Department of the Interior's Geospatial Platform (GeoPlatform), as part of the Interdepartmental Imagery Publication Platform (IIPP).",
+    "name": "NAIP/NAIP_plus",
+    "spatialReference": {
+     "latestWkid": 3857,
+     "wkid": 102100
+    },
+    "timeInfo": null
+   },
+   "catalog": [
+    {
+     "name": "NAIP2022_CONUS_forNaipPlus",
+     "category": 2,
+     "year": 2022,
+     "state": "US"
+    },
+    {
+     "name": "CRF_NAIP2023_L_v11",
+     "category": 2,
+     "year": 2023,
+     "state": "US"
+    },
+    {
+     "name": "m_3311240_se_12_030_20230917_20240228",
+     "category": 1,
+     "year": 2023,
+     "state": "AZ"
+    },
+    {
+     "name": "CRF_AZ_2023",
+     "category": 2,
+     "year": 2023,
+     "state": "AZ"
+    }
+   ],
+   "sample": {
+    "sharpness": 419.4,
+    "mean": [
+     154.0,
+     156.0,
+     148.2
+    ],
+    "empty": 0.0
+   }
+  },
+  {
+   "name": "USGS NAIP Plus",
+   "url": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
+   "meta": {
+    "pixelSizeX": 0.299999999987858,
+    "pixelSizeY": 0.299999999987858,
+    "bandCount": 4,
+    "maxImageWidth": 4000,
+    "maxImageHeight": 4000,
+    "pixelType": "U8",
+    "capabilities": "Image,Metadata,Catalog,Mensuration",
+    "copyrightText": "USGS, USDA, The National Map: Orthoimagery. March 12, 2025.",
+    "name": "USGSNAIPPlus",
+    "spatialReference": {
+     "wkid": 102100,
+     "latestWkid": 3857
+    },
+    "timeInfo": null
+   },
+   "catalog": [
+    {
+     "Name": "Ov_i02_L01_R0000002B_C00000009",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L02_R00000015_C00000004",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L03_R0000000A_C00000002",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L04_R00000005_C00000001",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L05_R00000002_C00000000",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L06_R00000001_C00000000",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L07_R00000000_C00000000",
+     "Category": 2
+    },
+    {
+     "Name": "Ov_i02_L08_R00000000_C00000000",
+     "Category": 2
+    }
+   ],
+   "sample": {
+    "sharpness": 426.0,
+    "mean": [
+     154.5,
+     156.4,
+     148.7
+    ],
+    "empty": 0.0
+   }
+  },
+  {
+   "name": "USGS NAIP Imagery",
+   "url": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer",
+   "meta": {
+    "pixelSizeX": 0.29999999999944177,
+    "pixelSizeY": 0.29999999999944177,
+    "bandCount": 4,
+    "maxImageWidth": 4000,
+    "maxImageHeight": 4000,
+    "pixelType": "U8",
+    "capabilities": "Image,Metadata,Catalog,Mensuration",
+    "copyrightText": "USGS, USDA, The National Map: Orthoimagery. January 09, 2025.",
+    "name": "USGSNAIPImagery",
+    "spatialReference": {
+     "wkid": 102100,
+     "latestWkid": 3857
+    },
+    "timeInfo": null
+   },
+   "catalog": [
+    {
+     "error": "RuntimeError(\"HTTP 504: '<html>\\\\r\\\\n<head><title>504 Gateway Time-out</title></head>\\\\r\\\\n<body>\\\\r\\\\n<center><h1>504 Gateway Time-out</h1></center>\\\\r\\\\n</body>\\\\r\\\\n</html>\\\\r\\\\n'\")"
+    }
+   ],
+   "sample": {
+    "sharpness": 425.9,
+    "mean": [
+     154.5,
+     156.4,
+     148.7
+    ],
+    "empty": 0.0
+   }
+  },
+  {
+   "name": "USDA NAIP CONUS Prime",
+   "url": "https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer",
+   "error": "RuntimeError(\"ConnectionError(ProtocolError('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer')))\")"
+  }
+ ],
+ "flown": "2023-09-17",
+ "photo_gain": 1.017,
+ "s2_match": {
+  "gain": [
+   0.6695,
+   0.5854,
+   0.6693
+  ],
+  "offset": [
+   -0.82,
+   28.33,
+   8.11
+  ]
+ },
+ "metro_clip_pct": 0.0,
+ "airfield_clip_pct": 0.05,
+ "airfield": {
+  "tiles": [
+   8,
+   5
+  ],
+  "tile_ground_m_per_px": 0.323,
+  "tile_sharpness_median": 376.5,
+  "base_size": [
+   8192,
+   4637
+  ],
+  "base_ground_m_per_px": 0.647
+ },
+ "chosen": "DOI GeoPlatform NAIP Plus"
+}

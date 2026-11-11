@@ -1,0 +1,308 @@
+<!doctype html>
+<!-- Generated from phx-twin.html by tools/build_index.mjs. Edit that file, then rebuild. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="3D digital twin of Phoenix Sky Harbor International Airport (KPHX) with live ADS-B traffic. Unofficial visualization, not for navigation or operational use.">
+<meta name="theme-color" content="#081014">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>PHX Sky Harbor Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed 3D scene; glass console panels pinned to the corners like an ops-center wall display. Single dark look by design. */
+:root{
+  --bg:#081014;
+  --panel:rgba(9,17,21,.80);
+  --panel-hi:rgba(22,34,40,.92);
+  --line:rgba(200,220,228,.15);
+  --fg:#e9eef0;
+  --dim:#94a7b0;
+  --faint:#5f7581;
+  --accent:#f2b53a;     /* taxiway amber */
+  --go:#4fd18b;         /* taxi centerline green */
+  --edge:#5aa9ff;       /* taxiway edge blue */
+  --stop:#ff5d4f;       /* stop-bar red */
+  --violet:#b99bff;
+  --f-display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --r:6px;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{position:fixed;inset:0;overflow:hidden}
+#gl{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(10px) saturate(1.15);-webkit-backdrop-filter:blur(10px) saturate(1.15)}
+.eyebrow{font-family:var(--f-display);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- top-left identity */
+#ident{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));padding:12px 14px 11px;display:grid;gap:6px;max-width:min(440px,calc(100% - 32px))}
+#ident h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:26px;line-height:1;letter-spacing:.01em;text-wrap:balance;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+#ident h1 .code{color:var(--accent);letter-spacing:.06em}
+#ident .sub{font-size:12.5px;color:var(--dim);line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:3px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.chip.sim{border-color:rgba(242,181,58,.55);color:var(--accent)}
+.chip.live{border-color:rgba(79,209,139,.6);color:var(--go)}
+.chip.warn{border-color:rgba(255,93,79,.6);color:var(--stop)}
+.chip.sim::before,.chip.live::before,.chip.warn::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+/* ---------- top-right clock / flow */
+#ops{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));padding:10px 14px;display:grid;gap:8px;min-width:236px}
+#ops .clock{display:flex;align-items:baseline;gap:10px;justify-content:space-between}
+#ops .clock .t{font-family:var(--f-mono);font-size:22px;font-weight:500;letter-spacing:.02em}
+#ops .clock .z{font-family:var(--f-mono);font-size:12px;color:var(--dim)}
+#ops .row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--dim)}
+#ops .row b{color:var(--fg);font-weight:500;font-family:var(--f-mono);font-size:12px}
+#ops .seg{display:flex}
+#ops .seg button{flex:1}
+#feed-note{margin:0;font-size:11.5px;line-height:1.4;color:var(--accent);max-width:236px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:5px 9px;font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button:hover{color:var(--fg);background:rgba(255,255,255,.04)}
+.seg button[aria-pressed="true"]{color:#1a1206;background:var(--accent)}
+.seg button:disabled,.btn:disabled{opacity:.42;cursor:not-allowed}
+.seg button:disabled:hover{background:transparent;color:var(--dim)}
+.seg button[aria-pressed="true"]:disabled:hover{color:#1a1206;background:var(--accent)}
+input:disabled{opacity:.42}
+
+/* ---------- traffic board */
+#traffic{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:calc(146px + env(safe-area-inset-top,0px));max-height:calc(100% - 146px - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));width:300px;display:flex;flex-direction:column;min-height:0}
+#traffic header{padding:10px 12px 8px;display:grid;gap:8px;border-bottom:1px solid var(--line)}
+.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.count{display:grid;gap:1px}
+.count b{font-family:var(--f-mono);font-size:18px;font-weight:500;line-height:1.1}
+.count span{font-size:10.5px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;font-family:var(--f-display);font-weight:600}
+#tlist{list-style:none;margin:0;padding:4px 0;overflow-y:auto;min-height:0;flex:1}
+#tlist li button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:76px 46px 1fr;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;border-left:2px solid transparent}
+#tlist li button:hover{background:rgba(255,255,255,.04)}
+#tlist li button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#tlist li button.sel{background:rgba(242,181,58,.09);border-left-color:var(--accent)}
+#tlist .cs{font-family:var(--f-mono);font-size:12.5px;font-weight:500}
+#tlist .ty{font-family:var(--f-mono);font-size:11.5px;color:var(--dim)}
+#tlist .st{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
+#tlist .st small{font-family:var(--f-mono);font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-family:var(--f-display);font-weight:600;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;border-radius:3px;white-space:nowrap;border:1px solid currentColor;line-height:1.25}
+.ph-arr{color:var(--edge)}.ph-dep{color:var(--violet)}.ph-taxi{color:var(--go)}.ph-hold{color:var(--accent)}.ph-rwy{color:var(--stop)}.ph-gate{color:var(--faint)}
+#traffic footer{padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);line-height:1.4}
+
+/* ---------- detail card */
+#detail{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(160px + env(safe-area-inset-top,0px));width:300px;padding:12px 14px;display:grid;gap:10px;max-height:calc(100% - 260px);overflow-y:auto}
+#detail .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+#detail .hd h2{margin:0;font-family:var(--f-mono);font-weight:500;font-size:22px;letter-spacing:.02em}
+#detail .hd p{margin:2px 0 0;color:var(--dim);font-size:12.5px}
+#detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px}
+#detail dt{color:var(--dim)}
+#detail dd{margin:0;font-family:var(--f-mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+#detail .route{font-family:var(--f-mono);font-size:15px;display:flex;align-items:center;gap:8px}
+#detail .route i{flex:1;height:1px;background:var(--line);position:relative}
+#detail .acts{display:flex;gap:8px}
+.btn{background:transparent;border:1px solid var(--line);border-radius:4px;padding:6px 10px;font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--dim)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1206}
+.x{background:none;border:0;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+
+/* ---------- bottom control bar */
+#bar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px;padding:8px 12px;max-width:calc(100% - 152px);overflow-x:auto;scrollbar-width:none}
+#bar::-webkit-scrollbar{display:none}
+#bar .grp{display:flex;align-items:center;gap:8px;flex:none}
+#bar .grp>.eyebrow{white-space:nowrap}
+#bar .sep{width:1px;height:26px;background:var(--line);flex:none}
+#tod{width:132px;accent-color:var(--accent)}
+#todv{font-family:var(--f-mono);font-size:12px;color:var(--dim);min-width:40px}
+#tbtn{display:none}
+
+/* ---------- zoom control */
+#zoom{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;overflow:hidden;z-index:2}
+#zoom button{all:unset;box-sizing:border-box;width:44px;height:44px;display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:26px;line-height:1;color:var(--fg);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#zoom button+button{border-top:1px solid var(--line)}
+#zoom button:hover{background:rgba(255,255,255,.07);color:var(--accent)}
+#zoom button:active{background:rgba(242,181,58,.18)}
+#zoom button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* ---------- attribution */
+#credits{position:absolute;right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(78px + env(safe-area-inset-bottom,0px));font-size:10.5px;color:rgba(233,238,240,.62);text-align:right;line-height:1.45;max-width:300px;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+#credits a{color:inherit;pointer-events:auto;text-decoration:underline;text-underline-offset:2px}
+
+/* ---------- aircraft labels (styled after the reference video's floating ADS-B tags) */
+.lbl{pointer-events:auto;cursor:pointer;user-select:none}
+.lbl .in{transform:translateY(-50%);display:grid;justify-items:center;gap:0;font-family:var(--f-display);font-weight:600;font-size:12.5px;line-height:1.18;color:#fff;text-align:center;text-shadow:0 0 3px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.7);white-space:nowrap;letter-spacing:.02em;padding-bottom:22px;position:relative}
+.lbl .in::after{content:"";position:absolute;left:50%;bottom:0;width:1px;height:20px;background:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,0))}
+.lbl .cs{font-family:var(--f-mono);font-weight:500;font-size:13.5px;color:#fff}
+.lbl .loc{font-family:var(--f-mono);font-weight:400;font-size:11px}
+.lbl.compact .x1{display:none}
+.lbl.sel .cs{color:var(--accent)}
+.lbl.sel .in::after{background:linear-gradient(var(--accent),rgba(242,181,58,0))}
+
+/* ---------- loading */
+#loading{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(120% 90% at 50% 40%,#13232b 0%,#081014 70%);z-index:5;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+#loading .box{width:min(420px,100%);display:grid;gap:12px}
+#loading h2{margin:0;font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1.05;text-wrap:balance}
+#loading h2 span{color:var(--accent)}
+#loading p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.45}
+.track{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+#load-bar{height:100%;width:0;background:var(--accent);transition:width .3s}
+#load-msg{font-family:var(--f-mono);font-size:12px;color:var(--dim)}
+#loading.err #load-msg{color:var(--stop)}
+
+/* ---------- narrow screens */
+@media (max-width:760px){
+  #ident{padding:9px 11px;gap:4px;max-width:calc(100% - 32px)}
+  #ident h1{font-size:20px}
+  #ident .sub{display:none}
+  #ops{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));min-width:0;padding:7px 10px;gap:4px}
+  #ops .clock .t{font-size:16px}
+  #ops .row.flowrow{display:none}
+  #traffic{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));height:min(46%,360px);width:auto;right:max(16px,env(safe-area-inset-right,0px));z-index:3}
+  #traffic.closed{display:none}
+  #detail{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;max-height:48%;z-index:4}
+  #bar{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));transform:none;justify-content:flex-start;max-width:none}
+  #zoom{bottom:auto;top:38%;transform:translateY(-50%)}
+  #feed-note{max-width:200px}
+  #tbtn{display:inline-block}
+  #credits{display:none}
+  .lbl .in{font-size:11px}
+  .lbl .cs{font-size:12px}
+}
+@media (min-width:761px){ #traffic.closed{display:flex} }
+@media (prefers-reduced-motion:reduce){ .chip.sim::before{animation:none} #load-bar{transition:none} }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl" aria-label="3D view of Phoenix Sky Harbor International Airport"></canvas>
+  <div id="labels"></div>
+
+  <section id="ident" class="panel">
+    <h1><span class="code">KPHX</span> Phoenix Sky Harbor</h1>
+    <div class="sub">33°26′03″N 112°00′42″W · Elev 1,131 ft · 3 runways · Terminals 3 &amp; 4</div>
+    <div class="chips">
+      <span class="chip sim" id="chip-mode" title="Aircraft movements come from a rules-based simulator. They follow the ADS-B data format but are not live.">Simulated ADS-B</span>
+      <span class="chip" id="chip-count">— aircraft</span>
+      <span class="chip" id="chip-wx">Wind —</span>
+    </div>
+  </section>
+
+  <section id="ops" class="panel" aria-label="Clock and runway configuration">
+    <div class="clock"><span class="t" id="clk">--:--:--</span><span class="z" id="clkz">MST · --:--Z</span></div>
+    <div class="seg" role="group" aria-label="Traffic data source">
+      <button id="mode-sim" aria-pressed="true" title="Rules-based traffic simulator">Simulated</button>
+      <button id="mode-live" aria-pressed="false" title="Real aircraft positions from an ADS-B feed">Live ADS-B</button>
+    </div>
+    <p id="feed-note" hidden></p>
+    <div class="row flowrow"><span id="flow-arr-l">Arrivals</span><b id="flow-arr">25L · 26</b></div>
+    <div class="row flowrow"><span id="flow-dep-l">Departures</span><b id="flow-dep">25R · 26</b></div>
+    <div class="seg" role="group" aria-label="Runway flow">
+      <button id="flow-west" aria-pressed="true" title="Land and depart toward the west (runways 25L, 25R, 26)">West flow</button>
+      <button id="flow-east" aria-pressed="false" title="Land and depart toward the east (runways 7L, 7R, 8)">East flow</button>
+    </div>
+  </section>
+
+  <section id="traffic" class="panel closed" aria-label="Traffic">
+    <header>
+      <div class="eyebrow">Traffic</div>
+      <div class="counts">
+        <div class="count"><b id="n-arr">0</b><span id="l-arr">Inbound</span></div>
+        <div class="count"><b id="n-dep">0</b><span id="l-dep">Outbound</span></div>
+        <div class="count"><b id="n-taxi">0</b><span id="l-taxi">Taxiing</span></div>
+        <div class="count"><b id="n-gate">0</b><span id="l-gate">Parked</span></div>
+      </div>
+    </header>
+    <ul id="tlist"></ul>
+    <footer>Select a flight to inspect it. Drag to orbit. Zoom with the + and − buttons, scroll wheel, pinch, or the + and − keys.</footer>
+  </section>
+
+  <section id="detail" class="panel" hidden aria-live="polite">
+    <div class="hd">
+      <div><h2 id="d-cs">—</h2><p id="d-op">—</p></div>
+      <button class="x" id="d-close" aria-label="Close flight details">×</button>
+    </div>
+    <div class="route" id="d-route"><span id="d-from">—</span><i></i><span id="d-to">—</span></div>
+    <dl>
+      <dt>Phase</dt><dd id="d-ph">—</dd>
+      <dt>Model</dt><dd id="d-ty">—</dd>
+      <dt>REGN</dt><dd id="d-reg">—</dd>
+      <dt>ICAO 24-bit</dt><dd id="d-hex">—</dd>
+      <dt>Squawk</dt><dd id="d-sq">—</dd>
+      <dt>Gate / stand</dt><dd id="d-gate">—</dd>
+      <dt>Altitude</dt><dd id="d-alt">—</dd>
+      <dt>Ground speed</dt><dd id="d-gs">—</dd>
+      <dt>Vertical rate</dt><dd id="d-vs">—</dd>
+      <dt>Track</dt><dd id="d-trk">—</dd>
+      <dt>Lat / Lon</dt><dd id="d-ll">—</dd>
+      <dt>Twin X / Y / Z</dt><dd id="d-xyz">—</dd>
+      <dt>Is grounded?</dt><dd id="d-gnd">—</dd>
+      <dt>Position source</dt><dd id="d-src">—</dd>
+      <dt>Report age</dt><dd id="d-age">—</dd>
+    </dl>
+    <div class="acts"><button class="btn primary" id="d-follow">Follow</button><button class="btn" id="d-center">Center</button></div>
+  </section>
+
+  <nav id="bar" class="panel" aria-label="View controls">
+    <button class="btn" id="tbtn" aria-controls="traffic" aria-expanded="false">Traffic</button>
+    <div class="grp"><span class="eyebrow">View</span>
+      <div class="seg" role="group" aria-label="Camera mode">
+        <button data-cam="orbit" aria-pressed="true">Orbit</button>
+        <button data-cam="tour" aria-pressed="false">Flyover</button>
+        <button data-cam="tower" aria-pressed="false">Tower</button>
+      </div>
+    </div>
+    <span class="sep"></span>
+    <div class="grp"><span class="eyebrow">Time</span>
+      <button class="btn" id="live" aria-pressed="true">Live</button>
+      <input type="range" id="tod" min="0" max="24" step="0.25" value="12" aria-label="Time of day, Phoenix local">
+      <span id="todv">12:00</span>
+    </div>
+    <span class="sep"></span>
+    <div class="grp"><span class="eyebrow">Speed</span>
+      <div class="seg" role="group" aria-label="Simulation speed">
+        <button data-spd="1" aria-pressed="true">1×</button>
+        <button data-spd="4" aria-pressed="false">4×</button>
+        <button data-spd="12" aria-pressed="false">12×</button>
+      </div>
+    </div>
+    <span class="sep"></span>
+    <div class="grp"><span class="eyebrow">Tags</span>
+      <div class="seg" role="group" aria-label="Aircraft tags">
+        <button data-lbl="full" aria-pressed="true">Full</button>
+        <button data-lbl="compact" aria-pressed="false">Callsign</button>
+        <button data-lbl="off" aria-pressed="false">Off</button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="zoom" class="panel" role="group" aria-label="Zoom">
+    <button id="zin" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+    <button id="zout" type="button" aria-label="Zoom out" title="Zoom out (−)">−</button>
+    <button id="zhome" type="button" aria-label="Reset view to the whole airport" title="Whole airport">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div id="credits">Airfield: X-Plane Scenery Gateway via FlightGear · <span id="credit-imagery">Imagery: Copernicus Sentinel-2, Jun 2025</span> · Terrain: AWS Terrain Tiles · Buildings: Overture Maps (OSM, USGS lidar) · <span id="credit-traffic">Traffic: simulated</span> · Unofficial visualization, not for navigation or operational use</div>
+
+  <div id="loading" role="status">
+    <div class="box">
+      <div class="eyebrow">Digital twin</div>
+      <h2><span>KPHX</span> Phoenix Sky Harbor International</h2>
+      <p>Building the airfield from FAA-referenced runway geometry, 600+ pavement polygons, painted markings, Sentinel-2 imagery, lidar building heights and a live traffic simulator.</p>
+      <div class="track"><div id="load-bar"></div></div>
+      <div id="load-msg">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
