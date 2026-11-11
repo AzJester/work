@@ -42,7 +42,9 @@ button{font:inherit;color:inherit}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-family:var(--f-display);font-weight:600;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:3px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
 .chip.sim{border-color:rgba(242,181,58,.55);color:var(--accent)}
-.chip.sim::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px;animation:pulse 1.6s ease-in-out infinite}
+.chip.live{border-color:rgba(79,209,139,.6);color:var(--go)}
+.chip.warn{border-color:rgba(255,93,79,.6);color:var(--stop)}
+.chip.sim::before,.chip.live::before,.chip.warn::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:1px;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
 
 /* ---------- top-right clock / flow */
@@ -52,11 +54,18 @@ button{font:inherit;color:inherit}
 #ops .clock .z{font-family:var(--f-mono);font-size:12px;color:var(--dim)}
 #ops .row{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--dim)}
 #ops .row b{color:var(--fg);font-weight:500;font-family:var(--f-mono);font-size:12px}
+#ops .seg{display:flex}
+#ops .seg button{flex:1}
+#feed-note{margin:0;font-size:11.5px;line-height:1.4;color:var(--accent);max-width:236px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .seg button{background:transparent;border:0;padding:5px 9px;font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button:hover{color:var(--fg);background:rgba(255,255,255,.04)}
 .seg button[aria-pressed="true"]{color:#1a1206;background:var(--accent)}
+.seg button:disabled,.btn:disabled{opacity:.42;cursor:not-allowed}
+.seg button:disabled:hover{background:transparent;color:var(--dim)}
+.seg button[aria-pressed="true"]:disabled:hover{color:#1a1206;background:var(--accent)}
+input:disabled{opacity:.42}
 
 /* ---------- traffic board */
 #traffic{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:calc(146px + env(safe-area-inset-top,0px));max-height:calc(100% - 146px - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));width:300px;display:flex;flex-direction:column;min-height:0}
@@ -95,7 +104,7 @@ button{font:inherit;color:inherit}
 .x{background:none;border:0;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
 
 /* ---------- bottom control bar */
-#bar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px;padding:8px 12px;max-width:calc(100% - 32px);overflow-x:auto;scrollbar-width:none}
+#bar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px;padding:8px 12px;max-width:calc(100% - 152px);overflow-x:auto;scrollbar-width:none}
 #bar::-webkit-scrollbar{display:none}
 #bar .grp{display:flex;align-items:center;gap:8px;flex:none}
 #bar .grp>.eyebrow{white-space:nowrap}
@@ -104,8 +113,16 @@ button{font:inherit;color:inherit}
 #todv{font-family:var(--f-mono);font-size:12px;color:var(--dim);min-width:40px}
 #tbtn{display:none}
 
+/* ---------- zoom control */
+#zoom{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;overflow:hidden;z-index:2}
+#zoom button{all:unset;box-sizing:border-box;width:44px;height:44px;display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:26px;line-height:1;color:var(--fg);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#zoom button+button{border-top:1px solid var(--line)}
+#zoom button:hover{background:rgba(255,255,255,.07);color:var(--accent)}
+#zoom button:active{background:rgba(242,181,58,.18)}
+#zoom button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
 /* ---------- attribution */
-#credits{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));font-size:10.5px;color:rgba(233,238,240,.62);text-align:right;line-height:1.45;max-width:300px;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+#credits{position:absolute;right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(78px + env(safe-area-inset-bottom,0px));font-size:10.5px;color:rgba(233,238,240,.62);text-align:right;line-height:1.45;max-width:300px;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
 
 /* ---------- aircraft labels (styled after the reference video's floating ADS-B tags) */
 .lbl{pointer-events:auto;cursor:pointer;user-select:none}
@@ -139,7 +156,9 @@ button{font:inherit;color:inherit}
   #traffic{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));height:min(46%,360px);width:auto;right:max(16px,env(safe-area-inset-right,0px));z-index:3}
   #traffic.closed{display:none}
   #detail{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;max-height:48%;z-index:4}
-  #bar{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));transform:none;justify-content:flex-start}
+  #bar{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));transform:none;justify-content:flex-start;max-width:none}
+  #zoom{bottom:auto;top:38%;transform:translateY(-50%)}
+  #feed-note{max-width:200px}
   #tbtn{display:inline-block}
   #credits{display:none}
   .lbl .in{font-size:11px}
@@ -157,7 +176,7 @@ button{font:inherit;color:inherit}
     <h1><span class="code">KPHX</span> Phoenix Sky Harbor</h1>
     <div class="sub">33°26′03″N 112°00′42″W · Elev 1,131 ft · 3 runways · Terminals 3 &amp; 4</div>
     <div class="chips">
-      <span class="chip sim" title="Aircraft movements are generated by a rules-based simulator. Positions, IDs and registrations follow the ADS-B data format but are not live.">Simulated ADS-B</span>
+      <span class="chip sim" id="chip-mode" title="Aircraft movements come from a rules-based simulator. They follow the ADS-B data format but are not live.">Simulated ADS-B</span>
       <span class="chip" id="chip-count">— aircraft</span>
       <span class="chip" id="chip-wx">Wind —</span>
     </div>
@@ -165,8 +184,13 @@ button{font:inherit;color:inherit}
 
   <section id="ops" class="panel" aria-label="Clock and runway configuration">
     <div class="clock"><span class="t" id="clk">--:--:--</span><span class="z" id="clkz">MST · --:--Z</span></div>
-    <div class="row flowrow"><span>Arrivals</span><b id="flow-arr">25L · 26</b></div>
-    <div class="row flowrow"><span>Departures</span><b id="flow-dep">25R · 26</b></div>
+    <div class="seg" role="group" aria-label="Traffic data source">
+      <button id="mode-sim" aria-pressed="true" title="Rules-based traffic simulator">Simulated</button>
+      <button id="mode-live" aria-pressed="false" title="Real aircraft positions from an ADS-B feed">Live ADS-B</button>
+    </div>
+    <p id="feed-note" hidden></p>
+    <div class="row flowrow"><span id="flow-arr-l">Arrivals</span><b id="flow-arr">25L · 26</b></div>
+    <div class="row flowrow"><span id="flow-dep-l">Departures</span><b id="flow-dep">25R · 26</b></div>
     <div class="seg" role="group" aria-label="Runway flow">
       <button id="flow-west" aria-pressed="true" title="Land and depart toward the west (runways 25L, 25R, 26)">West flow</button>
       <button id="flow-east" aria-pressed="false" title="Land and depart toward the east (runways 7L, 7R, 8)">East flow</button>
@@ -177,14 +201,14 @@ button{font:inherit;color:inherit}
     <header>
       <div class="eyebrow">Traffic</div>
       <div class="counts">
-        <div class="count"><b id="n-arr">0</b><span>Inbound</span></div>
-        <div class="count"><b id="n-dep">0</b><span>Outbound</span></div>
-        <div class="count"><b id="n-taxi">0</b><span>Taxiing</span></div>
-        <div class="count"><b id="n-gate">0</b><span>Parked</span></div>
+        <div class="count"><b id="n-arr">0</b><span id="l-arr">Inbound</span></div>
+        <div class="count"><b id="n-dep">0</b><span id="l-dep">Outbound</span></div>
+        <div class="count"><b id="n-taxi">0</b><span id="l-taxi">Taxiing</span></div>
+        <div class="count"><b id="n-gate">0</b><span id="l-gate">Parked</span></div>
       </div>
     </header>
     <ul id="tlist"></ul>
-    <footer>Select a flight to inspect it. Drag to orbit, scroll or pinch to zoom.</footer>
+    <footer>Select a flight to inspect it. Drag to orbit. Zoom with the + and − buttons, scroll wheel, pinch, or the + and − keys.</footer>
   </section>
 
   <section id="detail" class="panel" hidden aria-live="polite">
@@ -192,7 +216,7 @@ button{font:inherit;color:inherit}
       <div><h2 id="d-cs">—</h2><p id="d-op">—</p></div>
       <button class="x" id="d-close" aria-label="Close flight details">×</button>
     </div>
-    <div class="route"><span id="d-from">—</span><i></i><span id="d-to">—</span></div>
+    <div class="route" id="d-route"><span id="d-from">—</span><i></i><span id="d-to">—</span></div>
     <dl>
       <dt>Phase</dt><dd id="d-ph">—</dd>
       <dt>Model</dt><dd id="d-ty">—</dd>
@@ -207,6 +231,8 @@ button{font:inherit;color:inherit}
       <dt>Lat / Lon</dt><dd id="d-ll">—</dd>
       <dt>Twin X / Y / Z</dt><dd id="d-xyz">—</dd>
       <dt>Is grounded?</dt><dd id="d-gnd">—</dd>
+      <dt>Position source</dt><dd id="d-src">—</dd>
+      <dt>Report age</dt><dd id="d-age">—</dd>
     </dl>
     <div class="acts"><button class="btn primary" id="d-follow">Follow</button><button class="btn" id="d-center">Center</button></div>
   </section>
@@ -244,7 +270,15 @@ button{font:inherit;color:inherit}
     </div>
   </nav>
 
-  <div id="credits">Airfield: X-Plane Scenery Gateway via FlightGear · Imagery: Copernicus Sentinel-2, Jun 2025 · Terrain: AWS Terrain Tiles · Buildings: Overture Maps (OSM, USGS lidar) · Traffic: simulated</div>
+  <div id="zoom" class="panel" role="group" aria-label="Zoom">
+    <button id="zin" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+    <button id="zout" type="button" aria-label="Zoom out" title="Zoom out (−)">−</button>
+    <button id="zhome" type="button" aria-label="Reset view to the whole airport" title="Whole airport">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div id="credits">Airfield: X-Plane Scenery Gateway via FlightGear · Imagery: Copernicus Sentinel-2, Jun 2025 · Terrain: AWS Terrain Tiles · Buildings: Overture Maps (OSM, USGS lidar) · <span id="credit-traffic">Traffic: simulated</span> · Unofficial visualization, not for navigation or operational use</div>
 
   <div id="loading" role="status">
     <div class="box">

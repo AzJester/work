@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { nToIcao, hex6, normalize, estimateQnhOffset, predict, modelKey, operatorOf, flowVote } from './adsb.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -22,25 +23,9 @@ const angDiff = (a, b) => ((b - a + 540) % 360) - 180;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const fmt = (v, d = 0) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
-const hex6 = (v) => v.toString(16).toUpperCase().padStart(6, '0');
 const isNarrow = () => innerWidth <= 760;
 
-// ---------------------------------------------------------------- N-number -> ICAO 24-bit (FAA allocation)
-// Verified against the reference video: N327QS -> A389C0.
-const NCH = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-const NSUF = 1 + 24 * 25, NB4 = 1 + 24 + 10, NB3 = 10 * NB4 + NSUF, NB2 = 10 * NB3 + NSUF, NB1 = 10 * NB2 + NSUF;
-export function nToIcao(reg) {
-  const s = reg.toUpperCase().replace(/^N/, '');
-  let o = 0xA00001 + (+s[0] - 1) * NB1;
-  const bk = [NB2, NB3, NB4];
-  for (let i = 1; i < s.length; i++) {
-    const c = s[i];
-    if (i === 4) { o += NCH.includes(c) ? NCH.indexOf(c) + 1 : 25 + (+c); break; }
-    if (NCH.includes(c)) { o += 25 * NCH.indexOf(c) + 1; if (s[i + 1]) o += NCH.indexOf(s[i + 1]) + 1; break; }
-    o += NSUF + (+c) * bk[i - 1];
-  }
-  return hex6(o);
-}
+// N-number -> ICAO 24-bit conversion lives in adsb.js. Verified against the reference video: N327QS -> A389C0.
 if (nToIcao('N327QS') !== 'A389C0') console.warn('ICAO conversion self-test failed');
 
 // ---------------------------------------------------------------- loading
@@ -84,6 +69,8 @@ const LIV = { // generic livery colors keyed by operator (no logos)
   EJA: { body: '#f2f3f5', belly: '#2b3644', tail: '#f2f3f5', eng: '#2b3644' },
   GA: { body: '#f2f3f5', belly: '#7c8794', tail: '#7c8794', eng: '#c5cad1' },
   MIL: { body: '#8d969c', belly: '#8d969c', tail: '#8d969c', eng: '#7b8489' },
+  GEN: { body: '#f2f3f5', belly: '#d9dde3', tail: '#8a96a3', eng: '#b9c0c8' },
+  NKS: { body: '#f2cf1d', belly: '#f2cf1d', tail: '#1b1b1b', eng: '#f2cf1d' },
 };
 const R3 = () => rint(100, 999), R2 = () => rint(10, 99);
 const OPS = {
@@ -107,7 +94,7 @@ const OPS = {
   GA: { name: 'General aviation', w: 1, area: 'GA', fleet: [['C68A', 1], ['GLF6', 1], ['CL35', 1]], reg: () => `N${rint(1, 9)}${rint(10, 999)}${pick(['', 'A', 'G', 'X', 'TM'])}`, fn: null, dest: ['VNY', 'ASE', 'TEB', 'SJD', 'LAS', 'SNA', 'DAL'] },
 };
 const OP_LIST = Object.entries(OPS).map(([k, v]) => ({ code: k, ...v }));
-const TYPE_NAMES = { A319: 'Airbus A319', A320: 'Airbus A320', A20N: 'Airbus A320neo', A321: 'Airbus A321', A21N: 'Airbus A321neo', B737: 'Boeing 737-700', B738: 'Boeing 737-800', B38M: 'Boeing 737 MAX 8', B739: 'Boeing 737-900', B752: 'Boeing 757-200', BCS3: 'Airbus A220-300', E175: 'Embraer 175', B763: 'Boeing 767-300F', B772: 'Boeing 777-200ER', A306: 'Airbus A300-600F', MD11: 'Boeing MD-11F', E55P: 'Embraer Phenom 300', C68A: 'Cessna Citation Latitude', GLF6: 'Gulfstream G650', CL35: 'Challenger 350', K35R: 'Boeing KC-135R' };
+const TYPE_NAMES = { A319: 'Airbus A319', A320: 'Airbus A320', A20N: 'Airbus A320neo', A321: 'Airbus A321', A21N: 'Airbus A321neo', B737: 'Boeing 737-700', B738: 'Boeing 737-800', B38M: 'Boeing 737 MAX 8', B739: 'Boeing 737-900', B752: 'Boeing 757-200', BCS3: 'Airbus A220-300', E175: 'Embraer 175', B763: 'Boeing 767-300F', B772: 'Boeing 777-200ER', A306: 'Airbus A300-600F', MD11: 'Boeing MD-11F', E55P: 'Embraer Phenom 300', C68A: 'Cessna Citation Latitude', GLF6: 'Gulfstream G650', CL35: 'Challenger 350', K35R: 'Boeing KC-135R', CRJ7: 'Bombardier CRJ700', CRJ9: 'Bombardier CRJ900', B789: 'Boeing 787-9', B77W: 'Boeing 777-300ER', A333: 'Airbus A330-300', A359: 'Airbus A350-900', B744: 'Boeing 747-400', C172: 'Cessna 172', SR22: 'Cirrus SR22', PC12: 'Pilatus PC-12', C208: 'Cessna Caravan', BE20: 'Beechcraft King Air', DH8D: 'De Havilland Dash 8-400', AT72: 'ATR 72', H60: 'Sikorsky H-60', EC35: 'Airbus EC135' };
 
 // family specs: R radius, belly height, engine radius, layout
 const FAM = {
@@ -117,6 +104,9 @@ const FAM = {
   rj: { R: 1.5, belly: 0.95, engR: 0.74, engs: 'wing2', sweep: 24, dih: 5, tT: false, wl: 0.06, vref: 67, vr: 70, acc: 2.1, vs: 11 },
   bj: { R: 0.95, belly: 0.55, engR: 0.42, engs: 'tail2', sweep: 18, dih: 3, tT: true, wl: 0.06, vref: 58, vr: 60, acc: 2.6, vs: 16 },
   quad: { R: 1.85, belly: 1.25, engR: 0.88, engs: 'wing4', sweep: 35, dih: 6, tT: false, wl: 0, vref: 72, vr: 78, acc: 1.8, vs: 9 },
+  ga: { R: 0.62, belly: 0.5, engR: 0.3, engs: 'none', sweep: 1, dih: 4, tT: false, wl: 0, vref: 35, vr: 33, acc: 2, vs: 4 },
+  tp: { R: 1.3, belly: 0.9, engR: 0.55, engs: 'prop2', sweep: 3, dih: 3, tT: true, wl: 0, vref: 55, vr: 55, acc: 2, vs: 8 },
+  heli: { R: 0.95, belly: 0.6, engR: 0.3, engs: 'heli', sweep: 0, dih: 0, tT: false, wl: 0, vref: 30, vr: 0, acc: 2, vs: 5 },
 };
 const TYPES = {
   A319: ['nb', 33.8, 34.1, 11.8], A320: ['nb', 37.6, 35.8, 11.8], A20N: ['nb', 37.6, 35.8, 11.8, { engR: 1.08 }], A321: ['nb', 44.5, 35.8, 11.8], A21N: ['nb', 44.5, 35.8, 11.8, { engR: 1.08 }],
@@ -125,7 +115,15 @@ const TYPES = {
   B763: ['wb', 54.9, 47.6, 15.9, { R: 2.52, engR: 1.42 }], B772: ['wb', 63.7, 60.9, 18.5, { R: 3.1, engR: 1.8 }], A306: ['wb', 54.1, 44.8, 16.5, { R: 2.82, engR: 1.45 }], MD11: ['tri', 61.6, 51.7, 17.6],
   E55P: ['bj', 15.6, 16.2, 5.1], C68A: ['bj', 19.0, 22.0, 6.3, { R: 1.05 }], GLF6: ['bj', 30.4, 30.4, 7.9, { R: 1.3, engR: 0.62 }], CL35: ['bj', 20.9, 21.0, 6.1, { R: 1.1, engR: 0.5 }],
   K35R: ['quad', 41.5, 39.9, 12.7],
+  // additional models used for live traffic
+  CRJ7: ['bj', 32.5, 23.2, 7.6, { R: 1.35, engR: 0.62, belly: 0.85 }], CRJ9: ['bj', 36.2, 24.9, 7.5, { R: 1.35, engR: 0.62, belly: 0.85 }],
+  B789: ['wb', 62.8, 60.1, 17.0, { R: 2.9, engR: 1.7 }], B77W: ['wb', 73.9, 64.8, 18.5, { R: 3.1, engR: 1.9 }], A333: ['wb', 63.7, 60.3, 16.8, { R: 2.82, engR: 1.5 }], A359: ['wb', 66.8, 64.8, 17.1, { R: 2.98, engR: 1.6 }],
+  B744: ['quad', 70.7, 64.4, 19.4, { R: 3.25, engR: 1.3, belly: 2.0 }],
+  C172: ['ga', 8.3, 11.0, 2.7, { hiWing: true }], SR22: ['ga', 7.9, 11.7, 2.7], PC12: ['ga', 14.4, 16.3, 4.3, { R: 0.85, belly: 0.7, tT: true }], C208: ['ga', 11.5, 15.9, 4.5, { R: 0.85, belly: 0.9, hiWing: true }],
+  BE20: ['tp', 13.4, 16.6, 4.5, { R: 0.8, engR: 0.42, belly: 0.7 }], DH8D: ['tp', 32.8, 28.4, 8.3, { hiWing: true }], AT72: ['tp', 27.2, 27.1, 7.7, { hiWing: true }],
+  H60: ['heli', 15.3, 16.4, 5.1], EC35: ['heli', 10.2, 10.2, 3.5, { R: 0.8 }],
 };
+const KNOWN_MODELS = new Set(Object.keys(TYPES));
 function typeSpec(t) { const [fam, L, S, H, o] = TYPES[t]; return { t, fam, L, S, H, ...FAM[fam], ...(o || {}) }; }
 
 // ================================================================= boot
@@ -155,7 +153,7 @@ const labelRenderer = new CSS2DRenderer({ element: $('#labels') });
 labelRenderer.setSize(innerWidth, innerHeight);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.08;
-controls.maxPolarAngle = 88 * DEG; controls.minDistance = 25; controls.maxDistance = 60000;
+controls.maxPolarAngle = 88 * DEG; controls.minDistance = 12; controls.maxDistance = 60000;
 controls.zoomSpeed = 1.1; controls.screenSpacePanning = false;
 
 // ---------------------------------------------------------------- terrain
@@ -758,20 +756,21 @@ function aircraftGeometry(T, liv) {
     g.computeVertexNormals(); parts.push(g);
   }
   // wings
-  const wy = T.fam === 'bj' ? yc - R * 0.55 : yc - R * 0.55, rootC = L * (T.fam === 'bj' ? 0.17 : 0.19), wz = -L * 0.07, semi = S / 2;
-  const sweep = Math.tan(T.sweep * DEG), dih = Math.tan(T.dih * DEG), tipC = rootC * 0.24;
+  const straight = T.sweep < 10, tk = Math.min(1, R / 1.5);
+  const wy = T.hiWing ? yc + R * 0.78 : yc - R * 0.55, rootC = L * (T.fam === 'bj' ? 0.17 : straight ? 0.2 : 0.19), wz = -L * (straight ? 0.14 : 0.07), semi = S / 2;
+  const sweep = Math.tan(T.sweep * DEG), dih = Math.tan(T.dih * DEG), tipC = rootC * (straight ? 0.62 : 0.24);
   const tipY = wy + semi * dih, tipZ = wz + semi * sweep;
-  for (const s of [-1, 1]) {
-    surface(parts, [s * R * 0.6, wy, wz], rootC, [s * semi, tipY, tipZ], tipC, 0.42, 0.1, [0, 1, 0], cWing);
+  if (T.fam !== 'heli') for (const s of [-1, 1]) {
+    surface(parts, [s * R * 0.6, wy, wz], rootC, [s * semi, tipY, tipZ], tipC, 0.42 * tk, 0.1 * tk, [0, 1, 0], cWing);
     if (T.wl > 0) surface(parts, [s * semi * 0.995, tipY, tipZ], tipC, [s * semi * 1.01, tipY + S * T.wl, tipZ + tipC * 0.8], tipC * 0.4, 0.06, 0.04, [1, 0, 0], liv.tail2 ? cTail2 : cTail);
   }
   // tail surfaces
   const finRootZ = L * 0.3, finC = L * (T.fam === 'bj' ? 0.17 : 0.16), finTop = H, finRootY = yc + R * 0.5;
   const finSweep = Math.tan((T.fam === 'bj' ? 40 : 37) * DEG) * (finTop - finRootY);
-  surface(parts, [0, finRootY, finRootZ], finC, [0, finTop, finRootZ + finSweep], finC * 0.38, 0.3, 0.1, [1, 0, 0], cTail);
+  surface(parts, [0, finRootY, finRootZ], finC, [0, finTop, finRootZ + finSweep], finC * 0.38, 0.3 * tk, 0.1 * tk, [1, 0, 0], cTail);
   const stS = S * (T.fam === 'wb' || T.fam === 'tri' ? 0.36 : 0.37) / 2, stC = L * 0.1;
   const stY = T.tT ? finTop - 0.3 : yc + R * 0.25, stZ = T.tT ? finRootZ + finSweep * 0.95 : L * 0.35;
-  for (const s of [-1, 1]) surface(parts, [0, stY, stZ], stC, [s * stS, stY + stS * 0.08, stZ + stS * Math.tan(32 * DEG)], stC * 0.4, 0.18, 0.06, [0, 1, 0], T.tT ? cTail : cBody);
+  if (T.fam !== 'heli') for (const s of [-1, 1]) surface(parts, [0, stY, stZ], stC, [s * stS, stY + stS * 0.08, stZ + stS * Math.tan(32 * DEG)], stC * 0.4, 0.18 * tk, 0.06 * tk, [0, 1, 0], T.tT ? cTail : cBody);
   // engines
   const er = T.engR, el = er * 2.9;
   const lathe = new THREE.LatheGeometry([[er * 0.5, 0], [er * 0.82, el * 0.12], [er * 0.97, el * 0.45], [er, el * 0.8], [er * 0.93, el], [er * 0.8, el * 0.985]].map(([a, b]) => new THREE.Vector2(a, b)), 16);
@@ -787,6 +786,13 @@ function aircraftGeometry(T, liv) {
   if (T.engs === 'wing4') for (const s of [-1, 1]) for (const f of [0.38, 0.66]) { const x = s * semi * f; engAt(x, wingY(x) - er * 1.15, wingZ(x) + el * 0.6, er * 0.6); }
   if (T.engs === 'tail2') for (const s of [-1, 1]) engAt(s * (R + er * 1.15), yc + R * 0.35, L * 0.26 + el * 0.5, 0);
   if (T.engs === 'wing2tail') engAt(0, finRootY + er * 0.6, finRootZ + el * 0.3, 0);
+  if (T.engs === 'prop2') for (const s of [-1, 1]) { const x = s * semi * 0.3; engAt(x, wingY(x) - er * 0.3, wingZ(x) + el * 0.62, 0); }
+  if (T.engs === 'heli') {
+    const hubZ = -L * 0.12, mastH = Math.max(0.3, H - (yc + R));
+    parts.push(prep(new THREE.CylinderGeometry(0.14, 0.14, mastH, 6), cDark, new THREE.Matrix4().makeTranslation(0, yc + R + mastH / 2, hubZ)));
+    for (const a of [0, Math.PI / 2]) parts.push(prep(new THREE.BoxGeometry(S, 0.06, 0.42), cDark, new THREE.Matrix4().makeRotationY(a + 0.5).setPosition(0, H, hubZ)));
+    parts.push(prep(new THREE.BoxGeometry(0.08, 1.9, 0.3), cDark, new THREE.Matrix4().makeTranslation(R * 0.3, finTop - 0.6, finRootZ + finSweep + finC * 0.3)));
+  }
   const body = mergeGeometries(parts);
   // landing gear
   const gp = [], wheel = new THREE.CylinderGeometry(T.belly * 0.36, T.belly * 0.36, T.belly * 0.28, 12); wheel.rotateZ(Math.PI / 2);
@@ -950,10 +956,11 @@ class Aircraft {
   constructor(op, type, opts = {}) {
     this.id = SIM.nextId++;
     this.op = op; this.T = typeSpec(type); this.type = type;
-    this.reg = op.reg();
-    this.hex = this.reg.startsWith('N') ? nToIcao(this.reg) : (op.hex ? op.hex() : hex6(rint(0xA00001, 0xADF7C7)));
-    this.newFlight();
-    this.sq = squawk();
+    this.live = !!opts.live;
+    this.reg = opts.reg ?? op.reg();
+    this.hex = opts.hex ?? (this.reg.startsWith('N') ? nToIcao(this.reg) : (op.hex ? op.hex() : hex6(rint(0xA00001, 0xADF7C7))));
+    if (this.live) { this.callsign = opts.callsign; this.other = null; this.sq = ''; }
+    else { this.newFlight(); this.sq = squawk(); }
     this.x = 0; this.n = 0; this.alt = 0; this.hdg = 0; this.v = 0; this.vs = 0; this.pitch = 0; this.bank = 0; this.yawRate = 0;
     this.phase = 'gate'; this.path = null; this.s = 0; this.holds = []; this.gate = null; this.rwyEnd = null; this.static = !!opts.static;
     this.engines = false; this.blockT = 0; this.lastHdg = null;
@@ -979,13 +986,14 @@ class Aircraft {
     this.sq = squawk();
   }
   get grounded() { return this.alt < 0.3; }
-  get moving() { return !['gate', 'parked'].includes(this.phase); }
+  get moving() { return !['gate', 'parked', 'stop'].includes(this.phase); }
   setPath(path, phase) { this.path = path; this.s = 0; this.phase = phase; path.i = 0; }
   dispose() {
     acGroup.remove(this.obj); this.label.element.remove(); this.label.removeFromParent();
     for (const r of SIM.rw) { r.occ.delete(this); r.cross.delete(this); r.req.delete(this); }
     if (this.gate && this.gate.occ === this) this.gate.occ = null;
     SIM.ac.splice(SIM.ac.indexOf(this), 1);
+    if (this.live) LIVE.map.delete(this.hex);
     if (selected === this) select(null);
   }
 }
@@ -1236,7 +1244,8 @@ function simStep(dt) {
     if (SIM.t >= SIM.arrTimer[id]) { spawnArrival(id); const mixed = FLOWS[SIM.flow].dep.includes(id === '26' ? '26' : id === '08' ? '08' : '_'); SIM.arrTimer[id] = SIM.t + (mixed ? 150 + Math.random() * 80 : 90 + Math.random() * 60); }
   }
   for (const ac of [...SIM.ac]) stepAircraft(ac, dt);
-  // Sky Train
+}
+function stepTrains(dt) {
   for (const tr of skyTrains) {
     if (tr.wait > 0) { tr.wait -= dt; continue; }
     tr.s += tr.dir * 14 * dt;
@@ -1263,9 +1272,114 @@ function populate() {
   // run the simulator forward so taxiing traffic exists on first frame
   for (let i = 0; i < 360; i++) simStep(0.5);
 }
-progress('Generating traffic', 0.8);
-await new Promise((r) => setTimeout(r, 0));
-populate();
+
+// ---------------------------------------------------------------- live ADS-B feed
+// The page polls a relay (or any readsb-format endpoint given as ?feed=URL) and renders exactly what the feed reports.
+// Between reports each aircraft is dead-reckoned along its track; corrections are blended in rather than snapped.
+const DEFAULT_FEED = 'https://hqqwlkmggwgaoiyzgrhy.supabase.co/functions/v1/adsb-relay';
+const FEED_URL = (() => {
+  try { const u = new URLSearchParams(location.search).get('feed'); if (u && /^https?:\/\//.test(u)) return u; } catch { /* no query string here */ }
+  return window.PHX_TWIN_FEED || DEFAULT_FEED;
+})();
+const FEED_HOST = (() => { try { return new URL(FEED_URL).hostname; } catch { return 'feed'; } })();
+const LIVE = { on: false, map: new Map(), timer: 0, fails: 0, lastOk: 0, src: '', qnh: 0, qnhSet: false, votes: { west: 0, east: 0 }, flowSeen: false, err: '' };
+async function fetchFeed(timeoutMs = 6000) {
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch(FEED_URL, { cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) throw new Error(`the feed answered ${r.status}`);
+    const j = await r.json();
+    if (!Array.isArray(j.ac) && !Array.isArray(j.aircraft)) throw new Error('the feed returned no aircraft list');
+    return j;
+  } finally { clearTimeout(to); }
+}
+function nearestGate(x, n, max = 45) { let best = null, bd = max * max; for (const g of GATES) { const d = (g.p[0] - x) ** 2 + (g.p[1] - n) ** 2; if (d < bd) { bd = d; best = g; } } return best; }
+function liveIdentity(ac, r) {
+  const o = operatorOf(r.flight, r.reg, r.mil), key = modelKey(r.type, r.category, KNOWN_MODELS);
+  if (ac.modelKey !== key || ac.livKey !== o.liv) {
+    const T = typeSpec(key), geo = aircraftGeometry(T, LIV[o.liv] || LIV.GA);
+    ac.T = T; ac.body.geometry = geo.body; ac.gearMesh.geometry = geo.gear; ac.lightsLocal = geo.lights; ac.label.position.y = T.H + 5;
+    ac.modelKey = key; ac.livKey = o.liv;
+  }
+  ac.op = { code: o.code, name: o.name, liv: o.liv };
+  ac.callsign = r.flight || r.reg || r.hex; ac.reg = r.reg || '—'; ac.type = r.type || '—'; ac.sq = r.squawk;
+}
+function makeLiveAircraft(r) {
+  const o = operatorOf(r.flight, r.reg, r.mil), key = modelKey(r.type, r.category, KNOWN_MODELS);
+  const ac = new Aircraft({ code: o.code, name: o.name, liv: o.liv }, key, { live: true, reg: r.reg || '—', hex: r.hex, callsign: r.flight || r.reg || r.hex });
+  ac.modelKey = key; ac.livKey = o.liv; ac.type = r.type || '—'; ac.sq = r.squawk; ac.ex = ac.en = ac.ea = 0;
+  return ac;
+}
+function liveIngest(j) {
+  const tNow = performance.now() / 1000, list = j.ac || j.aircraft || [];
+  const q = estimateQnhOffset(list);
+  if (q !== null) { LIVE.qnh = LIVE.qnhSet ? lerp(LIVE.qnh, q, 0.3) : q; LIVE.qnhSet = true; }
+  LIVE.votes.west *= 0.97; LIVE.votes.east *= 0.97;
+  const seen = new Set();
+  for (const raw of list) {
+    const r = normalize(raw, LIVE.qnh);
+    if (!r || r.seenPos > 45 || Math.hypot(r.x, r.n) > 62000) continue;
+    seen.add(r.hex);
+    r.t = tNow - r.seenPos;
+    const tr = r.track * DEG; r.vx = Math.sin(tr) * r.gs; r.vn = Math.cos(tr) * r.gs;
+    const vote = flowVote(r); if (vote) LIVE.votes[vote] += 1;
+    let ac = LIVE.map.get(r.hex);
+    const p = predict(r, tNow);
+    if (!ac) {
+      ac = makeLiveAircraft(r); LIVE.map.set(r.hex, ac);
+      ac.x = p.x; ac.n = p.n; ac.alt = p.alt;
+      const g = r.ground && r.gs < 1.2 ? nearestGate(r.x, r.n) : null;
+      ac.hdg = r.hdg ?? (g ? g.h : r.track);
+    } else {
+      liveIdentity(ac, r);
+      ac.ex = ac.x - p.x; ac.en = ac.n - p.n; ac.ea = ac.alt - p.alt;
+      if (Math.hypot(ac.ex, ac.en) > 600) { ac.ex = ac.en = 0; ac.ea = 0; } // a jump that large is a new track, not an error to smooth
+    }
+    ac.rep = r;
+    if (r.ground) { const g = r.gs < 1.2 ? nearestGate(r.x, r.n) : null, rw = rwyAt(r.x, r.n, 4); ac.liveSpot = g ? g.name : rw >= 0 ? `Runway ${RWY[rw].name.replace(/\b0/g, '')}` : ''; } else ac.liveSpot = '';
+  }
+  for (const [hex, ac] of [...LIVE.map]) if (!seen.has(hex) && tNow - ac.rep.t > 60) ac.dispose();
+  const { west, east } = LIVE.votes;
+  if (Math.max(west, east) > 1.5 && Math.max(west, east) > 2 * Math.min(west, east)) { const f = west > east ? 'west' : 'east'; if (!LIVE.flowSeen || SIM.flow !== f) { LIVE.flowSeen = true; setFlow(f); } }
+}
+function liveStep(dt) {
+  const tNow = performance.now() / 1000, k = Math.exp(-dt / 1.3);
+  for (const ac of LIVE.map.values()) {
+    const r = ac.rep, p = predict(r, tNow);
+    ac.ex *= k; ac.en *= k; ac.ea *= k;
+    ac.x = p.x + ac.ex; ac.n = p.n + ac.en; ac.alt = Math.max(0, p.alt + ac.ea);
+    ac.v = r.gs; ac.vs = r.vs;
+    if (r.hdg !== null) {
+      const rate = r.ground ? 40 : 8, dh = clamp(angDiff(ac.hdg, r.hdg), -rate * dt, rate * dt);
+      ac.yawRate = lerp(ac.yawRate, dt > 0 ? dh / dt : 0, 0.08); ac.hdg = (ac.hdg + dh + 360) % 360;
+    } else ac.yawRate *= 0.9;
+    if (r.ground) ac.phase = r.gs < 1.2 ? 'stop' : (r.gs > 18 && rwyAt(ac.x, ac.n, 4) >= 0 ? 'roll' : 'taxi');
+    else ac.phase = r.vs < -1.2 ? 'arr' : r.vs > 1.2 ? 'climb' : 'lvl';
+    ac.engines = !(r.ground && r.gs < 1.2);
+  }
+}
+function schedulePoll(ms = 2000) { clearTimeout(LIVE.timer); LIVE.timer = setTimeout(pollLive, ms); }
+async function pollLive() {
+  if (!LIVE.on) return;
+  try {
+    const j = await fetchFeed();
+    if (!LIVE.on) return;
+    liveIngest(j); LIVE.fails = 0; LIVE.lastOk = performance.now(); LIVE.src = j.src || FEED_HOST;
+    schedulePoll(document.hidden ? 15000 : 2000);
+  } catch (e) { LIVE.fails++; LIVE.err = e.message; schedulePoll(Math.min(15000, 3000 * LIVE.fails)); }
+}
+function clearAircraft() {
+  for (const a of [...SIM.ac]) a.dispose();
+  LIVE.map.clear();
+  for (const g of GATES) g.occ = null;
+  for (const r of SIM.rw) { r.occ.clear(); r.cross.clear(); r.req.clear(); }
+}
+
+// Start on live traffic when a feed answers; otherwise run the simulator. The claude.ai preview blocks outside calls, so it always simulates.
+progress('Checking for a live ADS-B feed', 0.8);
+const firstPayload = await fetchFeed(3000).catch(() => null);
+if (firstPayload) { LIVE.on = true; LIVE.lastOk = performance.now(); LIVE.src = firstPayload.src || FEED_HOST; liveIngest(firstPayload); }
+else { progress('Generating traffic', 0.85); await new Promise((r) => setTimeout(r, 0)); populate(); }
 
 // ---------------------------------------------------------------- aircraft lights (nav, beacon, strobe, landing)
 const MAXL = 12 * 160;
@@ -1284,7 +1398,7 @@ function updateAcLights() {
     const powered = ac.engines || ac.moving;
     if (powered) { put(w(L.nav[0]), C.R, 1.0); put(w(L.nav[1]), C.G, 1.0); put(w(L.nav[2]), [1, 1, 1], 0.9); }
     if (ac.engines) { put(w(L.bcn[0]), C.R, 1.6, [ph, 1, 0.12]); put(w(L.bcn[1]), C.R, 1.6, [ph + 0.5, 1, 0.12]); }
-    const onRw = ['tkof', 'climb', 'arr', 'roll'].includes(ac.phase);
+    const onRw = !ac.grounded || ['tkof', 'roll'].includes(ac.phase);
     if (onRw) { put(w(L.nav[0]), [1, 1, 1], 2.4, [ph, 1.2, 0.05]); put(w(L.nav[1]), [1, 1, 1], 2.4, [ph, 1.2, 0.05]); }
     if (onRw && ac.alt < 3000) { put(w(L.land[0]), [1, 0.98, 0.9], 4.5); put(w(L.land[1]), [1, 0.98, 0.9], 4.5); }
     if (['taxi', 'taxiout'].includes(ac.phase)) put(w(L.taxi), [1, 0.96, 0.85], 2.2);
@@ -1312,7 +1426,8 @@ const PH = {
   arr: ['Approach', 'ph-arr'], roll: ['Landing', 'ph-rwy'], taxi: ['Taxi in', 'ph-taxi'], gate: ['At gate', 'ph-gate'], parked: ['Parked', 'ph-gate'],
   push: ['Pushback', 'ph-hold'], start: ['Engine start', 'ph-hold'], taxiout: ['Taxi out', 'ph-taxi'], tkof: ['Takeoff', 'ph-rwy'], climb: ['Departure', 'ph-dep'],
 };
-const phaseOf = (ac) => (ac.phase === 'taxiout' && ac.holding && ac.v < 0.3 ? ['Holding short', 'ph-hold'] : ac.holding && ac.phase === 'taxi' ? ['Holding', 'ph-hold'] : PH[ac.phase] || [ac.phase, 'ph-gate']);
+const PH_LIVE = { arr: ['Descending', 'ph-arr'], climb: ['Climbing', 'ph-dep'], lvl: ['Level', 'ph-dep'], roll: ['On runway', 'ph-rwy'], taxi: ['Taxiing', 'ph-taxi'], stop: ['Stopped', 'ph-gate'] };
+const phaseOf = (ac) => ac.live ? (ac.phase === 'arr' && ac.alt < 1500 && Math.hypot(ac.x, ac.n) < 30000 ? ['Approach', 'ph-arr'] : PH_LIVE[ac.phase] || ['—', 'ph-gate']) : (ac.phase === 'taxiout' && ac.holding && ac.v < 0.3 ? ['Holding short', 'ph-hold'] : ac.holding && ac.phase === 'taxi' ? ['Holding', 'ph-hold'] : PH[ac.phase] || [ac.phase, 'ph-gate']);
 function select(ac) {
   if (selected) selected.lblEl.classList.remove('sel');
   selected = ac;
@@ -1325,11 +1440,14 @@ function updateDetail() {
   const ac = selected; if (!ac) return;
   const [ph] = phaseOf(ac);
   $('#d-cs').textContent = ac.callsign; $('#d-op').textContent = ac.op.name;
+  $('#d-route').hidden = ac.live; // ADS-B carries no origin or destination
   $('#d-from').textContent = ac.dir === 'out' ? 'PHX' : ac.phase === 'gate' && !ac.dir ? '—' : ac.other;
   $('#d-to').textContent = ac.dir === 'out' ? ac.other : 'PHX';
-  $('#d-ph').textContent = ph; $('#d-ty').textContent = `${ac.type} · ${TYPE_NAMES[ac.type] || ''}`;
-  $('#d-reg').textContent = ac.reg; $('#d-hex').textContent = ac.hex; $('#d-sq').textContent = ac.engines ? ac.sq : '—';
-  $('#d-gate').textContent = ac.gate ? ac.gate.name : ac.rwyEnd ? `Runway ${ac.rwyEnd.id.replace(/^0/, '')}` : '—';
+  $('#d-ph').textContent = ph; $('#d-ty').textContent = TYPE_NAMES[ac.type] ? `${ac.type} · ${TYPE_NAMES[ac.type]}` : ac.type;
+  $('#d-reg').textContent = ac.reg; $('#d-hex').textContent = ac.hex; $('#d-sq').textContent = ac.live ? (ac.sq || '—') : ac.engines ? ac.sq : '—';
+  $('#d-gate').textContent = ac.live ? (ac.liveSpot || '—') : ac.gate ? ac.gate.name : ac.rwyEnd ? `Runway ${ac.rwyEnd.id.replace(/^0/, '')}` : '—';
+  $('#d-src').textContent = ac.live ? ({ adsb_icao: 'ADS-B', adsb_icao_nt: 'ADS-B (non-transponder)', adsr_icao: 'ADS-R rebroadcast', tisb_icao: 'TIS-B', mlat: 'MLAT (multilateration)', mode_s: 'Mode S', adsc: 'ADS-C', other: 'Other' }[ac.rep.src] || ac.rep.src || 'ADS-B') + (ac.rep.altSrc === 'baro' ? ' · baro alt' : '') : 'Simulator';
+  $('#d-age').textContent = ac.live ? `${Math.max(0, performance.now() / 1000 - ac.rep.t).toFixed(1)} s` : '—';
   $('#d-alt').textContent = ac.grounded ? `${fmt(altFt(ac))} ft MSL (on ground)` : `${fmt(Math.round(altFt(ac) / 10) * 10)} ft MSL · ${fmt(Math.round(ac.alt / FT / 10) * 10)} AGL`;
   $('#d-gs').textContent = `${fmt(ac.v / KT)} kt`; $('#d-vs').textContent = `${ac.vs >= 0 ? '+' : '−'}${fmt(Math.abs(Math.round(ac.vs / FT * 60 / 10) * 10))} ft/min`;
   $('#d-trk').textContent = `${String(Math.round(ac.hdg) % 360).padStart(3, '0')}°`;
@@ -1341,7 +1459,7 @@ function updateDetail() {
 const listRows = new Map();
 function renderList(force) {
   const ul = $('#tlist');
-  const order = { arr: 0, roll: 1, climb: 2, tkof: 3, taxiout: 4, start: 5, push: 6, taxi: 7 };
+  const order = { arr: 0, roll: 1, climb: 2, tkof: 3, lvl: 3.5, taxiout: 4, start: 5, push: 6, taxi: 7 };
   const items = SIM.ac.filter((a) => a.moving || a === selected).sort((a, b) => (order[a.phase] ?? 9) - (order[b.phase] ?? 9) || a.callsign.localeCompare(b.callsign));
   const keep = new Set(items.map((a) => a.id));
   for (const [id, li] of listRows) if (!keep.has(id)) { li.remove(); listRows.delete(id); }
@@ -1356,11 +1474,15 @@ function renderList(force) {
     b.classList.toggle('sel', ac === selected);
     b.children[0].textContent = ac.callsign; b.children[1].textContent = ac.type;
     const pill = b.children[2].children[0]; pill.textContent = ph; pill.className = `pill ${cls}`;
-    b.children[2].children[1].textContent = ac.grounded ? (ac.gate && ac.phase !== 'taxiout' ? ac.gate.name : ac.rwyEnd ? `RWY ${ac.rwyEnd.id.replace(/^0/, '')}` : '') : `${fmt(Math.round(altFt(ac) / 100) * 100)}′`;
+    b.children[2].children[1].textContent = ac.live && ac.grounded ? (ac.liveSpot || '') : ac.grounded ? (ac.gate && ac.phase !== 'taxiout' ? ac.gate.name : ac.rwyEnd ? `RWY ${ac.rwyEnd.id.replace(/^0/, '')}` : '') : `${fmt(Math.round(altFt(ac) / 100) * 100)}′`;
     if (ul.children[i] !== li) ul.insertBefore(li, ul.children[i] || null);
   });
   const c = { arr: 0, dep: 0, taxi: 0, gate: 0 };
-  for (const a of SIM.ac) { if (a.phase === 'arr') c.arr++; else if (a.phase === 'climb' || a.phase === 'tkof') c.dep++; else if (['taxi', 'taxiout', 'push', 'start', 'roll'].includes(a.phase)) c.taxi++; else c.gate++; }
+  for (const a of SIM.ac) {
+    if (a.phase === 'arr') c.arr++; else if (a.phase === 'climb' || a.phase === 'tkof') c.dep++;
+    else if (LIVE.on) { if (a.grounded) c.taxi++; else c.gate++; } // live tiles: descending, climbing, on the surface, level
+    else if (['taxi', 'taxiout', 'push', 'start', 'roll'].includes(a.phase)) c.taxi++; else c.gate++;
+  }
   $('#n-arr').textContent = c.arr; $('#n-dep').textContent = c.dep; $('#n-taxi').textContent = c.taxi; $('#n-gate').textContent = c.gate;
   $('#chip-count').textContent = `${SIM.ac.length} aircraft`;
 }
@@ -1405,7 +1527,7 @@ const TOUR = [ // [x, n, alt, tx, tn] world meters
 ];
 const tourPos = new THREE.CatmullRomCurve3(TOUR.map((k) => new THREE.Vector3(k[0], k[2], -k[1])), true, 'centripetal');
 const tourTgt = new THREE.CatmullRomCurve3(TOUR.map((k) => new THREE.Vector3(k[3], 0, -k[4])), true, 'centripetal');
-let tourT = 0;
+let tourT = 0, zoomGoal = null;
 function setCam(mode) {
   camMode = mode;
   $$('[data-cam]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cam === mode || (mode === 'follow' && b.dataset.cam === 'orbit'))));
@@ -1413,10 +1535,12 @@ function setCam(mode) {
   if (mode === 'tower') {
     followSel = false;
     camera.position.set(TOWER.x + 0.25, TOWER.cab + 0.12, -TOWER.n - 0.8); controls.target.set(TOWER.x, TOWER.cab - 0.2, -TOWER.n); // looking south over 7L/25R and 7R/25L
-    controls.minDistance = 0.5; controls.maxDistance = 1.2; controls.rotateSpeed = -0.35; controls.enablePan = false; controls.maxPolarAngle = 170 * DEG;
+    controls.minDistance = 0.5; controls.maxDistance = 1.2; controls.rotateSpeed = -0.35; controls.enablePan = false; controls.enableZoom = false; controls.maxPolarAngle = 170 * DEG;
   } else {
-    controls.minDistance = 25; controls.maxDistance = 60000; controls.rotateSpeed = 1; controls.enablePan = true; controls.maxPolarAngle = 88 * DEG;
+    controls.minDistance = 12; controls.maxDistance = 60000; controls.rotateSpeed = 1; controls.enablePan = true; controls.enableZoom = true; controls.maxPolarAngle = 88 * DEG;
+    if (camera.fov !== 48) { camera.fov = 48; camera.updateProjectionMatrix(); }
   }
+  zoomGoal = null;
   if (mode === 'orbit' && controls.target.y > 50) controls.target.y = 0;
   updateDetail();
 }
@@ -1427,7 +1551,37 @@ function centerOn(ac) {
   if (off.y < dist * 0.25) off.y = dist * 0.35;
   controls.target.copy(tgt); camera.position.copy(tgt).add(off);
 }
-canvas.addEventListener('pointerdown', () => { if (camMode === 'tour') { setCam('orbit'); controls.target.copy(tourTgt.getPointAt(tourT % 1)); } });
+const leaveTour = () => { if (camMode === 'tour') { setCam('orbit'); controls.target.copy(tourTgt.getPointAt(tourT % 1)); } };
+canvas.addEventListener('pointerdown', leaveTour);
+
+// Zoom: buttons, scroll wheel, pinch and +/- keys all work in every view. In the tower cab zoom narrows the field of view.
+function zoomBy(f) {
+  leaveTour();
+  if (camMode === 'tower') { camera.fov = clamp(camera.fov * f, 5, 70); camera.updateProjectionMatrix(); return; }
+  const cur = zoomGoal ?? camera.position.distanceTo(controls.target);
+  zoomGoal = clamp(cur * f, controls.minDistance, controls.maxDistance);
+}
+function resetView() {
+  setCam('orbit'); zoomGoal = null;
+  controls.target.set(350, 0, 80); camera.position.set(2700, 1500, 2900); controls.update();
+}
+canvas.addEventListener('wheel', (e) => {
+  if (camMode === 'tour' || camMode === 'tower') { e.preventDefault(); zoomBy(e.deltaY > 0 ? 1.12 : 0.89); } else zoomGoal = null;
+}, { passive: false });
+// aircraft tags sit above the canvas and would otherwise swallow the scroll wheel
+$('#labels').addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(e.deltaY > 0 ? 1.12 : 0.89); }, { passive: false });
+addEventListener('keydown', (e) => {
+  if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return;
+  if (e.key === '+' || e.key === '=') zoomBy(0.7); else if (e.key === '-' || e.key === '_') zoomBy(1.43);
+});
+for (const [id, f] of [['zin', 0.7], ['zout', 1.43]]) {
+  const b = $(`#${id}`); let hold = 0;
+  const stop = () => clearInterval(hold);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); zoomBy(f); stop(); hold = setInterval(() => zoomBy(f ** 0.5), 180); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); zoomBy(f); } });
+}
+$('#zhome').onclick = resetView;
 
 const ray = new THREE.Raycaster(); let downXY = null;
 canvas.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; });
@@ -1448,7 +1602,7 @@ function setFlow(f) {
   $('#flow-west').setAttribute('aria-pressed', String(f === 'west')); $('#flow-east').setAttribute('aria-pressed', String(f === 'east'));
   $('#flow-arr').textContent = FLOWS[f].arr.map((s) => s.replace(/^0/, '')).join(' · ');
   $('#flow-dep').textContent = FLOWS[f].dep.map((s) => s.replace(/^0/, '')).join(' · ');
-  $('#chip-wx').textContent = FLOWS[f].wind;
+  $('#chip-wx').textContent = LIVE.on ? `${f === 'west' ? 'West' : 'East'} flow observed` : FLOWS[f].wind;
   for (const s of socks) s.rotation.y = -((FLOWS[f].windHdg + 180) % 360 - 90) * DEG;
 }
 $('#flow-west').onclick = () => setFlow('west'); $('#flow-east').onclick = () => setFlow('east');
@@ -1457,6 +1611,45 @@ $$('[data-spd]').forEach((b) => (b.onclick = () => { simSpeed = +b.dataset.spd; 
 $$('[data-lbl]').forEach((b) => (b.onclick = () => { labelsOn.mode = b.dataset.lbl; $$('[data-lbl]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
 const tod = $('#tod');
 function setLive(on) { live = on; $('#live').setAttribute('aria-pressed', String(on)); if (on) clockMs = Date.now(); }
+const feedNote = (msg) => { const n = $('#feed-note'); n.textContent = msg; n.hidden = !msg; };
+function syncModeUi() {
+  const on = LIVE.on;
+  $('#mode-sim').setAttribute('aria-pressed', String(!on)); $('#mode-live').setAttribute('aria-pressed', String(on));
+  for (const b of [$('#flow-west'), $('#flow-east'), ...$$('[data-spd]')]) b.disabled = on;
+  tod.disabled = on; $('#live').disabled = on;
+  $('#flow-arr-l').textContent = on ? 'Landing (observed)' : 'Arrivals'; $('#flow-dep-l').textContent = on ? 'Departing (observed)' : 'Departures';
+  const lab = on ? ['Descending', 'Climbing', 'Surface', 'Level'] : ['Inbound', 'Outbound', 'Taxiing', 'Parked'];
+  ['l-arr', 'l-dep', 'l-taxi', 'l-gate'].forEach((id, i) => { $(`#${id}`).textContent = lab[i]; });
+  $('#credit-traffic').textContent = on ? `Traffic: live ADS-B via ${LIVE.src || FEED_HOST} (community receivers, ODbL)` : 'Traffic: simulated';
+  if (on) {
+    simSpeed = 1; $$('[data-spd]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.spd === '1'))); setLive(true);
+    if (!LIVE.flowSeen) { $('#chip-wx').textContent = 'Flow not yet observed'; $('#flow-arr').textContent = '—'; $('#flow-dep').textContent = '—'; }
+  } else setFlow(SIM.flow);
+  updateModeChip();
+}
+function updateModeChip() {
+  const chip = $('#chip-mode');
+  if (!LIVE.on) { chip.textContent = 'Simulated ADS-B'; chip.className = 'chip sim'; chip.title = 'Aircraft movements come from a rules-based simulator. They follow the ADS-B data format but are not live.'; return; }
+  const age = Math.round((performance.now() - LIVE.lastOk) / 1000);
+  chip.className = LIVE.fails ? 'chip warn' : 'chip live';
+  chip.textContent = LIVE.fails ? `Live feed lost · ${age} s` : 'Live ADS-B';
+  chip.title = LIVE.fails ? `No answer from the feed (${LIVE.err}). Holding last known tracks and retrying.` : `Real aircraft positions from ${LIVE.src || FEED_HOST}, refreshed every 2 seconds. Aircraft with transponders off do not appear.`;
+}
+async function setDataMode(mode) {
+  if (mode === 'live' && !LIVE.on) {
+    feedNote('Connecting to the live feed…');
+    let j;
+    try { j = await fetchFeed(5000); }
+    catch (e) { feedNote(`No live feed is reachable from this page (${e.name === 'TypeError' || e.name === 'AbortError' ? 'the request was blocked or timed out' : e.message}). The claude.ai preview blocks outside data; live traffic runs on the hosted copy.`); return; }
+    clearAircraft(); LIVE.on = true; LIVE.fails = 0; LIVE.lastOk = performance.now(); LIVE.src = j.src || FEED_HOST; LIVE.flowSeen = false; LIVE.votes = { west: 0, east: 0 };
+    liveIngest(j); schedulePoll(); feedNote('');
+  } else if (mode === 'sim' && LIVE.on) {
+    LIVE.on = false; clearTimeout(LIVE.timer); clearAircraft(); SIM.t = 0; SIM.arrTimer = {}; populate(); feedNote('');
+  }
+  syncModeUi();
+}
+$('#mode-sim').onclick = () => setDataMode('sim'); $('#mode-live').onclick = () => setDataMode('live');
+document.addEventListener('visibilitychange', () => { if (LIVE.on && !document.hidden) schedulePoll(200); });
 $('#live').onclick = () => setLive(true);
 tod.oninput = () => {
   const h = +tod.value, now = mst(clockMs);
@@ -1472,6 +1665,8 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight, false); labelRenderer.setSize(innerWidth, innerHeight);
 });
 setFlow('west');
+syncModeUi();
+if (LIVE.on) schedulePoll();
 
 // ---------------------------------------------------------------- main loop
 updateSky(clockMs);
@@ -1481,10 +1676,14 @@ progress('Ready', 1);
 let last = performance.now(), uiT = 0, skyT = 0, lblT = 0;
 function frame(now) {
   const dtR = Math.min(0.1, (now - last) / 1000); last = now;
-  const dt = dtR * simSpeed;
+  const dt = dtR * (LIVE.on ? 1 : simSpeed);
   clockMs += dt * 1000;
-  if (live && simSpeed === 1 && Math.abs(clockMs - Date.now()) > 5000) clockMs = Date.now();
-  let rem = dt; while (rem > 1e-6) { const h = Math.min(0.25, rem); simStep(h); rem -= h; }
+  if (LIVE.on) { clockMs = Date.now(); liveStep(dtR); }
+  else {
+    if (live && simSpeed === 1 && Math.abs(clockMs - Date.now()) > 5000) clockMs = Date.now();
+    let rem = dt; while (rem > 1e-6) { const h = Math.min(0.25, rem); simStep(h); rem -= h; }
+  }
+  stepTrains(dt);
   for (const ac of SIM.ac) updateAircraftVisual(ac, dtR);
   for (const tr of skyTrains) {
     tr.grp.children.forEach((car, k) => {
@@ -1501,6 +1700,11 @@ function frame(now) {
     if (camMode === 'follow' && selected) {
       const tgt = selected.obj.position, d = tgt.clone().sub(controls.target);
       controls.target.add(d); camera.position.add(d);
+    }
+    if (zoomGoal !== null) {
+      const off = camera.position.clone().sub(controls.target), cur = off.length(), next = lerp(cur, zoomGoal, 1 - Math.exp(-dtR * 9));
+      camera.position.copy(controls.target).add(off.setLength(next));
+      if (Math.abs(next - zoomGoal) < Math.max(0.5, zoomGoal * 0.004)) zoomGoal = null;
     }
     controls.update();
   }
@@ -1529,7 +1733,7 @@ function frame(now) {
   lblT += dtR; if (lblT > 0.2) { lblT = 0; updateLabels(); }
   uiT += dtR;
   if (uiT > 0.5) {
-    uiT = 0; renderList(); updateDetail();
+    uiT = 0; renderList(); updateDetail(); updateModeChip();
     const t = mst(clockMs);
     $('#clk').textContent = `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}:${p2(t.getUTCSeconds())}`;
     const z = new Date(clockMs); $('#clkz').textContent = `MST · ${p2(z.getUTCHours())}:${p2(z.getUTCMinutes())}Z`;
@@ -1543,4 +1747,4 @@ function frame(now) {
 requestAnimationFrame((t) => { last = t; frame(t); });
 setTimeout(() => { $('#loading').hidden = true; }, 150);
 if (!isNarrow()) $('#traffic').classList.remove('closed');
-window.__twin = { SIM, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep };
+window.__twin = { SIM, LIVE, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };
