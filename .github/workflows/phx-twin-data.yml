@@ -1,0 +1,60 @@
+name: PHX twin data
+
+# Fetches what the PHX digital twin needs from the open internet:
+#   feeds    - reports what the public ADS-B APIs return for KPHX (no changes made)
+#   imagery  - bakes public-domain NAIP aerial photography into phx-digital-twin/data
+#              and commits it back to the branch
+# Runs when the fetch scripts change on a pull request, or on demand.
+on:
+  pull_request:
+    paths:
+      - phx-digital-twin/tools/fetch_imagery.py
+      - phx-digital-twin/tools/imagery.config.json
+      - phx-digital-twin/tools/probe_feeds.mjs
+      - .github/workflows/phx-twin-data.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phx-twin-data-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  feeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Probe ADS-B sources
+        run: node phx-digital-twin/tools/probe_feeds.mjs
+
+  imagery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install imaging libraries
+        run: pip install --quiet numpy pillow requests pyproj opencv-python-headless
+      - name: Fetch and bake aerial imagery
+        run: python phx-digital-twin/tools/fetch_imagery.py
+      - name: Commit baked imagery
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A phx-digital-twin/data phx-digital-twin/tools/imagery_report.json phx-digital-twin/tools/_probe
+          if git diff --cached --quiet; then
+            echo "No imagery changes."
+          else
+            git commit -m "PHX twin: bake NAIP aerial imagery (fetched by CI)"
+            git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
+          fi
