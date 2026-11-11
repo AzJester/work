@@ -41,16 +41,16 @@ async function getData() {
   // Aerial photography is optional: when the files are missing the airfield is painted from vector data instead.
   const optImg = (u) => new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; });
   const small = matchMedia('(pointer:coarse)').matches || innerWidth < 760 || !!window.__TWIN_LOWQ;
-  const photos = Promise.all([optImg(small ? 'data/photo_airfield_4k.jpg' : 'data/photo_airfield.jpg'), optImg('data/photo_metro.jpg')]);
+  const photos = Promise.all([optImg(small ? 'data/photo_airfield_4k.jpg' : 'data/photo_airfield.jpg'), optImg('data/photo_metro.jpg'), fetch('data/photo_tiles/index.json').then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
   const fonts = document.fonts ? Promise.all([document.fonts.load('700 26px "Barlow Condensed"'), document.fonts.load('600 12px "Barlow Condensed"')]).catch(() => {}) : Promise.resolve();
   const [airport, terrTxt, bldTxt] = await Promise.all([get('data/airport.json', 'json'), get('data/terrain.b64.txt'), get('data/buildings.b64.txt')]);
   const terr = b64(terrTxt), bld = b64(bldTxt);
   progress('Decoding Sentinel-2 imagery', 0.35);
   await img.decode();
   progress('Loading aerial photography', 0.4);
-  const [photoAir, photoMetro] = await photos;
+  const [photoAir, photoMetro, photoInfo] = await photos;
   await Promise.race([fonts, new Promise((r) => setTimeout(r, 2500))]);
-  return { airport, terr, bld, img, photoAir, photoMetro };
+  return { airport, terr, bld, img, photoAir, photoMetro, photoInfo: photoAir ? photoInfo : null };
 }
 
 // ---------------------------------------------------------------- reference data
@@ -186,7 +186,19 @@ function gridGeo(arr, size, half) {
   g.computeVertexNormals();
   return g;
 }
-const imgTex = new THREE.Texture(D.img);
+// When aerial photos are in use, tone the contrast-stretched Sentinel-2 base toward them (statistics from the bake)
+// so the hand-off between the two at the edge of the metro square does not show.
+const S2M = D.photoMetro && D.photoInfo && D.photoInfo.s2_match;
+const s2Tone = (v, ch) => (S2M ? clamp(v * S2M.gain[ch] + S2M.offset[ch], 0, 255) : v);
+const baseImg = (() => {
+  if (!S2M) return D.img;
+  const c = document.createElement('canvas'); c.width = D.img.width; c.height = D.img.height;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(D.img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), a = d.data, lut = [0, 1, 2].map((ch) => Uint8ClampedArray.from({ length: 256 }, (_, v) => s2Tone(v, ch)));
+  for (let i = 0; i < a.length; i += 4) { a[i] = lut[0][a[i]]; a[i + 1] = lut[1][a[i + 1]]; a[i + 2] = lut[2][a[i + 2]]; }
+  g.putImageData(d, 0, 0); return c;
+})();
+const imgTex = baseImg === D.img ? new THREE.Texture(D.img) : new THREE.CanvasTexture(baseImg);
 imgTex.colorSpace = THREE.SRGBColorSpace; imgTex.anisotropy = ANISO; imgTex.needsUpdate = true;
 
 // city-lights emissive map derived from the imagery: low-saturation built-up pixels glow at night
@@ -227,7 +239,7 @@ terrain.receiveShadow = true; scene.add(terrain);
   const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
     const h = p.getY(i), m = sstep(15, 380, h);
-    c.setRGB(lerp(0.70, 0.47, m), lerp(0.60, 0.38, m), lerp(0.47, 0.30, m), THREE.SRGBColorSpace);
+    c.setRGB(s2Tone(lerp(0.70, 0.47, m) * 255, 0) / 255, s2Tone(lerp(0.60, 0.38, m) * 255, 1) / 255, s2Tone(lerp(0.47, 0.30, m) * 255, 2) / 255, THREE.SRGBColorSpace);
     const k = 0.93 + Math.random() * 0.1; col[i * 3] = c.r * k; col[i * 3 + 1] = c.g * k; col[i * 3 + 2] = c.b * k;
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
@@ -417,6 +429,52 @@ const airfieldMat = new THREE.MeshStandardMaterial({ map: AF.tex, roughness: 0.9
 {
   const g = new THREE.PlaneGeometry(AF.Wm, AF.Hm); g.rotateX(-Math.PI / 2);
   const m = new THREE.Mesh(g, airfieldMat); m.position.set((PX0 + PX1) / 2, 0, -(PN0 + PN1) / 2); m.receiveShadow = true; scene.add(m);
+}
+
+// ---------------------------------------------------------------- full-detail aerial tiles
+// The airfield photo is 0.65 m per pixel. Around wherever the view is focused, 30 cm tiles are loaded on top of it
+// and dropped again when the view moves away, so close-ups stay sharp without holding the whole field in GPU memory.
+const DETAIL = { info: D.photoInfo, tiles: new Map(), bad: new Set(), busy: 0, cap: MOBILE || LOWQ ? 4 : 10, night: null };
+const tileLoader = new THREE.TextureLoader();
+function dropTile(key) {
+  const t = DETAIL.tiles.get(key); if (!t) return;
+  if (t.mesh) { scene.remove(t.mesh); t.mesh.material.map.dispose(); t.mesh.material.dispose(); t.mesh.geometry.dispose(); }
+  DETAIL.tiles.delete(key);
+}
+function updatePhotoTiles(focus) {
+  const I = DETAIL.info; if (!I) return;
+  const now = performance.now(), camDist = camera.position.distanceTo(focus);
+  const rad = camDist < 2400 ? clamp(camDist * 0.75, 320, 1000) : -1, fx = focus.x, fn = -focus.z, want = [];
+  if (rad > 0) for (let r = 0; r < I.rows; r++) for (let c = 0; c < I.cols; c++) {
+    const x0 = I.x0 + c * I.tile_m, n1 = I.n1 - r * I.tile_m;
+    if (n1 <= PN0) continue;
+    const d = Math.hypot(Math.max(x0 - fx, 0, fx - (x0 + I.tile_m)), Math.max((n1 - I.tile_m) - fn, 0, fn - n1));
+    if (d < rad) want.push([d, r, c]);
+  }
+  want.sort((a, b) => a[0] - b[0]);
+  for (const [, r, c] of want.slice(0, DETAIL.cap)) {
+    const key = `${r}_${c}`, have = DETAIL.tiles.get(key);
+    if (have) { have.used = now; continue; }
+    if (DETAIL.busy >= 2 || DETAIL.bad.has(key)) continue;
+    const t = { used: now, mesh: null }; DETAIL.tiles.set(key, t); DETAIL.busy++;
+    tileLoader.load(`data/photo_tiles/${key}.jpg`, (tex) => {
+      DETAIL.busy--;
+      if (DETAIL.tiles.get(key) !== t) { tex.dispose(); return; }
+      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANISO;
+      const x0 = I.x0 + c * I.tile_m, n1 = I.n1 - r * I.tile_m, n0 = Math.max(n1 - I.tile_m, PN0), h = n1 - n0; // the last row is clipped to the plane
+      const g = new THREE.PlaneGeometry(I.tile_m, h); g.rotateX(-Math.PI / 2);
+      const vb = 1 - h / I.tile_m; g.attributes.uv.setY(2, vb); g.attributes.uv.setY(3, vb);
+      const u0 = (x0 - PX0) / (PX1 - PX0), u1 = (x0 + I.tile_m - PX0) / (PX1 - PX0), v1 = (n1 - PN0) / (PN1 - PN0), v0 = (n0 - PN0) / (PN1 - PN0);
+      g.setAttribute('uv1', new THREE.Float32BufferAttribute([u0, v1, u1, v1, u0, v0, u1, v0], 2)); // night floodlight map shares the airfield layout
+      if (!DETAIL.night) { DETAIL.night = AF.ntex.clone(); DETAIL.night.channel = 1; DETAIL.night.needsUpdate = true; }
+      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, metalness: 0, emissiveMap: DETAIL.night, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: airfieldMat.emissiveIntensity, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -8, envMapIntensity: 0.6 }));
+      m.position.set(x0 + I.tile_m / 2, 0.02, -(n1 - h / 2)); m.receiveShadow = true; scene.add(m); t.mesh = m;
+    }, undefined, () => { DETAIL.busy--; DETAIL.bad.add(key); DETAIL.tiles.delete(key); });
+  }
+  if (DETAIL.tiles.size > DETAIL.cap) {
+    const old = [...DETAIL.tiles].filter(([, t]) => t.mesh && now - t.used > 3000).sort((a, b) => a[1].used - b[1].used);
+    for (const [key] of old.slice(0, DETAIL.tiles.size - DETAIL.cap)) dropTile(key);
+  }
 }
 
 // ---------------------------------------------------------------- static lights (runway, taxiway, approach, PAPI, beacon)
@@ -730,6 +788,7 @@ function updateSky(ms) {
   scene.fog.density = lerp(0.000034, 0.000024, day);
   stars.material.opacity = night * 0.9;
   terrainMat.emissiveIntensity = night * 0.55; airfieldMat.emissiveIntensity = night * 0.7;
+  for (const t of DETAIL.tiles.values()) if (t.mesh) t.mesh.material.emissiveIntensity = night * 0.7;
   if (bldShader.ref) bldShader.ref.uniforms.uNight.value = night;
   glassMat.emissiveIntensity = night * 0.6; if (skyTrains.bandMat) skyTrains.bandMat.emissiveIntensity = night * 0.8;
   lightUniforms.uNight.value = night; lightUniforms.uDay.value = lerp(0.6, 0.3, day);
@@ -1710,7 +1769,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight, false); labelRenderer.setSize(innerWidth, innerHeight);
 });
-if (D.photoAir || D.photoMetro) $('#credit-imagery').textContent = 'Imagery: USDA NAIP aerial photography (airfield and metro), Copernicus Sentinel-2 (region)';
+if (D.photoAir || D.photoMetro) $('#credit-imagery').textContent = `Imagery: USDA NAIP aerial photography${D.photoInfo && D.photoInfo.flown ? `, flown ${D.photoInfo.flown.slice(0, 7)}` : ''} (airfield and metro), Copernicus Sentinel-2 (region)`;
 setFlow('west');
 syncModeUi();
 if (LIVE.on) schedulePoll();
@@ -1777,7 +1836,7 @@ function frame(now) {
   lightUniforms.uScale.value = renderer.domElement.height / (2 * Math.tan(camera.fov * DEG / 2));
   scene.updateMatrixWorld();
   updateAcLights();
-  lblT += dtR; if (lblT > 0.2) { lblT = 0; updateLabels(); }
+  lblT += dtR; if (lblT > 0.2) { lblT = 0; updateLabels(); updatePhotoTiles(focus); }
   uiT += dtR;
   if (uiT > 0.5) {
     uiT = 0; renderList(); updateDetail(); updateModeChip();
@@ -1794,4 +1853,4 @@ function frame(now) {
 requestAnimationFrame((t) => { last = t; frame(t); });
 setTimeout(() => { $('#loading').hidden = true; }, 150);
 if (!isNarrow()) $('#traffic').classList.remove('closed');
-window.__twin = { SIM, LIVE, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };
+window.__twin = { SIM, LIVE, DETAIL, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };

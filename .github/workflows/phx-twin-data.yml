@@ -1,18 +1,27 @@
 name: PHX twin data
 
-# Fetches what the PHX digital twin needs from the open internet:
-#   feeds    - reports what the public ADS-B APIs return for KPHX (no changes made)
-#   imagery  - bakes public-domain NAIP aerial photography into phx-digital-twin/data
-#              and commits it back to the branch
-# Runs when the fetch scripts change on a pull request, or on demand.
+# Jobs that need the open internet on behalf of the PHX digital twin:
+#   feeds     - reports what the public ADS-B APIs return for KPHX (changes nothing)
+#   imagery   - bakes public-domain NAIP aerial photography into phx-digital-twin/data
+#               and commits it back to the branch
+#   deployed  - checks the public page and the live ADS-B relay after a deploy
+# On a pull request, feeds and imagery run when the fetch scripts change. Run it by hand
+# (Actions > PHX twin data > Run workflow) to check the deployment or to re-bake imagery.
 on:
   pull_request:
     paths:
       - phx-digital-twin/tools/fetch_imagery.py
       - phx-digital-twin/tools/imagery.config.json
       - phx-digital-twin/tools/probe_feeds.mjs
-      - .github/workflows/phx-twin-data.yml
   workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        default: check-deployment
+        options:
+          - check-deployment
+          - bake-imagery
 
 permissions:
   contents: write
@@ -34,8 +43,9 @@ jobs:
         run: node phx-digital-twin/tools/probe_feeds.mjs
 
   imagery:
+    if: github.event_name == 'pull_request' || inputs.task == 'bake-imagery'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +56,9 @@ jobs:
       - name: Install imaging libraries
         run: pip install --quiet numpy pillow requests pyproj opencv-python-headless
       - name: Fetch and bake aerial imagery
+        env:
+          # a manual run always re-bakes; a pull-request run skips when the committed bake matches the script
+          FORCE_BAKE: ${{ inputs.task == 'bake-imagery' && '1' || '0' }}
         run: python phx-digital-twin/tools/fetch_imagery.py
       - name: Commit baked imagery
         run: |
@@ -56,5 +69,18 @@ jobs:
             echo "No imagery changes."
           else
             git commit -m "PHX twin: bake NAIP aerial imagery (fetched by CI)"
+            git pull --rebase origin "${{ github.head_ref || github.ref_name }}"
             git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
           fi
+
+  deployed:
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'check-deployment'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the public page and the live relay
+        run: node phx-digital-twin/tools/check_deployment.mjs

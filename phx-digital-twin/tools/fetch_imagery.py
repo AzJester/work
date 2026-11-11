@@ -14,7 +14,7 @@ to the Sentinel-2 base so the seams do not show, and writes:
 
 Usage: python phx-digital-twin/tools/fetch_imagery.py   (from the repo root)
 """
-import io, json, math, os, sys, time
+import hashlib, io, json, math, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np, requests, cv2
 from PIL import Image
@@ -174,19 +174,26 @@ def bake(src, entry, report):
     native = float(entry["meta"].get("pixelSizeX") or 0.3)
     log(f"== baking from {src['name']} (service pixel {native:.2f} m)")
 
-    # metro first: it also gives the color statistics used to match the Sentinel-2 base
+    # The photos keep their own exposure: a single gain that puts the brightest concrete just below white, nothing more.
+    # (Matching them to the contrast-stretched Sentinel-2 base clipped 11% of the airfield to white.) The page instead
+    # tones the Sentinel-2 base toward the photos using the per-channel statistics written to index.json.
     metro = warp(mosaic(src, merc_bbox(-METRO_HALF, METRO_HALF, -METRO_HALF, METRO_HALF), 2.5 * k, bands, chunk=1024), -METRO_HALF, METRO_HALF, -METRO_HALF, METRO_HALF, 4096, 4096)
+    g = float(min(1.2, 242.0 / max(float(np.percentile(metro, 99.8)), 1.0)))
+    fix = lambda a: np.clip(a.astype(np.float32) * g, 0, 255).astype(np.uint8)  # noqa: E731
+    metro = fix(metro)
     s2 = np.asarray(Image.open(os.path.join(DATA, "imagery.jpg")).convert("RGB")).astype(np.float32)
     px = s2.shape[0] / (2 * S2_HALF)
     c0, c1 = int((S2_HALF - METRO_HALF) * px), int((S2_HALF + METRO_HALF) * px)
     ref = s2[c0:c1, c0:c1]
     low = cv2.resize(metro, (ref.shape[1], ref.shape[0]), interpolation=cv2.INTER_AREA).astype(np.float32)
-    gain = np.clip(ref.reshape(-1, 3).std(0) / np.maximum(low.reshape(-1, 3).std(0), 1e-3), 0.6, 1.6)
-    off = ref.reshape(-1, 3).mean(0) - low.reshape(-1, 3).mean(0) * gain
-    report["color_match"] = {"gain": [round(float(v), 3) for v in gain], "offset": [round(float(v), 1) for v in off]}
-    log("   color match", report["color_match"])
-    fix = lambda a: np.clip(a.astype(np.float32) * gain + off, 0, 255).astype(np.uint8)  # noqa: E731
-    Image.fromarray(fix(metro)).save(os.path.join(DATA, "photo_metro.jpg"), quality=84, optimize=True)
+    s2_gain = np.clip(low.reshape(-1, 3).std(0) / np.maximum(ref.reshape(-1, 3).std(0), 1e-3), 0.5, 1.5)
+    s2_off = low.reshape(-1, 3).mean(0) - ref.reshape(-1, 3).mean(0) * s2_gain
+    s2_match = {"gain": [round(float(v), 4) for v in s2_gain], "offset": [round(float(v), 2) for v in s2_off]}
+    report["photo_gain"] = round(g, 3)
+    report["s2_match"] = s2_match
+    report["metro_clip_pct"] = round(float((metro >= 254).mean() * 100), 2)
+    log("   photo gain", report["photo_gain"], "| Sentinel-2 to photo match", s2_match, "| clipped", report["metro_clip_pct"], "%")
+    Image.fromarray(metro).save(os.path.join(DATA, "photo_metro.jpg"), quality=84, optimize=True)
     del metro, s2, low
 
     # airfield at full detail: 8 x 5 tiles of 2048 px, 0.32 m/px, from the top-left (north-west) corner of the plane
@@ -208,18 +215,33 @@ def bake(src, entry, report):
     W = cols * T // 2
     H = int(round(W * (n1 - n0) / (x1 - x0)))
     air = base[:H]
-    json.dump({"x0": x0, "n1": n1, "tile_m": tile_m, "cols": cols, "rows": rows, "px": T, "source": src["name"], "flown": report.get("flown")},
+    json.dump({"x0": x0, "n1": n1, "tile_m": tile_m, "cols": cols, "rows": rows, "px": T, "source": src["name"], "flown": report.get("flown"), "s2_match": s2_match},
               open(os.path.join(TILES, "index.json"), "w"))
+    report["airfield_clip_pct"] = round(float((air >= 254).mean() * 100), 2)
     report["airfield"] = {"tiles": [cols, rows], "tile_ground_m_per_px": round(tile_m / T, 3), "tile_sharpness_median": round(float(np.median(sharp)), 1),
                           "base_size": [W, H], "base_ground_m_per_px": round((x1 - x0) / W, 3)}
     Image.fromarray(air).save(os.path.join(DATA, "photo_airfield.jpg"), quality=82, optimize=True)
     Image.fromarray(cv2.resize(air, (W // 2, H // 2), interpolation=cv2.INTER_AREA)).save(os.path.join(DATA, "photo_airfield_4k.jpg"), quality=84, optimize=True)
 
 
+def inputs_sha():
+    h = hashlib.sha256()
+    for name in ("fetch_imagery.py", "imagery.config.json"):
+        h.update(open(os.path.join(HERE, name), "rb").read())
+    return h.hexdigest()[:16]
+
+
 def main():
     cfg = json.load(open(os.path.join(HERE, "imagery.config.json")))
     k = 1 / math.cos(math.radians(LAT0))
-    report = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "sources": []}
+    sha, out_path = inputs_sha(), os.path.join(HERE, "imagery_report.json")
+    # Pull-request runs fire on every push. Skip when the committed bake already came from this script and config.
+    if os.path.exists(out_path) and os.environ.get("FORCE_BAKE") != "1":
+        prev = json.load(open(out_path))
+        if prev.get("inputs_sha") == sha and all(os.path.exists(os.path.join(DATA, f)) for f in ("photo_airfield.jpg", "photo_metro.jpg", "photo_tiles/index.json")):
+            log(f"Imagery is up to date for inputs {sha} (flown {prev.get('flown')}, source {prev.get('chosen')}). Nothing to do.")
+            return 0
+    report = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "inputs_sha": sha, "sources": []}
     usable = []
     sx0, sx1, sn0, sn1 = 850.0, 1550.0, -80.0, 390.0  # sample: 700 x 470 m over Terminal 4
     for src in SOURCES:
