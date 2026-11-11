@@ -38,13 +38,19 @@ async function getData() {
   const get = async (u, t) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u} returned ${r.status}`); return t === 'json' ? r.json() : r.text(); };
   const b64 = (txt) => { const s = atob(txt.trim()), u8 = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i); return u8.buffer; };
   const img = new Image(); img.src = 'data/imagery.jpg';
+  // Aerial photography is optional: when the files are missing the airfield is painted from vector data instead.
+  const optImg = (u) => new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; });
+  const small = matchMedia('(pointer:coarse)').matches || innerWidth < 760 || !!window.__TWIN_LOWQ;
+  const photos = Promise.all([optImg(small ? 'data/photo_airfield_4k.jpg' : 'data/photo_airfield.jpg'), optImg('data/photo_metro.jpg')]);
   const fonts = document.fonts ? Promise.all([document.fonts.load('700 26px "Barlow Condensed"'), document.fonts.load('600 12px "Barlow Condensed"')]).catch(() => {}) : Promise.resolve();
   const [airport, terrTxt, bldTxt] = await Promise.all([get('data/airport.json', 'json'), get('data/terrain.b64.txt'), get('data/buildings.b64.txt')]);
   const terr = b64(terrTxt), bld = b64(bldTxt);
   progress('Decoding Sentinel-2 imagery', 0.35);
   await img.decode();
+  progress('Loading aerial photography', 0.4);
+  const [photoAir, photoMetro] = await photos;
   await Promise.race([fonts, new Promise((r) => setTimeout(r, 2500))]);
-  return { airport, terr, bld, img };
+  return { airport, terr, bld, img, photoAir, photoMetro };
 }
 
 // ---------------------------------------------------------------- reference data
@@ -199,6 +205,21 @@ function cityLights(img) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 const terrainMat = new THREE.MeshStandardMaterial({ map: imgTex, roughness: 1, metalness: 0, emissiveMap: cityLights(D.img), emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0, envMapIntensity: 0.6 });
+const METRO_HALF = 6144;
+const midTex = D.photoMetro ? new THREE.Texture(D.photoMetro) : null;
+if (midTex) {
+  midTex.colorSpace = THREE.SRGBColorSpace; midTex.anisotropy = ANISO; midTex.needsUpdate = true;
+  // inside the metro square the 3 m aerial photo replaces the 10 m satellite base, feathered at the edge
+  terrainMat.onBeforeCompile = (sh) => {
+    sh.uniforms.uMid = { value: midTex }; sh.uniforms.uMidHalf = { value: METRO_HALF };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uMid; uniform float uMidHalf; varying vec3 vWP;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      vec2 muv = vec2(vWP.x, -vWP.z) / (2.0 * uMidHalf) + 0.5;
+      float mw = smoothstep(0.0, 0.035, min(min(muv.x, 1.0 - muv.x), min(muv.y, 1.0 - muv.y)));
+      diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uMid, muv).rgb, mw);`);
+  };
+}
 const terrain = new THREE.Mesh(gridGeo(tInner, TN, THALF), terrainMat);
 terrain.receiveShadow = true; scene.add(terrain);
 {
@@ -273,7 +294,7 @@ const LSTY = { // line type -> [color, width m, dash, black border]
   6: ['#f0be2a', 0.9], 56: ['#f0be2a', 0.9, null, 1], 7: ['#f0be2a', 0.5], 57: ['#f0be2a', 0.5, null, 1], 8: ['#f0be2a', 0.15, [4.5, 9]], 58: ['#f0be2a', 0.15, [4.5, 9], 1],
   19: ['#c24a37', 0.18], 20: ['#e9e8e2', 0.15], 21: ['#e9e8e2', 0.3, [1, 1]], 22: ['#e9e8e2', 0.15, [3, 3]], 30: ['#cf3b2d', 0.2], 31: ['#cf3b2d', 0.2, [3, 3]], 74: ['#dcdcd6', 0.2], 73: ['#e9e8e2', 0.15], 60: ['#f0be2a', 0.15],
 };
-function bakeAirfield() {
+function paintAirfield() {
   const Wm = PX1 - PX0, Hm = PN1 - PN0;
   const cw = (MAXTEX >= 8192 && !MOBILE && !LOWQ) ? 8192 : 4096, s = cw / Wm, ch = Math.round(Hm * s);
   const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
@@ -364,7 +385,17 @@ function bakeAirfield() {
   for (const l of AP.lines) { const st = LSTY[l.t]; if (st && st[3]) drawLine(l, st, true); }
   for (const l of AP.lines) { const st = LSTY[l.t]; if (st) drawLine(l, st, false); }
   g.setLineDash([]);
-  const tex = new THREE.CanvasTexture(cv);
+  return cv;
+}
+function bakeAirfield() {
+  const Wm = PX1 - PX0, Hm = PN1 - PN0;
+  let src = D.photoAir;
+  if (src) { // real aerial photo: use it as is, only shrinking it when the GPU cannot take the full size
+    const cap = Math.min(MAXTEX, LOWQ ? 4096 : 16384);
+    if (src.width > cap) { const c = document.createElement('canvas'); c.width = cap; c.height = Math.round(src.height * cap / src.width); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(src, 0, 0, c.width, c.height); src = c; }
+  } else src = paintAirfield();
+  const tex = src instanceof HTMLCanvasElement ? new THREE.CanvasTexture(src) : new THREE.Texture(src);
+  tex.needsUpdate = true;
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = ANISO; tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter;
   // night apron floodlight map
   const nc = document.createElement('canvas'); nc.width = 1024; nc.height = Math.round(1024 * Hm / Wm);
@@ -379,7 +410,7 @@ function bakeAirfield() {
   const ntex = new THREE.CanvasTexture(nc); ntex.colorSpace = THREE.SRGBColorSpace;
   return { tex, ntex, Wm, Hm };
 }
-progress('Painting runways, taxiways and 6,400 markings', 0.55);
+progress(D.photoAir ? 'Laying down aerial photography' : 'Painting runways, taxiways and 6,400 markings', 0.55);
 await new Promise((r) => setTimeout(r, 0));
 const AF = bakeAirfield();
 const airfieldMat = new THREE.MeshStandardMaterial({ map: AF.tex, roughness: 0.92, metalness: 0, emissiveMap: AF.ntex, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4, envMapIntensity: 0.6 });
@@ -531,13 +562,21 @@ function buildBuildings(buf) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.05, envMapIntensity: 0.7 });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uImg = { value: imgTex }; sh.uniforms.uNight = { value: 0 }; bldShader.ref = sh;
+    sh.uniforms.uMid = { value: midTex || imgTex }; sh.uniforms.uAir = { value: D.photoAir ? AF.tex : imgTex };
+    sh.uniforms.uPhoto = { value: new THREE.Vector2(midTex ? 1 : 0, D.photoAir ? 1 : 0) }; sh.uniforms.uAirB = { value: new THREE.Vector4(PX0, PX1, PN0, PN1) };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aRoof; attribute float aKind; attribute float aWU;\nvarying float vRoof; varying float vKind; varying float vWU; varying vec3 vWP;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoof = aRoof; vKind = aKind; vWU = aWU; vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uImg; uniform float uNight;\nvarying float vRoof; varying float vKind; varying float vWU; varying vec3 vWP; float winLit = 0.0;')
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D uImg; uniform sampler2D uMid; uniform sampler2D uAir; uniform vec2 uPhoto; uniform vec4 uAirB; uniform float uNight;\nvarying float vRoof; varying float vKind; varying float vWU; varying vec3 vWP; float winLit = 0.0;')
       .replace('#include <color_fragment>', `#include <color_fragment>
       if (vRoof > 0.5) {
         vec2 iuv = vec2((vWP.x + 15360.0) / 30720.0, (-vWP.z + 15360.0) / 30720.0);
-        diffuseColor.rgb = mix(texture2D(uImg, iuv).rgb, diffuseColor.rgb, 0.25);
+        vec2 muv = vec2(vWP.x, -vWP.z) / 12288.0 + 0.5;
+        vec2 auv = vec2((vWP.x - uAirB.x) / (uAirB.y - uAirB.x), (-vWP.z - uAirB.z) / (uAirB.w - uAirB.z));
+        vec3 rc = texture2D(uImg, iuv).rgb, mc = texture2D(uMid, muv).rgb, ac = texture2D(uAir, auv).rgb;
+        float inM = uPhoto.x * step(0.0, muv.x) * step(muv.x, 1.0) * step(0.0, muv.y) * step(muv.y, 1.0);
+        float inA = uPhoto.y * step(0.0, auv.x) * step(auv.x, 1.0) * step(0.0, auv.y) * step(auv.y, 1.0);
+        rc = mix(mix(rc, mc, inM), ac, inA);
+        diffuseColor.rgb = mix(rc, diffuseColor.rgb, mix(0.25, 0.06, max(inM, inA)));
       } else {
         float fh = vKind > 0.5 && vKind < 1.5 ? 3.1 : 3.8;
         float cw = vKind > 3.5 && vKind < 4.5 ? 2.0 : 3.4;
@@ -1364,7 +1403,8 @@ async function pollLive() {
   try {
     const j = await fetchFeed();
     if (!LIVE.on) return;
-    liveIngest(j); LIVE.fails = 0; LIVE.lastOk = performance.now(); LIVE.src = j.src || FEED_HOST;
+    liveIngest(j); LIVE.fails = 0; LIVE.lastOk = performance.now();
+    if ((j.src || FEED_HOST) !== LIVE.src) { LIVE.src = j.src || FEED_HOST; syncModeUi(); }
     schedulePoll(document.hidden ? 15000 : 2000);
   } catch (e) { LIVE.fails++; LIVE.err = e.message; schedulePoll(Math.min(15000, 3000 * LIVE.fails)); }
 }
@@ -1620,7 +1660,13 @@ function syncModeUi() {
   $('#flow-arr-l').textContent = on ? 'Landing (observed)' : 'Arrivals'; $('#flow-dep-l').textContent = on ? 'Departing (observed)' : 'Departures';
   const lab = on ? ['Descending', 'Climbing', 'Surface', 'Level'] : ['Inbound', 'Outbound', 'Taxiing', 'Parked'];
   ['l-arr', 'l-dep', 'l-taxi', 'l-gate'].forEach((id, i) => { $(`#${id}`).textContent = lab[i]; });
-  $('#credit-traffic').textContent = on ? `Traffic: live ADS-B via ${LIVE.src || FEED_HOST} (community receivers, ODbL)` : 'Traffic: simulated';
+  const ct = $('#credit-traffic'); ct.textContent = on ? 'Traffic: live ADS-B from ' : 'Traffic: simulated';
+  if (on) { // the feeds ask for a credit with a link
+    const home = { 'adsb.fi': 'https://adsb.fi', 'adsb.lol': 'https://adsb.lol', 'airplanes.live': 'https://airplanes.live' }[LIVE.src];
+    const el = document.createElement(home ? 'a' : 'span'); el.textContent = LIVE.src || FEED_HOST;
+    if (home) { el.href = home; el.target = '_blank'; el.rel = 'noopener'; }
+    ct.append(el, ' community receivers');
+  }
   if (on) {
     simSpeed = 1; $$('[data-spd]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.spd === '1'))); setLive(true);
     if (!LIVE.flowSeen) { $('#chip-wx').textContent = 'Flow not yet observed'; $('#flow-arr').textContent = '—'; $('#flow-dep').textContent = '—'; }
@@ -1664,6 +1710,7 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight, false); labelRenderer.setSize(innerWidth, innerHeight);
 });
+if (D.photoAir || D.photoMetro) $('#credit-imagery').textContent = 'Imagery: USDA NAIP aerial photography (airfield and metro), Copernicus Sentinel-2 (region)';
 setFlow('west');
 syncModeUi();
 if (LIVE.on) schedulePoll();

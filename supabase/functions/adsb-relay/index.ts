@@ -9,7 +9,8 @@
 // fixed upstream URL keep it from being used as a general proxy.
 //
 // Optional controls: ADSB_RELAY_ALLOWED_ORIGINS (comma list),
-// ADSB_RELAY_UPSTREAMS (ordered subset of adsb.lol, airplanes.live, adsb.fi),
+// ADSB_RELAY_UPSTREAMS (ordered subset of adsb.lol, airplanes.live, adsb.fi;
+// default adsb.lol then adsb.fi),
 // ADSB_RELAY_CACHE_MS, ADSB_RELAY_TIMEOUT_MS.
 
 import {
@@ -21,6 +22,7 @@ import {
   shapePayload,
   upstreamOrder,
   upstreamUrl,
+  withSticky,
 } from "./relay.mjs";
 
 const envInt = (name: string, fallback: number, min: number, max: number): number => {
@@ -28,23 +30,28 @@ const envInt = (name: string, fallback: number, min: number, max: number): numbe
   return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
 };
 
-const CACHE_MS = envInt("ADSB_RELAY_CACHE_MS", 1500, 500, 30_000);
-const TIMEOUT_MS = envInt("ADSB_RELAY_TIMEOUT_MS", 6000, 1000, 20_000);
+const CACHE_MS = envInt("ADSB_RELAY_CACHE_MS", 2000, 1000, 30_000);
+const TIMEOUT_MS = envInt("ADSB_RELAY_TIMEOUT_MS", 4000, 1000, 20_000);
+const STICKY_MS = 5 * 60_000;
 const STALE_MS = 20_000;
 
 let cached: { at: number; body: string } | null = null;
 let inflight: Promise<string> | null = null;
+let sticky: { name: string; until: number } | null = null;
 
 async function fetchUpstream(): Promise<string> {
   const errors: string[] = [];
-  for (const name of upstreamOrder(Deno.env.get("ADSB_RELAY_UPSTREAMS"))) {
+  const order = upstreamOrder(Deno.env.get("ADSB_RELAY_UPSTREAMS"));
+  for (const name of withSticky(order, sticky && sticky.until > Date.now() ? sticky.name : null)) {
     try {
       const res = await fetch(upstreamUrl(name), {
         headers: { "Accept": "application/json", "User-Agent": "airport-twin-relay/1.0" },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return JSON.stringify(shapePayload(await res.json(), name, Date.now()));
+      const body = JSON.stringify(shapePayload(await res.json(), name, Date.now()));
+      if (!sticky || sticky.name !== name || sticky.until <= Date.now()) sticky = { name, until: Date.now() + STICKY_MS };
+      return body;
     } catch (err) {
       errors.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
     }

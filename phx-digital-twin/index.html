@@ -132,6 +132,7 @@ input:disabled{opacity:.42}
 
 /* ---------- attribution */
 #credits{position:absolute;right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(78px + env(safe-area-inset-bottom,0px));font-size:10.5px;color:rgba(233,238,240,.62);text-align:right;line-height:1.45;max-width:300px;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
+#credits a{color:inherit;pointer-events:auto;text-decoration:underline;text-underline-offset:2px}
 
 /* ---------- aircraft labels (styled after the reference video's floating ADS-B tags) */
 .lbl{pointer-events:auto;cursor:pointer;user-select:none}
@@ -288,7 +289,7 @@ input:disabled{opacity:.42}
     </button>
   </div>
 
-  <div id="credits">Airfield: X-Plane Scenery Gateway via FlightGear · Imagery: Copernicus Sentinel-2, Jun 2025 · Terrain: AWS Terrain Tiles · Buildings: Overture Maps (OSM, USGS lidar) · <span id="credit-traffic">Traffic: simulated</span> · Unofficial visualization, not for navigation or operational use</div>
+  <div id="credits">Airfield: X-Plane Scenery Gateway via FlightGear · <span id="credit-imagery">Imagery: Copernicus Sentinel-2, Jun 2025</span> · Terrain: AWS Terrain Tiles · Buildings: Overture Maps (OSM, USGS lidar) · <span id="credit-traffic">Traffic: simulated</span> · Unofficial visualization, not for navigation or operational use</div>
 
   <div id="loading" role="status">
     <div class="box">

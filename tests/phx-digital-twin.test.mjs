@@ -8,7 +8,7 @@ import {
 } from "../phx-digital-twin/adsb.js";
 import { buildIndex } from "../phx-digital-twin/tools/build_index.mjs";
 import {
-  AREA, KEEP, corsHeaders, normalizeOrigins, originAllowed, pickFields, shapePayload, upstreamOrder, upstreamUrl,
+  AREA, KEEP, corsHeaders, normalizeOrigins, originAllowed, pickFields, shapePayload, upstreamOrder, upstreamUrl, withSticky,
 } from "../supabase/functions/adsb-relay/relay.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -112,7 +112,11 @@ test("runway flow is inferred only from low descending traffic on a runway headi
 test("relay only reaches fixed upstreams for one fixed area", () => {
   assert.equal(upstreamUrl("adsb.lol"), `https://api.adsb.lol/v2/point/${AREA.lat}/${AREA.lon}/${AREA.radiusNm}`);
   assert.throws(() => upstreamUrl("example.com"));
-  assert.deepEqual(upstreamOrder(""), ["adsb.lol"]);
+  assert.deepEqual(upstreamOrder(""), ["adsb.lol", "adsb.fi"]);
+  assert.equal(upstreamUrl("adsb.fi"), `https://opendata.adsb.fi/api/v2/lat/${AREA.lat}/lon/${AREA.lon}/dist/${AREA.radiusNm}`);
+  assert.deepEqual(withSticky(["adsb.lol", "adsb.fi"], "adsb.fi"), ["adsb.fi", "adsb.lol"], "the upstream that last answered goes first");
+  assert.deepEqual(withSticky(["adsb.lol", "adsb.fi"], "example.com"), ["adsb.lol", "adsb.fi"]);
+  assert.deepEqual(withSticky(["adsb.lol", "adsb.fi"], null), ["adsb.lol", "adsb.fi"]);
   assert.deepEqual(upstreamOrder("airplanes.live, https://evil.example/x ,adsb.lol"), ["airplanes.live", "adsb.lol"]);
   // the function must not build an upstream URL from anything in the request
   assert.doesNotMatch(relaySource, /searchParams|req\.url|await req\.(json|text)\(/);
@@ -135,7 +139,7 @@ test("relay CORS allow-list and payload trimming", () => {
 
   const shaped = shapePayload({ ac: [{ hex: "a", lat: 1, lon: 2, junk: 1 }, { hex: "b" }], total: 2 }, "adsb.lol", 1234);
   assert.deepEqual(shaped, { now: 1234, src: "adsb.lol", area: "KPHX", ac: [{ hex: "a", lat: 1, lon: 2 }] });
-  assert.equal(shapePayload({ aircraft: [{ hex: "a", lat: 1, lon: 2 }] }, "x", 1).ac.length, 1, "accepts a receiver's aircraft.json");
+  assert.equal(shapePayload({ now: 1794421442, aircraft: [{ hex: "a", lat: 1, lon: 2 }], resultCount: 1, ptime: 0 }, "adsb.fi", 1).ac.length, 1, "accepts the adsb.fi and aircraft.json shape");
   assert.throws(() => shapePayload({ msg: "rate limited" }, "x", 1));
 });
 

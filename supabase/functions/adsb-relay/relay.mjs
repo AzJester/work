@@ -9,7 +9,16 @@ export const UPSTREAMS = Object.freeze({
   "adsb.fi": ({ lat, lon, radiusNm }) => `https://opendata.adsb.fi/api/v2/lat/${lat}/lon/${lon}/dist/${radiusNm}`,
 });
 
-export const DEFAULT_UPSTREAMS = Object.freeze(["adsb.lol"]);
+// Order tried when ADSB_RELAY_UPSTREAMS is unset. Measured from a GitHub-hosted runner on 2026-11-11: adsb.lol did not
+// answer, airplanes.live returned 403 (access by arrangement only), adsb.fi returned data. adsb.fi's terms: personal,
+// non-commercial use, at most 1 request per second, credit with a link to adsb.fi.
+export const DEFAULT_UPSTREAMS = Object.freeze(["adsb.lol", "adsb.fi"]);
+export const UPSTREAM_HOME = Object.freeze({ "adsb.lol": "https://adsb.lol", "airplanes.live": "https://airplanes.live", "adsb.fi": "https://adsb.fi" });
+
+// Put the upstream that last answered first for a while, so a dead one is not retried on every refresh.
+export function withSticky(order, sticky) {
+  return sticky && order.includes(sticky) ? [sticky, ...order.filter((name) => name !== sticky)] : [...order];
+}
 export const DEFAULT_ALLOWED_ORIGINS = Object.freeze(["https://azjester.github.io"]);
 
 // Fields the twin uses. Everything else from upstream is dropped to keep responses small.
