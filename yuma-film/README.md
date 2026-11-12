@@ -3,6 +3,8 @@
 A 92-second promotional film about Yuma, Arizona: real photographs of the city and the country
 around it, a narrated script, and a light acoustic score.
 
+Created by Shane Turner, DBA.
+
 | File | What it is |
 |---|---|
 | `yuma-arizona-promo.mp4` | The film. 1920x1080, 30 fps, H.264 with AAC stereo, about 32 MB |

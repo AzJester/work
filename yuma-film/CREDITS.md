@@ -1,5 +1,7 @@
 # Credits
 
+Created by Shane Turner, DBA.
+
 Every photograph in the film is in the public domain, released under CC0, or published by the
 Library of Congress with no known restrictions. None of them carry a ShareAlike condition.
 

@@ -178,13 +178,15 @@ def ov_credits(o):
     L = blank()
     dr = ImageDraw.Draw(L)
     rows = o["rows"]
-    lh = {"h": 60, "t": 40, "s": 24}
+    lh = {"h": 60, "n": 54, "t": 40, "s": 24}
     total = sum(lh[k] for k, _ in rows) * S
     y = (H - total) / 2 + 20 * S
     for kind, txt in rows:
         y += lh[kind] * S
         if kind == "h":
             centered(dr, y, txt.upper(), font("sans", 24 * S, 600), GOLD + (255,), tr=6 * S)
+        elif kind == "n":
+            centered(dr, y, txt, font("sans", 36 * S, 600), WHITE + (255,), tr=0.8 * S)
         elif kind == "t":
             centered(dr, y, txt, font("sans", 25 * S, 500), WHITE + (235,), tr=0.4 * S)
     return Image.alpha_composite(veil(np.full((H, W), o.get("dim", 0.86))), L)
