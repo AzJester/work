@@ -8,9 +8,9 @@
 <meta name="theme-color" content="#050607">
 <!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=2">
+<link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
 <link rel="preload" href="assets/fonts/Archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/JetBrainsMono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="canonical" href="https://azjester.github.io/work/astrion-division/ldawif/">
@@ -1154,7 +1154,9 @@
   /* ---- easter egg: reveal the division poster ----
      Triggers: type "ldawif" anywhere, or tap the hero eyebrow 5 times quickly. */
   (function(){
-    var EGG_SRC = 'assets/easter-egg.jpg';
+    // Bump ?v= whenever the poster art changes. The origin's shared service worker (/work/sw.js)
+    // answers same-URL assets from its cache first, so a replaced file keeps showing the old picture.
+    var EGG_SRC = 'assets/easter-egg.jpg?v=2';
     var open = false, buf = '', taps = 0, tapT = 0, lastFocus = null;
     function dismiss(){
       var o = document.querySelector('.patch-overlay');
