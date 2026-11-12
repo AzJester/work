@@ -8,10 +8,11 @@ A searchable launch point for the work applications built across the
 products, account-gated tools, and source-only applications that have not been
 published yet.
 
-The library is work-only and opt-in. It never adds a repository on its own: beyond
-the curated catalog, a repository is pulled from public GitHub metadata only when its
-name is in the page's `discoverableRepos` allowlist, so a new public repository stays
-off the library until it is listed.
+The library is work-only and fully curated. Every card is written into the page, so
+it loads nothing at run time and a new repository appears only when someone adds a
+card for it. Visitors can search, filter by category, pin the applications they use,
+switch between card and list layouts, and choose a light or dark theme. Those choices
+are stored in the visitor's own browser and nowhere else.
 
 ### [Open the Application Library](https://azjester.github.io/work/apps.html)
 

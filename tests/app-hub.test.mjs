@@ -17,7 +17,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/astrion-site/",
   "https://azjester.github.io/work/astrion-film/",
   "https://azjester.github.io/work/phx-digital-twin/",
-  "https://azjester.github.io/work/black-hat-agent/",
+  "https://azjester.github.io/Black_Hat_Agent/",
   "https://azjester.github.io/work/solutions-architect/",
   "https://azjester.github.io/work/dashboard.html",
   "https://azjester.github.io/work/geopresence/",
@@ -38,6 +38,8 @@ const requiredLiveUrls = [
   "https://azjester.github.io/agile-pricer/",
   "https://intel.insightfuldefense.com/",
   "https://linkbudget.st-dba.com/",
+  "https://azjester.github.io/passive_sensor_demo_F5.2/",
+  "https://azjester.github.io/Talent-Acquisition-Agent/",
 ];
 
 const sourceOnlyRepos = [
@@ -99,12 +101,14 @@ const workApplications = [
   "Lotus Notes",
   "Map Builder",
   "PHX Sky Harbor Twin",
+  "Passive Acoustic UAS Sensor",
   "Radar Signal Chain",
   "Roadmap Builder",
   "Roadmap Builder Lite",
   "SEG Flexible Staff Scheduling",
   "Shared Leadership Dashboard",
   "Solution Architect Workbench",
+  "Talent Acquisition Agent",
   "The AI Compendium",
   "USN Tactical AI Backbone",
   "Unified Project Management Suite",
@@ -113,7 +117,7 @@ const workApplications = [
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 30 work applications", () => {
+test("curated catalog lists exactly the 32 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),
@@ -121,7 +125,7 @@ test("curated catalog lists exactly the 30 work applications", () => {
   assert.match(hub, /One launch point for the work applications built across AzJester repositories/);
   assert.match(
     hub,
-    /const categoryOrder = \["All", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "More", "Source only"\];/,
+    /const categoryOrder = \["All", "Pinned", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "Source only"\];/,
   );
 });
 
@@ -213,15 +217,42 @@ test("the inline application module parses without a build step", () => {
   assert.doesNotThrow(() => new Script(scripts.at(-1)[1]));
 });
 
-test("GitHub refresh has a curated fallback and adds only allowlisted repositories", () => {
-  assert.match(hub, /api\.github\.com\/users\/\$\{GITHUB_USER\}\/repos/);
-  assert.match(hub, /repo\.has_pages/);
-  assert.match(hub, /The curated catalog remains complete/);
-  assert.match(
-    hub,
-    /const discoverableRepos = new Set\(\["black_hat_agent", "passive_sensor_demo_f5\.2", "talent-acquisition-agent"\]\);/,
-  );
-  assert.match(hub, /if \(!discoverableRepos\.has\(key\) \|\| knownRepos\.has\(key\) \|\| repo\.private \|\|/);
-  assert.doesNotMatch(hub, /excludedRepos/,
-    "Discovery is opt-in: an exclusion list would let a new public repository reach the work library by default");
+test("the library is fully curated and never reaches outside its own page", () => {
+  for (const pattern of [/api\.github\.com/, /\bfetch\(/, /XMLHttpRequest/, /discoverableRepos/, /excludedRepos/]) {
+    assert.doesNotMatch(hub, pattern, "Every card is curated: the page must not load or discover anything at run time");
+  }
+  assert.doesNotMatch(hub, /github\.com\/AzJester(?![\w/-])/,
+    "Link to repositories, not to the account profile, which lists more than the work library does");
+});
+
+test("every catalog entry is complete, unique, and safely linked", () => {
+  const source = hub.match(/const catalog = (\[[\s\S]*?\n\s*\]);/)?.[1];
+  assert.ok(source, "The catalog must stay an inline array literal");
+  const catalog = new Script(`(${source})`).runInNewContext();
+  const categories = new Set(["Operations", "Defense", "Research", "Design & Graphics", "AI & Learning"]);
+  const seenTitles = new Set();
+  const seenLiveUrls = new Set();
+  for (const app of catalog) {
+    assert.ok(app.title && app.description && app.repo, `Incomplete entry: ${JSON.stringify(app.title)}`);
+    assert.ok(categories.has(app.category), `${app.title}: unknown category ${app.category}`);
+    assert.ok(["Public", "Account", "Source"].includes(app.access), `${app.title}: unknown access ${app.access}`);
+    assert.ok(Array.isArray(app.tags) && app.tags.length >= 1 && app.tags.length <= 3, `${app.title}: expected one to three tags`);
+    assert.ok(app.description.length <= 220, `${app.title}: description is too long for a card`);
+    assert.match(app.repoUrl, /^https:\/\/github\.com\/AzJester\/[^/]+/, `${app.title}: source must be a repository URL`);
+    assert.equal(Boolean(app.liveUrl), app.access !== "Source", `${app.title}: only source-only entries may lack a live URL`);
+    if (app.liveUrl) {
+      assert.match(app.liveUrl, /^https:\/\/[^\s]+\/$|^https:\/\/[^\s]+\.html$/, `${app.title}: live URL must be https`);
+      assert.ok(!seenLiveUrls.has(app.liveUrl), `${app.title}: duplicate live URL`);
+      seenLiveUrls.add(app.liveUrl);
+    }
+    assert.ok(!seenTitles.has(app.title), `Duplicate title: ${app.title}`);
+    seenTitles.add(app.title);
+  }
+});
+
+test("pins, layout, and theme are remembered through guarded browser storage", () => {
+  assert.match(hub, /try \{\s+return localStorage\.getItem\(`app-library:\$\{key\}`\);\s+\} catch \{\s+return null;/);
+  assert.match(hub, /try \{\s+localStorage\.setItem\(`app-library:\$\{key\}`, value\);\s+\} catch \{/);
+  assert.match(hub, /:root\[data-theme="light"\] \{/);
+  assert.match(hub, /\.app-grid\[data-view="list"\]/);
 });
