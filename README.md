@@ -601,10 +601,12 @@ Marked `noindex` while under review.
 
 ## Astrion Division Landing Page (team review build)
 
-A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` — same
-HUD design, with the ambient C-UAS radar engagement playing behind the hero, official
-leadership headshots served as optimized files from `astrion-division/assets/`, and the
-prototype's accessibility/cross-browser/content issues fixed:
+A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` in the current
+Astrion web brand: the seven website color tokens, Archivo and JetBrains Mono, the outlined
+wordmark, and brand photography. The ambient C-UAS radar engagement plays behind the hero,
+official leadership headshots are served as optimized files from
+`astrion-division/ldawif/assets/`, and the prototype's accessibility/cross-browser/content
+issues are fixed:
 
 ### → https://azjester.github.io/work/astrion-division/ldawif/
 
