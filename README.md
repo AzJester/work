@@ -609,6 +609,17 @@ prototype's accessibility/cross-browser/content issues fixed:
 
 Marked `noindex` while under review.
 
+## Astrion Capabilities Film
+
+A fully coded film of Astrion mission areas, from orbit to seabed. Picture and score are
+computed live in the browser from one self-contained HTML file with no runtime requests.
+
+### [Open the Astrion Capabilities Film](https://azjester.github.io/work/astrion-film/)
+
+The Pages build serves `astrion-film/astrion-capabilities-film.html` as the index of
+`/astrion-film/`. After changing anything under `astrion-film/src/`, rebuild that file
+with `node astrion-film/build.mjs`.
+
 ## LDAWIF — All-Domain Kill Web
 
 A standalone, self-contained web app for the LDAWIF concept (Layered Defense ·

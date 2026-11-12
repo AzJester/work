@@ -15,6 +15,8 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/astrion-division/ldawif/",
   "https://azjester.github.io/work/astrion/",
   "https://azjester.github.io/work/astrion-site/",
+  "https://azjester.github.io/work/astrion-film/",
+  "https://azjester.github.io/work/phx-digital-twin/",
   "https://azjester.github.io/work/black-hat-agent/",
   "https://azjester.github.io/work/solutions-architect/",
   "https://azjester.github.io/work/dashboard.html",
@@ -34,6 +36,8 @@ const requiredLiveUrls = [
   "https://azjester.github.io/SEG-SCHEDULE/",
   "https://azjester.github.io/lotus/",
   "https://azjester.github.io/agile-pricer/",
+  "https://intel.insightfuldefense.com/",
+  "https://linkbudget.st-dba.com/",
 ];
 
 const sourceOnlyRepos = [
@@ -53,6 +57,8 @@ const exactWorkSourceUrls = [
   "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
   "https://github.com/AzJester/work/tree/main/astrion",
   "https://github.com/AzJester/work/tree/main/astrion-site",
+  "https://github.com/AzJester/work/tree/main/astrion-film",
+  "https://github.com/AzJester/work/tree/main/phx-digital-twin",
 ];
 
 test("application hub publishes at a stable root HTML route", () => {
@@ -79,16 +85,20 @@ const workApplications = [
   "AI Practice Lab",
   "Astrion · Mission Segments",
   "Astrion Agile Pricing Studio",
+  "Astrion Capabilities Film",
   "Astrion Division · LDAWIF",
   "Astrion company site",
   "Black Hat Agent",
+  "DefenseIntel",
   "DoD RFP Compliance Workspace",
   "Insightful Defense",
   "JIATF C-UAS C2 COP",
   "LDAWIF",
   "Legal AI Value Tracker",
+  "Link Budget",
   "Lotus Notes",
   "Map Builder",
+  "PHX Sky Harbor Twin",
   "Radar Signal Chain",
   "Roadmap Builder",
   "Roadmap Builder Lite",
@@ -103,7 +113,7 @@ const workApplications = [
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 26 work applications", () => {
+test("curated catalog lists exactly the 30 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),
@@ -136,6 +146,11 @@ test("Solution Architect Workbench is linked and stamped as under development", 
   assert.match(hub, /developmentStamp\.textContent = app\.status\.toLocaleUpperCase\(\)/);
   assert.match(hub, /app\.access, app\.status, app\.repo/);
   assert.match(pagesWorkflow, /cp -R[^\n]*solutions-architect[^\n]*_site\//);
+});
+
+test("the Astrion Capabilities Film is published as the index of its library route", () => {
+  assert.ok(existsSync(resolve(root, "astrion-film/astrion-capabilities-film.html")));
+  assert.match(pagesWorkflow, /mkdir -p _site\/astrion-film\n\s+cp astrion-film\/astrion-capabilities-film\.html _site\/astrion-film\/index\.html/);
 });
 
 test("all verified live applications use their working primary URLs", () => {

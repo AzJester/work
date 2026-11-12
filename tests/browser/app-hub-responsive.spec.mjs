@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-async function openHub(page, baseURL, query = "", expectedCount = 26) {
+async function openHub(page, baseURL, query = "", expectedCount = 30) {
   await page.route("https://api.github.com/**", route => route.fulfill({
     status: 200,
     contentType: "application/json",
@@ -169,7 +169,7 @@ test("GitHub metadata adds only allowlisted repositories to the work library", a
     repository("work"),
   ]);
   await page.goto(hubUrl);
-  await expect(page.locator(".app-card")).toHaveCount(29);
+  await expect(page.locator(".app-card")).toHaveCount(33);
   await expect(page.getByRole("heading", { name: "brand new public site", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "another unlisted app", exact: true })).toHaveCount(0);
 
@@ -184,6 +184,6 @@ test("GitHub metadata adds only allowlisted repositories to the work library", a
     repository("Talent-Acquisition-Agent", { has_pages: false }),
   ]);
   await page.goto(hubUrl);
-  await expect(page.locator(".app-card")).toHaveCount(26);
+  await expect(page.locator(".app-card")).toHaveCount(30);
   await expect(page.locator('#filters [data-category="More"]')).toHaveCount(0);
 });
