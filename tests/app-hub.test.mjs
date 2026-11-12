@@ -24,23 +24,16 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/status.html",
   "https://azjester.github.io/work/tracker.html",
   "https://azjester.github.io/work/weekly-task-tracker.html",
-  "https://shaine-weekly-status.onrender.com/",
   "https://azjester.github.io/J-C_Replace/",
   "https://ai-training.st-dba.com/",
   "https://compliance.insightfuldefense.com/",
-  "https://vault.st-dba.com/",
   "https://azjester.github.io/usn-ai-tac-sim/",
   "https://cuas.insightfuldefense.com/",
   "https://insightfuldefense.com/",
   "https://infostyles.onrender.com/",
-  "https://resume.st-dba.com/",
   "https://azjester.github.io/SEG-SCHEDULE/",
   "https://azjester.github.io/lotus/",
-  "https://azjester.github.io/gun-laws/",
-  "https://azjester.github.io/SIGMA-155/",
-  "https://azjester.github.io/asteroids-/",
   "https://azjester.github.io/agile-pricer/",
-  "https://azjester.github.io/WarGames-/",
 ];
 
 const sourceOnlyRepos = [
@@ -81,11 +74,45 @@ test("social metadata uses the dedicated published application-library card", ()
   assert.match(hub, /name="twitter:image" content="https:\/\/azjester\.github\.io\/work\/apps-og\.png"/);
 });
 
-test("curated catalog contains all 33 identified applications", () => {
+const workApplications = [
+  "AI Metrics Dashboard",
+  "AI Practice Lab",
+  "Astrion · Mission Segments",
+  "Astrion Agile Pricing Studio",
+  "Astrion Division · LDAWIF",
+  "Astrion company site",
+  "Black Hat Agent",
+  "DoD RFP Compliance Workspace",
+  "Insightful Defense",
+  "JIATF C-UAS C2 COP",
+  "LDAWIF",
+  "Legal AI Value Tracker",
+  "Lotus Notes",
+  "Map Builder",
+  "Radar Signal Chain",
+  "Roadmap Builder",
+  "Roadmap Builder Lite",
+  "SEG Flexible Staff Scheduling",
+  "Shared Leadership Dashboard",
+  "Solution Architect Workbench",
+  "The AI Compendium",
+  "USN Tactical AI Backbone",
+  "Unified Project Management Suite",
+  "Weekly Status Tracker · Cloud",
+  "Weekly Status Tracker · Lite",
+  "Weekly Task Tracker",
+];
+
+test("curated catalog lists exactly the 26 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
-  const appCount = [...catalogBlock.matchAll(/\n\s{10}title: "/g)].length;
-  assert.equal(appCount, 33);
-  assert.match(hub, /One launch point for every public AzJester application/);
+  const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual([...titles].sort(), [...workApplications].sort(),
+    "The library is work-only: add an application here only when it belongs in front of a work audience");
+  assert.match(hub, /One launch point for the work applications built across AzJester repositories/);
+  assert.match(
+    hub,
+    /const categoryOrder = \["All", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "More", "Source only"\];/,
+  );
 });
 
 test("Solution Architect Workbench is linked and stamped as under development", () => {
@@ -142,19 +169,13 @@ test("The AI Compendium is classified as a graphics application", () => {
   assert.doesNotMatch(hub, /title: "The AI Compendium",[\s\S]{0,500}(AI skills hub|"Skills")/);
 });
 
-test("Weekly Status links to its live app and real source repository", () => {
-  assert.match(hub, /title: "shAIne Weekly Status",[\s\S]{0,500}liveUrl: "https:\/\/shaine-weekly-status\.onrender\.com\/"/);
-  assert.match(hub, /title: "shAIne Weekly Status",[\s\S]{0,500}repoUrl: "https:\/\/github\.com\/AzJester\/shAIne_Weekly_Status"/);
+test("card links are skipped when an application has no URL for them", () => {
   assert.match(hub, /if \(typeof url !== "string" \|\| !url\.trim\(\)\) return null/);
 });
 
-test("Claude Skills and Thought Circuit live in a separate resources section", () => {
+test("Thought Circuit is the only entry in the separate resources section", () => {
   assert.match(hub, /<section class="resources" id="resources" aria-labelledby="resources-title">/);
-  assert.equal((hub.match(/<article class="resource-card"/g) || []).length, 2);
-
-  const skillsCard = hub.match(/<article class="resource-card" data-resource="claude-skills">([\s\S]*?)<\/article>/)?.[1] || "";
-  assert.match(skillsCard, /<h3>Claude &amp; AI Agent Skills<\/h3>/);
-  assert.match(skillsCard, /href="https:\/\/github\.com\/AzJester\/skills"/);
+  assert.equal((hub.match(/<article class="resource-card"/g) || []).length, 1);
 
   const thoughtCircuitCard = hub.match(/<article class="resource-card" data-resource="thought-circuit">([\s\S]*?)<\/article>/)?.[1] || "";
   assert.match(thoughtCircuitCard, /<h3>Thought Circuit<\/h3>/);
@@ -177,8 +198,15 @@ test("the inline application module parses without a build step", () => {
   assert.doesNotThrow(() => new Script(scripts.at(-1)[1]));
 });
 
-test("GitHub refresh has a curated fallback and discovers future public deployments", () => {
+test("GitHub refresh has a curated fallback and adds only allowlisted repositories", () => {
   assert.match(hub, /api\.github\.com\/users\/\$\{GITHUB_USER\}\/repos/);
   assert.match(hub, /repo\.has_pages/);
   assert.match(hub, /The curated catalog remains complete/);
+  assert.match(
+    hub,
+    /const discoverableRepos = new Set\(\["black_hat_agent", "passive_sensor_demo_f5\.2", "talent-acquisition-agent"\]\);/,
+  );
+  assert.match(hub, /if \(!discoverableRepos\.has\(key\) \|\| knownRepos\.has\(key\) \|\| repo\.private \|\|/);
+  assert.doesNotMatch(hub, /excludedRepos/,
+    "Discovery is opt-in: an exclusion list would let a new public repository reach the work library by default");
 });

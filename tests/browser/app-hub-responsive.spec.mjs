@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-async function openHub(page, baseURL, query = "", expectedCount = 33) {
+async function openHub(page, baseURL, query = "", expectedCount = 26) {
   await page.route("https://api.github.com/**", route => route.fulfill({
     status: 200,
     contentType: "application/json",
@@ -115,10 +115,6 @@ test("deep-linked filters and application links resolve visibly and correctly", 
   expect(activeVisible).toBe(true);
 
   await openHub(page, baseURL);
-  const weeklyStatus = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "shAIne Weekly Status", exact: true }) });
-  await expect(weeklyStatus.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://shaine-weekly-status.onrender.com/");
-  await expect(weeklyStatus.getByRole("link", { name: /^View source:/ })).toHaveAttribute("href", "https://github.com/AzJester/shAIne_Weekly_Status");
-
   const solutionWorkbench = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Solution Architect Workbench", exact: true }) });
   await expect(solutionWorkbench).toContainText("Defense");
   await expect(solutionWorkbench.locator(".availability")).toHaveText("Live");
@@ -132,8 +128,7 @@ test("deep-linked filters and application links resolve visibly and correctly", 
   const astrionLdawif = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "Astrion Division · LDAWIF", exact: true }) });
   await expect(astrionLdawif.getByRole("link", { name: /^View source:/ })).toHaveAttribute("href", "https://github.com/AzJester/work/tree/main/astrion-division/ldawif");
 
-  const skills = page.locator('[data-resource="claude-skills"]');
-  await expect(skills.getByRole("link", { name: /Browse Claude and AI Agent Skills/ })).toHaveAttribute("href", "https://github.com/AzJester/skills");
+  await expect(page.locator(".resource-card")).toHaveCount(1);
 
   const thoughtCircuit = page.locator('[data-resource="thought-circuit"]');
   await expect(thoughtCircuit.getByRole("link", { name: /Visit Thought Circuit/ })).toHaveAttribute("href", "https://st-dba.com/");
@@ -144,4 +139,51 @@ test("deep-linked filters and application links resolve visibly and correctly", 
     .filter(link => new URL(link.href).pathname === pathname)
     .map(link => link.getAttribute("aria-label")), new URL("../apps.html", baseURL).pathname);
   expect(localLoops).toEqual([]);
+});
+
+test("GitHub metadata adds only allowlisted repositories to the work library", async ({ page, baseURL }) => {
+  const repository = (name, overrides = {}) => ({
+    name,
+    html_url: `https://github.com/AzJester/${name}`,
+    description: null,
+    homepage: null,
+    language: "HTML",
+    has_pages: true,
+    private: false,
+    pushed_at: "2026-11-01T00:00:00Z",
+    ...overrides,
+  });
+  const respondWith = repositories => page.route("https://api.github.com/**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(repositories),
+  }));
+  const hubUrl = new URL("../apps.html", baseURL).href;
+
+  await respondWith([
+    repository("passive_sensor_demo_F5.2", { homepage: "https://azjester.github.io/passive_sensor_demo_F5.2/" }),
+    repository("Talent-Acquisition-Agent"),
+    repository("Black_Hat_Agent"),
+    repository("brand-new-public-site"),
+    repository("another-unlisted-app", { homepage: "https://example.com/" }),
+    repository("work"),
+  ]);
+  await page.goto(hubUrl);
+  await expect(page.locator(".app-card")).toHaveCount(29);
+  await expect(page.getByRole("heading", { name: "brand new public site", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "another unlisted app", exact: true })).toHaveCount(0);
+
+  await page.locator('#filters [data-category="More"]').click();
+  await expect(page.locator(".app-card h3")).toHaveText(["Black Hat Agent", "passive sensor demo F5.2", "Talent Acquisition Agent"]);
+  const sensorDemo = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "passive sensor demo F5.2", exact: true }) });
+  await expect(sensorDemo.getByRole("link", { name: /^Open app:/ })).toHaveAttribute("href", "https://azjester.github.io/passive_sensor_demo_F5.2/");
+
+  await page.unroute("https://api.github.com/**");
+  await respondWith([
+    repository("passive_sensor_demo_F5.2", { private: true }),
+    repository("Talent-Acquisition-Agent", { has_pages: false }),
+  ]);
+  await page.goto(hubUrl);
+  await expect(page.locator(".app-card")).toHaveCount(26);
+  await expect(page.locator('#filters [data-category="More"]')).toHaveCount(0);
 });

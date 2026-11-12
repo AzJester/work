@@ -18,7 +18,7 @@
   <meta property="og:image:alt" content="Application Library — Built by Shane Turner">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Application Library · Shane Turner">
-  <meta name="twitter:description" content="One launch point for every public AzJester application.">
+  <meta name="twitter:description" content="One launch point for the work applications built across AzJester repositories.">
   <meta name="twitter:image" content="https://azjester.github.io/work/apps-og.png">
   <meta name="twitter:image:alt" content="Application Library — Built by Shane Turner">
   <style>
@@ -420,8 +420,6 @@
     .app-card[data-category="Defense"] { --card-accent: var(--amber); }
     .app-card[data-category="AI & Learning"] { --card-accent: var(--violet); }
     .app-card[data-category="Design & Graphics"] { --card-accent: var(--violet); }
-    .app-card[data-category="Personal"] { --card-accent: var(--green); }
-    .app-card[data-category="Games"] { --card-accent: #ff8b84; }
 
     .card-top {
       display: flex;
@@ -867,27 +865,12 @@
       <div class="resources-heading">
         <div>
           <p class="resources-eyebrow">Beyond the applications</p>
-          <h2 id="resources-title">Skills &amp; resources</h2>
+          <h2 id="resources-title">Resources</h2>
         </div>
-        <p class="resources-intro">Reusable agent tools and published analysis that extend the work.</p>
+        <p class="resources-intro">Published analysis that extends the work.</p>
       </div>
 
       <div class="resource-grid">
-        <article class="resource-card" data-resource="claude-skills">
-          <div class="resource-top">
-            <p class="resource-kind">AI agent library</p>
-            <span class="resource-mark" aria-hidden="true">SK</span>
-          </div>
-          <h3>Claude &amp; AI Agent Skills</h3>
-          <p class="resource-description">A personal collection of reusable skills for Claude and other AI agents, organized as documented skill packages with Claude Code and Codex support where available.</p>
-          <ul class="resource-tags" aria-label="Claude and AI Agent Skills topics">
-            <li class="resource-tag">Claude Code</li>
-            <li class="resource-tag">Agent skills</li>
-            <li class="resource-tag">Reusable workflows</li>
-          </ul>
-          <a class="app-link primary resource-link" href="https://github.com/AzJester/skills" target="_blank" rel="noopener noreferrer" aria-label="Browse Claude and AI Agent Skills on GitHub (opens in a new tab)">Browse skills <span class="external-icon" aria-hidden="true">↗</span></a>
-        </article>
-
         <article class="resource-card" data-resource="thought-circuit">
           <div class="resource-top">
             <p class="resource-kind">Published analysis</p>
@@ -909,7 +892,7 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <p>Designed and built by Shane Turner.</p>
-      <p>Public catalog · <span id="reviewed-date">Reviewed August 31, 2026</span> · <a href="https://github.com/AzJester/work" target="_blank" rel="noopener noreferrer">View this repository</a></p>
+      <p>Public catalog · <span id="reviewed-date">Reviewed November 12, 2026</span> · <a href="https://github.com/AzJester/work" target="_blank" rel="noopener noreferrer">View this repository</a></p>
     </div>
   </footer>
 
@@ -997,16 +980,6 @@
           repoUrl: "https://github.com/AzJester/work/blob/main/tracker.html",
           repo: "work",
           tags: ["Status", "KPIs", "Supabase"]
-        },
-        {
-          title: "shAIne Weekly Status",
-          description: "A public, read-only executive status viewer for current reports, portfolio priorities, risks, roadmaps, documents, archives, and print views.",
-          category: "Operations",
-          access: "Public",
-          liveUrl: "https://shaine-weekly-status.onrender.com/",
-          repoUrl: "https://github.com/AzJester/shAIne_Weekly_Status",
-          repo: "shAIne_Weekly_Status",
-          tags: ["Executive brief", "Portfolio", "Read-only"]
         },
         {
           title: "Weekly Task Tracker",
@@ -1109,16 +1082,6 @@
           tags: ["USN", "Simulation", "Assurance"]
         },
         {
-          title: "Firearms Vault",
-          description: "A private, sign-in-protected collection manager with structured records, attachments, local edition, and share views.",
-          category: "Personal",
-          access: "Account",
-          liveUrl: "https://vault.st-dba.com/",
-          repoUrl: "https://github.com/AzJester/firearms-vault",
-          repo: "firearms-vault",
-          tags: ["PWA", "Private data", "Supabase"]
-        },
-        {
           title: "Insightful Defense",
           description: "Mission-focused analysis connecting defense technology, AI, acquisition, and operational outcomes.",
           category: "Research",
@@ -1179,46 +1142,6 @@
           tags: ["Training", "Practice", "Skills"]
         },
         {
-          title: "GunLawMap",
-          description: "An interactive U.S. firearm-law map for exploring state policies, comparisons, reciprocity, methodology, and change over time.",
-          category: "Research",
-          access: "Public",
-          liveUrl: "https://azjester.github.io/gun-laws/",
-          repoUrl: "https://github.com/AzJester/gun-laws",
-          repo: "gun-laws",
-          tags: ["Policy", "Map", "State data"]
-        },
-        {
-          title: "Interactive Résumé",
-          description: "A web résumé with a cinematic 3D experience plus accessible classic and printable versions.",
-          category: "Personal",
-          access: "Public",
-          liveUrl: "https://resume.st-dba.com/",
-          repoUrl: "https://github.com/AzJester/resume",
-          repo: "resume",
-          tags: ["Portfolio", "3D", "Career"]
-        },
-        {
-          title: "SIGMA 155: Fire Mission",
-          description: "A browser artillery game that turns fire-mission procedure, targeting, jamming, difficulty, and resupply into playable mechanics.",
-          category: "Games",
-          access: "Public",
-          liveUrl: "https://azjester.github.io/SIGMA-155/",
-          repoUrl: "https://github.com/AzJester/SIGMA-155",
-          repo: "SIGMA-155",
-          tags: ["Artillery", "Tactics", "Game"]
-        },
-        {
-          title: "Asteroids",
-          description: "A faithful, installable browser recreation of the 1979 arcade cabinet with keyboard, touch, and two-player modes.",
-          category: "Games",
-          access: "Public",
-          liveUrl: "https://azjester.github.io/asteroids-/",
-          repoUrl: "https://github.com/AzJester/asteroids-",
-          repo: "asteroids-",
-          tags: ["Arcade", "Canvas", "PWA"]
-        },
-        {
           title: "Astrion Agile Pricing Studio",
           description: "Model agile fixed-price federal pursuits with staffing, milestones, basis-of-estimate detail, cost phasing, and team sync.",
           category: "Operations",
@@ -1227,16 +1150,6 @@
           repoUrl: "https://github.com/AzJester/agile-pricer",
           repo: "agile-pricer",
           tags: ["Pricing", "BOE", "Federal"]
-        },
-        {
-          title: "WarGames",
-          description: "A retro CRT-terminal recreation inspired by the 1983 film, built as an accessible browser game.",
-          category: "Games",
-          access: "Public",
-          liveUrl: "https://azjester.github.io/WarGames-/",
-          repoUrl: "https://github.com/AzJester/WarGames-",
-          repo: "WarGames-",
-          tags: ["Terminal", "Retro", "Game"]
         },
         {
           title: "Roadmap Builder Lite",
@@ -1270,7 +1183,11 @@
         }
       ];
 
-      const categoryOrder = ["All", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "Personal", "Games", "More", "Source only"];
+      const categoryOrder = ["All", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "More", "Source only"];
+      // Opt-in list. A repository is added from public GitHub metadata only when its
+      // lowercase name appears here, so a new public repository never reaches this
+      // page on its own.
+      const discoverableRepos = new Set(["black_hat_agent", "passive_sensor_demo_f5.2", "talent-acquisition-agent"]);
       const state = { query: "", category: "All" };
       const elements = {
         grid: document.getElementById("app-grid"),
@@ -1437,11 +1354,10 @@
           });
 
           const knownRepos = new Set(catalog.map((app) => app.repo.toLocaleLowerCase()));
-          const excludedRepos = new Set(["skills", "whisper", "ledger", "ldawif-meeting629", "ufo", "ai-save", "jiatf401-a.github.io"]);
           const catalogLengthBeforeDiscovery = catalog.length;
           repositories.forEach((repo) => {
             const key = repo.name.toLocaleLowerCase();
-            if (knownRepos.has(key) || excludedRepos.has(key) || (!repo.has_pages && !repo.homepage)) return;
+            if (!discoverableRepos.has(key) || knownRepos.has(key) || repo.private || (!repo.has_pages && !repo.homepage)) return;
             catalog.push({
               title: repo.name.replace(/[-_]+/g, " "),
               description: repo.description || "A public application published from this repository.",

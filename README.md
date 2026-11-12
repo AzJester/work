@@ -3,10 +3,15 @@ My Work Repository
 
 ## Application Library
 
-A searchable launch point for every public application built across the
+A searchable launch point for the work applications built across the
 [`AzJester`](https://github.com/AzJester) repositories. The catalog includes live
 products, account-gated tools, and source-only applications that have not been
-published yet. It also checks public GitHub metadata for newly deployed repositories.
+published yet.
+
+The library is work-only and opt-in. It never adds a repository on its own: beyond
+the curated catalog, a repository is pulled from public GitHub metadata only when its
+name is in the page's `discoverableRepos` allowlist, so a new public repository stays
+off the library until it is listed.
 
 ### [Open the Application Library](https://azjester.github.io/work/apps.html)
 
