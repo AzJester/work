@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { nToIcao, hex6, normalize, estimateQnhOffset, predict, modelKey, operatorOf, flowVote } from './adsb.js';
+import { nToIcao, hex6, normalize, estimateQnhOffset, predict, modelKey, operatorOf, flowVote, livePhase } from './adsb.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -25,6 +25,15 @@ const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const fmt = (v, d = 0) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
 const isNarrow = () => innerWidth <= 760;
 
+// Optional switches set by a host page or a capture script before this module loads.
+//   window.__TWIN_OPTS    = { shadow: 0|size, terrainStep: 1|2|4, aniso: n, tiles: n, air: 'full'|'4k', pixelRatio: n, antialias: bool }
+//   window.__TWIN_CAPTURE = { epoch: ms }  frame-by-frame mode for recording: nothing advances until __twin.step(dt) is called,
+//                                         and every clock in the page reads the stepped time instead of the wall clock.
+const OPTS = window.__TWIN_OPTS || {};
+const CAP = window.__TWIN_CAPTURE ? { t: 0, draw: true, epoch: window.__TWIN_CAPTURE.epoch || Date.now() } : null;
+const nowMs = () => (CAP ? CAP.t : performance.now());
+const wallMs = () => (CAP ? CAP.epoch + CAP.t : Date.now());
+
 // N-number -> ICAO 24-bit conversion lives in adsb.js. Verified against the reference video: N327QS -> A389C0.
 if (nToIcao('N327QS') !== 'A389C0') console.warn('ICAO conversion self-test failed');
 
@@ -40,7 +49,7 @@ async function getData() {
   const img = new Image(); img.src = 'data/imagery.jpg';
   // Aerial photography is optional: when the files are missing the airfield is painted from vector data instead.
   const optImg = (u) => new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = u; });
-  const small = matchMedia('(pointer:coarse)').matches || innerWidth < 760 || !!window.__TWIN_LOWQ;
+  const small = OPTS.air ? OPTS.air === '4k' : (matchMedia('(pointer:coarse)').matches || innerWidth < 760 || !!window.__TWIN_LOWQ);
   const photos = Promise.all([optImg(small ? 'data/photo_airfield_4k.jpg' : 'data/photo_airfield.jpg'), optImg('data/photo_metro.jpg'), fetch('data/photo_tiles/index.json').then((r) => (r.ok ? r.json() : null)).catch(() => null)]);
   const fonts = document.fonts ? Promise.all([document.fonts.load('700 26px "Barlow Condensed"'), document.fonts.load('600 12px "Barlow Condensed"')]).catch(() => {}) : Promise.resolve();
   const [airport, terrTxt, bldTxt] = await Promise.all([get('data/airport.json', 'json'), get('data/terrain.b64.txt'), get('data/buildings.b64.txt')]);
@@ -140,18 +149,18 @@ progress('Setting up renderer', 0.45);
 
 const canvas = $('#gl');
 let renderer;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: OPTS.antialias !== false, powerPreference: 'high-performance' }); }
 catch (e) { fail('This browser could not start WebGL, which the 3D twin needs. Try a desktop browser with hardware acceleration on.'); throw e; }
 const MOBILE = matchMedia('(pointer:coarse)').matches || innerWidth < 760;
 const LOWQ = !!window.__TWIN_LOWQ; // headless test hook: software GL cannot keep up with full quality
-renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75));
+renderer.setPixelRatio(OPTS.pixelRatio || Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.62;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = OPTS.shadow !== 0;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const MAXTEX = renderer.capabilities.maxTextureSize;
-const ANISO = renderer.capabilities.getMaxAnisotropy();
+const ANISO = Math.min(renderer.capabilities.getMaxAnisotropy(), OPTS.aniso || 16);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 2, 180000);
@@ -178,11 +187,12 @@ function terrainH(x, n) {
   const h = (a, b) => tInner[b * TN + a] / 10;
   return lerp(lerp(h(i, j), h(i + 1, j), u), lerp(h(i, j + 1), h(i + 1, j + 1), u), v);
 }
-function gridGeo(arr, size, half) {
-  const g = new THREE.PlaneGeometry(2 * half, 2 * half, size - 1, size - 1);
+function gridGeo(arr, size, half, step = 1) {
+  const n = Math.floor((size - 1) / step) + 1;
+  const g = new THREE.PlaneGeometry(2 * half, 2 * half, n - 1, n - 1);
   g.rotateX(-Math.PI / 2);
   const p = g.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setY(i, arr[i] / 10);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) p.setY(r * n + c, arr[Math.min(size - 1, r * step) * size + Math.min(size - 1, c * step)] / 10);
   g.computeVertexNormals();
   return g;
 }
@@ -232,10 +242,10 @@ if (midTex) {
       diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(uMid, muv).rgb, mw);`);
   };
 }
-const terrain = new THREE.Mesh(gridGeo(tInner, TN, THALF), terrainMat);
+const terrain = new THREE.Mesh(gridGeo(tInner, TN, THALF, OPTS.terrainStep || 1), terrainMat);
 terrain.receiveShadow = true; scene.add(terrain);
 {
-  const g = gridGeo(tOuter, TM, THALF2);
+  const g = gridGeo(tOuter, TM, THALF2, OPTS.terrainStep || 1);
   const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
     const h = p.getY(i), m = sstep(15, 380, h);
@@ -434,7 +444,7 @@ const airfieldMat = new THREE.MeshStandardMaterial({ map: AF.tex, roughness: 0.9
 // ---------------------------------------------------------------- full-detail aerial tiles
 // The airfield photo is 0.65 m per pixel. Around wherever the view is focused, 30 cm tiles are loaded on top of it
 // and dropped again when the view moves away, so close-ups stay sharp without holding the whole field in GPU memory.
-const DETAIL = { info: D.photoInfo, tiles: new Map(), bad: new Set(), busy: 0, cap: MOBILE || LOWQ ? 4 : 10, night: null };
+const DETAIL = { info: D.photoInfo, tiles: new Map(), bad: new Set(), busy: 0, cap: OPTS.tiles || (MOBILE || LOWQ ? 4 : 10), night: null };
 const tileLoader = new THREE.TextureLoader();
 function dropTile(key) {
   const t = DETAIL.tiles.get(key); if (!t) return;
@@ -443,7 +453,7 @@ function dropTile(key) {
 }
 function updatePhotoTiles(focus) {
   const I = DETAIL.info; if (!I) return;
-  const now = performance.now(), camDist = camera.position.distanceTo(focus);
+  const now = nowMs(), camDist = camera.position.distanceTo(focus);
   const rad = camDist < 2400 ? clamp(camDist * 0.75, 320, 1000) : -1, fx = focus.x, fn = -focus.z, want = [];
   if (rad > 0) for (let r = 0; r < I.rows; r++) for (let c = 0; c < I.cols; c++) {
     const x0 = I.x0 + c * I.tile_m, n1 = I.n1 - r * I.tile_m;
@@ -761,7 +771,7 @@ const envScene = new THREE.Scene(); const skyEnv = new Sky(); skyEnv.scale.setSc
 const pmrem = new THREE.PMREMGenerator(renderer);
 let envRT = null;
 const sun = new THREE.DirectionalLight(0xffffff, 3);
-sun.castShadow = true; { const sm = LOWQ ? 1024 : MOBILE ? 2048 : 4096; sun.shadow.mapSize.set(sm, sm); }
+sun.castShadow = true; { const sm = OPTS.shadow || (LOWQ ? 1024 : MOBILE ? 2048 : 4096); sun.shadow.mapSize.set(sm, sm); }
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.6;
 scene.add(sun, sun.target);
 const hemi = new THREE.HemisphereLight(0xbdd3ef, 0x9a8466, 0.8); scene.add(hemi);
@@ -800,7 +810,7 @@ function updateSky(ms) {
   sun.intensity = 3.4 * day + 0.12 * night;
   sun.color.setRGB(1, lerp(0.72, 0.97, sstep(0.0, 0.35, sAlt)), lerp(0.5, 0.92, sstep(0.0, 0.35, sAlt)));
   if (night > 0.5) sun.color.setRGB(0.55, 0.65, 0.95);
-  sun.castShadow = day > 0.05;
+  sun.castShadow = day > 0.05 && OPTS.shadow !== 0;
   hemi.intensity = 0.15 + 0.85 * day; hemi.color.setRGB(lerp(0.25, 0.74, day), lerp(0.32, 0.83, day), lerp(0.5, 0.94, day));
   hemi.groundColor.setRGB(lerp(0.12, 0.6, day), lerp(0.1, 0.52, day), lerp(0.1, 0.4, day));
   renderer.toneMappingExposure = lerp(0.95, 0.6, day);
@@ -1429,7 +1439,7 @@ function makeLiveAircraft(r) {
   return ac;
 }
 function liveIngest(j) {
-  const tNow = performance.now() / 1000, list = j.ac || j.aircraft || [];
+  const tNow = nowMs() / 1000, list = j.ac || j.aircraft || [];
   const q = estimateQnhOffset(list);
   if (q !== null) { LIVE.qnh = LIVE.qnhSet ? lerp(LIVE.qnh, q, 0.3) : q; LIVE.qnhSet = true; }
   LIVE.votes.west *= 0.97; LIVE.votes.east *= 0.97;
@@ -1461,7 +1471,7 @@ function liveIngest(j) {
   if (Math.max(west, east) > 1.5 && Math.max(west, east) > 2 * Math.min(west, east)) { const f = west > east ? 'west' : 'east'; if (!LIVE.flowSeen || SIM.flow !== f) { LIVE.flowSeen = true; setFlow(f); } }
 }
 function liveStep(dt) {
-  const tNow = performance.now() / 1000, k = Math.exp(-dt / 1.3);
+  const tNow = nowMs() / 1000, k = Math.exp(-dt / 1.3);
   for (const ac of LIVE.map.values()) {
     const r = ac.rep, p = predict(r, tNow);
     ac.ex *= k; ac.en *= k; ac.ea *= k;
@@ -1471,18 +1481,17 @@ function liveStep(dt) {
       const rate = r.ground ? 40 : 8, dh = clamp(angDiff(ac.hdg, r.hdg), -rate * dt, rate * dt);
       ac.yawRate = lerp(ac.yawRate, dt > 0 ? dh / dt : 0, 0.08); ac.hdg = (ac.hdg + dh + 360) % 360;
     } else ac.yawRate *= 0.9;
-    if (r.ground) ac.phase = r.gs < 1.2 ? 'stop' : (r.gs > 18 && rwyAt(ac.x, ac.n, 4) >= 0 ? 'roll' : 'taxi');
-    else ac.phase = r.vs < -1.2 ? 'arr' : r.vs > 1.2 ? 'climb' : 'lvl';
+    ac.phase = livePhase(r, ac.alt, () => rwyAt(ac.x, ac.n, r.ground ? 4 : 8) >= 0);
     ac.engines = !(r.ground && r.gs < 1.2);
   }
 }
-function schedulePoll(ms = 2000) { clearTimeout(LIVE.timer); LIVE.timer = setTimeout(pollLive, ms); }
+function schedulePoll(ms = 2000) { if (CAP) return; clearTimeout(LIVE.timer); LIVE.timer = setTimeout(pollLive, ms); } // a capture script feeds frames itself
 async function pollLive() {
   if (!LIVE.on) return;
   try {
     const j = await fetchFeed();
     if (!LIVE.on) return;
-    liveIngest(j); LIVE.fails = 0; LIVE.lastOk = performance.now();
+    liveIngest(j); LIVE.fails = 0; LIVE.lastOk = nowMs();
     if ((j.src || FEED_HOST) !== LIVE.src) { LIVE.src = j.src || FEED_HOST; syncModeUi(); }
     schedulePoll(document.hidden ? 15000 : 2000);
   } catch (e) { LIVE.fails++; LIVE.err = e.message; schedulePoll(Math.min(15000, 3000 * LIVE.fails)); }
@@ -1496,8 +1505,8 @@ function clearAircraft() {
 
 // Start on live traffic when a feed answers; otherwise run the simulator. The claude.ai preview blocks outside calls, so it always simulates.
 progress('Checking for a live ADS-B feed', 0.8);
-const firstPayload = await fetchFeed(3000).catch(() => null);
-if (firstPayload) { LIVE.on = true; LIVE.lastOk = performance.now(); LIVE.src = firstPayload.src || FEED_HOST; liveIngest(firstPayload); }
+const firstPayload = CAP ? null : await fetchFeed(3000).catch(() => null);
+if (firstPayload) { LIVE.on = true; LIVE.lastOk = nowMs(); LIVE.src = firstPayload.src || FEED_HOST; liveIngest(firstPayload); }
 else { progress('Generating traffic', 0.85); await new Promise((r) => setTimeout(r, 0)); populate(); }
 
 // ---------------------------------------------------------------- aircraft lights (nav, beacon, strobe, landing)
@@ -1537,7 +1546,7 @@ function updateAircraftVisual(ac, dtR) {
   const bank = ac.grounded ? 0 : clamp(Math.atan(ac.v * ac.yawRate * DEG / 9.81) / DEG, -27, 27);
   ac.bank = lerp(ac.bank, bank, clamp(dtR * 2, 0, 1));
   o.rotation.set(ac.pitch * DEG, -ac.hdg * DEG, -ac.bank * DEG);
-  ac.gearMesh.visible = ac.grounded || (ac.phase === 'arr' && ac.alt < 650) || (ac.phase === 'climb' && ac.alt < 70);
+  ac.gearMesh.visible = ac.grounded || ac.phase === 'roll' || (ac.phase === 'arr' && ac.alt < 650) || (ac.phase === 'climb' && ac.alt < 70);
 }
 
 // ---------------------------------------------------------------- selection, labels, UI
@@ -1566,7 +1575,7 @@ function updateDetail() {
   $('#d-reg').textContent = ac.reg; $('#d-hex').textContent = ac.hex; $('#d-sq').textContent = ac.live ? (ac.sq || '—') : ac.engines ? ac.sq : '—';
   $('#d-gate').textContent = ac.live ? (ac.liveSpot || '—') : ac.gate ? ac.gate.name : ac.rwyEnd ? `Runway ${ac.rwyEnd.id.replace(/^0/, '')}` : '—';
   $('#d-src').textContent = ac.live ? ({ adsb_icao: 'ADS-B', adsb_icao_nt: 'ADS-B (non-transponder)', adsr_icao: 'ADS-R rebroadcast', tisb_icao: 'TIS-B', mlat: 'MLAT (multilateration)', mode_s: 'Mode S', adsc: 'ADS-C', other: 'Other' }[ac.rep.src] || ac.rep.src || 'ADS-B') + (ac.rep.altSrc === 'baro' ? ' · baro alt' : '') : 'Simulator';
-  $('#d-age').textContent = ac.live ? `${Math.max(0, performance.now() / 1000 - ac.rep.t).toFixed(1)} s` : '—';
+  $('#d-age').textContent = ac.live ? `${Math.max(0, nowMs() / 1000 - ac.rep.t).toFixed(1)} s` : '—';
   $('#d-alt').textContent = ac.grounded ? `${fmt(altFt(ac))} ft MSL (on ground)` : `${fmt(Math.round(altFt(ac) / 10) * 10)} ft MSL · ${fmt(Math.round(ac.alt / FT / 10) * 10)} AGL`;
   $('#d-gs').textContent = `${fmt(ac.v / KT)} kt`; $('#d-vs').textContent = `${ac.vs >= 0 ? '+' : '−'}${fmt(Math.abs(Math.round(ac.vs / FT * 60 / 10) * 10))} ft/min`;
   $('#d-trk').textContent = `${String(Math.round(ac.hdg) % 360).padStart(3, '0')}°`;
@@ -1713,7 +1722,7 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 // ---------------------------------------------------------------- controls wiring
-let simSpeed = 1, live = true, clockMs = Date.now(), todOffset = 0;
+let simSpeed = 1, live = true, clockMs = wallMs(), todOffset = 0;
 const mst = (ms) => new Date(ms - 7 * 3600000);
 const p2 = (v) => String(v).padStart(2, '0');
 function setFlow(f) {
@@ -1729,7 +1738,7 @@ $$('[data-cam]').forEach((b) => (b.onclick = () => { if (b.dataset.cam === 'tour
 $$('[data-spd]').forEach((b) => (b.onclick = () => { simSpeed = +b.dataset.spd; $$('[data-spd]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
 $$('[data-lbl]').forEach((b) => (b.onclick = () => { labelsOn.mode = b.dataset.lbl; $$('[data-lbl]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
 const tod = $('#tod');
-function setLive(on) { live = on; $('#live').setAttribute('aria-pressed', String(on)); if (on) clockMs = Date.now(); }
+function setLive(on) { live = on; $('#live').setAttribute('aria-pressed', String(on)); if (on) clockMs = wallMs(); }
 const feedNote = (msg) => { const n = $('#feed-note'); n.textContent = msg; n.hidden = !msg; };
 function syncModeUi() {
   const on = LIVE.on;
@@ -1755,10 +1764,14 @@ function syncModeUi() {
 function updateModeChip() {
   const chip = $('#chip-mode');
   if (!LIVE.on) { chip.textContent = 'Simulated ADS-B'; chip.className = 'chip sim'; chip.title = 'Aircraft movements come from a rules-based simulator. They follow the ADS-B data format but are not live.'; return; }
-  const age = Math.round((performance.now() - LIVE.lastOk) / 1000);
+  const age = Math.round((nowMs() - LIVE.lastOk) / 1000);
   chip.className = LIVE.fails ? 'chip warn' : 'chip live';
   chip.textContent = LIVE.fails ? `Live feed lost · ${age} s` : 'Live ADS-B';
   chip.title = LIVE.fails ? `No answer from the feed (${LIVE.err}). Holding last known tracks and retrying.` : `Real aircraft positions from ${LIVE.src || FEED_HOST}, refreshed every 2 seconds. Aircraft with transponders off do not appear.`;
+}
+function startLive(j) {
+  clearAircraft(); LIVE.on = true; LIVE.fails = 0; LIVE.lastOk = nowMs(); LIVE.src = j.src || FEED_HOST; LIVE.flowSeen = false; LIVE.votes = { west: 0, east: 0 };
+  liveIngest(j);
 }
 async function setDataMode(mode) {
   if (mode === 'live' && !LIVE.on) {
@@ -1766,8 +1779,7 @@ async function setDataMode(mode) {
     let j;
     try { j = await fetchFeed(5000); }
     catch (e) { feedNote(`No live feed is reachable from this page (${e.name === 'TypeError' || e.name === 'AbortError' ? 'the request was blocked or timed out' : e.message}). The claude.ai preview blocks outside data; live traffic runs on the hosted copy.`); return; }
-    clearAircraft(); LIVE.on = true; LIVE.fails = 0; LIVE.lastOk = performance.now(); LIVE.src = j.src || FEED_HOST; LIVE.flowSeen = false; LIVE.votes = { west: 0, east: 0 };
-    liveIngest(j); schedulePoll(); feedNote('');
+    startLive(j); schedulePoll(); feedNote('');
   } else if (mode === 'sim' && LIVE.on) {
     LIVE.on = false; clearTimeout(LIVE.timer); clearAircraft(); SIM.t = 0; SIM.arrTimer = {}; populate(); feedNote('');
   }
@@ -1799,14 +1811,14 @@ updateSky(clockMs);
 camera.position.copy(tourPos.getPointAt(0)); camera.lookAt(tourTgt.getPointAt(0)); controls.target.copy(tourTgt.getPointAt(0));
 setCam('tour');
 progress('Ready', 1);
-let last = performance.now(), uiT = 0, skyT = 0, lblT = 0;
+let last = nowMs(), uiT = 0, skyT = 0, lblT = 0;
 function frame(now) {
   const dtR = Math.min(0.1, (now - last) / 1000); last = now;
   const dt = dtR * (LIVE.on ? 1 : simSpeed);
   clockMs += dt * 1000;
-  if (LIVE.on) { clockMs = Date.now(); liveStep(dtR); }
+  if (LIVE.on) { clockMs = wallMs(); liveStep(dtR); }
   else {
-    if (live && simSpeed === 1 && Math.abs(clockMs - Date.now()) > 5000) clockMs = Date.now();
+    if (live && simSpeed === 1 && Math.abs(clockMs - wallMs()) > 5000) clockMs = wallMs();
     let rem = dt; while (rem > 1e-6) { const h = Math.min(0.25, rem); simStep(h); rem -= h; }
   }
   stepTrains(dt);
@@ -1866,11 +1878,12 @@ function frame(now) {
     const hh = t.getUTCHours() + t.getUTCMinutes() / 60; if (document.activeElement !== tod) tod.value = String(Math.round(hh * 4) / 4);
     $('#todv').textContent = `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}`;
   }
-  renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-  requestAnimationFrame(frame);
+  if (!CAP || CAP.draw) { renderer.render(scene, camera); labelRenderer.render(scene, camera); }
+  if (!CAP) requestAnimationFrame(frame);
 }
-requestAnimationFrame((t) => { last = t; frame(t); });
+if (CAP) frame(0); else requestAnimationFrame((t) => { last = t; frame(t); });
 setTimeout(() => { $('#loading').hidden = true; }, 150);
 if (!isNarrow()) $('#traffic').classList.remove('closed');
-window.__twin = { SIM, LIVE, DETAIL, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };
+// capture mode: advance the whole page by dt seconds and render exactly one frame (draw = false advances without rendering)
+const step = CAP ? (dt, draw = true) => { CAP.t += dt * 1000; CAP.draw = draw; frame(CAP.t); } : null;
+window.__twin = { SIM, LIVE, DETAIL, renderer, scene, step, startLive, syncModeUi, centerOn, tourState: () => tourT, setTour: (v) => { tourT = v; }, ENDS, RWY, GATES, select, setCam, camera, controls, nToIcao, updateSky, setFlow, astar, simStep, liveIngest, setDataMode, zoomBy, resetView };

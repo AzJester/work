@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
-  FIELD, FT, estimateQnhOffset, flowVote, llToLocal, modelKey, nToIcao, normalize, operatorOf, predict,
+  FIELD, FT, estimateQnhOffset, flowVote, livePhase, llToLocal, modelKey, nToIcao, normalize, operatorOf, predict,
 } from "../phx-digital-twin/adsb.js";
 import { buildIndex } from "../phx-digital-twin/tools/build_index.mjs";
 import {
@@ -110,6 +110,22 @@ test("runway flow is inferred only from low descending traffic on a runway headi
   assert.equal(flowVote({ ...base, ground: true }), null);
 });
 
+test("an aircraft rolling on a runway is on the runway even while its transponder still says airborne", () => {
+  const on = () => true, off = () => false;
+  assert.equal(livePhase({ ground: false, gs: 72, vs: -0.9 }, 2, on), "roll", "touchdown, airborne bit not yet cleared");
+  assert.equal(livePhase({ ground: false, gs: 40, vs: 0 }, 0, on), "roll", "takeoff roll reported as airborne");
+  assert.equal(livePhase({ ground: false, gs: 72, vs: -3.5 }, 8, on), "arr", "still descending over the threshold");
+  assert.equal(livePhase({ ground: false, gs: 80, vs: 6 }, 5, on), "climb", "lifted off");
+  assert.equal(livePhase({ ground: false, gs: 60, vs: 0 }, 300, on), "lvl", "level flight above the field");
+  assert.equal(livePhase({ ground: false, gs: 60, vs: 0 }, 5, off), "lvl", "low and level but not over a runway");
+  assert.equal(livePhase({ ground: true, gs: 30, vs: 0 }, 0, on), "roll");
+  assert.equal(livePhase({ ground: true, gs: 8, vs: 0 }, 0, off), "taxi");
+  assert.equal(livePhase({ ground: true, gs: 0.4, vs: 0 }, 0, off), "stop");
+  let calls = 0;
+  livePhase({ ground: false, gs: 120, vs: -4 }, 900, () => { calls += 1; return true; });
+  assert.equal(calls, 0, "the runway lookup is skipped when it cannot change the answer");
+});
+
 test("relay only reaches fixed upstreams for one fixed area", () => {
   assert.equal(upstreamUrl("adsb.lol"), `https://api.adsb.lol/v2/point/${AREA.lat}/${AREA.lon}/${AREA.radiusNm}`);
   assert.throws(() => upstreamUrl("example.com"));
@@ -152,6 +168,15 @@ test("the hosted page is generated from the artifact page and deployed with its 
   assert.match(workflow, /cp -R[^\n]*phx-digital-twin\/index\.html[^\n]*phx-digital-twin\/adsb\.js[^\n]*phx-digital-twin\/data[^\n]*_site\/phx-digital-twin\//);
   assert.match(workflow, /supabase functions deploy adsb-relay [^\n]*--no-verify-jwt/);
   assert.match(app, /functions\/v1\/adsb-relay/);
+});
+
+test("the demo movie is deployed, starts playing before it has fully downloaded, and has no audio track", () => {
+  assert.match(workflow, /cp -R[^\n]*phx-digital-twin\/phx-twin-demo\.mp4[^\n]*_site\/phx-digital-twin\//);
+  const movie = readFileSync(resolve(root, "phx-digital-twin/phx-twin-demo.mp4"));
+  assert.ok(movie.length < 50 * 1024 * 1024, "keep the movie under GitHub's 50 MB warning size");
+  const head = movie.subarray(0, 1024 * 1024).toString("latin1"); // the track index (moov) leads the file when encoded with -movflags +faststart
+  assert.ok(head.includes("moov") && head.includes("vide"), "encode with -movflags +faststart");
+  assert.ok(!head.includes("soun"), "the movie must not carry an audio track");
 });
 
 test("aerial photography is baked, described and matches the script that fetches it", () => {

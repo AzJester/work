@@ -3,6 +3,7 @@
 Browser-based 3D twin of Phoenix Sky Harbor International (KPHX), modeled on the Unreal-style airport flyover with floating ADS-B tags. Real aerial photography, real airfield geometry, live aircraft.
 
 - **Public page:** `https://azjester.github.io/work/phx-digital-twin/` (live ADS-B capable).
+- **Demo movie:** `https://azjester.github.io/work/phx-digital-twin/phx-twin-demo.mp4` (61 seconds, silent, 24 MB). How it was made: see Demo movie.
 - **claude.ai artifact preview:** same scene with simulated traffic only. The artifact sandbox blocks all outside data calls.
 - **Local:** serve the repo root with any static server and open `/phx-digital-twin/`.
 
@@ -72,7 +73,21 @@ Orbit, Flyover and Tower views; click any aircraft or list row to inspect and fo
 - `data/`: `photo_tiles/` (40 tiles, 26 MB), `photo_airfield.jpg`, `photo_metro.jpg`, Sentinel-2 base, terrain, buildings, airfield JSON.
 - `tools/fetch_imagery.py`: fetches and bakes the aerial photography. It needs the open internet, so it runs in GitHub Actions (`.github/workflows/phx-twin-data.yml`) and commits the result. `tools/imagery_report.json` records the source, flight date and exposure.
 - `tools/probe_feeds.mjs`, `tools/check_deployment.mjs`: report what the ADS-B feeds return and whether the deployed page and relay work. Run from Actions: PHX twin data, Run workflow.
+- `tools/record_feed.mjs`: records a few minutes of the relay's output to `tools/_recording/feed.json.gz` (Actions: PHX twin data, task `record-feed`). `tools/capture_demo.mjs`: renders the demo movie from that recording. See Demo movie.
 - Other `tools/*.py`: preprocessing for airfield, terrain, buildings and taxi graph (Python 3 with numpy, rasterio, shapely, pyproj, pyarrow, fsspec).
+
+## Demo movie
+
+`tools/capture_demo.mjs` renders a silent walkthrough frame by frame, so it works on a machine with no GPU. It opens the real page in headless Chromium with `window.__TWIN_CAPTURE` set, which freezes the page clock until the script calls `__twin.step(dt)`, replays the recorded ADS-B session through the same ingest path the live feed uses, and clicks the real controls. The pointer and captions are overlays added for the recording.
+
+```bash
+export PLAYWRIGHT=/path/to/node_modules/playwright/index.js THREE_DIR=/path/to/node_modules/three FONT_DIR=/path/to/node_modules
+for s in A B C D E F; do node phx-digital-twin/tools/capture_demo.mjs $s frames/$s; done
+for s in A B C D E F; do for f in frames/$s/*.jpg; do echo "file '$f'"; done; done > frames.txt
+ffmpeg -r 20 -f concat -safe 0 -i frames.txt -an -c:v libx264 -pix_fmt yuv420p -crf 18 -movflags +faststart phx-twin-demo.mp4
+```
+
+The published copy is `phx-twin-demo.mp4` (1600x900, CRF 24). Traffic in the movie is a replay, not live at render time: the recording's timestamp is in the captions. Scenes are cut from one recording in time order. Software rendering takes 1 to 4 seconds per frame.
 
 ## Simulated traffic model
 
