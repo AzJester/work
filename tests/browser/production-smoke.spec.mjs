@@ -131,3 +131,18 @@ test("@production deployed Solution Architect Workbench release is healthy", asy
   await expect(solutionCard.locator(".development-stamp")).toHaveText("UNDER DEVELOPMENT");
   expect(pageErrors).toEqual([]);
 });
+
+test("@production deployed Astrion Capabilities Film is published at its library route", async ({ request }) => {
+  test.skip(!process.env.PRODUCTION_SMOKE, "runs only after the Pages deployment");
+  test.setTimeout(120_000);
+
+  const route = `../astrion-film/?deployment-smoke=${Date.now()}`;
+  await expect
+    .poll(async () => (await request.get(route, { failOnStatusCode: false })).status(), {
+      timeout: 90_000,
+      intervals: [1_000, 2_000, 5_000],
+    })
+    .toBe(200);
+  const film = await request.get(route, { failOnStatusCode: false });
+  expect(await film.text()).toContain("<title>Astrion Capabilities Film</title>");
+});

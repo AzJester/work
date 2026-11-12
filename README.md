@@ -3,10 +3,16 @@ My Work Repository
 
 ## Application Library
 
-A searchable launch point for every public application built across the
+A searchable launch point for the work applications built across the
 [`AzJester`](https://github.com/AzJester) repositories. The catalog includes live
 products, account-gated tools, and source-only applications that have not been
-published yet. It also checks public GitHub metadata for newly deployed repositories.
+published yet.
+
+The library is work-only and fully curated. Every card is written into the page, so
+it loads nothing at run time and a new repository appears only when someone adds a
+card for it. Visitors can search, filter by category, pin the applications they use,
+switch between card and list layouts, and choose a light or dark theme. Those choices
+are stored in the visitor's own browser and nowhere else.
 
 ### [Open the Application Library](https://azjester.github.io/work/apps.html)
 
@@ -603,6 +609,17 @@ prototype's accessibility/cross-browser/content issues fixed:
 ### → https://azjester.github.io/work/astrion-division/ldawif/
 
 Marked `noindex` while under review.
+
+## Astrion Capabilities Film
+
+A fully coded film of Astrion mission areas, from orbit to seabed. Picture and score are
+computed live in the browser from one self-contained HTML file with no runtime requests.
+
+### [Open the Astrion Capabilities Film](https://azjester.github.io/work/astrion-film/)
+
+The Pages build serves `astrion-film/astrion-capabilities-film.html` as the index of
+`/astrion-film/`. After changing anything under `astrion-film/src/`, rebuild that file
+with `node astrion-film/build.mjs`.
 
 ## LDAWIF — All-Domain Kill Web
 

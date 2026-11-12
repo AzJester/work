@@ -197,6 +197,9 @@ jobs:
           # PHX digital twin: ship the page, modules and data, not the preprocessing scripts.
           mkdir -p _site/phx-digital-twin
           cp -R phx-digital-twin/index.html phx-digital-twin/app.js phx-digital-twin/adsb.js phx-digital-twin/data _site/phx-digital-twin/
+          # Astrion capabilities film: one self-contained file, served as its folder's index.
+          mkdir -p _site/astrion-film
+          cp astrion-film/astrion-capabilities-film.html _site/astrion-film/index.html
           touch _site/.nojekyll
 
       - name: Upload site artifact
