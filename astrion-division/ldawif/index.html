@@ -5,63 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Astrion · Layered Defense, Autonomous Warfare, Integrated Fires</title>
 <meta name="description" content="Astrion engineers, integrates, and validates mission systems across layered defense, autonomous warfare, and integrated fires. Proven under real conditions before the field.">
-<meta name="theme-color" content="#0b0c11">
+<meta name="theme-color" content="#050607">
 <!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/Archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/JetBrainsMono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="canonical" href="https://azjester.github.io/work/astrion-division/ldawif/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Astrion">
 <meta property="og:title" content="Astrion · Layered Defense, Autonomous Warfare, Integrated Fires">
 <meta property="og:description" content="Mission advantage, proven before it reaches the field. Layered defense, autonomous warfare, and integrated fires — validated end to end.">
 <meta property="og:url" content="https://azjester.github.io/work/astrion-division/ldawif/">
-<meta property="og:image" content="https://azjester.github.io/work/astrion-division/ldawif/assets/og-card.png">
+<meta property="og:image" content="https://azjester.github.io/work/astrion-division/ldawif/assets/og-card.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script>document.documentElement.classList.add('js');</script>
 <style>
   /* ============================================================
-     ASTRION DIVISION LANDING — technical / futuristic HUD skin
-     Self-contained page + local assets/. Astrion brand colors.
-     Obvia is licensed and not web-embeddable here, so Verdana
-     (approved fallback) anchors display + body; a monospace
-     utility face carries the telemetry.
-     Official headshots live in assets/.
+     ASTRION DIVISION LANDING · current Astrion web brand
+     Color: the seven website tokens (Void, Carbon, Gunmetal, Bone,
+     Steel, Ion, Flare) and nothing else. Hairlines are Steel at
+     reduced alpha.
+     Type: Archivo for display and body, JetBrains Mono for labels
+     and metadata. The wordmark is the outlined SVG, so Space
+     Grotesk is never loaded.
+     Shape: square corners, flat panels, 1px hairlines.
+     Self-contained page + local assets/.
      ============================================================ */
 
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("assets/fonts/Archivo-latin-wght-normal.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 100 800; font-display: swap; src: url("assets/fonts/JetBrainsMono-latin-wght-normal.woff2") format("woff2"); }
+
   :root {
-    --force: #442C81;
-    --force-2: #6b45c9;
-    --force-deep: #2a1a52;
-    --sky: #29AAE1;
-    --sky-glow: rgba(41,170,225,.55);
-    --refraction: #1ED872;
-    --refraction-glow: rgba(30,216,114,.5);
-    --supernova: #FFAF2E;
-    --twilight: #FC5442;
+    /* current Astrion website tokens. Hex first, for engines without oklch. */
+    --astrion-void: #050607;
+    --astrion-carbon: #0B0D10;
+    --astrion-gunmetal: #171B22;
+    --astrion-bone: #EEEDE7;
+    --astrion-steel: #8A8F99;
+    --astrion-ion: #23CEF0;
+    --astrion-flare: #E2FDFF;
 
-    --bg: #0b0c11;
-    --bg-2: #101219;
-    --panel: rgba(255,255,255,.028);
-    --panel-2: rgba(255,255,255,.05);
+    /* role tokens */
+    --bg: var(--astrion-void);
+    --panel: var(--astrion-carbon);
+    --band: var(--astrion-gunmetal);
+    --ink: var(--astrion-bone);
+    --ink-dim: var(--astrion-steel);
+    --accent: var(--astrion-ion);
+    --line: rgba(138,143,153,.24);        /* Steel hairline */
+    --line-strong: rgba(138,143,153,.55); /* Steel control border */
 
-    --ink: #eef0f6;
-    --ink-dim: #9aa1b8;
-    --mono-dim: #7c84a3; /* >=4.5:1 on --bg for the small mono labels */
-    --edge: rgba(160,180,220,.22);
-    --edge-hot: rgba(41,170,225,.65);
-    --line: rgba(255,255,255,.09);
-
-    --font: Verdana, Geneva, "DejaVu Sans", sans-serif;
-    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, "Cascadia Code", monospace;
+    --font: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
 
     --maxw: 1180px;
     --pad: clamp(20px, 5vw, 66px);
-    --notch: polygon(0 0, calc(100% - 13px) 0, 100% 13px, 100% 100%, 13px 100%, 0 calc(100% - 13px));
-    --notch-sm: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  }
+  @supports (color: oklch(0% 0 0)) {
+    :root {
+      --astrion-void: oklch(0.121 0.0039 245.47);
+      --astrion-carbon: oklch(0.1582 0.0072 258.37);
+      --astrion-gunmetal: oklch(0.2212 0.015 261.62);
+      --astrion-bone: oklch(0.9452 0.0081 98.88);
+      --astrion-steel: oklch(0.6491 0.016 264.46);
+      --astrion-ion: oklch(0.7856 0.1345 216.5);
+      --astrion-flare: oklch(0.9757 0.0288 205.5);
+    }
   }
 
   * { box-sizing: border-box; }
@@ -71,182 +85,145 @@
   body {
     margin: 0;
     font-family: var(--font);
+    font-size: 16px; line-height: 1.55; font-weight: 400;
     color: var(--ink);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
-    line-height: 1.55;
-    position: relative;
+    text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
-  /* ambient console grid over the whole page, very faint */
-  body::before {
-    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .04;
-    background-image:
-      linear-gradient(rgba(255,255,255,.6) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.6) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(circle at 50% 0%, #000, transparent 85%);
-    -webkit-mask-image: radial-gradient(circle at 50% 0%, #000, transparent 85%);
-  }
-  body > * { position: relative; z-index: 1; }
 
   a { color: inherit; text-decoration: none; }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
 
-  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--sky); color: #04222f; padding: 10px 16px; }
+  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--astrion-bone); color: var(--astrion-void);
+    padding: 10px 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
   .skip:focus { left: 12px; top: 12px; }
-  :focus-visible { outline: 2px solid var(--sky); outline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-  /* notched HUD panel with masked 1px glow edge.
-     Standard mask longhands accompany the -webkit- ones so the
-     ring renders as a ring (not a filled overlay) in every engine. */
-  .hud { position: relative; clip-path: var(--notch); }
-  .hud::before {
-    content: ""; position: absolute; inset: 0; padding: 1px; background: var(--edge);
-    clip-path: var(--notch); pointer-events: none;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-    mask-clip: content-box, border-box;
-    mask-composite: exclude;
-    transition: background .2s ease;
-  }
-  .hud:hover::before { background: var(--edge-hot); }
+  /* flat panel: square corners and a Steel hairline */
+  .hud { position: relative; border: 1px solid var(--line); transition: border-color .2s ease; }
+  .hud:hover { border-color: var(--line-strong); }
 
+  /* display type: Archivo, heavy, uppercase, tight */
+  .hero h1, .sec-head h2, .enabler h2, .contact h2 { font-weight: 800; text-transform: uppercase; text-wrap: balance; }
+
+  /* eyebrow: a short Ion rule, then a mono label */
   .eyebrow {
-    font-family: var(--mono); font-size: 11.5px; letter-spacing: .26em; text-transform: uppercase;
-    color: var(--sky); margin: 0 0 16px; display: inline-flex; align-items: center; gap: 11px;
+    font-family: var(--mono); font-size: 11px; font-weight: 500; line-height: 15px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 0 0 18px; display: inline-flex; align-items: flex-start; gap: 14px;
   }
-  .eyebrow::before { content: "";
-    width: 8px; height: 8px; background: var(--sky); box-shadow: 0 0 10px var(--sky-glow);
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); display: inline-block; }
+  .eyebrow::before { content: ""; flex: none; width: 28px; height: 1px; margin-top: 7px; background: var(--accent); }
 
   /* ---------------- NAV ---------------- */
   .nav {
     position: sticky; top: 0; z-index: 100;
-    background: rgba(11,12,17,.72);
-    backdrop-filter: saturate(150%) blur(12px); -webkit-backdrop-filter: saturate(150%) blur(12px);
+    background: rgba(5,6,7,.84);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--line);
   }
   .nav-in { display: flex; align-items: center; gap: 22px; height: 68px; }
   .logo { display: inline-flex; align-items: center; }
-  /* white knockout Astrion logo reads cleanly on the near-black nav */
-  .logo img { height: 30px; width: auto; display: block; }
+  /* outlined wordmark in Bone; the file carries its own clear space */
+  .logo img { height: 20px; width: auto; display: block; }
   .nav-links { margin-left: auto; display: flex; align-items: center; gap: 28px; }
-  .nav-links a.link { font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
-  .nav-links a.link:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
+  .nav-links a.link { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; color: var(--ink-dim); text-transform: uppercase; transition: color .15s ease; }
+  .nav-links a.link:hover { color: var(--ink); }
 
-  .status { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--mono-dim);
+  .status { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--ink-dim);
     display: inline-flex; align-items: center; gap: 12px; padding-left: 6px; }
-  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--refraction);
-    box-shadow: 0 0 0 0 var(--refraction-glow); animation: ping 2.6s ease-out infinite; }
-  .status b { color: var(--refraction); font-weight: normal; }
-  .status .clk { color: var(--sky); }
-  @keyframes ping { 0%{box-shadow:0 0 0 0 var(--refraction-glow);} 70%{box-shadow:0 0 0 7px rgba(30,216,114,0);} 100%{box-shadow:0 0 0 0 rgba(30,216,114,0);} }
+  .status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(35,206,240,.5); animation: ping 2.6s ease-out infinite; }
+  .status b { color: var(--ink); font-weight: 500; }
+  @keyframes ping { 0%{box-shadow:0 0 0 0 rgba(35,206,240,.5);} 70%{box-shadow:0 0 0 7px rgba(35,206,240,0);} 100%{box-shadow:0 0 0 0 rgba(35,206,240,0);} }
 
-  .btn { font-family: var(--mono); font-weight: bold; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase;
-    padding: 12px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
-    clip-path: var(--notch-sm); transition: transform .15s ease, filter .15s ease, background .15s ease, color .15s ease; }
-  .btn-primary { background: var(--sky); color: #04222f; filter: drop-shadow(0 0 13px rgba(41,170,225,.4)); }
-  .btn-primary:hover { transform: translateY(-1px); filter: drop-shadow(0 0 20px rgba(41,170,225,.6)); }
-  .btn-ghost { position: relative; background: transparent; color: var(--ink); }
-  .btn-ghost::before { content:""; position:absolute; inset:0; padding:1px; background: var(--edge-hot);
-    clip-path: var(--notch-sm);
-    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-    -webkit-mask-composite:xor;
-    mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
-    mask-clip: content-box, border-box;
-    mask-composite: exclude; }
-  .btn-ghost:hover { color: var(--sky); text-shadow: 0 0 12px var(--sky-glow); }
-  .btn.pending { cursor: default; color: var(--mono-dim); }
-  .btn.pending:hover { color: var(--mono-dim); text-shadow: none; transform: none; }
-
-  /* target-lock brackets: corner marks snap onto interactive elements on hover,
-     echoing the radar's lock indicator (top-left / bottom-right, like .telem) */
-  .btn { position: relative; }
-  .btn::after, .card::after, .pillar::after, .cap::after { content: ""; position: absolute; inset: 5px;
-    pointer-events: none; opacity: 0; transform: scale(1.15);
-    transition: transform .16s ease, opacity .16s ease;
-    background:
-      linear-gradient(currentColor, currentColor) left top / 13px 2px no-repeat,
-      linear-gradient(currentColor, currentColor) left top / 2px 13px no-repeat,
-      linear-gradient(currentColor, currentColor) right bottom / 13px 2px no-repeat,
-      linear-gradient(currentColor, currentColor) right bottom / 2px 13px no-repeat; }
-  .card::after, .pillar::after { color: var(--sky); }
-  .cap::after { color: rgba(255,255,255,.9); }
-  .btn:hover::after, .btn:focus-visible::after,
-  .card:hover::after, .pillar:hover::after, .cap:hover::after { opacity: .85; transform: scale(1); }
-  .btn.pending:hover::after { opacity: 0; }
-  /* outlines are clipped away by clip-path, so focus rings go inset */
-  .btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px currentColor; }
+  .btn { position: relative; font-family: var(--mono); font-weight: 500; font-size: 12px; line-height: 16px; letter-spacing: .16em; text-transform: uppercase;
+    padding: 13px 22px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+    color: var(--ink); background: transparent; border: 1px solid var(--line-strong); border-radius: 0;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .btn-primary { background: var(--astrion-bone); color: var(--astrion-void); border-color: var(--astrion-bone); }
+  .btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-ghost:hover { background: var(--astrion-bone); color: var(--astrion-void); border-color: var(--astrion-bone); }
+  .btn.pending { cursor: default; color: var(--ink-dim); border-color: var(--line); }
+  .btn.pending:hover { background: transparent; color: var(--ink-dim); border-color: var(--line); }
   .btn .arr { transition: transform .15s ease; }
   .btn:hover .arr { transform: translateX(3px); }
+  .btn.pending:hover .arr { transform: none; }
+  .btn .short { display: none; }
+
+  /* target-lock brackets: corner marks snap onto panels on hover,
+     echoing the radar's lock indicator (top-left / bottom-right, like .telem) */
+  .card::after, .pillar::after, .cap::after { content: ""; position: absolute; inset: 6px;
+    pointer-events: none; opacity: 0; transform: scale(1.04); color: var(--accent);
+    transition: transform .16s ease, opacity .16s ease;
+    background:
+      linear-gradient(currentColor, currentColor) left top / 12px 1px no-repeat,
+      linear-gradient(currentColor, currentColor) left top / 1px 12px no-repeat,
+      linear-gradient(currentColor, currentColor) right bottom / 12px 1px no-repeat,
+      linear-gradient(currentColor, currentColor) right bottom / 1px 12px no-repeat; }
+  .card:hover::after, .pillar:hover::after, .cap:hover::after { opacity: 1; transform: scale(1); }
 
   /* ---------------- HERO ---------------- */
-  .hero { position: relative; overflow: hidden; padding: 0;
-    background:
-      radial-gradient(1200px 560px at 80% -12%, rgba(68,44,129,.5), transparent 62%),
-      radial-gradient(760px 440px at 4% 8%, rgba(41,170,225,.14), transparent 58%),
-      linear-gradient(180deg, #0e1017, var(--bg));
-    border-bottom: 1px solid var(--line); }
+  .hero { position: relative; overflow: hidden; padding: 0; background: var(--bg); border-bottom: 1px solid var(--line); }
 
-  .hero-in { position: relative; z-index: 1; padding: clamp(66px, 12vh, 128px) 0 clamp(56px, 9vh, 96px); }
-  .hero h1 { font-size: clamp(32px, 4.6vw, 56px); line-height: 1.02; letter-spacing: -.015em;
-    margin: 8px 0 22px; max-width: 16ch; font-weight: bold; text-shadow: 0 0 40px rgba(41,170,225,.12); }
-  .hero h1 .hl { color: var(--sky); text-shadow: 0 0 26px var(--sky-glow); }
-  .lede { font-size: clamp(16px, 2.1vw, 20px); color: var(--ink-dim); max-width: 62ch; margin: 0 0 30px; }
+  .hero-in { position: relative; z-index: 1; padding-top: clamp(66px, 12vh, 128px); padding-bottom: clamp(56px, 9vh, 96px); }
+  .hero h1 { font-size: clamp(34px, 5vw, 66px); line-height: .94; letter-spacing: -.022em;
+    margin: 8px 0 26px; max-width: 12.5em; }
+  .hero h1 .hl { color: var(--accent); }
+  .lede { font-size: clamp(16px, 1.6vw, 18px); line-height: 1.6; color: var(--ink-dim); max-width: 56ch; margin: 0 0 32px; }
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 
-  /* HUD telemetry strip (decorative) */
-  .telem { position: relative; margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 14px;
-    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; color: var(--mono-dim);
+  /* telemetry strip (decorative): Steel labels, Bone values, one Ion state */
+  .telem { position: relative; margin-top: 28px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--ink-dim);
     padding: 12px 20px; }
   .telem::before, .telem::after { content:""; position:absolute; width:11px; height:11px; }
-  .telem::before { top:0; left:0; border-top:1.5px solid var(--sky); border-left:1.5px solid var(--sky); }
-  .telem::after { bottom:0; right:0; border-bottom:1.5px solid var(--sky); border-right:1.5px solid var(--sky); }
-  .telem em { font-style: normal; color: var(--refraction); }
-  .telem .clk { color: var(--sky); }
-  .telem .sep { color: rgba(255,255,255,.18); }
+  .telem::before { top:0; left:0; border-top:1px solid var(--accent); border-left:1px solid var(--accent); }
+  .telem::after { bottom:0; right:0; border-bottom:1px solid var(--accent); border-right:1px solid var(--accent); }
+  .telem em { font-style: normal; color: var(--ink); display: inline-block; transition: transform .15s ease; }
+  .telem em.ok { color: var(--accent); }
+  .telem em.bump { transform: scale(1.35); }
+  .telem .sep { color: var(--line-strong); }
 
   /* signature: sensor-to-shooter signal chain */
   .track { margin-top: clamp(46px, 8vh, 84px); }
-  .track-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--mono-dim);
+  .track-label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--ink-dim);
     text-transform: uppercase; margin-bottom: 20px; }
   .rail { position: relative; }
-  .rail .line { position: absolute; left: 0; right: 0; top: 15px; height: 2px;
-    background: linear-gradient(90deg, var(--sky), var(--supernova) 55%, var(--refraction));
-    opacity: .5; box-shadow: 0 0 14px rgba(41,170,225,.4); }
-  .rail .pulse { position: absolute; top: 9px; width: 14px; height: 14px; border-radius: 50%; background: var(--sky);
-    box-shadow: 0 0 20px 5px var(--sky-glow); animation: run 4.6s cubic-bezier(.5,0,.5,1) infinite; }
-  @keyframes run { 0%{left:0%; background:var(--sky); box-shadow:0 0 20px 5px var(--sky-glow);}
-    50%{background:var(--supernova); box-shadow:0 0 20px 5px rgba(255,175,46,.6);}
-    100%{left:100%; background:var(--refraction); box-shadow:0 0 20px 5px var(--refraction-glow);} }
+  .rail .line { position: absolute; left: 0; right: 0; top: 15px; height: 1px; background: var(--line-strong); }
+  .rail .pulse { position: absolute; top: 12px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    animation: run 4.6s cubic-bezier(.5,0,.5,1) infinite; }
+  @keyframes run { 0%{left:0%;} 100%{left:100%;} }
   .nodes { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
     list-style: none; margin: 0; padding: 0; }
   .node { position: relative; padding-top: 40px; }
-  .node .dot { position: absolute; top: 7px; left: 0; width: 18px; height: 18px; border-radius: 50%;
-    background: #0e1017; border: 2px solid var(--sky); box-shadow: 0 0 14px var(--sky-glow);
+  .node .dot { position: absolute; top: 9px; left: 0; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--accent);
     transition: transform .18s ease, background .18s ease; }
-  .node:nth-child(3) .dot { border-color: var(--supernova); box-shadow: 0 0 14px rgba(255,175,46,.5); }
-  .node:nth-child(4) .dot { border-color: var(--refraction); box-shadow: 0 0 14px var(--refraction-glow); }
   /* kill-chain trace: nodes flash in sequence when the radar defeats a contact */
-  .node .dot.hit { transform: scale(1.55); background: var(--sky); }
-  .node:nth-child(3) .dot.hit { background: var(--supernova); }
-  .node:nth-child(4) .dot.hit { background: var(--refraction); }
-  .node .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--mono-dim); display: block; margin-bottom: 6px; }
-  .node .nh { display: block; margin: 0 0 4px; font-size: 15px; font-weight: bold; letter-spacing: .01em; }
-  .node p { margin: 0; font-size: 13px; color: var(--ink-dim); max-width: 26ch; }
-  .node .spine { display: inline-block; margin-top: 9px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
-    color: var(--supernova); border: 1px solid rgba(255,175,46,.4); padding: 3px 8px; clip-path: var(--notch-sm); }
+  .node .dot.hit { transform: scale(1.5); background: var(--accent); }
+  .node .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; color: var(--ink-dim); display: block; margin-bottom: 8px; }
+  .node .nh { display: block; margin: 0 0 6px; font-size: 14px; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; }
+  .node p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-dim); max-width: 26ch; }
+  .node .spine { display: table; margin-top: 10px; font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    color: var(--accent); border: 1px solid rgba(35,206,240,.45); padding: 3px 8px;
+    transition: color .15s ease, border-color .15s ease; }
+  .node .spine:hover { color: var(--ink); border-color: var(--ink); }
 
-  /* hero: the C-UAS radar engagement plays ambiently behind the copy — and is playable:
-     on pointer-capable widths the scope accepts clicks that designate inbound targets */
-  .hero-scope { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .72;
+  /* hero: the division's layered-defense photograph sits at the right, fading into Void
+     toward the copy and the fold. The C-UAS radar engagement plays over it, and is playable:
+     on pointer-capable widths the scope accepts clicks that designate inbound targets. */
+  .hero-scope { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .hero-scope::before { content: ""; position: absolute; inset: 0; opacity: .9;
+    background:
+      linear-gradient(90deg, var(--bg) 36%, rgba(5,6,7,.3) 68%, rgba(5,6,7,.15) 100%),
+      linear-gradient(180deg, rgba(5,6,7,0) 44%, var(--bg) 90%),
+      url("assets/img/hero-layered-defense.webp") 100% 22% / auto 108% no-repeat; }
+  .hero-scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: .8;
     mask-image: radial-gradient(at 72% 54%, #000 0 42%, transparent 80%);
     -webkit-mask-image: radial-gradient(at 72% 54%, #000 0 42%, transparent 80%); }
-  .hero-scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .scope-hint { position: absolute; right: 6%; bottom: 9%; font-family: var(--mono); font-size: 10px;
-    letter-spacing: .18em; text-transform: uppercase; color: var(--sky); opacity: .55;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--accent); opacity: .7;
     transition: opacity .6s ease; }
   .scope-hint.off { opacity: 0; }
   @media (min-width: 941px) { .hero-scope canvas { pointer-events: auto; cursor: crosshair; } }
@@ -254,166 +231,147 @@
   /* let clicks in the empty hero regions fall through to the scope */
   .hero-in { pointer-events: none; }
   .hero-in > * { pointer-events: auto; }
-  .telem .amber { font-style: normal; color: var(--supernova); }
-  .telem .skyv { font-style: normal; color: var(--sky); }
-  .telem em { display: inline-block; transition: transform .15s ease; }
-  .telem em.bump { transform: scale(1.35); }
 
   /* ---------------- SECTION SHELL ---------------- */
-  section { padding: clamp(66px, 10vh, 112px) 0; position: relative; }
-  .sec-head { max-width: 68ch; margin-bottom: clamp(36px, 5vh, 58px); }
-  .sec-head h2 { font-size: clamp(26px, 3.7vw, 42px); line-height: 1.08; margin: 0 0 14px; letter-spacing: -.015em; font-weight: bold; }
-  .sec-head p { margin: 0; font-size: 17px; color: var(--ink-dim); }
-
-  .gridbg::after { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.05;
-    background-image: linear-gradient(rgba(41,170,225,.6) 1px, transparent 1px), linear-gradient(90deg, rgba(41,170,225,.6) 1px, transparent 1px);
-    background-size: 40px 40px; mask-image: radial-gradient(circle at 20% 0%, #000, transparent 70%);
-    -webkit-mask-image: radial-gradient(circle at 20% 0%, #000, transparent 70%); }
-  .gridbg .wrap { position: relative; z-index: 1; }
+  section { padding: clamp(72px, 11vh, 128px) 0; position: relative; }
+  .sec-head { max-width: 900px; margin-bottom: clamp(36px, 5vh, 58px); }
+  .sec-head h2 { font-size: clamp(28px, 3.9vw, 52px); line-height: .96; margin: 0 0 18px; letter-spacing: -.02em; }
+  .sec-head p:not(.eyebrow) { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-dim); max-width: 58ch; }
 
   /* ---------------- PILLARS ---------------- */
   .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-  .pillar { background: var(--panel); padding: 30px 26px 26px; }
-  .pillar .bar { position: absolute; left: 0; top: 26px; bottom: 26px; width: 3px; z-index: 2; box-shadow: 0 0 12px currentColor; }
-  .pillar.pd .bar { background: var(--sky); color: var(--sky); }
-  .pillar.aw .bar { background: var(--force-2); color: var(--force-2); }
-  .pillar.fi .bar { background: var(--refraction); color: var(--refraction); }
-  .pillar { transition: transform .18s ease; }
-  .pillar:hover { transform: translateY(-5px); }
-  .pillar .pnum { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--mono-dim); }
-  .pillar h3 { font-size: 22px; margin: 12px 0 8px; letter-spacing: -.01em; }
-  .pillar .oneliner { color: var(--ink); font-size: 15px; margin: 0 0 18px; }
+  .pillar { background: var(--panel); display: flex; flex-direction: column; }
+  .pillar .pmedia { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover;
+    background: var(--band); border-bottom: 1px solid var(--line); }
+  .pillar .pbody { padding: 26px 26px 28px; display: flex; flex-direction: column; flex: 1; }
+  .pillar .pnum { font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: .18em; color: var(--ink-dim); }
+  .pillar h3 { font-size: 21px; line-height: 1.05; font-weight: 800; text-transform: uppercase; margin: 14px 0 10px; letter-spacing: -.01em; }
+  .pillar .oneliner { color: var(--ink); font-size: 15px; margin: 0 0 20px; }
   .pillar ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-  .pillar li { font-family: var(--mono); font-size: 12.5px; letter-spacing: .02em; color: var(--ink-dim);
-    padding: 10px 0 10px 22px; position: relative; border-bottom: 1px solid var(--line); }
-  .pillar li::before { content:""; position:absolute; left:2px; top:15px; width:7px; height:7px;
-    border-right:1.5px solid var(--sky); border-bottom:1.5px solid var(--sky); transform: rotate(-45deg); }
+  .pillar li { font-size: 14px; color: var(--ink-dim);
+    padding: 10px 0 10px 20px; position: relative; border-bottom: 1px solid var(--line); }
+  .pillar li::before { content:""; position:absolute; left:2px; top:18px; width:5px; height:5px; background: var(--accent); }
   .pillar li:last-child { border-bottom: none; }
-  .aw-flag { display:inline-block; margin-top:16px; font-family: var(--mono); font-size:10.5px; letter-spacing:.08em;
-    color: var(--force-2); background: rgba(107,69,201,.12); border:1px solid rgba(107,69,201,.4); padding:6px 10px; clip-path: var(--notch-sm); }
+  .aw-flag { display:inline-block; align-self: flex-start; margin-top:18px; font-family: var(--mono); font-size:10.5px; letter-spacing:.08em;
+    color: var(--ink); border:1px solid var(--line-strong); padding:6px 10px; }
 
   /* ---------------- ENABLER BAND ---------------- */
-  .enabler { background: linear-gradient(120deg, var(--force-deep), var(--force) 52%, #38227a); overflow: hidden; }
-  .enabler::after { content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
-    background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px);
-    background-size: 44px 44px; mask-image: radial-gradient(circle at 72% 40%, #000, transparent 72%);
-    -webkit-mask-image: radial-gradient(circle at 72% 40%, #000, transparent 72%); }
-  .enabler .wrap { position: relative; z-index: 1; }
+  .enabler { background: var(--band); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
   .enabler-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 42px; align-items: center; }
-  .enabler h2 { font-size: clamp(26px, 3.5vw, 40px); margin: 8px 0 14px; letter-spacing: -.015em; }
-  .enabler p { color: rgba(255,255,255,.86); font-size: 16px; margin: 0 0 8px; max-width: 52ch; }
-  .enabler .eyebrow { color: var(--supernova); }
-  .enabler .eyebrow::before { background: var(--supernova); box-shadow: 0 0 10px rgba(255,175,46,.6); }
+  .enabler h2 { font-size: clamp(28px, 3.7vw, 48px); line-height: .96; margin: 8px 0 18px; letter-spacing: -.02em; }
+  .enabler p:not(.eyebrow) { color: var(--ink); font-size: 16px; line-height: 1.6; margin: 0 0 8px; max-width: 52ch; }
   .caps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .cap { background: rgba(255,255,255,.07); padding: 16px; transition: transform .18s ease; }
-  .cap:hover { transform: translateY(-4px); }
-  .cap.hud::before { background: rgba(255,255,255,.22); }
-  .cap b { display: block; font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; margin-bottom: 5px; color: #fff; }
-  .cap span { font-size: 12.5px; color: rgba(255,255,255,.74); }
-  .enabler .mono-note { color: rgba(255,255,255,.72); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; margin-top: 16px; }
+  .cap { background: var(--panel); padding: 16px; }
+  .cap b { display: block; font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .08em; margin-bottom: 6px; color: var(--ink); }
+  .cap span { font-size: 13px; line-height: 1.5; color: var(--ink-dim); display: block; }
+  .enabler p.mono-note { color: var(--ink-dim); font-family: var(--mono); font-size: 13px; letter-spacing: .06em; margin-top: 16px; }
 
   /* ModelOps health console: confidence sparkline with a drift->retrain->recover cycle */
-  .mops { background: rgba(10,8,20,.5); padding: 14px 14px 10px; margin-bottom: 12px; }
-  .mops.hud::before { background: rgba(255,255,255,.25); }
+  .mops { background: var(--bg); padding: 14px 14px 10px; margin-bottom: 12px; }
   .mops-bar { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono);
-    font-size: 10.5px; letter-spacing: .16em; color: #fff; text-transform: uppercase;
-    padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.14); }
-  .mops-bar #mops-ver { color: var(--supernova); }
+    font-size: 10.5px; letter-spacing: .16em; color: var(--ink); text-transform: uppercase;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .mops-bar #mops-ver { color: var(--accent); }
   .mops-scope { position: relative; height: 108px; margin: 10px 0 8px; }
   .mops-scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .mops-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.14); }
+  .mops-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
   .mchip { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase;
-    padding: 4px 9px; color: rgba(255,255,255,.75); border: 1px solid rgba(255,255,255,.28); clip-path: var(--notch-sm); }
-  .mchip.state-ok { color: var(--refraction); border-color: rgba(30,216,114,.55); }
-  .mchip.state-warn { color: var(--supernova); border-color: rgba(255,175,46,.6); }
-  .mchip.state-info { color: #9ad9f5; border-color: rgba(41,170,225,.6); }
+    padding: 4px 9px; color: var(--ink-dim); border: 1px solid var(--line-strong); }
+  /* three states without three hues: Ion outline, Bone fill, Flare outline */
+  .mchip.state-ok { color: var(--accent); border-color: var(--accent); }
+  .mchip.state-warn { color: var(--astrion-void); background: var(--astrion-bone); border-color: var(--astrion-bone); }
+  .mchip.state-info { color: var(--astrion-flare); border-color: var(--astrion-flare); }
 
   /* model lifecycle loop */
   .lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 18px; }
   .lifecycle .lc { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-    color: rgba(255,255,255,.62); border: 1px solid rgba(255,255,255,.28); padding: 4px 9px; clip-path: var(--notch-sm);
+    color: var(--ink-dim); border: 1px solid var(--line-strong); padding: 4px 9px;
     animation: lcpulse 10s linear infinite; }
   .lifecycle .lc:nth-child(1) { animation-delay: 0s; }
   .lifecycle .lc:nth-child(3) { animation-delay: 2s; }
   .lifecycle .lc:nth-child(5) { animation-delay: 4s; }
   .lifecycle .lc:nth-child(7) { animation-delay: 6s; }
   .lifecycle .lc:nth-child(9) { animation-delay: 8s; }
-  .lifecycle .lca { color: rgba(255,255,255,.4); font-size: 12px; }
-  .lifecycle .lca.loop { color: var(--supernova); font-size: 15px; }
-  @keyframes lcpulse { 0%, 15% { color: #fff; border-color: var(--supernova); }
-    19%, 100% { color: rgba(255,255,255,.62); border-color: rgba(255,255,255,.28); } }
+  .lifecycle .lca { color: var(--ink-dim); font-size: 12px; }
+  .lifecycle .lca.loop { color: var(--accent); font-size: 15px; }
+  @keyframes lcpulse { 0%, 15% { color: var(--astrion-bone); border-color: var(--astrion-ion); }
+    19%, 100% { color: var(--astrion-steel); border-color: rgba(138,143,153,.55); } }
 
   /* cross-links between the kill chain's DECIDE node and this section */
-  .chainlink { display: inline-block; margin-top: 14px; font-family: var(--mono); font-size: 10.5px;
-    letter-spacing: .12em; text-transform: uppercase; color: var(--supernova);
-    border: 1px solid rgba(255,175,46,.45); padding: 5px 10px; clip-path: var(--notch-sm); }
-  .chainlink:hover { color: #fff; border-color: var(--supernova); }
-  .node .spine:hover { color: #fff; border-color: var(--supernova); }
+  .chainlink { display: inline-block; margin-top: 16px; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+    border: 1px solid rgba(35,206,240,.45); padding: 5px 10px; transition: color .15s ease, border-color .15s ease; }
+  .chainlink:hover { color: var(--ink); border-color: var(--ink); }
   #chain { scroll-margin-top: 90px; }
 
+  /* lab to field: the three places a model has to hold up, in brand photography */
+  .fieldstrip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: clamp(44px, 7vh, 72px); }
+  .shot { margin: 0; background: var(--panel); }
+  .shot img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; background: var(--bg); }
+  .shot figcaption { display: flex; align-items: baseline; gap: 12px; padding: 12px 14px;
+    font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink);
+    border-top: 1px solid var(--line); }
+  .shot figcaption span { color: var(--ink-dim); }
+
   /* ---------------- PROOF ---------------- */
-  .proof { background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .proof-label { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; color: var(--mono-dim);
+  .proof { background: var(--bg); border-bottom: 1px solid var(--line); }
+  .proof-label { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; color: var(--ink-dim);
     text-transform: uppercase; margin-bottom: 28px; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
-  .stat { padding: 20px 20px; background: var(--panel); }
-  .stat .accent { position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; box-shadow: 0 0 10px currentColor; }
-  .stat:nth-child(1) .accent { background: var(--sky); color: var(--sky); }
-  .stat:nth-child(2) .accent { background: var(--refraction); color: var(--refraction); }
-  .stat:nth-child(3) .accent { background: var(--supernova); color: var(--supernova); }
-  .stat:nth-child(4) .accent { background: var(--force-2); color: var(--force-2); }
-  .stat .num { font-family: var(--mono); font-size: clamp(28px, 3.8vw, 42px); font-weight: bold; letter-spacing: -.01em;
-    line-height: 1; color: var(--ink); text-shadow: 0 0 22px rgba(41,170,225,.18); }
-  .stat .lbl { font-size: 12.5px; color: var(--ink-dim); margin-top: 10px; }
+  .stat { padding: 22px 20px; background: var(--panel); }
+  .stat .num { font-size: clamp(26px, 2.6vw, 34px); font-weight: 800; letter-spacing: -.02em;
+    line-height: 1; color: var(--ink); text-transform: uppercase; white-space: nowrap; }
+  .stat .lbl { font-size: 13px; line-height: 1.5; color: var(--ink-dim); margin-top: 12px; }
 
   /* ---------------- LEADERSHIP ---------------- */
   .lead-featured { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center;
     background: var(--panel); padding: 26px 28px; margin-bottom: 22px; }
-  .lead-featured .fbar { position:absolute; left:0; top:0; bottom:0; width:4px;
-    background: linear-gradient(var(--force-2), var(--sky)); box-shadow: 0 0 14px var(--sky-glow); z-index:2; }
-  .avatar { width: 90px; height: 90px; flex: none; display: grid; place-items: center; clip-path: var(--notch-sm);
-    font-family: var(--mono); font-weight: bold; font-size: 26px; color: #fff; letter-spacing: .04em;
-    background: linear-gradient(135deg, var(--force), var(--sky)); filter: drop-shadow(0 0 12px rgba(41,170,225,.3)); }
+  .lead-featured .fbar { position:absolute; left:-1px; top:-1px; bottom:-1px; width:2px; background: var(--accent); }
+  .avatar { width: 90px; height: 90px; flex: none; display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 500; font-size: 26px; color: var(--ink); letter-spacing: .04em;
+    background: var(--band); }
   .avatar.photo { background: none; }
   .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .lead-featured .who h3 { margin: 0 0 5px; font-size: 24px; }
-  .lead-featured .who .role { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--sky); text-transform: uppercase; margin: 0 0 8px; }
+  .lead-featured .who h3 { margin: 0 0 6px; font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+  .lead-featured .who .role { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; margin: 0 0 8px; }
   .lead-featured .who p { margin: 0; color: var(--ink-dim); font-size: 15px; max-width: 60ch; }
-  .rankchip { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--mono-dim);
+  .rankchip { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--ink-dim);
     padding: 8px 12px; white-space: nowrap; }
-  .rankchip.hud::before { background: var(--edge); }
 
   .lead-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
-  .card { background: var(--panel); padding: 24px 22px; transition: transform .18s ease; }
-  .card:hover { transform: translateY(-5px); }
+  .card { background: var(--panel); padding: 24px 22px; }
   .card .avatar { width: 60px; height: 60px; font-size: 18px; margin-bottom: 16px; }
-  .card h3 { margin: 0 0 5px; font-size: 18px; }
-  .card .role { font-family: var(--mono); font-size: 11px; letter-spacing: .07em; color: var(--sky); text-transform: uppercase; margin: 0 0 10px; line-height: 1.4; }
-  .card p { margin: 0; font-size: 13px; color: var(--ink-dim); }
-  .card .owner { display:block; margin-top:12px; font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--mono-dim); }
+  .card h3 { margin: 0 0 6px; font-size: 17px; line-height: 1.25; font-weight: 700; }
+  .card .role { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; color: var(--accent); text-transform: uppercase; margin: 0 0 10px; line-height: 1.5; }
+  .card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-dim); }
+  .card .owner { display:block; margin-top:14px; font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--ink-dim); }
 
   /* ---------------- CONTACT ---------------- */
+  /* the open hangar door sits behind the closing ask, held back by a Void scrim */
   .contact { background:
-      radial-gradient(760px 400px at 82% 0%, rgba(41,170,225,.2), transparent 62%),
-      linear-gradient(180deg, #0e1017, var(--bg)); }
+      linear-gradient(90deg, var(--bg) 6%, rgba(5,6,7,.84) 44%, rgba(5,6,7,.46) 100%),
+      linear-gradient(180deg, var(--bg) 0%, rgba(5,6,7,0) 30%, rgba(5,6,7,0) 72%, var(--bg) 100%),
+      url("assets/img/engineering-hangar.webp") center / cover no-repeat var(--bg); }
   .contact-in { display: grid; grid-template-columns: 1.2fr 1fr; gap: 42px; align-items: center; }
-  .contact h2 { font-size: clamp(28px, 4.1vw, 46px); margin: 8px 0 16px; letter-spacing: -.015em; }
-  .contact p { color: var(--ink-dim); font-size: 17px; margin: 0 0 26px; max-width: 48ch; }
+  .contact h2 { font-size: clamp(30px, 4.3vw, 56px); line-height: .96; margin: 8px 0 18px; letter-spacing: -.02em; }
+  .contact p:not(.eyebrow) { color: var(--ink-dim); font-size: 17px; line-height: 1.6; margin: 0 0 28px; max-width: 48ch; }
   .contact .panel { background: var(--panel); padding: 28px; }
   /* division poker chip: transparent PNG drops straight onto the panel */
-  .contact .panel .chip { display: block; width: 176px; height: 176px; margin: 0 auto 18px;
-    filter: drop-shadow(0 0 18px rgba(41,170,225,.18)); }
+  .contact .panel .chip { display: block; width: 176px; height: 176px; margin: 0 auto 18px; }
   .contact .panel .row { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .contact .panel .row:last-child { border-bottom: none; }
-  .contact .panel .k { color: var(--mono-dim); font-family: var(--mono); font-size: 11px; letter-spacing: .1em; }
+  .contact .panel .k { color: var(--ink-dim); font-family: var(--mono); font-size: 11px; letter-spacing: .12em; }
   .contact .panel .v { color: var(--ink); text-align: right; }
+  .contact .panel .v.dim { color: var(--ink-dim); }
 
   /* ---------------- FOOTER ---------------- */
   footer { background: var(--bg); border-top: 1px solid var(--line); padding: 36px 0 42px; }
-  .foot-in { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
-  .foot-in small { color: var(--mono-dim); font-size: 12px; line-height: 1.7; font-family: var(--mono); letter-spacing: .02em; }
-  .foot-links { display: flex; gap: 22px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--ink-dim); text-transform: uppercase; }
-  .foot-links a:hover { color: var(--sky); }
+  .foot-in { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-end; justify-content: space-between; }
+  .foot-mark { display: block; height: 16px; width: auto; margin: 0 0 14px -2px; }
+  .foot-in small { display: block; color: var(--ink-dim); font-size: 11.5px; line-height: 1.7; font-family: var(--mono); letter-spacing: .08em; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 10px 22px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; color: var(--ink-dim); text-transform: uppercase; }
+  .foot-links a { transition: color .15s ease; }
+  .foot-links a:hover { color: var(--ink); }
 
   /* ---------------- RESPONSIVE ---------------- */
   /* stage the nav down so it never overflows: status first, then section links; CTA always stays */
@@ -437,9 +395,24 @@
     .rail .line, .rail .pulse { display: none; }
     .node { padding-top: 0; padding-left: 28px; }
     .node .dot { top: 2px; }
-    .hero-scope { opacity: .3;
+    /* stacked: the photograph becomes a quiet band across the top, the scope a faint trace */
+    .hero-scope::before { opacity: .34;
+      background:
+        linear-gradient(180deg, rgba(5,6,7,.2) 0%, var(--bg) 62%),
+        url("assets/img/hero-layered-defense.webp") 60% 0 / 100% auto no-repeat; }
+    .hero-scope canvas { opacity: .3;
       mask-image: radial-gradient(at 50% 42%, rgba(0,0,0,.95) 0 36%, transparent 76%);
       -webkit-mask-image: radial-gradient(at 50% 42%, rgba(0,0,0,.95) 0 36%, transparent 76%); }
+    .contact { background:
+        linear-gradient(180deg, var(--bg) 0%, rgba(5,6,7,.8) 34%, rgba(5,6,7,.8) 66%, var(--bg) 100%),
+        url("assets/img/engineering-hangar.webp") center / cover no-repeat var(--bg); }
+  }
+  /* two columns: the third mission area spans the row, photograph beside its copy */
+  @media (min-width: 641px) and (max-width: 940px) {
+    .pillar:last-child { grid-column: 1 / -1; flex-direction: row; }
+    .pillar:last-child .pmedia { width: 50%; aspect-ratio: auto; align-self: stretch; min-height: 100%;
+      border-bottom: 0; border-right: 1px solid var(--line); }
+    .pillar:last-child .pbody { width: 50%; }
   }
   @media (max-width: 760px) {
     .lead-grid { grid-template-columns: repeat(2, 1fr); }
@@ -447,7 +420,9 @@
     .lead-grid .card:last-child { grid-column: span 2; }
   }
   @media (max-width: 640px) {
-    .pillars, .stats, .caps { grid-template-columns: 1fr; }
+    .pillars, .stats, .caps, .fieldstrip { grid-template-columns: 1fr; }
+    .fieldstrip { gap: 14px; }
+    .shot img { aspect-ratio: 2 / 1; }
     .lead-featured { grid-template-columns: auto 1fr; }
     .lead-featured .rankchip { display: none; }
     .hero h1 { max-width: 100%; }
@@ -455,13 +430,17 @@
   @media (max-width: 520px) {
     .lead-grid { grid-template-columns: 1fr; }
     .lead-grid .card, .lead-grid .card:nth-child(n+4), .lead-grid .card:last-child { grid-column: auto; }
+    .logo img { height: 17px; }
+    .nav .btn { padding: 10px 14px; letter-spacing: .12em; }
+    .nav .btn .long { display: none; }
+    .nav .btn .short { display: inline; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .rail .pulse, .status .dot { animation: none; }
-    .rail .pulse { left: 100%; background: var(--refraction); }
+    .rail .pulse { left: 100%; }
     .reveal { opacity: 1 !important; transform: none !important; }
-    .btn::after, .card::after, .pillar::after, .cap::after, .node .dot, .telem em, .cap { transition: none; }
+    .btn, .btn .arr, .hud, .card::after, .pillar::after, .cap::after, .node .dot, .telem em { transition: none; }
     .lifecycle .lc { animation: none; }
     .scope-hint { display: none; }
   }
@@ -472,14 +451,14 @@
 
   /* ---------------- DIVISION PATCH (easter egg) ---------------- */
   .patch-overlay { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center;
-    background: rgba(4,5,9,.88); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    background: rgba(5,6,7,.9); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     cursor: pointer; animation: patchfade .35s ease; }
   .patch-overlay figure { margin: 0; text-align: center; animation: patchpop .45s cubic-bezier(.2,.9,.3,1.2); }
   .patch-overlay img { max-width: min(86vw, 520px); max-height: 74vh; width: auto; height: auto;
-    display: block; margin: 0 auto; filter: drop-shadow(0 0 44px rgba(41,170,225,.35)); }
+    display: block; margin: 0 auto; border: 1px solid var(--line); }
   .patch-overlay figcaption { font-family: var(--mono); font-size: 11.5px; letter-spacing: .22em;
-    text-transform: uppercase; color: var(--sky); margin-top: 22px; }
-  .patch-overlay figcaption b { display: block; font-weight: normal; color: var(--mono-dim); margin-top: 8px; font-size: 10px; }
+    text-transform: uppercase; color: var(--accent); margin-top: 22px; }
+  .patch-overlay figcaption b { display: block; font-weight: normal; color: var(--ink-dim); margin-top: 8px; font-size: 10px; }
   @keyframes patchfade { from { opacity: 0; } }
   @keyframes patchpop { from { opacity: 0; transform: scale(.9); } }
   @media (prefers-reduced-motion: reduce) { .patch-overlay, .patch-overlay figure { animation: none; } }
@@ -491,16 +470,16 @@
 <!-- NAV -->
 <header class="nav">
   <div class="wrap nav-in">
-    <!-- Official Astrion wordmark (white knockout for the dark nav). Keep clear space = logotype x-height. -->
+    <!-- Current Astrion web wordmark: the outlined SVG in Bone, so no wordmark font is loaded. -->
     <a class="logo" href="https://astrion.us" aria-label="Astrion home">
-      <img src="assets/astrion-logo.png" alt="Astrion" width="176" height="30" decoding="async">
+      <img src="assets/astrion-wordmark-light.svg" alt="Astrion" width="137" height="20" decoding="async">
     </a>
     <nav class="nav-links" aria-label="Primary">
       <a class="link" href="#capabilities">Capabilities</a>
       <a class="link" href="#enabler">AI // ModelOps</a>
       <a class="link" href="#leadership">Leadership</a>
-      <span class="status" aria-hidden="true"><span class="dot"></span><b>SECURE</b><span class="clk" id="navclk">--:--:--</span></span>
-      <a href="#contact" class="btn btn-primary">Start a conversation <span class="arr">&rarr;</span></a>
+      <span class="status" aria-hidden="true"><span class="dot"></span><b>SECURE</b><span id="navclk">--:--:--</span></span>
+      <a href="#contact" class="btn btn-primary"><span class="long">Start a conversation</span><span class="short">Contact</span> <span class="arr">&rarr;</span></a>
     </nav>
   </div>
 </header>
@@ -520,10 +499,10 @@
         <a href="#capabilities" class="btn btn-ghost">See capabilities</a>
       </div>
       <div class="telem" aria-hidden="true">
-        <span>SYS <em>NOMINAL</em></span><span class="sep">/</span>
-        <span>UTC <em class="clk" id="heroclk">--:--:--</em></span><span class="sep">/</span>
-        <span>C-UAS INBOUND <em class="amber" id="cf-threat">0</em></span><span class="sep">/</span>
-        <span>TRACKED <em class="skyv" id="cf-track">0</em></span><span class="sep">/</span>
+        <span>SYS <em class="ok">NOMINAL</em></span><span class="sep">/</span>
+        <span>UTC <em id="heroclk">--:--:--</em></span><span class="sep">/</span>
+        <span>C-UAS INBOUND <em id="cf-threat">0</em></span><span class="sep">/</span>
+        <span>TRACKED <em id="cf-track">0</em></span><span class="sep">/</span>
         <span>DEFEATED <em id="cf-kill">0</em></span>
       </div>
 
@@ -544,7 +523,7 @@
   </section>
 
   <!-- PILLARS -->
-  <section class="gridbg" id="capabilities">
+  <section id="capabilities">
     <div class="wrap">
       <div class="sec-head reveal">
         <p class="eyebrow">What the division does</p>
@@ -552,24 +531,33 @@
         <p>Each area stands on its own program record. What connects them is a refusal to field anything we have not validated under conditions that mirror the fight.</p>
       </div>
       <div class="pillars">
-        <article class="pillar pd hud reveal"><span class="bar" aria-hidden="true"></span>
-          <span class="pnum">MISSION AREA · DEFEND</span>
-          <h3>Layered Defense</h3>
-          <p class="oneliner">Detect, deter, and defeat threats in depth, not at a single line.</p>
-          <ul><li>Counter-UAS detection and defeat</li><li>Electronic warfare and spectrum operations</li><li>Directed energy integration</li><li>Air and missile defense C2</li></ul>
+        <article class="pillar hud reveal">
+          <img class="pmedia" src="assets/img/layered-defense.webp" alt="Electro-optical sensor turret on a pedestal overlooking a mountain road as an unmanned ground vehicle approaches." width="900" height="600" loading="lazy" decoding="async">
+          <div class="pbody">
+            <span class="pnum">MISSION AREA · DEFEND</span>
+            <h3>Layered Defense</h3>
+            <p class="oneliner">Detect, deter, and defeat threats in depth, not at a single line.</p>
+            <ul><li>Counter-UAS detection and defeat</li><li>Electronic warfare and spectrum operations</li><li>Directed energy integration</li><li>Air and missile defense C2</li></ul>
+          </div>
         </article>
-        <article class="pillar aw hud reveal"><span class="bar" aria-hidden="true"></span>
-          <span class="pnum">MISSION AREA · MANEUVER</span>
-          <h3>Autonomous Warfare</h3>
-          <p class="oneliner">Human-supervised autonomy, built to doctrine and validated in test.</p>
-          <ul><li>Robotic and autonomous systems</li><li>Autonomy software assurance</li><li>Human-machine teaming</li><li>Test and evaluation for autonomy</li></ul>
-          <span class="aw-flag">Operator in command. Machines assist, humans decide.</span>
+        <article class="pillar hud reveal">
+          <img class="pmedia" src="assets/img/autonomous-warfare.webp" alt="Unmanned ground vehicle on a turntable in an anechoic test chamber, facing a horn antenna." width="900" height="600" loading="lazy" decoding="async">
+          <div class="pbody">
+            <span class="pnum">MISSION AREA · MANEUVER</span>
+            <h3>Autonomous Warfare</h3>
+            <p class="oneliner">Human-supervised autonomy, built to doctrine and validated in test.</p>
+            <ul><li>Robotic and autonomous systems</li><li>Autonomy software assurance</li><li>Human-machine teaming</li><li>Test and evaluation for autonomy</li></ul>
+            <span class="aw-flag">Operator in command. Machines assist, humans decide.</span>
+          </div>
         </article>
-        <article class="pillar fi hud reveal"><span class="bar" aria-hidden="true"></span>
-          <span class="pnum">MISSION AREA · STRIKE</span>
-          <h3>Integrated Fires</h3>
-          <p class="oneliner">Synchronize effects across domains, from sensor to shooter.</p>
-          <ul><li>CJADC2 enablement</li><li>Sensor-to-shooter integration</li><li>Fires command and control</li><li>Multi-domain effects coordination</li></ul>
+        <article class="pillar hud reveal">
+          <img class="pmedia" src="assets/img/integrated-fires.webp" alt="Hand holding a rugged tablet that shows a map with marked routes, a communications mast and vehicle on the hill beyond." width="900" height="600" loading="lazy" decoding="async">
+          <div class="pbody">
+            <span class="pnum">MISSION AREA · STRIKE</span>
+            <h3>Integrated Fires</h3>
+            <p class="oneliner">Synchronize effects across domains, from sensor to shooter.</p>
+            <ul><li>CJADC2 enablement</li><li>Sensor-to-shooter integration</li><li>Fires command and control</li><li>Multi-domain effects coordination</li></ul>
+          </div>
         </article>
       </div>
     </div>
@@ -611,6 +599,20 @@
           </div>
         </div>
       </div>
+      <div class="fieldstrip">
+        <figure class="shot hud reveal">
+          <img src="assets/img/lab.webp" alt="Hardware under test in an open frame on a lab bench, cabled to a rack of instruments." width="900" height="600" loading="lazy" decoding="async">
+          <figcaption><span>01</span>Lab</figcaption>
+        </figure>
+        <figure class="shot hud reveal">
+          <img src="assets/img/range.webp" alt="Engineer at a laptop beside a radio unit on an outdoor test bench in open desert." width="900" height="600" loading="lazy" decoding="async">
+          <figcaption><span>02</span>Range</figcaption>
+        </figure>
+        <figure class="shot hud reveal">
+          <img src="assets/img/field.webp" alt="Rugged computer and tablet running at a coastal observation post at dusk." width="900" height="600" loading="lazy" decoding="async">
+          <figcaption><span>03</span>Field</figcaption>
+        </figure>
+      </div>
     </div>
   </section>
 
@@ -619,16 +621,16 @@
     <div class="wrap">
       <div class="proof-label reveal">// Track record</div>
       <div class="stats">
-        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">~150</div><div class="lbl">Programs supported across defense, space, intelligence, cyber, and civil</div></div>
-        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">36+NL</div><div class="lbl">U.S. states where Astrion operates, plus the Netherlands</div></div>
-        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">CMMI-DEV</div><div class="lbl">Appraised at Maturity Level 3</div></div>
-        <div class="stat hud reveal"><span class="accent" aria-hidden="true"></span><div class="num">AS9100</div><div class="lbl">Aerospace quality certified, along with ISO 9001</div></div>
+        <div class="stat hud reveal"><div class="num">~150</div><div class="lbl">Programs supported across defense, space, intelligence, cyber, and civil</div></div>
+        <div class="stat hud reveal"><div class="num">36+NL</div><div class="lbl">U.S. states where Astrion operates, plus the Netherlands</div></div>
+        <div class="stat hud reveal"><div class="num">CMMI-DEV</div><div class="lbl">Appraised at Maturity Level 3</div></div>
+        <div class="stat hud reveal"><div class="num">AS9100</div><div class="lbl">Aerospace quality certified, along with ISO 9001</div></div>
       </div>
     </div>
   </section>
 
   <!-- LEADERSHIP -->
-  <section class="gridbg" id="leadership">
+  <section id="leadership">
     <div class="wrap">
       <div class="sec-head reveal">
         <p class="eyebrow">Who runs it</p>
@@ -703,7 +705,7 @@
           <div class="row"><span class="k">FOR</span><span class="v">Customers &amp; teaming partners</span></div>
           <div class="row"><span class="k">MISSION AREAS</span><span class="v">Defense · Autonomy · Fires</span></div>
           <div class="row"><span class="k">READINESS</span><span class="v">Validated lab to field</span></div>
-          <div class="row"><span class="k">CONTACT</span><span class="v" style="color:var(--mono-dim);">Division mailbox pending</span></div>
+          <div class="row"><span class="k">CONTACT</span><span class="v dim">Division mailbox pending</span></div>
         </div>
       </div>
     </div>
@@ -713,10 +715,13 @@
 
 <footer>
   <div class="wrap foot-in">
-    <small>
-      &copy; <span id="yr">2026</span> ASTRION<br>
-      TEAM REVIEW BUILD
-    </small>
+    <div>
+      <img class="foot-mark" src="assets/astrion-wordmark-light.svg" alt="Astrion" width="109" height="16" loading="lazy" decoding="async">
+      <small>
+        &copy; <span id="yr">2026</span> ASTRION<br>
+        TEAM REVIEW BUILD
+      </small>
+    </div>
     <nav class="foot-links" aria-label="Footer">
       <a href="#capabilities">Capabilities</a><a href="#enabler">AI // ModelOps</a><a href="#leadership">Leadership</a><a href="../../astrion/">Company</a><a href="https://astrion.us">astrion.us</a>
     </nav>
@@ -813,7 +818,7 @@
           vin: 0.030 + Math.random()*0.022, lit:0, state:'in' });
       }
     }
-    // intercept beams alternate between brand red and green
+    // intercept beams alternate between Ion and Flare
     var beamHue = 0;
     function fireTracer(c, spd){ tracers.push({ t:0, spd:spd, tgt:c, hue:(beamHue++ % 2) }); }
     var el = { threat:document.getElementById('cf-threat'), track:document.getElementById('cf-track'),
@@ -825,13 +830,13 @@
     }
     function draw(){
       ctx.clearRect(0,0,W,H);
-      ctx.fillStyle='rgba(8,12,20,0.35)'; ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.fill();
-      ring(R,'rgba(41,170,225,0.30)',1.2);
-      ring(R*0.75,'rgba(41,170,225,0.16)',1);
-      ring(R*0.5,'rgba(41,170,225,0.16)',1);
-      ring(R*0.25,'rgba(41,170,225,0.16)',1);
-      ring(R*engageR,'rgba(41,170,225,0.55)',1.2,[4,5]);
-      ctx.strokeStyle='rgba(41,170,225,0.12)'; ctx.lineWidth=1;
+      ctx.fillStyle='rgba(5,6,7,0.32)'; ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.fill();
+      ring(R,'rgba(35,206,240,0.30)',1.2);
+      ring(R*0.75,'rgba(35,206,240,0.16)',1);
+      ring(R*0.5,'rgba(35,206,240,0.16)',1);
+      ring(R*0.25,'rgba(35,206,240,0.16)',1);
+      ring(R*engageR,'rgba(35,206,240,0.55)',1.2,[4,5]);
+      ctx.strokeStyle='rgba(35,206,240,0.12)'; ctx.lineWidth=1;
       for(var a=0;a<TAU;a+=Math.PI/6){ ctx.beginPath(); ctx.moveTo(cx,cy);
         ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R); ctx.stroke(); }
 
@@ -839,24 +844,24 @@
         for(var s=0;s<26;s++){
           var aa = sweep - s*0.021, al = (1 - s/26)*0.16;
           ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(aa)*R, cy+Math.sin(aa)*R);
-          ctx.strokeStyle='rgba(41,170,225,'+al.toFixed(3)+')'; ctx.lineWidth=2; ctx.stroke();
+          ctx.strokeStyle='rgba(35,206,240,'+al.toFixed(3)+')'; ctx.lineWidth=2; ctx.stroke();
         }
         ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(sweep)*R, cy+Math.sin(sweep)*R);
-        ctx.strokeStyle='rgba(41,170,225,0.9)'; ctx.lineWidth=2; ctx.shadowColor='#29AAE1'; ctx.shadowBlur=12; ctx.stroke(); ctx.shadowBlur=0;
+        ctx.strokeStyle='rgba(35,206,240,0.9)'; ctx.lineWidth=2; ctx.shadowColor='#23CEF0'; ctx.shadowBlur=10; ctx.stroke(); ctx.shadowBlur=0;
       }
 
       ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.PI/4);
-      ctx.fillStyle='#1ED872'; ctx.shadowColor='#1ED872'; ctx.shadowBlur=10; ctx.fillRect(-4,-4,8,8); ctx.restore(); ctx.shadowBlur=0;
+      ctx.fillStyle='#EEEDE7'; ctx.shadowColor='#23CEF0'; ctx.shadowBlur=8; ctx.fillRect(-4,-4,8,8); ctx.restore(); ctx.shadowBlur=0;
 
       for(var t=0;t<tracers.length;t++){
         var tr=tracers[t], c=tr.tgt; if(!c) continue;
         var tx=cx+Math.cos(c.ang)*c.rng*R, ty=cy+Math.sin(c.ang)*c.rng*R;
         var p=Math.min(1,tr.t), ix=cx+(tx-cx)*p, iy=cy+(ty-cy)*p;
-        var redBeam = tr.hue===0;
+        var ionBeam = tr.hue===0;
         ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ix,iy);
-        ctx.strokeStyle = redBeam ? 'rgba(252,84,66,0.9)' : 'rgba(30,216,114,0.9)';
-        ctx.lineWidth=1.6; ctx.shadowColor = redBeam ? '#FC5442' : '#1ED872'; ctx.shadowBlur=9; ctx.stroke(); ctx.shadowBlur=0;
-        ctx.beginPath(); ctx.arc(ix,iy,2.4,0,TAU); ctx.fillStyle = redBeam ? '#ffddd8' : '#dcffe9'; ctx.fill();
+        ctx.strokeStyle = ionBeam ? 'rgba(35,206,240,0.95)' : 'rgba(226,253,255,0.9)';
+        ctx.lineWidth=1.6; ctx.shadowColor = '#23CEF0'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+        ctx.beginPath(); ctx.arc(ix,iy,2.4,0,TAU); ctx.fillStyle = '#E2FDFF'; ctx.fill();
       }
 
       for(var i=0;i<contacts.length;i++){
@@ -864,13 +869,13 @@
         var x=cx+Math.cos(c2.ang)*c2.rng*R, y=cy+Math.sin(c2.ang)*c2.rng*R;
         var locked = c2.state==='lock', base = 0.35 + c2.lit*0.65;
         var vx=Math.cos(c2.ang), vy=Math.sin(c2.ang);
-        ctx.strokeStyle='rgba(255,175,46,'+(0.15+c2.lit*0.35).toFixed(3)+')'; ctx.lineWidth=1;
+        ctx.strokeStyle='rgba(138,143,153,'+(0.25+c2.lit*0.45).toFixed(3)+')'; ctx.lineWidth=1;
         ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-vx*10,y-vy*10); ctx.stroke();
-        ctx.fillStyle = locked ? 'rgba(252,84,66,'+base.toFixed(3)+')' : 'rgba(255,175,46,'+base.toFixed(3)+')';
-        ctx.shadowColor = locked ? '#FC5442' : '#FFAF2E'; ctx.shadowBlur = 6*c2.lit + (locked?4:0);
+        ctx.fillStyle = locked ? 'rgba(226,253,255,'+base.toFixed(3)+')' : 'rgba(238,237,231,'+base.toFixed(3)+')';
+        ctx.shadowColor = locked ? '#23CEF0' : '#EEEDE7'; ctx.shadowBlur = 6*c2.lit + (locked?4:0);
         ctx.fillRect(x-2.4,y-2.4,4.8,4.8); ctx.shadowBlur=0;
         if(locked){
-          var s2=7; ctx.strokeStyle='#FC5442'; ctx.lineWidth=1.2; ctx.beginPath();
+          var s2=7; ctx.strokeStyle='#23CEF0'; ctx.lineWidth=1.2; ctx.beginPath();
           ctx.moveTo(x-s2,y-s2+3); ctx.lineTo(x-s2,y-s2); ctx.lineTo(x-s2+3,y-s2);
           ctx.moveTo(x+s2-3,y-s2); ctx.lineTo(x+s2,y-s2); ctx.lineTo(x+s2,y-s2+3);
           ctx.moveTo(x+s2,y+s2-3); ctx.lineTo(x+s2,y+s2); ctx.lineTo(x+s2-3,y+s2);
@@ -880,15 +885,15 @@
 
       for(var k=0;k<kills.length;k++){
         var kk=kills[k], av=Math.max(0,kk.a);
-        ctx.beginPath(); ctx.arc(kk.x,kk.y,kk.r,0,TAU); ctx.strokeStyle='rgba(30,216,114,'+av.toFixed(3)+')'; ctx.lineWidth=1.6; ctx.stroke();
-        ctx.beginPath(); ctx.arc(kk.x,kk.y,2,0,TAU); ctx.fillStyle='rgba(220,255,235,'+av.toFixed(3)+')'; ctx.fill();
+        ctx.beginPath(); ctx.arc(kk.x,kk.y,kk.r,0,TAU); ctx.strokeStyle='rgba(35,206,240,'+av.toFixed(3)+')'; ctx.lineWidth=1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(kk.x,kk.y,2,0,TAU); ctx.fillStyle='rgba(226,253,255,'+av.toFixed(3)+')'; ctx.fill();
       }
 
       // click feedback pings
       for(var q=0;q<pings.length;q++){
         var pg=pings[q], pa=Math.max(0,pg.a);
         ctx.beginPath(); ctx.arc(pg.x,pg.y,pg.r,0,TAU);
-        ctx.strokeStyle=(pg.hit?'rgba(255,175,46,':'rgba(41,170,225,')+pa.toFixed(3)+')';
+        ctx.strokeStyle=(pg.hit?'rgba(226,253,255,':'rgba(35,206,240,')+pa.toFixed(3)+')';
         ctx.lineWidth=1.4; ctx.stroke();
       }
 
@@ -897,13 +902,13 @@
         var hc=nearestContact(mx,my,Math.max(26,R*0.08));
         var rp=hc?contactXY(hc):[mx,my];
         var rx=rp[0], ry=rp[1];
-        ctx.strokeStyle = hc?'#FFAF2E':'rgba(41,170,225,0.85)'; ctx.lineWidth=1.2;
+        ctx.strokeStyle = hc?'#E2FDFF':'rgba(35,206,240,0.85)'; ctx.lineWidth=1.2;
         ctx.beginPath(); ctx.arc(rx,ry,11,0,TAU); ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(rx-17,ry); ctx.lineTo(rx-6,ry); ctx.moveTo(rx+6,ry); ctx.lineTo(rx+17,ry);
         ctx.moveTo(rx,ry-17); ctx.lineTo(rx,ry-6); ctx.moveTo(rx,ry+6); ctx.lineTo(rx,ry+17);
         ctx.stroke();
-        if(hc){ ctx.font='9px monospace'; ctx.fillStyle='#FFAF2E'; ctx.fillText('DESIGNATE',rx+15,ry-13); }
+        if(hc){ ctx.font='9px "JetBrains Mono", monospace'; ctx.fillStyle='#E2FDFF'; ctx.fillText('DESIGNATE',rx+15,ry-13); }
       }
     }
 
@@ -1041,23 +1046,23 @@
     function yOf(v){ return H-10-((v-0.55)/0.45)*(H-22); }
     function draw(){
       ctx.clearRect(0,0,W,H);
-      ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=1;
+      ctx.strokeStyle='rgba(138,143,153,0.22)'; ctx.lineWidth=1;
       for(var g=0;g<3;g++){ var gy=8+g*(H-18)/2; ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
-      ctx.strokeStyle='rgba(255,175,46,0.5)'; ctx.setLineDash([4,4]);
+      ctx.strokeStyle='rgba(138,143,153,0.75)'; ctx.setLineDash([4,4]);
       ctx.beginPath(); ctx.moveTo(0,yOf(THRESH)); ctx.lineTo(W,yOf(THRESH)); ctx.stroke(); ctx.setLineDash([]);
       var cur=buf[buf.length-1];
-      var col=cur>=THRESH?'#1ED872':'#FFAF2E';
+      var col=cur>=THRESH?'#23CEF0':'#EEEDE7'; // Ion while healthy, Bone below threshold
       ctx.lineWidth=1.8; ctx.beginPath();
       for(var i=0;i<buf.length;i++){ var x=i*(W/(N-1)), vy=yOf(buf[i]); i?ctx.lineTo(x,vy):ctx.moveTo(x,vy); }
-      ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+      ctx.strokeStyle=col; ctx.stroke();
       ctx.beginPath(); ctx.arc(W-2,yOf(cur),2.5,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
-      ctx.font='9px monospace'; ctx.fillStyle='rgba(255,255,255,0.8)';
+      ctx.font='9px "JetBrains Mono", monospace'; ctx.fillStyle='#EEEDE7';
       ctx.fillText('CONF '+cur.toFixed(2), 6, 11);
       if(phase==='retrain'||phase==='redeploy'){
         var pw=W*(phase==='redeploy'?1:retrainP);
-        ctx.fillStyle='rgba(41,170,225,0.25)'; ctx.fillRect(0,H-4,pw,3);
-        ctx.fillStyle='#29AAE1'; ctx.fillRect(0,H-4,pw,1.5);
-        ctx.fillStyle='#9ad9f5';
+        ctx.fillStyle='rgba(35,206,240,0.25)'; ctx.fillRect(0,H-4,pw,3);
+        ctx.fillStyle='#23CEF0'; ctx.fillRect(0,H-4,pw,1.5);
+        ctx.fillStyle='#E2FDFF';
         ctx.fillText(phase==='redeploy'?'REDEPLOYING':'RETRAINING '+Math.round(retrainP*100)+'%', 6, H-8);
       }
     }
