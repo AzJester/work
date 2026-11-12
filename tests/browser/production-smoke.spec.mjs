@@ -35,43 +35,26 @@ test("@production deployed GeoPresence release is healthy", async ({ page, reque
   expect(pageErrors).toEqual([]);
 });
 
-test("@production deployed Black Hat Agent release is healthy", async ({ page, request }) => {
+test("@production the retired Black Hat Agent address forwards to the current build", async ({ page, request }) => {
   test.skip(!process.env.PRODUCTION_SMOKE, "runs only after the Pages deployment");
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
 
-  const route = `../black-hat-agent/?deployment-smoke=${Date.now()}`;
+  // Wait until the CDN serves the forwarding page instead of a cached copy of the old app.
+  const retired = `../black-hat-agent/?deployment-smoke=${Date.now()}`;
   await expect
     .poll(async () => {
-      const response = await request.get(route, { failOnStatusCode: false });
-      return response.status();
-    }, { timeout: 90_000, intervals: [1_000, 2_000, 5_000] })
-    .toBe(200);
-
-  const pageErrors = [];
-  page.on("pageerror", error => pageErrors.push(error.message));
-  const response = await page.goto(route, { waitUntil: "domcontentloaded" });
-  expect(response?.status()).toBe(200);
-  await expect(page).toHaveTitle(/Black Hat Agent$/i);
-  await expect(
-    page.locator(".sidebar .brand").getByText("Black Hat Agent", { exact: true })
-  ).toBeVisible();
-  await expect(page.getByText("LOCAL · NO SIGN-IN", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Data Import", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Workspace", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Import Excel or CSV", exact: true })
-  ).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(() => Boolean(window.XLSX && typeof window.XLSX.read === "function"))
-    )
+      const response = await request.get(retired, { failOnStatusCode: false });
+      return response.status() === 200 && (await response.text()).includes('location.replace("/Black_Hat_Agent/"');
+    }, { timeout: 100_000, intervals: [1_000, 2_000, 5_000] })
     .toBe(true);
-  const workerResponse = await request.get("../black-hat-agent/spreadsheet-worker.js", {
-    failOnStatusCode: false,
-  });
-  expect(workerResponse.status()).toBe(200);
-  expect(await workerResponse.text()).toContain('importScripts("./vendor/xlsx.full.min.js")');
-  expect(pageErrors).toEqual([]);
+
+  await page.goto(`${retired}#session`, { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/Black_Hat_Agent\/\?deployment-smoke=\d+#session$/);
+  await expect(page).toHaveTitle(/Black Hat Agent$/i);
+
+  // The Solution Architect Workbench loads SheetJS from this folder.
+  const spreadsheetLibrary = await request.get("../black-hat-agent/vendor/xlsx.full.min.js", { failOnStatusCode: false });
+  expect(spreadsheetLibrary.status()).toBe(200);
 });
 
 test("@production deployed Solution Architect Workbench release is healthy", async ({ page, request }) => {
