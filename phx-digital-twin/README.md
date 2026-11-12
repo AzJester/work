@@ -3,6 +3,7 @@
 Browser-based 3D twin of Phoenix Sky Harbor International (KPHX), modeled on the Unreal-style airport flyover with floating ADS-B tags. Real aerial photography, real airfield geometry, live aircraft.
 
 - **Public page:** `https://azjester.github.io/work/phx-digital-twin/` (live ADS-B capable).
+- **Demo movie:** `https://azjester.github.io/work/phx-digital-twin/phx-twin-demo.mp4` (61 seconds, silent, 24 MB). How it was made: see Demo movie.
 - **claude.ai artifact preview:** same scene with simulated traffic only. The artifact sandbox blocks all outside data calls.
 - **Local:** serve the repo root with any static server and open `/phx-digital-twin/`.
 
@@ -86,7 +87,7 @@ for s in A B C D E F; do for f in frames/$s/*.jpg; do echo "file '$f'"; done; do
 ffmpeg -r 20 -f concat -safe 0 -i frames.txt -an -c:v libx264 -pix_fmt yuv420p -crf 18 -movflags +faststart phx-twin-demo.mp4
 ```
 
-Traffic in the movie is a replay, not live at render time: the recording's timestamp is in the captions. Scenes are cut from one recording in time order. Software rendering takes 1 to 4 seconds per frame.
+The published copy is `phx-twin-demo.mp4` (1600x900, CRF 24). Traffic in the movie is a replay, not live at render time: the recording's timestamp is in the captions. Scenes are cut from one recording in time order. Software rendering takes 1 to 4 seconds per frame.
 
 ## Simulated traffic model
 

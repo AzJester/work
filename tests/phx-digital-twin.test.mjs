@@ -170,6 +170,15 @@ test("the hosted page is generated from the artifact page and deployed with its 
   assert.match(app, /functions\/v1\/adsb-relay/);
 });
 
+test("the demo movie is deployed, starts playing before it has fully downloaded, and has no audio track", () => {
+  assert.match(workflow, /cp -R[^\n]*phx-digital-twin\/phx-twin-demo\.mp4[^\n]*_site\/phx-digital-twin\//);
+  const movie = readFileSync(resolve(root, "phx-digital-twin/phx-twin-demo.mp4"));
+  assert.ok(movie.length < 50 * 1024 * 1024, "keep the movie under GitHub's 50 MB warning size");
+  const head = movie.subarray(0, 1024 * 1024).toString("latin1"); // the track index (moov) leads the file when encoded with -movflags +faststart
+  assert.ok(head.includes("moov") && head.includes("vide"), "encode with -movflags +faststart");
+  assert.ok(!head.includes("soun"), "the movie must not carry an audio track");
+});
+
 test("aerial photography is baked, described and matches the script that fetches it", () => {
   const info = JSON.parse(read("phx-digital-twin/data/photo_tiles/index.json"));
   const report = JSON.parse(read("phx-digital-twin/tools/imagery_report.json"));
