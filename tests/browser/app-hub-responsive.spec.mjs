@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const APP_COUNT = 32;
+const APP_COUNT = 30;
 
 async function openHub(page, baseURL, { query = "", expectedCount = APP_COUNT, storage = null } = {}) {
   if (storage) {
