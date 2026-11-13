@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: November 13, 2026
 
-Current version: 3.5.1
+Current version: 4.0.0
 
 Created by: Dr. Shane Turner
 
@@ -59,14 +59,14 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - provide eleven built-in categories with distinct interiors: Headquarters star, Regional headquarters building, Site circle, Contract site briefcase, Future site clock, Program office document, Operations center network/gear, Customer site person, Partner site link, Test or range site target, and Manufacturing facility factory
 - keep the pin system metadata-driven so additional categories can be added later without replacing the layout engine
 - combine repeated records of one type at an anchor behind a numeric count badge
-- fan different category pins around the same anchor and connect displaced pins to that anchor with leader lines
+- keep every pin's tip on the point it marks; show several types at one place, or several places too close to separate, as one numbered pin explained in a key under the map
 - adapt pin outlines and keylines to light, dark, clean, and transparent output
 - set the editor and exported map text in the Astrion Brand Kit typefaces: Archivo for display and body, JetBrains Mono for utility labels, versions and metadata; self-host both and carry Archivo inside PNG exports
 - show the outlined Astrion wordmark in the editor header
 - take every color in the editor and in exported maps from the astrion.us tokens (Void, Carbon, Gunmetal, Bone, Steel, Ion, Flare), with four documented token-over-token tints for solid export colors
 - encode pin category groups by form rather than hue: an Ion pin for the headquarters tier, a solid neutral pin for other Astrion sites, and an outlined pin for contract, customer, partner, and future sites
 - render legend entries with the same complete pin renderer used on the map, include only types used by current locations, and wrap entries automatically
-- run one deterministic global collision layout across all anchors, including distinct nearby cities and installations
+- merge places closer than 7 map units into one pin on their midpoint, closest pair first, so the result does not depend on input order
 - reserve state-label and state-count protected zones, pin footprints, callouts, connectors, and previously placed label geometry during layout
 - use fallback label positions and surface a visible warning when density prevents an ideal result
 - keep regular state initials at fixed, verified positions and protect small-state and District of Columbia callouts
@@ -172,14 +172,16 @@ SVG output remains scalable and editable. When **Clean SVG metadata** is enabled
 - duplicate Census base names remain independently searchable and selectable
 - the 887 installation anchors preserve their 805 DoD and 82 Coast Guard source split
 - city and installation markers use finite coordinates in the state-geometry projection
-- distinct nearby anchors participate in global marker and label occupancy rather than overlapping silently
-- same-type records share one count-badged pin, while different types fan into distinct pins with anchor leader lines
+- every pin tip is within 0.1 map units of its catalog point, or of the midpoint of the places it stands for
+- no two pins are closer than the merge distance, and no line connects a pin to another position
+- same-type records share one count-badged pin, while different types or merged places share one numbered pin with a key entry
 - all map and legend pins use the same generic teardrop shell, category interior, and adaptive outline treatment
-- state-label protected zones remain free of pin bodies, count badges, and leader lines
+- a state abbreviation that a pin or place label covers moves inside its state or hides; it never overlaps a pin
+- a place label sits beside its own pin, or within 84 map units on a leader and nearer its own pin than any other, or is hidden and reported
 - all eleven built-in categories retain their requested names and interior symbols, and the renderer remains extensible
 - the legend includes only used categories, wraps automatically, and matches the corresponding map pins exactly
 - Quick setup starts open; Map details, Advanced, and Project start collapsed with accurate dynamic summaries
-- state initials, small-state callouts, counts, markers, leaders, and labels remain mutually legible
+- state initials, small-state callouts, counts, markers, the key, and labels remain mutually legible
 - long title, subtitle, and location text is bounded, fitted, or accompanied by a visible explanation
 - adding, editing, removing, undoing, clearing, resetting, and replacing locations updates the preview and saved model correctly
 - invalid saved state and invalid project JSON cannot replace a valid project
@@ -199,7 +201,7 @@ SVG output remains scalable and editable. When **Clean SVG metadata** is enabled
 
 ## Verification and release process
 
-- Node source and geometry tests validate the application, data contracts, collision logic, accessibility structure, and documentation
+- Node source and geometry tests validate the application, data contracts, layout order, accessibility structure, and documentation
 - the place-catalog generator pins the Census source checksums and validates record counts, GEOID uniqueness, LSAD handling, projection output, and duplicate-name cases
 - Playwright covers responsive behavior, accessibility, project history, exports, dense metropolitan layouts, offline routing, and the production deployment
 - GitHub Actions runs source tests and Chromium Playwright tests before GitHub Pages deployment

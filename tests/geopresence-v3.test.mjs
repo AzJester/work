@@ -127,14 +127,67 @@ test("v3 keeps a reproducible GEOID/LSAD place catalog without collapsing duplic
   assert.match(app, /(?:anchorId|placeId|cityId)\s*:/, "saved locations must identify cities by stable ID, not display name");
 });
 
-test("distinct nearby anchors participate in one deterministic global occupancy layout", () => {
-  assert.match(app, /(?:global(?:Marker|Anchor|Layout|Occupancy)|occupied(?:Marker|Anchor)?(?:Boxes|Footprints)|markerCollisionBoxes)/i,
-    "marker occupancy must be shared across different anchors, not reset per anchor group");
-  assert.match(app, /(?:boxesOverlap|rectsOverlap|overlap|intersect|collid)/i);
-  assert.match(app, /(?:candidate|offset)[\s\S]{0,1800}(?:occupied|occupancy|collision|overlap)/i,
-    "candidate marker positions must be rejected when they overlap globally occupied geometry");
-  assert.match(app, /(?:sort\([\s\S]{0,500}(?:anchorId|placeId|id)|localeCompare)/i,
-    "nearby-anchor placement needs a stable tie-breaker so exports do not move between renders");
+// Runs the app's own pure layout helpers outside the browser.
+function layoutHelpers(extra = "") {
+  const names = ["markerBadgeOffset", "pinBoxes", "clusterPlaces", "wrapKeyEntry", "layoutGroupKey"];
+  const sources = names.map(name => functionSource(app, name));
+  names.forEach((name, index) => assert.ok(sources[index], `${name} function was not found`));
+  const constants = app.match(/const PIN_SIZE=[^;]+;/)?.[0];
+  assert.ok(constants, "pin layout constants were not found");
+  return vm.runInNewContext(`${constants}\nconst keyTextWidth=text=>String(text).length*6.5;\n${sources.join("\n")}\n${extra}\n({ ${names.join(", ")}, PIN_SIZE, PLACE_MERGE_DISTANCE })`);
+}
+const place = (key, x, y) => ({ key, anchorX: x, anchorY: y });
+// Array.from brings arrays built inside the vm context into this realm, so strict deep equality compares their contents.
+const summarize = clusters => Array.from(clusters, cluster => `${Array.from(cluster.places, member => member.key).join("+")}@${cluster.x.toFixed(3)},${cluster.y.toFixed(3)}`)
+  .sort();
+
+test("nearby places merge deterministically onto their centroid and no two pins end up closer than the merge distance", () => {
+  const { clusterPlaces, PLACE_MERGE_DISTANCE } = layoutHelpers();
+  assert.equal(PLACE_MERGE_DISTANCE, 7, "places closer than seven map units (about 21 miles) share a pin");
+
+  assert.deepEqual(summarize(clusterPlaces([place("a", 100, 100), place("b", 106.9, 100)])), ["a+b@103.450,100.000"],
+    "two places closer than the merge distance share one pin on their centroid");
+  const apart = clusterPlaces([place("a", 100.3, 200.7), place("b", 107.3, 200.7)]);
+  assert.deepEqual(summarize(apart), ["a@100.300,200.700", "b@107.300,200.700"], "places exactly the merge distance apart stay separate");
+  assert.equal(apart[0].x, 100.3, "a place on its own keeps its exact catalog x");
+  assert.equal(apart[0].y, 200.7, "a place on its own keeps its exact catalog y");
+  assert.equal(clusterPlaces([]).length, 0, "no places, no pins");
+
+  assert.deepEqual(summarize(clusterPlaces([place("a", 0, 0), place("b", 6, 0), place("c", 12, 0)])), ["a+b@3.000,0.000", "c@12.000,0.000"],
+    "a chain does not swallow a place that is farther than the merge distance from the merged pin");
+  assert.deepEqual(summarize(clusterPlaces([place("a", 0, 0), place("b", 5, 0), place("c", 8, 0)])), ["a+b+c@4.333,0.000"],
+    "the closest pair merges first, and a third place within reach of the merged pin joins it");
+  assert.deepEqual(summarize(clusterPlaces([place("a", 0, 0), place("b", 6, 0), place("c", 12, 0), place("d", 18, 0)])), ["a+b@3.000,0.000", "c+d@15.000,0.000"],
+    "equal gaps break ties on place keys");
+
+  let seed = 20261113;
+  const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const crowd = Array.from({ length: 400 }, (_, index) => place(`p${String(index).padStart(3, "0")}`, Number((random() * 90).toFixed(1)), Number((random() * 60).toFixed(1))));
+  const clusters = Array.from(clusterPlaces(crowd));
+  assert.equal(clusters.reduce((total, cluster) => total + cluster.places.length, 0), crowd.length, "every place belongs to exactly one pin");
+  assert.ok(clusters.length > 20 && clusters.length < crowd.length / 2, "a crowd of places collapses into far fewer pins");
+  assert.deepEqual(clusters.map(cluster => cluster.key), clusters.map(cluster => cluster.key).sort(), "pins are returned in a stable key order");
+  for (const cluster of clusters) {
+    const meanX = cluster.places.reduce((sum, member) => sum + member.anchorX, 0) / cluster.places.length;
+    const meanY = cluster.places.reduce((sum, member) => sum + member.anchorY, 0) / cluster.places.length;
+    assert.ok(Math.hypot(cluster.x - meanX, cluster.y - meanY) < 1e-9, "a merged pin sits on the plain centroid of its places");
+  }
+  for (let index = 0; index < clusters.length; index += 1) {
+    for (let other = index + 1; other < clusters.length; other += 1) {
+      assert.ok(Math.hypot(clusters[index].x - clusters[other].x, clusters[index].y - clusters[other].y) >= PLACE_MERGE_DISTANCE,
+        "no two pins are closer than the merge distance");
+    }
+  }
+  const reversed = clusterPlaces([...crowd].reverse());
+  const shuffled = clusterPlaces([...crowd].sort((a, b) => (a.anchorX * 7 + a.anchorY * 13) % 5 - (b.anchorX * 7 + b.anchorY * 13) % 5));
+  assert.deepEqual(summarize(reversed), summarize(clusters), "the result does not depend on the order locations were entered");
+  assert.deepEqual(summarize(shuffled), summarize(clusters), "the result does not depend on the order locations were entered");
+
+  const mapMarkup = lastFunctionSource(app, "mapMarkup");
+  assert.match(mapMarkup, /\.sort\(\(a,b\)=>a\.key\.localeCompare\(b\.key\)\)/, "places are ordered by stable key before they are clustered");
+  assert.match(mapMarkup, /(?:boxesOverlap|\.hits\()/, "labels are tested against the fixed pin boxes");
+  assert.match(mapMarkup, /candidates\.find\(candidate=>insideMap\(candidate\.box\)&&clearSpot\(candidate\.box\)\)/,
+    "a label candidate is rejected when it overlaps a pin, a state label, or an earlier place label");
   assert.match(app, /(?:labelOmitted|hiddenLabels|unplacedLabels|labelFallback|leaderPath)/i,
     "labels that cannot use their first position need a recorded fallback rather than silent omission");
 });
@@ -418,48 +471,118 @@ test("v3.1 renders category interiors inside one outlined teardrop pin shell", (
     "the pin interior registry should use its explicit icon metadata rather than the former outer-shape key");
 });
 
-test("v3.1 groups repeated types, fans mixed types, and reuses complete pins in a wrapping legend", () => {
+test("one pin per place: repeated types share a count badge, mixed types share a numbered group pin, and the legend reuses complete pins", () => {
   const mapMarkup = lastFunctionSource(app, "mapMarkup");
   assert.ok(mapMarkup, "current mapMarkup function was not found");
-  assert.match(mapMarkup, /const\s+pinsByType\s*=\s*new Map\(\)/);
-  assert.match(mapMarkup, /markerOffsets\(group\.typeGroups\.length\)/);
-  assert.match(mapMarkup, /class=["']marker-fan-stem["']/,
-    "mixed categories need visible stems back to their shared geographic anchor");
+  assert.match(mapMarkup, /pinsByType\s*=\s*new Map\(\)/);
+  assert.match(mapMarkup, /isGroup\s*=\s*merged\s*\|\|\s*typeGroups\.length\s*>\s*1/,
+    "several location types at one place, or several merged places, make a group pin");
+  assert.match(mapMarkup, /hasBadge\s*:\s*!isGroup\s*&&\s*pins\.length\s*>\s*1/, "only a single-type pin carries the count badge");
   assert.match(mapMarkup, /class=["']marker-count["']/);
   assert.match(mapMarkup, /count\s*>\s*1\s*\?/,
-    "one category repeated at an anchor should use one numeric badge rather than duplicate pins");
+    "one category repeated at a place should use one numeric badge rather than duplicate pins");
   assert.match(mapMarkup, />\$\{count\}<\/text>/,
     "the same-type badge must contain the actual numeric count");
+  assert.doesNotMatch(mapMarkup, /marker-fan-stem|marker-leader|markerOffsets/,
+    "mixed categories no longer fan away from their place");
+
+  const group = functionSource(app, "groupMarkerToken");
+  assert.ok(group, "groupMarkerToken function was not found");
+  assert.match(group, /markerStyle\(meta,p\)/, "a group pin is styled through markerStyle");
+  assert.match(group, /class=["']map-pin-body marker-pin["']/, "a group pin is the same teardrop");
+  assert.match(group, /pinBodyPath\(cx,cy,size\)/);
+  assert.match(group, /class=["']map-pin-number["'][^>]*fill=["']\$\{style\.icon\}["']/, "the key number takes the symbol's place and colour");
+  assert.doesNotMatch(group, /markerSymbol\(|marker-count/, "a group pin has no type symbol and no count badge");
+  assert.match(mapMarkup, /TONE_ORDER\.indexOf\(metaFor\(type\)\.tone\)/, "types are ranked by tier: lead, then site, then presence");
+  assert.match(app, /TONE_ORDER=\["lead","site","presence"\]/);
+  assert.match(mapMarkup, /groupMarkerToken\(metaFor\(cluster\.typeGroups\[0\]\[0\]\)/, "a group pin takes the highest tier among its members");
+  assert.match(mapMarkup, /numbered=clusters\.filter\(cluster=>cluster\.isGroup\)\.sort\(\(a,b\)=>a\.x-b\.x/, "group pins are numbered west to east");
+  assert.match(mapMarkup, /aria-label="\$\{esc\(`Group \$\{cluster\.number\}[^`]*\$\{detail\.join/, "a group pin's accessible name lists every location");
+  assert.match(mapMarkup, /location\$\{count===1\?"":"s"\} \(\$\{esc\(names\)\}\)/, "a single-type pin's accessible name lists every location");
 
   assert.ok((mapMarkup.match(/markerToken\(/g) || []).length >= 2,
     "map locations and legend entries must call the same complete pin renderer");
   assert.match(mapMarkup, /Object\.entries\(typeMeta\)\.filter\(\(\[type\]\)\s*=>\s*model\.pins\.some\(pin\s*=>\s*pin\.type\s*===\s*type\)\)/,
-    "the legend must show only categories used by the current project");
+    "the legend must show every category used by the current project, including those inside group pins");
   assert.match(mapMarkup,
     /(?:legend(?:Rows|Columns|Cols)|Math\.floor\([^)]*\/[^)]*\)[\s\S]{0,220}legend|index\s*%\s*(?:legend(?:Columns|Cols)|\d+))/i,
     "the expanded category legend needs row/column wrapping instead of one overflowing line");
 });
 
-test("v3.1 collision footprints protect state labels from pin bodies and count badges", () => {
-  const footprints = functionSource(app, "markerFootprints");
-  const mapMarkup = lastFunctionSource(app, "mapMarkup");
-  assert.ok(footprints, "markerFootprints function was not found");
-  const namesPinGeometry = /(?:(?:pin|marker)(?:Width|Height|Radius|Bounds|Body|Tail)|(?:body|tail)(?:Radius|Offset|Bounds)|teardrop|PIN_[A-Z_]+)/i.test(footprints);
-  const offsetsForPinTail = /y\s*:\s*dy\s*[-+]\s*[\d.]+[\s\S]{0,80}r\s*:\s*(?:1[7-9]|[2-9]\d)/i.test(footprints);
-  assert.ok(namesPinGeometry || offsetsForPinTail,
-    "collision geometry must cover the teardrop body and tail instead of the retired centered circle");
-  assert.match(footprints, /markerBadgeOffset/,
-    "numeric badge geometry must participate in the shared occupancy footprint");
-  assert.doesNotMatch(footprints, /\{\s*x\s*:\s*dx\s*,\s*y\s*:\s*dy\s*,\s*r\s*:\s*16\s*\}/,
-    "the former fixed circular footprint does not cover the teardrop tail");
+test("the numbered key lists as many group pins as fit and counts the rest", () => {
+  const { layoutGroupKey, wrapKeyEntry } = layoutHelpers();
+  const entry = number => ({ number, places: `Place ${number}, AL`, types: "Headquarters, Operations center, Contract site (2)" });
 
-  assert.match(mapMarkup, /group\.footprints\s*=\s*markerFootprints\(/);
-  assert.match(mapMarkup, /stateLabelBoxes\.some\(/,
-    "state abbreviation and state-count rectangles must remain protected placement zones");
-  assert.match(mapMarkup, /occupiedMarkerFootprints/,
-    "pin-aware footprints must still feed deterministic global occupancy");
+  const lines = wrapKeyEntry({ places: "Huntsville, AL", types: "Headquarters, Operations center, Contract site (2)" }, 1000);
+  assert.equal(lines.length, 1);
+  assert.equal(Array.from(lines[0], word => word.text).join(" "), "Huntsville, AL: Headquarters, Operations center, Contract site (2)");
+  assert.deepEqual(Array.from(lines[0]).filter(word => word.bold).map(word => word.text), ["Huntsville,", "AL:"], "the places are set apart from the types");
+  const wrapped = wrapKeyEntry({ places: "Huntsville, AL", types: "Headquarters, Operations center, Contract site (2)" }, 200);
+  assert.ok(wrapped.length > 1, "a long entry wraps inside its column");
+  assert.ok(Array.from(wrapped).every(line => Array.from(line).reduce((width, word) => width + word.text.length * 6.5, 0) <= 200), "no wrapped line is wider than its column");
+  const truncated = wrapKeyEntry({ places: "Huntsville, AL", types: Array.from({ length: 80 }, (_, index) => `Type${index}`).join(", ") }, 200, 4);
+  assert.equal(truncated.length, 4, "an entry never takes more than four lines");
+  assert.equal(truncated[3].at(-1).text, "…");
+
+  const one = layoutGroupKey([entry(1)], 1440, 150);
+  assert.equal(one.columns, 1);
+  assert.equal(one.items.length, 1);
+  assert.equal(one.hidden, 0);
+
+  const all = layoutGroupKey(Array.from({ length: 6 }, (_, index) => entry(index + 1)), 1440, 150);
+  assert.equal(all.columns, 2);
+  assert.equal(all.items.length, 6);
+  assert.equal(all.hidden, 0);
+  assert.equal(all.first, 3, "entries run down the first column, then the second");
+  assert.ok(all.height <= 150);
+
+  const crowded = layoutGroupKey(Array.from({ length: 60 }, (_, index) => entry(index + 1)), 1440, 150);
+  assert.equal(crowded.total, 60);
+  assert.ok(crowded.items.length > 0 && crowded.items.length < 60, "only the entries that fit are listed");
+  assert.equal(crowded.hidden, 60 - crowded.items.length, "the rest are counted for the final line");
+  assert.ok(crowded.height <= 150, "the key never grows past the height it is given");
+  assert.deepEqual(crowded.items.map(item => item.number), Array.from({ length: crowded.items.length }, (_, index) => index + 1), "entries are listed in number order");
+  const roomier = layoutGroupKey(Array.from({ length: 60 }, (_, index) => entry(index + 1)), 1440, 300);
+  assert.ok(roomier.items.length > crowded.items.length, "a taller band lists more entries");
+
+  const mapMarkup = lastFunctionSource(app, "mapMarkup");
+  const keyMarkup = functionSource(app, "groupKeyMarkup");
+  assert.ok(keyMarkup, "groupKeyMarkup function was not found");
+  assert.match(keyMarkup, /class="group-key-more"[^>]*>\+ \$\{key\.hidden\} more</, "a final line counts the group pins that are not listed");
+  assert.match(mapMarkup, /const key=keyEntries\.length\?layoutGroupKey\(/, "the key is drawn whenever a group pin exists, with or without the legend");
+  assert.match(mapMarkup, /mapBottom=legendBand\+\(key\?key\.height\+14:0\)/, "the bottom band grows for the key and the map shrinks to fit");
+  assert.match(mapMarkup, /keyOverflow:key\?key\.hidden:0/);
+  assert.match(app, /warnings\.keyOverflow\)warningParts\.push/, "the layout warning reports entries the key cannot list");
+});
+
+test("pin boxes cover the teardrop, its tail and the count badge, and state labels give way to them", () => {
+  const { pinBoxes, markerBadgeOffset, PIN_SIZE } = layoutHelpers();
+  const [body, ...rest] = pinBoxes(100, 200, false);
+  assert.equal(rest.length, 0, "a pin without a badge takes one box");
+  assert.ok(body[0] <= 100 - PIN_SIZE && body[2] >= 100 + PIN_SIZE, "the box covers the full width of the teardrop");
+  assert.ok(body[1] <= 200 - PIN_SIZE * 3.1 && body[3] >= 200, "the box runs from the top of the head down to the tip");
+  assert.ok(body[2] - body[0] < 30 && body[3] - body[1] < 40, "the box hugs the pin instead of reserving a wide zone around it");
+  const [, badge] = pinBoxes(100, 200, true);
+  const [badgeDx, badgeDy] = markerBadgeOffset();
+  assert.ok(badge, "a count badge adds its own box");
+  assert.ok(badge[0] <= 100 + badgeDx - 8 && badge[2] >= 100 + badgeDx + 8 && badge[1] <= 200 + badgeDy - 8 && badge[3] >= 200 + badgeDy + 8,
+    "the badge box covers the whole badge circle");
+
+  const stateLabels = functionSource(app, "placeStateLabels");
+  const mapMarkup = lastFunctionSource(app, "mapMarkup");
+  assert.ok(stateLabels, "placeStateLabels function was not found");
+  assert.match(stateLabels, /pinIndex\.hits\(box,2\)/, "a state plate that a pin's box would cover has to give way");
+  assert.match(stateLabels, /stateLabelOffsets\(\)\.find/, "it moves to the nearest free spot");
+  assert.match(stateLabels, /insideState\(code,/, "the new spot must be inside the same state");
+  assert.match(stateLabels, /if\(!spot\)\{hidden\+\+;return\}/, "with no free spot the abbreviation is left out");
+  assert.match(stateLabels, /callouts\.has\(code\)/, "callout states keep a callout");
+  assert.match(functionSource(app, "insideState"), /isPointInPath\(outline\.path,x,y,"evenodd"\)/);
+  assert.match(functionSource(app, "stateOutline"), /new Path2D\(geometry\.path\)/, "state outlines are cached as Path2D");
+  assert.match(mapMarkup, /const stateLabelBoxes=\[\.\.\.stateLabelLayout\.placed\.values\(\)\]/,
+    "place labels avoid the state plates where they finally sit");
   assert.match(mapMarkup, /markerCollisionBoxes/,
-    "labels and nearby independent anchors must reserve the final pin footprint");
+    "labels and state plates reserve nothing: they work around the final pin boxes");
+  assert.doesNotMatch(mapMarkup, /group\.x=group\.anchorX\+|markerShiftCandidates|occupiedMarkerFootprints/, "pins are never shifted off their points");
 });
 
 test("v3 application, README, plan, and changelog publish one consistent version", () => {
@@ -468,7 +591,7 @@ test("v3 application, README, plan, and changelog publish one consistent version
   const changelog = readText("changelog.md");
   const version = app.match(/\bAPP_VERSION\s*=\s*["'](\d+\.\d+\.\d+)["']/)?.[1];
   assert.ok(version, "APP_VERSION was not found");
-  assert.equal(version, "3.5.1", "this release must publish the complete v3.5.1 contract");
+  assert.equal(version, "4.0.0", "this release must publish the complete v4.0.0 contract");
   assert.ok(Number(version.split(".")[0]) >= 3, "the complete hardening release should be versioned as v3 or later");
   assert.equal(readme.match(/Version:\s*\*\*(\d+\.\d+\.\d+)\*\*/i)?.[1], version);
   assert.equal(plan.match(/Current version:\s*(\d+\.\d+\.\d+)/i)?.[1], version);

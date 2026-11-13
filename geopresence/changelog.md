@@ -4,6 +4,30 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [4.0.0] - 2026-11-13
+
+Pins now mark the place. This changes how existing maps are drawn, so it is a major version: saved projects keep every location and setting, and their pins move onto their true points.
+
+### Changed
+
+- every pin's tip sits exactly on its place; the layout no longer moves pins away from state abbreviations or from each other, and the fan arrangement and its leader lines are gone
+- places closer than about 21 miles share one pin on their midpoint
+- a place with several location types, or several merged places, shows one numbered pin in the form of its highest tier; a key under the map lists each number's places and location types with counts
+- state abbreviations give way: one moves inside its state to clear a pin or a place label, and hides when the state has no room
+- place labels sit beside their own pin; when that is not possible a label is drawn on a short leader, within about 250 miles and nearer its own pin than any other, or is hidden
+- label backing plates no longer touch each other
+- pins are painted south to north so overlapping pins keep both tips visible
+- the map moves down when a northern pin would reach the subtitle
+
+### Added
+
+- warnings under the map for hidden state abbreviations, labels on a leader, hidden labels, and a key that cannot list every entry
+- browser tests that measure every pin tip against its catalog point, including a 1,000-row import
+
+### Removed
+
+- the collision layout that fanned pins around an anchor
+
 ## [3.5.1] - 2026-11-13
 
 ### Fixed

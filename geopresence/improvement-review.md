@@ -12,8 +12,9 @@ Line numbers refer to `geopresence/index.html` at version 3.2.3. Versions 3.3.0 
 |---|---|
 | 3.4.0 | Brand Kit type and wordmark; headquarters pins distinct on light maps; placeholder contrast; Remove button outline |
 | 3.5.0 | UI items 1 (map-first workspace), 3 (persistent Undo with Ctrl+Z and a reachable history), 4 in part (full screen and zoom above 100%), 6 in part (reset and sample labels), 7 (combobox keyboard), 8, 9, 10 in part (invalid fields marked), 13 in part, and 14 (one corner radius). Table item 8 and table item 10 are done. |
+| 4.0.0 | Pin placement: every pin tip is on its point. The 10 samples draw as 9 pins, none off its point (all 10 were off before); Huntsville and Redstone Arsenal, 5 miles apart, share one numbered pin. Fix steps 1, 3 and 4 under "Pins and geolocation" are done with the numbered key. Places within about 21 miles share a pin; state abbreviations and place labels give way. Step 2 is no longer needed because no pin is displaced. |
 
-Pin placement, dropping a pin, the new pin artwork, import hardening and the code structure items are still open.
+Dropping a pin, the new pin artwork, the pre-export check, import hardening and the code structure items are still open. The table and figures below describe 3.4.0, before the pin placement change.
 
 ## The requirement
 
