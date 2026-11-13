@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.3\.0"/);
-  assert.match(html, /Version 3\.3\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.4\.0"/);
+  assert.match(html, /Version 3\.4\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -653,4 +653,55 @@ test("heading accents are brand tokens and retired accents migrate", () => {
   }
   assert.match(inlineScript, /out\.accent=resolveAccent\(raw\.accent\);/);
   assert.match(inlineScript, /accent:"#23cef0"/, "Ion is the default heading accent");
+});
+
+test("typography follows the Astrion Brand Kit with self-hosted fonts", () => {
+  const fontFaces = [...styles.matchAll(/@font-face\{([^}]*)\}/g)].map(match => match[1]);
+  assert.equal(fontFaces.length, 2, "Archivo and JetBrains Mono are the only declared faces");
+  const sources = fontFaces.map(rule => rule.match(/src:url\("([^"]+)"\)/)?.[1]);
+  assert.deepEqual(sources, [
+    "assets/fonts/Archivo-latin-wght-normal.woff2",
+    "assets/fonts/JetBrainsMono-latin-wght-normal.woff2"
+  ]);
+  for (const source of sources) {
+    const bytes = readFileSync(resolve(root, "geopresence", source));
+    assert.equal(bytes.subarray(0, 4).toString("latin1"), "wOF2", `${source} must be a WOFF2 file`);
+  }
+  for (const license of ["ARCHIVO-LICENSE.txt", "JETBRAINS-MONO-LICENSE.txt"]) {
+    assert.match(readFileSync(resolve(root, "geopresence/assets/fonts", license), "utf8"), /SIL Open Font License/i);
+  }
+  assert.match(styles, /--sans:"Archivo",system-ui,sans-serif/);
+  assert.match(styles, /--mono:"JetBrains Mono",/);
+  assert.match(styles, /body\{font-family:var\(--sans\)/);
+  for (const selector of ["\\.brand small", "\\.section-label", "\\.settings-summary-status", "\\.status", "footer", "code"]) {
+    assert.match(styles, new RegExp(`(?:^|[}\\s])${selector}\\{[^}]*font-family:var\\(--mono\\)`), `${selector} is a utility label and takes the mono face`);
+  }
+  assert.doesNotMatch(html, /Verdana/i, "the earlier brand typeface must not return");
+  assert.doesNotMatch(styles.replace(/\/\*[\s\S]*?\*\//g, ""), /Space Grotesk/i, "the outlined wordmark needs no font, so the wordmark face is never declared");
+  assert.doesNotMatch(html, /fonts\.(?:googleapis|gstatic)\.com/i, "fonts are self-hosted");
+});
+
+test("the header shows the outlined Astrion wordmark", () => {
+  const wordmarkTag = html.match(/<img class="wordmark"[^>]*>/)?.[0] || "";
+  assert.match(wordmarkTag, /src="assets\/astrion-wordmark-light\.svg"/);
+  assert.match(wordmarkTag, /alt="Astrion"/);
+  assert.match(wordmarkTag, /width="137" height="20"/);
+  const wordmark = readFileSync(resolve(root, "geopresence/assets/astrion-wordmark-light.svg"), "utf8");
+  assert.match(wordmark, /<title>Astrion website wordmark<\/title>/);
+  assert.match(wordmark, /viewBox="-100 -800 6159 900"/, "the supplied artwork carries its own clear space");
+  assert.doesNotMatch(wordmark, /<text\b|font-family/, "the wordmark is outlined, so it needs no font");
+  assert.doesNotMatch(html, /class="brand-mark"/);
+});
+
+test("map text uses the brand typeface and PNG export carries it", () => {
+  assert.match(inlineScript, /const MAP_FONT="Archivo,Arial,sans-serif",MAP_FONT_FILE="\.\/assets\/fonts\/Archivo-latin-wght-normal\.woff2";/);
+  const literalFamilies = [...inlineScript.matchAll(/font-family="([^"]+)"/g)].map(match => match[1]);
+  assert.ok(literalFamilies.length >= 10, "map text elements were not found");
+  assert.deepEqual([...new Set(literalFamilies)], ["${MAP_FONT}"], "every map text element takes the one font constant");
+  assert.match(inlineScript, /context\.font=`\$\{weight\} \$\{size\}px \$\{MAP_FONT\}`/, "text fitting measures in the same face it draws");
+  // An SVG drawn as an image cannot load the page's fonts, so the PNG path embeds the font; the SVG download stays plain.
+  assert.match(inlineScript, /async function mapFontCss\(\)\{[^\n]*loadFile\(MAP_FONT_FILE\)[^\n]*data:font\/woff2;base64,/);
+  assert.match(inlineScript, /async function pngBlob\(\)\{[^\n]*withMapFont\(serializedSvg\(\),fontCss\)/);
+  assert.match(inlineScript, /function exportSvg\(\)\{[^\n]*new Blob\(\[serializedSvg\(\)\]/, "the downloadable SVG embeds nothing");
+  assert.match(inlineScript, /mapFontCss\(\)\{[^\n]*catch\(error\)\{return""\}/, "a missing font file must not stop an export");
 });

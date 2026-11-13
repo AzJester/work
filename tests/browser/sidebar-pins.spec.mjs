@@ -317,15 +317,16 @@ test("pin forms follow the Astrion palette on light and dark land", async ({ pag
 
   for (const [theme, plate] of [["light", "#eeede7"], ["clean", "#ffffff"]]) {
     await (await revealControl(page, "#theme")).selectOption(theme);
-    expect(await readPins(), `${theme} land: Void headquarters with an Ion symbol, gray site, outlined contract site`).toEqual({
-      headquarters: { fill: "#050607", ring: "#050607", symbol: "#23cef0" },
+    expect(await readPins(), `${theme} land: Ion headquarters in a Void outline, gray site, outlined contract site`).toEqual({
+      headquarters: { fill: "#23cef0", ring: "#050607", symbol: "#050607" },
       hub: { fill: "#4b4b4a", ring: "#050607", symbol: "#eeede7" },
       contract: { fill: plate, ring: "#050607", symbol: "#050607" },
     });
   }
 
-  // A transparent light-theme map headed for a dark slide keeps dark fills on its light land
-  // and switches only the outline, so the pin separates from whatever is behind the map.
+  // A transparent light-theme map headed for a dark slide switches the outline to a light one, so the pin
+  // separates from whatever is behind the map. Ion inside a light outline would vanish into the light land,
+  // so the headquarters pin takes a Void fill there and keeps Ion for its symbol.
   await (await revealControl(page, "#theme")).selectOption("light");
   await (await revealControl(page, "#transparent")).check();
   await (await revealControl(page, "#transparentPreview")).selectOption("dark");

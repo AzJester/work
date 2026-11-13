@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: November 13, 2026
 
-Current version: 3.3.0
+Current version: 3.4.0
 
 Created by: Dr. Shane Turner
 
@@ -52,6 +52,8 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - combine repeated records of one type at an anchor behind a numeric count badge
 - fan different category pins around the same anchor and connect displaced pins to that anchor with leader lines
 - adapt pin outlines and keylines to light, dark, clean, and transparent output
+- set the editor and exported map text in the Astrion Brand Kit typefaces: Archivo for display and body, JetBrains Mono for utility labels, versions and metadata; self-host both and carry Archivo inside PNG exports
+- show the outlined Astrion wordmark in the editor header
 - take every color in the editor and in exported maps from the astrion.us tokens (Void, Carbon, Gunmetal, Bone, Steel, Ion, Flare), with four documented token-over-token tints for solid export colors
 - encode pin category groups by form rather than hue: an Ion pin for the headquarters tier, a solid neutral pin for other Astrion sites, and an outlined pin for contract, customer, partner, and future sites
 - render legend entries with the same complete pin renderer used on the map, include only types used by current locations, and wrap entries automatically
