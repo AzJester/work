@@ -134,8 +134,9 @@ test("interaction and accessibility contracts are present", () => {
   assert.match(page, /function scrollToTarget\(target\)/);
 });
 
-test("the catalog and README retain both Astrion routes", () => {
-  assert.match(hub, /title: "Astrion company site",[\s\S]{0,600}liveUrl: "https:\/\/azjester\.github\.io\/work\/astrion-site\/"/);
+test("the README retains both Astrion routes and the catalog lists only the mission segments page", () => {
+  assert.doesNotMatch(hub, /azjester\.github\.io\/work\/astrion-site\//,
+    "The company site was removed from the library on request; it is reached by direct link only");
   assert.match(hub, /liveUrl: "https:\/\/azjester\.github\.io\/work\/astrion\/"/);
   assert.match(readme, /### → https:\/\/azjester\.github\.io\/work\/astrion-site\//);
   assert.match(readme, /### → https:\/\/azjester\.github\.io\/work\/astrion\//);

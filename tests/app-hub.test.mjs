@@ -14,8 +14,6 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/",
   "https://azjester.github.io/work/astrion-division/ldawif/",
   "https://azjester.github.io/work/astrion/",
-  "https://azjester.github.io/work/astrion-site/",
-  "https://azjester.github.io/work/astrion-film/",
   "https://azjester.github.io/work/phx-digital-twin/",
   "https://azjester.github.io/Black_Hat_Agent/",
   "https://azjester.github.io/work/solutions-architect/",
@@ -58,8 +56,6 @@ const exactWorkSourceUrls = [
   "https://github.com/AzJester/work/blob/main/radar-signal-chain.html",
   "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
   "https://github.com/AzJester/work/tree/main/astrion",
-  "https://github.com/AzJester/work/tree/main/astrion-site",
-  "https://github.com/AzJester/work/tree/main/astrion-film",
   "https://github.com/AzJester/work/tree/main/phx-digital-twin",
 ];
 
@@ -87,9 +83,7 @@ const workApplications = [
   "AI Practice Lab",
   "Astrion · Mission Segments",
   "Astrion Agile Pricing Studio",
-  "Astrion Capabilities Film",
   "Astrion Division · LDAWIF",
-  "Astrion company site",
   "Black Hat Agent",
   "DefenseIntel",
   "DoD RFP Compliance Workspace",
@@ -117,7 +111,7 @@ const workApplications = [
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 32 work applications", () => {
+test("curated catalog lists exactly the 30 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),
@@ -152,9 +146,16 @@ test("Solution Architect Workbench is linked and stamped as under development", 
   assert.match(pagesWorkflow, /cp -R[^\n]*solutions-architect[^\n]*_site\//);
 });
 
-test("the Astrion Capabilities Film is published as the index of its library route", () => {
+test("the Astrion Capabilities Film is published as the index of its own route", () => {
   assert.ok(existsSync(resolve(root, "astrion-film/astrion-capabilities-film.html")));
   assert.match(pagesWorkflow, /mkdir -p _site\/astrion-film\n\s+cp astrion-film\/astrion-capabilities-film\.html _site\/astrion-film\/index\.html/);
+});
+
+test("the Astrion company site and Capabilities Film stay published but off the library", () => {
+  for (const pattern of [/Astrion company site/, /Astrion Capabilities Film/, /\/astrion-site\//, /\/astrion-film\//, /tree\/main\/astrion-(site|film)/]) {
+    assert.doesNotMatch(hub, pattern, "These two pages were removed from the library on request; they are reached by direct link only");
+  }
+  assert.match(pagesWorkflow, /cp -R[^\n]*\bastrion-site\b[^\n]*_site\//);
 });
 
 test("all verified live applications use their working primary URLs", () => {
