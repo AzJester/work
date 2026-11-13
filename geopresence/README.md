@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.4.0**
+Version: **3.5.0**
 
 Created by **Dr. Shane Turner**
 
@@ -12,6 +12,7 @@ The hosted application is the simplest way to use it. For local development, ser
 
 ## What it does
 
+- puts the map at the center of the screen with one rail beside it for Add a location, Locations, and Map settings, so the map stays in view while locations are added
 - presents a compact progressive-disclosure Map settings panel with Quick setup open by default and Map details, Advanced, and Project collapsed
 - keeps concise summaries on every settings group and updates them as the map choices change
 - displays recognizable geographic boundaries for every U.S. state and the District of Columbia, with Alaska and Hawaii insets
@@ -36,6 +37,17 @@ The hosted application is the simplest way to use it. For local development, ser
 - confirms destructive replacements, keeps an Undo history, and saves a recovery snapshot for the last destructive change
 
 The editor opens as an empty project. Sample Astrion locations are opt-in and are identified as demonstration data in the editor only; notices, creator text, and version text do not appear in copied or downloaded map graphics. The Huntsville Regional Headquarters and contract entries reflect user-provided information. The other optional locations are demonstration examples, not claims about current Astrion sites.
+
+## Workspace
+
+The map is the work area. On a desktop screen it sits on the left and is sized to the window, so the whole map is visible without scrolling. One rail on the right holds, in order, **Add a location**, **Locations**, and **Map settings**. The map stays in place while the rail scrolls. On a phone the map comes first, followed by the same three panels, with section links at the top.
+
+- **Undo** sits in the map header and is enabled whenever there is a change to undo. Its tooltip names the change. Ctrl+Z (Command+Z on a Mac) does the same when the cursor is not in a text field. Up to 20 changes can be undone, one at a time.
+- After a location is added, the state, source, and type stay as they were, so several locations in one state take fewer steps. Pressing Enter in a field adds the location and returns the cursor to the name field.
+- The status line under the map shows the canvas size, the number of locations, and any layout warning.
+- **Full screen** uses the whole window. Zooming above 100% lets the map grow past the window and scroll inside its stage.
+- Leaving the city or installation field closes its list of matches.
+- The sample button reads **Load sample locations** when the project is empty and **Replace with sample locations** when it is not.
 
 ## Compact Map settings
 
@@ -116,7 +128,7 @@ How the map text behaves in each output:
 
 If the font file cannot be read (first visit while offline), the editor and the PNG fall back to the system sans-serif and export still works.
 
-Corner radius and layout still follow the earlier look.
+Corners use one 4 px radius and panels are flat with hairline borders, as on astrion.us.
 
 ## Project safety and portability
 

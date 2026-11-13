@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.4\.0"/);
-  assert.match(html, /Version 3\.4\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.5\.0"/);
+  assert.match(html, /Version 3\.5\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -364,9 +364,10 @@ test("project files are portable, schema-checked, and sanitized", () => {
 
 test("CSV location upload publishes one accessible, documented file contract", () => {
   const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
-  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
-  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations and Add a location panels were not found");
-  assert.match(html.slice(locationsStart, addStart), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
+  const locationsEnd = html.indexOf("</section>", locationsStart);
+  assert.ok(locationsStart >= 0 && locationsEnd > locationsStart, "the Locations panel was not found");
+  assert.ok(html.includes('<section class="panel add-panel" aria-labelledby="addTitle"'), "the Add a location panel was not found");
+  assert.match(html.slice(locationsStart, locationsEnd), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
 
   const dialogStart = html.indexOf('<dialog class="import-dialog" id="locationImportDialog"');
   const dialogEnd = html.indexOf("</dialog>", dialogStart);
@@ -566,8 +567,16 @@ test("preview supports zoom, full screen, layout warnings, and fitted text", () 
 });
 
 test("current layout keeps controls within responsive columns", () => {
-  assert.match(styles, /\.workspace\{[^}]*grid-template-columns:330px minmax\(0,1fr\)/);
-  assert.match(styles, /\.below\{[^}]*grid-template-columns:minmax\(420px,1fr\) minmax\(330px,\.72fr\)/);
+  // The map is the work area; Add a location, Locations and Map settings share one rail beside it.
+  assert.match(styles, /\.workspace\{[^}]*grid-template-columns:minmax\(0,1fr\) 392px/);
+  assert.match(styles, /\.rail\{display:grid;[^}]*min-width:0/);
+  assert.match(styles, /\.preview-panel\{position:sticky;/, "the map stays in view while the rail scrolls");
+  const workspaceStart = html.indexOf('<div class="workspace">');
+  const order = ['<section class="panel preview-panel"', '<div class="rail">', '<section class="panel add-panel"', '<section class="panel locations-panel"', '<aside class="panel controls"']
+    .map(marker => html.indexOf(marker, workspaceStart));
+  assert.ok(order.every(index => index > workspaceStart), "a workspace region was not found");
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "reading order is map, add a location, locations, settings");
+  assert.doesNotMatch(html, /class="below"/, "the second row of panels was folded into the rail");
   assert.match(styles, /\.add-grid\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)[^}]*min-width:0/);
   assert.match(styles, /\.add-grid input,\.add-grid select\{width:100%;min-width:0;max-width:100%/);
   assert.match(styles, /\.preview-stage\{[^}]*overflow:auto/);
@@ -591,11 +600,11 @@ test("clear locations remains in the Locations panel", () => {
   const previewStart = html.indexOf('<section class="panel preview-panel"');
   const previewEnd = html.indexOf("</section>", previewStart);
   const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
-  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
+  const locationsEnd = html.indexOf("</section>", locationsStart);
   assert.ok(previewStart >= 0 && previewEnd > previewStart, "preview panel was not found");
-  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations panel was not found");
+  assert.ok(locationsStart >= 0 && locationsEnd > locationsStart, "Locations panel was not found");
   assert.doesNotMatch(html.slice(previewStart, previewEnd), /id="clearPins"/);
-  assert.match(html.slice(locationsStart, addStart), /id="clearPins"[^>]*>Clear locations<\/button>/);
+  assert.match(html.slice(locationsStart, locationsEnd), /id="clearPins"[^>]*>Clear locations<\/button>/);
 });
 
 test("obsolete standalone and statewide copy remain absent", () => {

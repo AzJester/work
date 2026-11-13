@@ -4,6 +4,31 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.5.0] - 2026-11-13
+
+### Changed
+
+- rebuilt the page as a workspace: the map sits on the left, sized to the window, and one rail on the right holds Add a location, Locations, and Map settings; on a 1440 x 900 or 1280 x 720 screen the whole map and the add form are in view without scrolling
+- the map stays in place while the rail scrolls; on a phone the map comes first
+- replaced the large heading block with one line of guidance, and moved the status line under the map
+- one 4 px corner radius and flat hairline panels throughout, as on astrion.us; the preview stage is drawn as an artboard
+- the location list is a compact scrolling list with hairline rows
+- Full screen now uses the whole window, and zooming above 100% enlarges the map instead of adding blank scroll
+
+### Added
+
+- a persistent Undo button in the map header, with Ctrl+Z, that can step back through up to 20 changes; previously Undo existed only in a message that disappeared after eight seconds
+- the state, source, and type are kept after a location is added; pressing Enter in a field adds the location and returns the cursor to the name field
+- keyboard focus is now visible on Open project, and returns to the export button after an export
+
+### Fixed
+
+- pressing Tab in the city or installation field no longer leaves its list open over the next field
+- an undone change is no longer offered again after a reload
+- invalid fields are marked on the field itself as well as by the message under it
+- the selected match in the city list is visible in Windows high-contrast mode
+- the reduced-motion setting now also stops the disclosure arrow animation
+
 ## [3.4.0] - 2026-11-13
 
 ### Changed
