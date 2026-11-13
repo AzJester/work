@@ -260,7 +260,7 @@ test("pin outlines retain destination contrast in light, dark, and transparent m
     { name: "light map", theme: "light", transparent: false },
     { name: "dark map", theme: "dark", transparent: false },
     { name: "transparent light destination", theme: "light", transparent: true, preview: "light", destination: "#ffffff" },
-    { name: "transparent dark destination", theme: "light", transparent: true, preview: "dark", destination: "#222230" },
+    { name: "transparent dark destination", theme: "light", transparent: true, preview: "dark", destination: "#050607" },
   ];
   const outlineColors = new Set();
 
@@ -293,4 +293,53 @@ test("pin outlines retain destination contrast in light, dark, and transparent m
   }
 
   expect(outlineColors.size, "outline tone adapts between light and dark destinations").toBeGreaterThanOrEqual(2);
+});
+
+test("pin forms follow the Astrion palette on light and dark land", async ({ page }) => {
+  await addCity(page, { name: "Form headquarters", state: "VA", city: "Arlington", type: "headquarters" });
+  await addCity(page, { name: "Form site", state: "VA", city: "Arlington", type: "hub" });
+  await addCity(page, { name: "Form contract", state: "VA", city: "Alexandria", type: "contract" });
+
+  const readPins = () => page.evaluate(() => Object.fromEntries(["headquarters", "hub", "contract"].map(type => {
+    const pin = document.querySelector(`#mapSvg .location-layer .site-marker[data-location-type="${type}"] .map-pin`);
+    const body = pin.querySelector(".map-pin-body");
+    const symbol = pin.querySelector(".map-pin-icon [fill]:not([fill='none']), .map-pin-icon [stroke]");
+    const symbolColor = symbol.getAttribute("fill") && symbol.getAttribute("fill") !== "none" ? symbol.getAttribute("fill") : symbol.getAttribute("stroke");
+    return [type, { fill: body.getAttribute("fill"), ring: body.getAttribute("stroke"), symbol: symbolColor }];
+  })));
+
+  await (await revealControl(page, "#theme")).selectOption("dark");
+  expect(await readPins(), "dark land: Ion headquarters, Bone site, outlined contract site").toEqual({
+    headquarters: { fill: "#23cef0", ring: "#eeede7", symbol: "#050607" },
+    hub: { fill: "#eeede7", ring: "#eeede7", symbol: "#050607" },
+    contract: { fill: "#0b0d10", ring: "#eeede7", symbol: "#eeede7" },
+  });
+
+  for (const [theme, plate] of [["light", "#eeede7"], ["clean", "#ffffff"]]) {
+    await (await revealControl(page, "#theme")).selectOption(theme);
+    expect(await readPins(), `${theme} land: Void headquarters with an Ion symbol, gray site, outlined contract site`).toEqual({
+      headquarters: { fill: "#050607", ring: "#050607", symbol: "#23cef0" },
+      hub: { fill: "#4b4b4a", ring: "#050607", symbol: "#eeede7" },
+      contract: { fill: plate, ring: "#050607", symbol: "#050607" },
+    });
+  }
+
+  // A transparent light-theme map headed for a dark slide keeps dark fills on its light land
+  // and switches only the outline, so the pin separates from whatever is behind the map.
+  await (await revealControl(page, "#theme")).selectOption("light");
+  await (await revealControl(page, "#transparent")).check();
+  await (await revealControl(page, "#transparentPreview")).selectOption("dark");
+  const onDarkDestination = await readPins();
+  expect(onDarkDestination.headquarters).toEqual({ fill: "#050607", ring: "#eeede7", symbol: "#23cef0" });
+  expect(onDarkDestination.contract).toEqual({ fill: "#eeede7", ring: "#050607", symbol: "#050607" });
+
+  const rows = await page.locator("#pinList .pin-row .pin-dot").evaluateAll(dots => dots.map(dot => ({
+    tone: dot.dataset.tone,
+    color: dot.style.getPropertyValue("--dot"),
+  })));
+  expect(rows, "the locations list repeats each pin form").toEqual([
+    { tone: "lead", color: "#23cef0" },
+    { tone: "site", color: "#eeede7" },
+    { tone: "presence", color: "#eeede7" },
+  ]);
 });

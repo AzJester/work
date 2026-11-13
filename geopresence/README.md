@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.2.3**
+Version: **3.3.0**
 
 Created by **Dr. Shane Turner**
 
@@ -23,6 +23,7 @@ The hosted application is the simplest way to use it. For local development, ser
 - combines repeated records of the same type at one anchor behind a numeric count badge
 - fans different pin types around a shared or dense anchor and connects displaced pins with leader lines
 - separates pin groups across nearby but distinct anchors with one deterministic global collision layout
+- uses the current Astrion website colors (Void, Carbon, Gunmetal, Bone, Steel, Ion) for the editor, the three map themes, the heading accents, and every pin
 - adapts pin outlines for light, dark, and transparent destinations; the legend renders identical complete pins, includes only categories used on the map, and wraps automatically
 - protects state abbreviations and counts as reserved zones so pins, callouts, connectors, and place labels do not cover them
 - warns when dense layout requires a fallback label, hides a label, fits long heading text, or cannot fully separate a marker group
@@ -67,7 +68,37 @@ The interior symbol communicates the current location category:
 
 When an anchor contains multiple records of one category, one pin carries a numeric count badge. When an anchor contains different categories, their pins fan apart and use leader lines to preserve the common geographic anchor. The same fanning and global collision pass also respects nearby independent anchors and the protected rectangles around state abbreviations and state counts.
 
-Pin outlines adapt to the light, dark, clean, and transparent destination treatment. Legend entries call the same pin renderer as map locations, so silhouette, interior symbol, category color, outline, and visual weight remain identical. The legend includes only types currently used on the map and wraps automatically when several are present. All eleven built-in categories are available in the location editor, and the metadata-driven pin renderer can accept additional categories in a future release without redesigning the placement system.
+Pins carry no category hue. The Astrion website palette has one accent, so three pin forms do the work color used to do:
+
+- **Ion pin:** Headquarters and Regional headquarters. On the light and clean themes, where Ion cannot hold contrast against the land, the pin is Void with an Ion symbol.
+- **Solid neutral pin:** Site, Program office, Operations center, Test or range site, and Manufacturing facility. Bone on the dark theme, dark gray on the light and clean themes.
+- **Outlined pin:** Contract site, Future site, Customer site, and Partner site, which mark presence at someone else's location or a planned one.
+
+The interior symbol still identifies each of the eleven categories on its own.
+
+Pin outlines adapt to the light, dark, clean, and transparent destination treatment. Legend entries call the same pin renderer as map locations, so silhouette, interior symbol, pin form, outline, and visual weight remain identical. The legend includes only types currently used on the map and wraps automatically when several are present. All eleven built-in categories are available in the location editor, and the metadata-driven pin renderer can accept additional categories in a future release without redesigning the placement system.
+
+## Brand colors
+
+Color comes from the tokens used on astrion.us and nothing else:
+
+| Token | Hex | Used for |
+|---|---|---|
+| Void | `#050607` | editor ground, dark map background, ink on light maps |
+| Carbon | `#0B0D10` | panels, top bar, dark-map label plates |
+| Gunmetal | `#171B22` | form fields, preview stage, dark-map land |
+| Bone | `#EEEDE7` | ink on dark, light-map background, clean-map land |
+| Steel | `#8A8F99` | small labels, dark-map state boundaries |
+| Ion | `#23CEF0` | the one accent: primary actions, links, focus rings, headquarters pins, default heading accent |
+| Flare | `#E2FDFF` | hover and error emphasis in the editor |
+
+Exported graphics need solid colors, so the map themes add four tints, each a token laid over another token: `#B4B3AF` (Bone 75% on Void), `#4B4B4A` (Void 70% on Bone), `#6E6E6C` (Void 55% on Bone), and `#D0D1D0` (Steel 30% on Bone). The Clean white theme and the light destination preview keep plain white because they stand in for a white page.
+
+The heading accent offers Astrion Ion, Steel, Bone, and Void. A project saved with one of the retired accents (Force, Sky, Water, Midnight) opens with the closest current one: the three blues and purple become Ion, and Midnight becomes Void.
+
+The palette has no red, amber, or green. Warnings, errors, and destructive actions are told apart by weight, outline, and wording instead of hue.
+
+Typeface, corner radius, and layout are unchanged in this release.
 
 ## Project safety and portability
 
