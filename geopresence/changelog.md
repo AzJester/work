@@ -4,6 +4,29 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.4.0] - 2026-11-13
+
+### Changed
+
+- set the editor in the Astrion Brand Kit typefaces: Archivo for display and body, JetBrains Mono for utility labels, versions, and compact metadata
+- set all map text in Archivo in place of Verdana: heading, subtitle, state abbreviations, place labels, counts, and legend
+- replaced the pin tile in the header with the outlined Astrion wordmark from the Brand Kit
+- PNG and Copy PNG now carry Archivo inside the image they are drawn from, so the exported graphic matches the preview on computers that do not have the font installed
+- the heading is fitted again once the brand font has loaded, so a long title is sized against the real letterforms
+
+### Fixed
+
+- headquarters pins on the Light and Clean white themes are now Ion inside a Void outline; in 3.3.0 they were Void and too close to the gray site pins (2.3:1), now 4.7:1
+- placeholder text in form fields now uses Steel (5.3:1) in place of the browser default, which fell below contrast requirements on the dark fields
+- the Remove buttons have a visible outline again; the 3.3.0 outline was too faint to bound the control
+- the preview status line and layout warning now take their intended compact style; the rule for them never matched the markup
+
+### Notes
+
+- downloaded SVG files name Archivo with Arial as the fallback and embed nothing; install the Brand Kit desktop fonts to see Archivo in PowerPoint or Illustrator
+- fonts are self-hosted under the SIL Open Font License; the page still reads only same-origin files through one loader
+- colors were checked against the Brand Kit palette sheet: all seven tokens match to the hex
+
 ## [3.3.0] - 2026-11-13
 
 ### Changed

@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.3.0**
+Version: **3.4.0**
 
 Created by **Dr. Shane Turner**
 
@@ -23,7 +23,7 @@ The hosted application is the simplest way to use it. For local development, ser
 - combines repeated records of the same type at one anchor behind a numeric count badge
 - fans different pin types around a shared or dense anchor and connects displaced pins with leader lines
 - separates pin groups across nearby but distinct anchors with one deterministic global collision layout
-- uses the current Astrion website colors (Void, Carbon, Gunmetal, Bone, Steel, Ion) for the editor, the three map themes, the heading accents, and every pin
+- follows the Astrion Brand Kit: the website colors (Void, Carbon, Gunmetal, Bone, Steel, Ion) for the editor, the three map themes, the heading accents, and every pin; Archivo and JetBrains Mono for type; and the outlined Astrion wordmark in the header
 - adapts pin outlines for light, dark, and transparent destinations; the legend renders identical complete pins, includes only categories used on the map, and wraps automatically
 - protects state abbreviations and counts as reserved zones so pins, callouts, connectors, and place labels do not cover them
 - warns when dense layout requires a fallback label, hides a label, fits long heading text, or cannot fully separate a marker group
@@ -70,7 +70,7 @@ When an anchor contains multiple records of one category, one pin carries a nume
 
 Pins carry no category hue. The Astrion website palette has one accent, so three pin forms do the work color used to do:
 
-- **Ion pin:** Headquarters and Regional headquarters. On the light and clean themes, where Ion cannot hold contrast against the land, the pin is Void with an Ion symbol.
+- **Ion pin:** Headquarters and Regional headquarters. On the light and clean themes the Ion fill sits inside a Void outline, which is what holds contrast against the land. On a transparent light-theme export headed for a dark background the outline has to be light, so the pin becomes Void with an Ion symbol.
 - **Solid neutral pin:** Site, Program office, Operations center, Test or range site, and Manufacturing facility. Bone on the dark theme, dark gray on the light and clean themes.
 - **Outlined pin:** Contract site, Future site, Customer site, and Partner site, which mark presence at someone else's location or a planned one.
 
@@ -98,7 +98,25 @@ The heading accent offers Astrion Ion, Steel, Bone, and Void. A project saved wi
 
 The palette has no red, amber, or green. Warnings, errors, and destructive actions are told apart by weight, outline, and wording instead of hue.
 
-Typeface, corner radius, and layout are unchanged in this release.
+## Brand typography and wordmark
+
+Type follows the Astrion Brand Kit typography guide (version 1.0, 2026-10-01):
+
+- **Archivo** sets display and body copy in the editor and all text in the map: heading, subtitle, state abbreviations, place labels, counts, and legend.
+- **JetBrains Mono** sets utility labels, versions, and compact metadata in the editor: the version line, section labels, settings summaries, the preview status line, code samples, and the footer.
+- **Space Grotesk** is the web wordmark face only. The header uses the kit's outlined wordmark SVG, which needs no font, so Space Grotesk is never loaded.
+
+Both fonts are self-hosted in `assets/fonts/` as Latin variable WOFF2 files with their SIL Open Font License texts. The page makes no request to a font service.
+
+How the map text behaves in each output:
+
+- **Preview:** drawn with the page's fonts.
+- **PNG and Copy PNG:** an SVG drawn as an image cannot see the page's fonts, so Archivo is embedded in the copy handed to the rasterizer. The PNG matches the preview on any computer.
+- **SVG download:** text names Archivo with Arial as the fallback and nothing is embedded, so the file stays plain and editable. It shows Archivo where the Brand Kit desktop fonts are installed and Arial elsewhere.
+
+If the font file cannot be read (first visit while offline), the editor and the PNG fall back to the system sans-serif and export still works.
+
+Corner radius and layout still follow the earlier look.
 
 ## Project safety and portability
 
