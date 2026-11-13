@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.5.0**
+Version: **3.5.1**
 
 Created by **Dr. Shane Turner**
 
@@ -40,7 +40,7 @@ The editor opens as an empty project. Sample Astrion locations are opt-in and ar
 
 ## Workspace
 
-The map is the work area. On a desktop screen it sits on the left and is sized to the window, so the whole map is visible without scrolling. One rail on the right holds, in order, **Add a location**, **Locations**, and **Map settings**. The map stays in place while the rail scrolls. On a phone the map comes first, followed by the same three panels, with section links at the top.
+The map is the work area. On a desktop screen it sits on the left and is sized to the window, so the whole map is visible without scrolling. One rail on the right holds, in order, **Add a location**, **Locations**, and **Map settings**. The map stays in place while the rail scrolls, as long as the window is tall enough to show the whole map panel. On a phone the map comes first, followed by the same three panels, with section links at the top.
 
 - **Undo** sits in the map header and is enabled whenever there is a change to undo. Its tooltip names the change. Ctrl+Z (Command+Z on a Mac) does the same when the cursor is not in a text field. Up to 20 changes can be undone, one at a time.
 - After a location is added, the state, source, and type stay as they were, so several locations in one state take fewer steps. Pressing Enter in a field adds the location and returns the cursor to the name field.

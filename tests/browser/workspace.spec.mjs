@@ -157,3 +157,28 @@ test("panels, buttons and fields share the brand's single corner radius", async 
   });
   expect(radii).toEqual(["4px"]);
 });
+
+test("on a short window the map does not pin itself and its footer can be reached", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 560 });
+  await gotoFresh(page);
+  expect(await page.locator(".preview-panel").evaluate(element => getComputedStyle(element).position)).toBe("static");
+  await page.locator(".hint").scrollIntoViewIfNeeded();
+  const hint = await box(page, ".hint");
+  expect(hint.y + hint.height, "the reference note can be scrolled into view").toBeLessThanOrEqual(560);
+});
+
+test("a location row keeps its name and actions on one line with details below", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoFresh(page);
+  await addCity(page, { name: "Mountain Regional Headquarters", state: "CO", city: "Colorado Springs", type: "regional" });
+  const row = page.locator("#pinList .pin-row").first();
+  const [name, details, edit, remove] = await Promise.all([
+    row.locator("strong").boundingBox(), row.locator("small").boundingBox(), row.locator("[data-edit]").boundingBox(), row.locator("[data-remove]").boundingBox(),
+  ]);
+  const middle = rect => rect.y + rect.height / 2;
+  expect(Math.abs(middle(name) - middle(edit)), "name and Edit share a line").toBeLessThan(10);
+  expect(Math.abs(middle(edit) - middle(remove))).toBeLessThan(2);
+  expect(details.y, "details sit below the name").toBeGreaterThanOrEqual(name.y + name.height - 1);
+  expect(details.x + details.width, "details use the width under the buttons").toBeGreaterThan(edit.x);
+  expect(details.height, "details take at most two lines").toBeLessThanOrEqual(36);
+});
