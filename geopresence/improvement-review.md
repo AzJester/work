@@ -6,6 +6,15 @@ This review ranks the UI and code improvements that would do the most for Map Bu
 
 Line numbers refer to `geopresence/index.html` at version 3.2.3. Versions 3.3.0 and 3.4.0 changed colors, type and three contrast items, and left the layout engine, data model and import code as they were, so the findings below still apply.
 
+## Shipped since this review
+
+| Version | What it addressed |
+|---|---|
+| 3.4.0 | Brand Kit type and wordmark; headquarters pins distinct on light maps; placeholder contrast; Remove button outline |
+| 3.5.0 | UI items 1 (map-first workspace), 3 (persistent Undo with Ctrl+Z and a reachable history), 4 in part (full screen and zoom above 100%), 6 in part (reset and sample labels), 7 (combobox keyboard), 8, 9, 10 in part (invalid fields marked), 13 in part, and 14 (one corner radius). Table item 8 and table item 10 are done. |
+
+Pin placement, dropping a pin, the new pin artwork, import hardening and the code structure items are still open.
+
 ## The requirement
 
 > Users should be able to drop real-looking pins in the correct geolocations.

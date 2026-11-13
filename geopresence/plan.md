@@ -4,7 +4,7 @@ Status: implemented
 
 Updated: November 13, 2026
 
-Current version: 3.4.0
+Current version: 3.5.0
 
 Created by: Dr. Shane Turner
 
@@ -30,6 +30,15 @@ The application is a graphic-production tool. It is not an operational mapping p
 Splitting the catalogs from the HTML reduces initial parsing cost while preserving a local, same-origin runtime. It does not introduce an external map service or government runtime connection.
 
 ## Requirements
+
+### Workspace layout
+
+- make the map the work area: on a desktop screen the whole map and the Add a location form are in view without scrolling
+- keep Add a location, Locations, and Map settings in one rail beside the map, in that order, and keep the map in view while the rail scrolls
+- on a phone, show the map first, then the rail panels in the same order, with section links at the top
+- keep Undo on the page at all times, enabled whenever a change can be undone, and bind it to Ctrl+Z outside text fields
+- keep the state, source, and type after a location is added so the next one in the same place takes fewer steps
+- use one 4 px corner radius and hairline panels, as on astrion.us
 
 ### Map settings organization
 
