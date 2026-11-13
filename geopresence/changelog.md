@@ -4,6 +4,13 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.5.1] - 2026-11-13
+
+### Fixed
+
+- on a window shorter than 620 px the map no longer pins itself in place, which had left the status line and reference note below the bottom edge with no way to scroll to them
+- location rows show the name and its Edit and Remove buttons on one line with the place details on a full-width line below; the details had been wrapping to three lines in the rail
+
 ## [3.5.0] - 2026-11-13
 
 ### Changed

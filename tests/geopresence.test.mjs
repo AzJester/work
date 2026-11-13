@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.5\.0"/);
-  assert.match(html, /Version 3\.5\.0/);
+  assert.match(inlineScript, /const APP_VERSION="3\.5\.1"/);
+  assert.match(html, /Version 3\.5\.1/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
