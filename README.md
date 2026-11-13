@@ -72,7 +72,7 @@ Start locally from the repository root with `python -m http.server 8000`, then o
 
 ## Map Builder
 
-A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.5.1**, created by **Dr. Shane Turner**:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **4.0.0**, created by **Dr. Shane Turner**:
 
 ### [Open Map Builder](https://azjester.github.io/work/geopresence/)
 
@@ -80,7 +80,7 @@ A browser application for building a branded geographic U.S. location map and ex
 - search 887 selectable public-reference military-installation anchors covering all 51 state/DC codes
 - use compact progressive-disclosure Map settings: Quick setup opens immediately, while Map details, Advanced, and Project stay collapsed with concise live summaries
 - use familiar generic teardrop pins with distinct interiors for eleven built-in types: Headquarters, Regional headquarters, Site, Contract site, Future site, Program office, Operations center, Customer site, Partner site, Test or range site, and Manufacturing facility
-- combine repeated locations of one type behind a count badge and fan different pin types apart with leader lines
+- draw every pin with its tip on the place it marks; places too close to tell apart share one numbered pin, and a key under the map lists what each number stands for
 - adapt pin outlines for light, dark, and transparent exports; the legend uses identical pins, shows only types used on the map, and wraps automatically
 - protect state initials, small-state callouts, counts, connectors, nearby pin groups, and place labels from overlap
 - edit locations, confirm destructive changes, Undo recent actions, and recover the latest destructive snapshot

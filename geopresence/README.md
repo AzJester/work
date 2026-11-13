@@ -2,7 +2,7 @@
 
 Map Builder is a browser application for creating a polished geographic U.S. presence map and exporting it for presentations, documents, posters, and other graphics.
 
-Version: **3.5.1**
+Version: **4.0.0**
 
 Created by **Dr. Shane Turner**
 
@@ -22,12 +22,12 @@ The hosted application is the simplest way to use it. For local development, ser
 - uses a familiar generic teardrop pin as the default location-marker silhouette, with an original application-rendered design rather than Google-branded artwork
 - distinguishes eleven built-in categories inside each pin: Headquarters star, Regional headquarters building, Site circle, Contract site briefcase, Future site clock, Program office document, Operations center network/gear, Customer site person, Partner site link, Test or range site target, and Manufacturing facility factory
 - combines repeated records of the same type at one anchor behind a numeric count badge
-- fans different pin types around a shared or dense anchor and connects displaced pins with leader lines
-- separates pin groups across nearby but distinct anchors with one deterministic global collision layout
+- draws every pin with its tip exactly on the place it marks; a pin is never moved to make room for anything else
+- gives places closer than about 21 miles one shared numbered pin on their midpoint, and lists what each number stands for in a key under the map
 - follows the Astrion Brand Kit: the website colors (Void, Carbon, Gunmetal, Bone, Steel, Ion) for the editor, the three map themes, the heading accents, and every pin; Archivo and JetBrains Mono for type; and the outlined Astrion wordmark in the header
 - adapts pin outlines for light, dark, and transparent destinations; the legend renders identical complete pins, includes only categories used on the map, and wraps automatically
-- protects state abbreviations and counts as reserved zones so pins, callouts, connectors, and place labels do not cover them
-- warns when dense layout requires a fallback label, hides a label, fits long heading text, or cannot fully separate a marker group
+- moves a state abbreviation inside its state when a pin or place label needs the spot, and hides it when the state has no room left
+- warns when a place label sits on a leader or is hidden, when a state abbreviation is hidden, when the key cannot list every entry, and when long heading text is fitted
 - offers fit, zoom-in, zoom-out, and full-screen preview controls for desktop and mobile use
 - supports light, dark, checkerboard, and custom destination previews for transparent graphics, plus automatic, dark, or light transparent-export text
 - exports PNG at 1×, 2×, or 3× quality, exports SVG, and copies PNG where the browser supports image clipboard access
@@ -78,7 +78,24 @@ The interior symbol communicates the current location category:
 - **Test or range site:** target
 - **Manufacturing facility:** factory
 
-When an anchor contains multiple records of one category, one pin carries a numeric count badge. When an anchor contains different categories, their pins fan apart and use leader lines to preserve the common geographic anchor. The same fanning and global collision pass also respects nearby independent anchors and the protected rectangles around state abbreviations and state counts.
+### Where pins are drawn
+
+A pin's tip is the location. Nothing in the layout moves a pin.
+
+- Each place gets one pin, with its tip on the catalog point for that city, community, or installation.
+- Places closer than 7 map units (about 21 miles) share one pin on the midpoint of their points. At this scale two pins that close would cover each other.
+- One location type at a place shows that type's pin. Several locations of that type add a count badge.
+- Several types at one place, or several merged places, show a numbered pin in the form of the highest tier present. Numbers run west to east.
+- A key under the map names each numbered pin's places and its location types with counts. The key appears only when a numbered pin exists, and the map shrinks to make room for it. If the key cannot list every entry it ends with "+ N more" and the editor says so.
+- Pins are painted south to north, so where one pin stands above another both tips stay visible.
+
+Text gives way to pins, in this order:
+
+1. A place label takes a spot beside its own pin: above, below, right, then left.
+2. State abbreviations then move inside their state to clear pins and those labels. One with no room is hidden and counted in the warning under the map.
+3. A place label that found no spot beside its pin is drawn nearby on a short leader. It stays within 84 map units (about 250 miles) of its pin and is never as close to another pin as to its own. If no such spot exists the label is hidden and counted in the warning. The pin stays, and its name remains in the pin's tooltip and accessible name.
+
+Label backing plates never overlap each other, a pin, or a state abbreviation.
 
 Pins carry no category hue. The Astrion website palette has one accent, so three pin forms do the work color used to do:
 
@@ -204,7 +221,7 @@ These sources cannot promise every military facility. They exclude classified or
 
 State geometry is derived from `us-atlas@3.0.1/states-albers-10m.json`, using U.S. Census Bureau cartographic boundary data in an Albers USA projection. Place and installation points use the same presentation coordinate space. The map is intended for graphic composition, not navigation, legal boundary analysis, or survey work.
 
-The preview uses a global occupancy pass for every location anchor, so separate nearby cities do not independently claim the same marker space. It then places labels against marker, state-label, and previously occupied label boxes. The same resolved layout is used by the preview, PNG, clipboard, and SVG outputs.
+The layout places pins first, on their points, then place labels, then state abbreviations, as described under "Where pins are drawn". The same resolved layout is used by the preview, PNG, clipboard, and SVG outputs. Maps saved in earlier versions keep their locations and settings and are redrawn with the pins on their points.
 
 Transparent output has no canvas background. Destination preview changes only the editor backdrop; it is not exported. Select automatic, dark, or light text for the intended destination. No single text color can guarantee contrast over every possible photograph, so check the result against its final background.
 
