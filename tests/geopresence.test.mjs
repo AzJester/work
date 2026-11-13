@@ -306,20 +306,22 @@ test("site categories retain distinct pin interiors and accessible contrast", ()
   assert.doesNotMatch(inlineScript, /class="marker-backplate"/);
 });
 
-test("co-located tokens and globally nearby locations share collision occupancy", () => {
+test("pins stay on their points: places merge into clusters and nothing shifts a marker", () => {
   const mapMarkup = sectionFromLast("function mapMarkup(){", "function comboConfig(kind)");
   assert.match(mapMarkup, /const anchorGroups=new Map\(\)/);
   assert.match(mapMarkup, /const groups=\[\.\.\.anchorGroups\.values\(\)\]\.sort/);
-  assert.match(mapMarkup, /markerOffsets\(group\.typeGroups\.length\)/);
-  assert.match(mapMarkup, /markerFootprints\(group\.offsets,group\.typeGroups\)/);
-  assert.match(mapMarkup, /occupiedMarkerFootprints/);
-  assert.match(mapMarkup, /markerShiftCandidates/);
-  assert.match(mapMarkup, /occupiedMarkerFootprints\.every/);
-  assert.match(mapMarkup, /stateLabelBoxes\.some/);
-  assert.match(mapMarkup, /markerCollisionBoxes\.some/);
-  assert.match(mapMarkup, /globalOccupancy:occupiedMarkerFootprints\.length/);
-  assert.match(mapMarkup, /unplacedMarkers/);
-  assert.match(mapMarkup, /class="marker-leader"/);
+  assert.match(mapMarkup, /clusterPlaces\(groups\)/, "one pin per place, with nearby places merged onto their centroid");
+  assert.match(mapMarkup, /cluster\.boxes=pinBoxes\(cluster\.x,cluster\.y,cluster\.hasBadge\)/, "each pin's box is fixed at its own point");
+  assert.match(mapMarkup, /markerCollisionBoxes\.push\(box\)/, "labels are laid out around the fixed pin boxes");
+  assert.match(mapMarkup, /placeStateLabels\(/, "state abbreviations give way to pins");
+  assert.match(mapMarkup, /groupMarkerToken\(/, "a place with several types, or several merged places, shows a numbered group pin");
+  assert.match(mapMarkup, /groupKeyMarkup\(/, "the key explains each numbered pin");
+  assert.match(mapMarkup, /keyOverflow:/);
+  assert.match(mapMarkup, /hiddenStateLabels:/);
+  assert.match(mapMarkup, /\.sort\(\(a,b\)=>b\.y-a\.y/, "pins are painted south to north so every tip stays on top");
+  for (const retired of [/markerOffsets/, /markerFootprints/, /markerShiftCandidates/, /occupiedMarkerFootprints/, /unplacedMarkers/, /globalOccupancy/, /marker-leader/, /marker-fan-stem/, /function legacyMapMarkup/]) {
+    assert.doesNotMatch(inlineScript, retired, `${retired} belongs to the retired displacement layout`);
+  }
 });
 
 test("state initials, counts, markers, and place labels remain in protected layers", () => {
@@ -560,7 +562,9 @@ test("preview supports zoom, full screen, layout warnings, and fitted text", () 
   assert.match(inlineScript, /function setPreviewZoom\(value\)/);
   assert.match(inlineScript, /Math\.min\(2\.5,Math\.max\(\.5,value\)\)/);
   assert.match(inlineScript, /function openFullscreenPreview\(\)/);
-  assert.match(inlineScript, /warnings\.unplacedMarkers/);
+  assert.match(inlineScript, /warnings\.keyOverflow/);
+  assert.match(inlineScript, /warnings\.hiddenStateLabels/);
+  assert.match(inlineScript, /warnings\.labelFallback/);
   assert.match(inlineScript, /warnings\.hiddenLabels/);
   assert.match(inlineScript, /warnings\.fittedTextCount/);
 });
