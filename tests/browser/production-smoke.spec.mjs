@@ -1,5 +1,11 @@
+import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 import { projectExportButton, projectImportInput, revealControl, undoButton, zoomControls } from "./helpers.mjs";
+
+// The deployed page must show the version this commit ships. Reading it from the source
+// keeps the smoke test from going stale each time the version is bumped.
+const releasedVersion = readFileSync(new URL("../../geopresence/index.html", import.meta.url), "utf8")
+  .match(/\bAPP_VERSION\s*=\s*"(\d+\.\d+\.\d+)"/)?.[1];
 
 test("@production deployed GeoPresence release is healthy", async ({ page, request }) => {
   test.skip(!process.env.PRODUCTION_SMOKE, "runs only after the Pages deployment");
@@ -21,7 +27,8 @@ test("@production deployed GeoPresence release is healthy", async ({ page, reque
   await expect.poll(() => page.locator("#mapSvg .state-shape").count()).toBeGreaterThanOrEqual(51);
   await expect(page.getByText("Map heading", { exact: true })).toBeVisible();
   await expect(page.locator("body")).not.toContainText(/Standalone\s*(?:\u00c2)?\u00b7\s*No map service required/i);
-  await expect(page.locator("body")).toContainText(/v3\.2\.3/i);
+  expect(releasedVersion, "APP_VERSION was not found in geopresence/index.html").toBeTruthy();
+  await expect(page.locator("body")).toContainText(new RegExp(`v${releasedVersion.replaceAll(".", "\\.")}`, "i"));
 
   await page.locator("#locationImportOpen").click();
   await expect(page.locator("#locationImportDialog")).toBeVisible();
