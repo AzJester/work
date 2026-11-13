@@ -199,6 +199,8 @@ SVG output remains scalable and editable. When **Clean SVG metadata** is enabled
 
 ## Future options
 
+A ranked review of UI and code improvements, measured against the requirement that users can drop real-looking pins in the correct geolocations, is in [improvement-review.md](improvement-review.md) (November 13, 2026).
+
 Only add these if they become useful:
 
 - custom marker icons
