@@ -4,6 +4,26 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [3.3.0] - 2026-11-13
+
+### Changed
+
+- moved the editor to the current Astrion website colors: a Void ground, Carbon panels, Gunmetal fields, Bone text, Steel labels, and Ion as the single accent for primary actions, links, and focus rings
+- recolored the three map themes: Dark is Void with Gunmetal land and Steel boundaries, Light is Bone with a Steel-tinted land, and Clean white keeps a white page with Bone land
+- replaced the Force, Sky, Water, and Midnight heading accents with Astrion Ion, Steel, Bone, and Void; Ion is the default
+- replaced the eleven category hues with three pin forms drawn from the palette: an Ion pin for Headquarters and Regional headquarters, a solid neutral pin for other Astrion sites, and an outlined pin for Contract, Future, Customer, and Partner sites; interior symbols are unchanged
+- pin fill now follows the land the pin sits on and the outline follows whatever is behind the map, so pins stay legible on transparent exports for light and dark destinations
+- warnings, errors, and destructive actions no longer use red or amber, which the palette does not include; weight, outline, and wording carry the state
+- replaced the gradient tile in the header with an Ion pin mark
+
+### Migration
+
+- a saved browser project or project file that uses a retired heading accent opens with the closest current accent; nothing else in a saved project changes
+
+### Preserved
+
+- typeface, layout, corner radius, export sizes, the eleven categories and their symbols, the CSV and project formats, local-only persistence, and attribution to Dr. Shane Turner
+
 ## [3.2.3] - 2026-07-14
 
 ### Fixed

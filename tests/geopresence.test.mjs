@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.3"/);
-  assert.match(html, /Version 3\.2\.3/);
+  assert.match(inlineScript, /const APP_VERSION="3\.3\.0"/);
+  assert.match(html, /Version 3\.3\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -278,11 +278,28 @@ test("site categories retain distinct pin interiors and accessible contrast", ()
   for (const [value, meta] of Object.entries(expectedTypes)) {
     assert.match(typeSelector, new RegExp(`<option\\s+value="${value}"[^>]*>\\s*${meta.label}\\s*</option>`, "i"));
   }
+  // The palette has one accent, so three pin forms group the categories instead of eleven hues.
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.tone])),
+    {
+      headquarters: "lead", regional: "lead",
+      hub: "site", program: "site", operations: "site", test: "site", manufacturing: "site",
+      contract: "presence", future: "presence", customer: "presence", partner: "presence"
+    }
+  );
+  // Contrast is checked against the surfaces the themes actually draw, read from the palette itself.
+  const paletteSource = inlineScript.match(/function palette\(\)\{[^\n]*\}\}/)?.[0];
+  assert.ok(paletteSource, "theme palette function was not found");
+  const paletteFor = theme => vm.runInNewContext(`let model={theme:${JSON.stringify(theme)}};${paletteSource};palette()`);
   for (const [type, meta] of Object.entries(types)) {
-    assert.ok(contrastRatio(meta.color, "#ffffff") >= 4.5, `${type} light marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.color, "#dfe3e8") >= 4, `${type} light marker must contrast with light land`);
-    assert.ok(contrastRatio(meta.darkColor, "#171722") >= 4.5, `${type} dark marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.darkColor, "#3c3852") >= 4, `${type} dark marker must contrast with dark land`);
+    for (const theme of ["light", "clean"]) {
+      const surface = paletteFor(theme);
+      assert.ok(contrastRatio(meta.color, surface.panel) >= 4.5, `${type} ${theme} marker must contrast with its plate`);
+      assert.ok(contrastRatio(meta.color, surface.land) >= 4, `${type} ${theme} marker must contrast with the land`);
+    }
+    const dark = paletteFor("dark");
+    assert.ok(contrastRatio(meta.darkColor, dark.panel) >= 4.5, `${type} dark marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.darkColor, dark.land) >= 4, `${type} dark marker must contrast with dark land`);
   }
   assert.match(inlineScript, /function markerToken\(meta,cx,cy,size,p\)/);
   assert.match(inlineScript, /class="[^"]*\bmarker-pin\b[^"]*"/);
@@ -585,4 +602,55 @@ test("obsolete standalone and statewide copy remain absent", () => {
   assert.doesNotMatch(html, /Standalone\s*[·•]\s*No map service required/);
   assert.doesNotMatch(html, /Standalone browser application/);
   assert.doesNotMatch(html, />Statewide</);
+});
+
+test("every color comes from the Astrion website tokens", () => {
+  const tokens = ["#050607", "#0b0d10", "#171b22", "#eeede7", "#8a8f99", "#23cef0", "#e2fdff"];
+  // Solid tints for exported graphics, each one token laid over another (documented in the README).
+  const tints = ["#b4b3af", "#4b4b4a", "#6e6e6c", "#d0d1d0"];
+  // White stands in for a white page (Clean white theme, light destination preview); black is shadow only.
+  const neutral = ["#ffffff", "#fff", "#000"];
+  const retired = ["#442c81", "#29aae1", "#307eef", "#222230"];
+  const allowed = new Set([...tokens, ...tints, ...neutral]);
+
+  const migration = html.match(/retiredAccents=\{[^}]*\}/)?.[0] || "";
+  for (const color of retired) assert.ok(migration.includes(color), `${color} should only survive in the accent migration map`);
+  const page = html.replace(migration, "");
+  const hexColors = new Set((page.match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi) || []).map(value => value.toLowerCase()));
+  for (const color of hexColors) assert.ok(allowed.has(color), `${color} is not an Astrion website color`);
+  for (const color of tokens) assert.ok(hexColors.has(color), `${color} should be in use`);
+
+  const tokenChannels = new Set(tokens.map(color => color.match(/[a-f\d]{2}/gi).map(value => Number.parseInt(value, 16)).join(",")));
+  const translucent = [...styles.matchAll(/rgba?\((\d+),\s*(\d+),\s*(\d+)/g)].map(match => match.slice(1, 4).join(","));
+  assert.ok(translucent.length > 0, "the stylesheet should use tokens at reduced opacity for hairlines");
+  for (const channels of translucent) {
+    assert.ok(tokenChannels.has(channels), `rgba(${channels}) is not an Astrion website color at reduced opacity`);
+  }
+  assert.doesNotMatch(styles, /--(?:force|sky|green|daylight|zenith|midnight|silver|orange|red|water)\b/,
+    "legacy palette variables must not return");
+  assert.match(html, /<meta name="theme-color" content="#0b0d10">/);
+});
+
+test("heading accents are brand tokens and retired accents migrate", () => {
+  const accentSelect = html.match(/<select id="accent">[\s\S]*?<\/select>/)?.[0] || "";
+  const options = [...accentSelect.matchAll(/<option value="(#[0-9a-f]{6})">([^<]+)<\/option>/g)].map(match => [match[1], match[2]]);
+  assert.deepEqual(options, [
+    ["#23cef0", "Astrion Ion"],
+    ["#8a8f99", "Astrion Steel"],
+    ["#eeede7", "Astrion Bone"],
+    ["#050607", "Astrion Void"]
+  ]);
+  const source = inlineScript.match(/const accentOptions=[^\n]*\n\s*const resolveAccent=[^\n]*\n/)?.[0];
+  assert.ok(source, "accent resolution was not found");
+  const resolveAccent = vm.runInNewContext(`${source};resolveAccent`);
+  assert.equal(resolveAccent("#442c81"), "#23cef0", "Force becomes Ion");
+  assert.equal(resolveAccent("#29AAE1"), "#23cef0", "Sky becomes Ion, whatever its letter case");
+  assert.equal(resolveAccent("#307eef"), "#23cef0", "Water becomes Ion");
+  assert.equal(resolveAccent("#222230"), "#050607", "Midnight becomes Void");
+  assert.equal(resolveAccent("#8A8F99"), "#8a8f99", "a current accent is kept");
+  for (const value of [undefined, null, "", "red", "#123456", "javascript:alert(1)"]) {
+    assert.equal(resolveAccent(value), "#23cef0", `${String(value)} falls back to Ion`);
+  }
+  assert.match(inlineScript, /out\.accent=resolveAccent\(raw\.accent\);/);
+  assert.match(inlineScript, /accent:"#23cef0"/, "Ion is the default heading accent");
 });

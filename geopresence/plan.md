@@ -2,9 +2,9 @@
 
 Status: implemented
 
-Updated: July 14, 2026
+Updated: November 13, 2026
 
-Current version: 3.2.3
+Current version: 3.3.0
 
 Created by: Dr. Shane Turner
 
@@ -52,6 +52,8 @@ Splitting the catalogs from the HTML reduces initial parsing cost while preservi
 - combine repeated records of one type at an anchor behind a numeric count badge
 - fan different category pins around the same anchor and connect displaced pins to that anchor with leader lines
 - adapt pin outlines and keylines to light, dark, clean, and transparent output
+- take every color in the editor and in exported maps from the astrion.us tokens (Void, Carbon, Gunmetal, Bone, Steel, Ion, Flare), with four documented token-over-token tints for solid export colors
+- encode pin category groups by form rather than hue: an Ion pin for the headquarters tier, a solid neutral pin for other Astrion sites, and an outlined pin for contract, customer, partner, and future sites
 - render legend entries with the same complete pin renderer used on the map, include only types used by current locations, and wrap entries automatically
 - run one deterministic global collision layout across all anchors, including distinct nearby cities and installations
 - reserve state-label and state-count protected zones, pin footprints, callouts, connectors, and previously placed label geometry during layout
