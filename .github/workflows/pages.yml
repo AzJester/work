@@ -193,7 +193,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -- *.html *.png *.gif *.webmanifest sw.js _site/
-          cp -R assets astrion astrion-site astrion-division LDAWIF geopresence black-hat-agent solutions-architect _site/
+          cp -R assets astrion astrion-site astrion-division LDAWIF geopresence black-hat-agent solutions-architect topo _site/
           # PHX digital twin: ship the page, modules and data, not the preprocessing scripts.
           mkdir -p _site/phx-digital-twin
           cp -R phx-digital-twin/index.html phx-digital-twin/app.js phx-digital-twin/adsb.js phx-digital-twin/data _site/phx-digital-twin/

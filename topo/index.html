@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Build and print free topographic maps of anywhere in the world, to scale, with an MGRS grid. Export the same map for Garmin handhelds and ATAK.">
+  <meta name="theme-color" content="#16201b">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Topo Map Builder">
+  <meta property="og:description" content="Free printable topographic maps with MGRS grids at 1:15,000 to 1:50,000, plus Garmin and ATAK export.">
+  <meta property="og:url" content="https://azjester.github.io/work/topo/">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://tiles.openfreemap.org https://s3.amazonaws.com https://nominatim.openstreetmap.org; worker-src 'self' blob:; child-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Topo Map Builder</title>
+  <link rel="canonical" href="https://azjester.github.io/work/topo/">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="vendor/maplibre-gl-6.18.0/maplibre-gl.css">
+  <link rel="stylesheet" href="app.css?v=1.0.0">
+</head>
+<body>
+  <a class="skip" href="#panel">Skip to map options</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <rect width="32" height="32" rx="6" fill="#d9480f"/>
+        <path d="M5 23c4-1 5-7 9-8s5 4 8 3 3-6 5-7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M5 17c3-1 4-5 7-6s5 3 8 2 4-5 7-6" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".75"/>
+        <path d="M11 4v24M21 4v24M4 11h24M4 21h24" stroke="#16201b" stroke-width=".9" opacity=".55"/>
+      </svg>
+      <span class="brand-name">Topo Map Builder</span>
+    </div>
+    <form class="goto" id="goto" role="search" autocomplete="off">
+      <input id="goto-input" type="search" placeholder="Town, ZIP, MGRS or lat, lon" enterkeyhint="go"
+        aria-label="Go to a town, a ZIP code, an MGRS reference, or a latitude and longitude">
+      <button type="submit" class="btn" id="goto-submit">Go</button>
+      <button type="button" class="btn icon" id="locate" title="Go to my location" aria-label="Go to my location">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <ul class="suggest" id="suggest" role="listbox" aria-label="Matching places" hidden></ul>
+    </form>
+    <button type="button" class="btn panel-toggle" id="panel-toggle" aria-controls="panel" aria-expanded="true">Options</button>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" id="panel" aria-label="Map options and export" tabindex="-1">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Export type">
+        <button type="button" role="tab" id="tab-print" data-mode="print" aria-selected="true">Print</button>
+        <button type="button" role="tab" id="tab-garmin" data-mode="garmin" aria-selected="false" tabindex="-1">Garmin</button>
+        <button type="button" role="tab" id="tab-atak" data-mode="atak" aria-selected="false" tabindex="-1">ATAK</button>
+      </div>
+
+      <section data-modes="print" aria-labelledby="scale-heading">
+        <h2 id="scale-heading">Scale</h2>
+        <div class="seg five" id="scale-seg" role="radiogroup" aria-labelledby="scale-heading"></div>
+        <div class="seg two" id="orient-seg" role="radiogroup" aria-label="Page orientation">
+          <button type="button" role="radio" data-v="p" aria-checked="true">Portrait</button>
+          <button type="button" role="radio" data-v="l" aria-checked="false">Landscape</button>
+        </div>
+        <p class="hint" id="scale-note"></p>
+      </section>
+
+      <section data-modes="print" aria-labelledby="pages-heading">
+        <h2 id="pages-heading">Pages <span class="count" id="page-count"></span></h2>
+        <p class="hint">
+          <b>Click</b> the map to pick a page and click it again to drop it. <b>Shift-drag</b> picks every page in an area.
+          <b>Drag</b> a picked page to move it in 1 km steps; it snaps to the edge of a neighbour.
+        </p>
+        <ul class="chips" id="chips" aria-label="Picked pages"></ul>
+        <div class="nudge" id="nudge" role="group" aria-label="Move the selected page by 1 km" hidden>
+          <span class="label">Move selected</span>
+          <button type="button" class="btn small" data-nudge="w" aria-label="Move the selected page 1 km west">&larr;</button>
+          <button type="button" class="btn small" data-nudge="n" aria-label="Move the selected page 1 km north">&uarr;</button>
+          <button type="button" class="btn small" data-nudge="s" aria-label="Move the selected page 1 km south">&darr;</button>
+          <button type="button" class="btn small" data-nudge="e" aria-label="Move the selected page 1 km east">&rarr;</button>
+        </div>
+        <div class="buttonrow">
+          <button type="button" class="btn small" id="clear">Clear all</button>
+          <button type="button" class="btn small" id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+          <button type="button" class="btn small" id="redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+          <button type="button" class="btn small" id="fit">Zoom to pages</button>
+        </div>
+      </section>
+
+      <section class="export" data-modes="print" aria-label="Export the pages">
+        <div class="actions">
+          <button type="button" class="btn primary" id="download" disabled>Download PDF</button>
+          <button type="button" class="btn primary" id="print" disabled>Print</button>
+          <button type="button" class="btn" id="share">Share</button>
+        </div>
+        <label class="check"><input type="checkbox" id="legend-page" checked> Add a legend page</label>
+        <p class="hint" id="estimate"></p>
+        <p class="hint">US Letter. Print at <b>100% (actual size)</b>, then measure the scale bar on the sheet to confirm it.</p>
+      </section>
+
+      <section data-modes="garmin atak" aria-labelledby="region-heading" hidden>
+        <h2 id="region-heading">Region</h2>
+        <p class="regionread" id="region-read"></p>
+        <div class="buttonrow">
+          <button type="button" class="btn small" id="region-fit">Fit to view</button>
+          <button type="button" class="btn small" id="region-pages">Use picked pages</button>
+        </div>
+        <p class="hint"><b>Drag</b> the square handles to size the box and the round grip to move it. <b>Shift-drag</b> on the map draws a new box.</p>
+      </section>
+
+      <section data-modes="garmin" aria-labelledby="garmin-heading" hidden>
+        <h2 id="garmin-heading">Detail <span class="count" id="garmin-read"></span></h2>
+        <input type="range" id="garmin-zoom" min="8" max="17" step="1" aria-label="Garmin map zoom">
+        <label class="row"><span class="label">Device holds</span>
+          <select id="garmin-budget" class="field">
+            <option value="100">100 images (eTrex, older GPSMAP)</option>
+            <option value="500">500 images (GPSMAP 64 to 67, Montana)</option>
+          </select>
+        </label>
+        <p class="hint" id="garmin-hint"></p>
+      </section>
+
+      <section data-modes="atak" aria-labelledby="atak-heading" hidden>
+        <h2 id="atak-heading">Zoom levels <span class="count" id="atak-read"></span></h2>
+        <label class="row"><span class="label">From</span><input type="range" id="atak-min" min="6" max="17" step="1" aria-label="Lowest zoom level"></label>
+        <label class="row"><span class="label">To</span><input type="range" id="atak-max" min="6" max="17" step="1" aria-label="Highest zoom level"></label>
+        <p class="hint" id="atak-hint"></p>
+      </section>
+
+      <section class="export" data-modes="garmin atak" aria-label="Build the device file" hidden>
+        <button type="button" class="btn primary wide" id="bake">Build file</button>
+        <p class="hint" id="bake-how"></p>
+      </section>
+
+      <section aria-labelledby="map-heading">
+        <h2 id="map-heading">Map</h2>
+        <div class="row"><span class="label" id="units-label">Units</span>
+          <div class="seg two compact" data-setting="units" role="radiogroup" aria-labelledby="units-label">
+            <button type="button" role="radio" data-v="m">Metric</button><button type="button" role="radio" data-v="ft">Imperial</button>
+          </div></div>
+        <div class="row"><span class="label" id="labels-label">Labels</span>
+          <div class="seg two compact" data-setting="labels" role="radiogroup" aria-labelledby="labels-label">
+            <button type="button" role="radio" data-v="sparse">Sparse</button><button type="button" role="radio" data-v="full">Full</button>
+          </div></div>
+        <div class="row"><span class="label" id="palette-label">Ink</span>
+          <div class="seg two compact" data-setting="palette" role="radiogroup" aria-labelledby="palette-label">
+            <button type="button" role="radio" data-v="colour">Colour</button><button type="button" role="radio" data-v="bw">B&amp;W</button>
+          </div></div>
+        <div class="row"><span class="label" id="relief-label">Hillshade</span>
+          <div class="seg three compact" data-setting="relief" role="radiogroup" aria-labelledby="relief-label">
+            <button type="button" role="radio" data-v="off">Off</button><button type="button" role="radio" data-v="soft">Soft</button><button type="button" role="radio" data-v="sharp">Sharp</button>
+          </div></div>
+        <div class="row"><span class="label" id="contours-label">Contours</span>
+          <div class="seg three compact" data-setting="contours" role="radiogroup" aria-labelledby="contours-label">
+            <button type="button" role="radio" data-v="off">Off</button><button type="button" role="radio" data-v="sparse">Sparse</button><button type="button" role="radio" data-v="full">Full</button>
+          </div></div>
+        <ul class="toggles" id="toggles-main"></ul>
+        <details class="more">
+          <summary>More layers</summary>
+          <div id="toggles-more"></div>
+        </details>
+      </section>
+
+      <section class="docs" aria-labelledby="help-heading">
+        <h2 id="help-heading">Help</h2>
+        <button type="button" class="btn small" id="help-open">Legend and printing guide</button>
+      </section>
+
+      <footer class="fine">
+        <p>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
+          Tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> on the
+          <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> schema.
+          Elevation from <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">Mapzen terrain tiles</a>
+          (USGS 3DEP, SRTM, GMTED and others). Place search by <a href="https://nominatim.org" target="_blank" rel="noopener">Nominatim</a>.
+          Magnetic declination from the NOAA and BGS World Magnetic Model 2025.</p>
+        <p>Drawn from open data that changes over time. Confirm critical details against an official source before relying on a map in the field.</p>
+        <p class="version">Topo Map Builder <span id="version"></span></p>
+      </footer>
+    </aside>
+
+    <main class="mapwrap" id="mapwrap">
+      <div id="map" aria-label="Topographic map"></div>
+      <div class="viewseg seg two compact" id="view-seg" role="radiogroup" aria-label="Map view" title="3D is a preview only. Exports are always flat.">
+        <button type="button" role="radio" data-v="2d" aria-checked="true">2D</button><button type="button" role="radio" data-v="3d" aria-checked="false">3D</button>
+      </div>
+      <div class="dragbox" id="dragbox" hidden></div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <div class="progress" id="progress" role="alertdialog" aria-modal="true" aria-labelledby="progress-label" hidden>
+    <div class="progress-card">
+      <p id="progress-label">Working</p>
+      <progress id="progress-bar" max="1" value="0"></progress>
+      <p class="hint">Keep this tab open and in front while it renders.</p>
+      <button type="button" class="btn" id="progress-cancel">Cancel</button>
+    </div>
+  </div>
+
+  <dialog class="help" id="help" aria-labelledby="help-title">
+    <form method="dialog" class="help-head">
+      <h2 id="help-title">Legend and printing guide</h2>
+      <button class="btn small" value="close" aria-label="Close the guide">Close</button>
+    </form>
+    <div class="help-body">
+      <h3>Map symbols</h3>
+      <ul class="legend">
+        <li><i class="sw line major"></i>Highway or primary road</li>
+        <li><i class="sw line secondary"></i>Secondary road</li>
+        <li><i class="sw line minor"></i>Local road</li>
+        <li><i class="sw line track"></i>Track (unpaved, vehicle width)</li>
+        <li><i class="sw line path"></i>Trail or footpath</li>
+        <li><i class="sw line rail"></i>Railway</li>
+        <li><i class="sw line stream"></i>River or stream</li>
+        <li><i class="sw line stream dashed"></i>Intermittent stream</li>
+        <li><i class="sw line contour"></i>Contour line</li>
+        <li><i class="sw line contour index"></i>Index contour, labelled with its elevation</li>
+        <li><i class="sw line grid"></i>MGRS grid line</li>
+        <li><i class="sw line boundary"></i>Administrative boundary</li>
+        <li><i class="sw area wood"></i>Tree cover</li>
+        <li><i class="sw area water"></i>Lake, pond or wide river</li>
+        <li><i class="sw area wetland"></i>Wetland</li>
+        <li><i class="sw area sand"></i>Sand</li>
+        <li><i class="sw area rock"></i>Bare rock</li>
+        <li><i class="sw area built"></i>Built-up area</li>
+        <li><i class="sw area military"></i>Military area</li>
+        <li><i class="sw area park"></i>Park or protected land</li>
+      </ul>
+      <h3>Printing to scale</h3>
+      <ol>
+        <li>Pick pages on the map, then choose <b>Download PDF</b> or <b>Print</b>.</li>
+        <li>In the print dialog choose <b>Actual size</b> or <b>100%</b>. Do not use "Fit to page".</li>
+        <li>Measure the kilometre scale bar on the sheet with a ruler. At 1:25,000 one kilometre is 40 mm; at 1:50,000 it is 20 mm.</li>
+        <li>Neighbouring pages share an edge, so trimmed sheets join without overlap.</li>
+      </ol>
+      <h3>Reading the grid</h3>
+      <p>Grid squares are 1 km. Read <b>right, then up</b>: take the grid line left of the point and estimate tenths across,
+        then the line below it and estimate tenths up. Four digits name a 1 km square, six digits a 100 m square.</p>
+      <p>The readout at the bottom left of the map shows how far grid north (GN) and magnetic north (MN) sit from true north
+        at the centre of the view. Each printed sheet carries the same values and the conversion between compass and grid bearings.</p>
+      <h3>Devices</h3>
+      <p><b>Garmin:</b> the KMZ is a Custom Map. Copy it to the <code>Garmin/CustomMaps</code> folder on the device or its memory card.
+        Older units read at most 100 images across all custom maps; newer ones 500.</p>
+      <p><b>ATAK:</b> the MBTiles file is a tile set. Import it with Import Manager or copy it to <code>atak/imagery</code>, then pick it from the map layers.</p>
+      <h3>Privacy</h3>
+      <p>Everything runs in this browser. Map tiles and elevation come straight from their public hosts, and a place search sends
+        the text you type to the OpenStreetMap Nominatim service. Picked pages and settings are stored in this browser only.</p>
+    </div>
+  </dialog>
+
+  <noscript><p class="noscript">Topo Map Builder needs JavaScript to draw the map.</p></noscript>
+  <script src="vendor/maplibre-contour-0.1.1/maplibre-contour.min.js"></script>
+  <script type="module" src="app.mjs?v=1.0.0"></script>
+</body>
+</html>

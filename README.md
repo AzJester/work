@@ -96,6 +96,24 @@ The teardrop is generic application-rendered cartographic geometry, not Google M
 
 The app requires no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. City and installation catalogs are public reference data, not legal boundaries, exact building locations, or a complete military inventory. Optional samples are identified in the editor; the Huntsville Regional Headquarters and contract entries reflect user-provided information, while the other locations are demonstration examples.
 
+## Topo Map Builder
+
+A browser application for building printable topographic maps of anywhere in the world, to scale, with an MGRS grid, and for exporting the same map to Garmin handhelds and ATAK. Version **1.0.0**:
+
+### [Open Topo Map Builder](https://azjester.github.io/work/topo/)
+
+- draw a topographic map with hillshade, contours, land cover, water, roads, trails, railways, buildings, parks, boundaries, peaks and place names
+- overlay the MGRS grid from grid zone boundaries down to 100 m lines, and read grid convergence, magnetic declination and the MGRS reference under the pointer
+- go to a town or ZIP code, an MGRS reference, or a latitude and longitude
+- pick print pages at 1:25,000, 1:50,000, 1:24,000, 1:48,000 or 1:15,000 on US Letter; pages sit on the UTM grid, move in 1 km steps and butt together exactly
+- export a PDF at true scale with a vector grid, grid numbers, scale bars, a north diagram, the grid-magnetic angle, the contour interval, data credits and an optional legend page
+- build a Garmin Custom Map (KMZ) within a 100 or 500 image device limit, or an ATAK tile set (MBTiles) across a range of zoom levels
+- choose colour or black-and-white ink, hillshade and contour density, metric or imperial units, and twenty layer switches; preview terrain in 3D; share a link to the same pages
+
+It is a static site with no server, account or API key. The page and its libraries (MapLibre GL JS, maplibre-contour, jsPDF, sql.js) are served from the repository. The visitor's browser reads map data straight from public hosts: OpenStreetMap vector tiles from OpenFreeMap, Mapzen terrain tiles on AWS Open Data, and Nominatim for place search. Magnetic declination comes from the World Magnetic Model 2025. GitHub Pages deployment is gated by Node and Playwright tests and followed by a production smoke test.
+
+It is an original application built on open data and open-source libraries. It carries no flood zones, power lines, pipelines, aeronautical obstacles or marine chart data, because no free worldwide tile source offers them, and it is not a substitute for an official map. Details, accuracy figures and limits are in [`topo/README.md`](topo/README.md).
+
 ## Weekly Status Tracker
 
 A standalone, self-contained page for tracking your **weekly task status** and producing a
@@ -754,6 +772,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
 | `black-hat-agent/` | Forwards the old Black Hat Agent address to the current build, which lives in the [`Black_Hat_Agent`](https://github.com/AzJester/Black_Hat_Agent) repository. Also holds the vendored SheetJS library that the Solution Architect Workbench loads. |
+| `topo/` | **Topo Map Builder**: printable topographic maps with an MGRS grid at true scale, PDF export, and Garmin (KMZ) and ATAK (MBTiles) export, drawn in the browser from open map data. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
