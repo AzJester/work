@@ -1,0 +1,706 @@
+{
+ "title": "Yuma, Arizona: the sunniest city on Earth",
+ "fps": 30,
+ "duration": 92.0,
+ "xfade": 0.9,
+ "fade_in": 1.4,
+ "fade_out": 1.6,
+ "fonts": {
+  "display": "fonts/PlayfairDisplay.ttf",
+  "italic": "fonts/PlayfairDisplay-Italic.ttf",
+  "sans": "fonts/Montserrat.ttf"
+ },
+ "music": {
+  "file": "audio/music.wav",
+  "lufs": -21.5,
+  "duck_db": 10.5
+ },
+ "master_lufs": -16.0,
+ "captions": "out/yuma-arizona-promo.srt",
+ "narration": {
+  "file": "audio/narration.mp3",
+  "lufs": -17.0,
+  "paragraphs": [
+   {
+    "at": 2.2,
+    "lines": [
+     [
+      0.0,
+      2.08,
+      "Some places wait for a sunny day."
+     ],
+     [
+      2.76,
+      5.82,
+      "Yuma, Arizona, wakes up to one almost every morning."
+     ],
+     [
+      6.46,
+      8.58,
+      "It holds the world record for sunshine."
+     ],
+     [
+      9.18,
+      12.76,
+      "More than four thousand hours of it, every single year."
+     ]
+    ]
+   },
+   {
+    "at": 21.0,
+    "lines": [
+     [
+      13.18,
+      15.18,
+      "The Colorado River made this town."
+     ],
+     [
+      15.74,
+      19.96,
+      "For centuries, this was the crossing, where travelers found their way west."
+     ],
+     [
+      20.48,
+      22.66,
+      "And that history is still here to touch."
+     ],
+     [
+      23.3,
+      26.1,
+      "The Ocean-to-Ocean Bridge, built in 1915."
+     ],
+     [
+      26.82,
+      30.5,
+      "The Territorial Prison on the hill, where the Old West did its time."
+     ],
+     [
+      31.08,
+      33.32,
+      "And a Main Street that still feels like one."
+     ]
+    ]
+   },
+   {
+    "at": 42.8,
+    "lines": [
+     [
+      33.66,
+      36.64,
+      "Past the edge of town, winter looks a lot like spring."
+     ],
+     [
+      37.3,
+      42.84,
+      "From November to March, these fields grow about 90 percent of the leafy greens on America's tables."
+     ],
+     [
+      43.44,
+      47.04,
+      "And in the date groves, Medjool dates ripen slow and sweet."
+     ]
+    ]
+   },
+   {
+    "at": 57.7,
+    "lines": [
+     [
+      47.56,
+      49.34,
+      "Then, there's the wild side."
+     ],
+     [
+      50.06,
+      52.46,
+      "Golden dunes, rolling to the horizon."
+     ],
+     [
+      52.98,
+      56.54,
+      "The rugged Kofa Mountains, home to desert bighorn sheep."
+     ],
+     [
+      56.54,
+      59.44,
+      "And a river made for slow afternoons."
+     ]
+    ]
+   },
+   {
+    "at": 71.3,
+    "lines": [
+     [
+      60.0,
+      60.5,
+      "Warm days."
+     ],
+     [
+      61.58,
+      62.42,
+      "Wide open skies."
+     ],
+     [
+      63.26,
+      65.44,
+      "Sunsets that stop you mid-sentence."
+     ],
+     [
+      66.1,
+      67.44,
+      "This is Yuma, Arizona."
+     ],
+     [
+      68.12,
+      68.86,
+      "Come for the sunshine."
+     ],
+     [
+      69.48,
+      70.82,
+      "Stay for everything else."
+     ]
+    ]
+   }
+  ]
+ },
+ "shots": [
+  {
+   "id": "sunrise2",
+   "img": "src/sunrise2.jpg",
+   "t": 0.0,
+   "from": [
+    0.5,
+    0.42,
+    1.1
+   ],
+   "to": [
+    0.52,
+    0.47,
+    1.22
+   ],
+   "grade": {
+    "gain": 1.12,
+    "sat": 1.0,
+    "warm": 0.0
+   }
+  },
+  {
+   "id": "sunrise",
+   "img": "src/sunrise.jpg",
+   "t": 4.5,
+   "from": [
+    0.5,
+    0.56,
+    1.06
+   ],
+   "to": [
+    0.5,
+    0.5,
+    1.18
+   ],
+   "grade": {
+    "sat": 1.0,
+    "warm": 0.0
+   }
+  },
+  {
+   "id": "morning2",
+   "img": "src/morning2.jpg",
+   "t": 8.2,
+   "from": [
+    0.47,
+    0.5,
+    1.08
+   ],
+   "to": [
+    0.54,
+    0.47,
+    1.16
+   ]
+  },
+  {
+   "id": "grove",
+   "img": "src/grove.jpg",
+   "t": 11.0,
+   "from": [
+    0.52,
+    0.5,
+    1.05
+   ],
+   "to": [
+    0.56,
+    0.48,
+    1.15
+   ]
+  },
+  {
+   "id": "valley",
+   "img": "src/valley.jpg",
+   "t": 15.2,
+   "from": [
+    0.46,
+    0.5,
+    1.08
+   ],
+   "to": [
+    0.54,
+    0.5,
+    1.16
+   ]
+  },
+  {
+   "id": "river",
+   "img": "src/river.jpg",
+   "t": 20.5,
+   "from": [
+    0.48,
+    0.6,
+    1.05
+   ],
+   "to": [
+    0.53,
+    0.58,
+    1.14
+   ]
+  },
+  {
+   "id": "train",
+   "img": "src/train.jpg",
+   "t": 23.2,
+   "from": [
+    0.47,
+    0.5,
+    1.22
+   ],
+   "to": [
+    0.45,
+    0.52,
+    1.34
+   ],
+   "grade": {
+    "mono": true,
+    "contrast": 0.16,
+    "gamma": 1.08
+   }
+  },
+  {
+   "id": "gateway",
+   "img": "src/gateway.jpg",
+   "t": 27.8,
+   "from": [
+    0.6,
+    0.56,
+    1.3
+   ],
+   "to": [
+    0.66,
+    0.6,
+    1.5
+   ]
+  },
+  {
+   "id": "bridge",
+   "img": "src/bridge.jpg",
+   "t": 30.7,
+   "from": [
+    0.5,
+    0.56,
+    1.04
+   ],
+   "to": [
+    0.5,
+    0.45,
+    1.12
+   ],
+   "grade": {
+    "gain": 1.12
+   }
+  },
+  {
+   "id": "cellblock",
+   "img": "src/cellblock.jpg",
+   "t": 34.2,
+   "from": [
+    0.5,
+    0.52,
+    1.04
+   ],
+   "to": [
+    0.5,
+    0.5,
+    1.2
+   ]
+  },
+  {
+   "id": "mainst",
+   "img": "src/mainst.jpg",
+   "t": 38.5,
+   "from": [
+    0.5,
+    0.44,
+    1.3
+   ],
+   "to": [
+    0.5,
+    0.45,
+    1.08
+   ]
+  },
+  {
+   "id": "tractors",
+   "img": "src/tractors.jpg",
+   "t": 42.4,
+   "from": [
+    0.46,
+    0.6,
+    1.1
+   ],
+   "to": [
+    0.54,
+    0.58,
+    1.1
+   ]
+  },
+  {
+   "id": "lettuce",
+   "img": "src/lettuce.jpg",
+   "t": 46.0,
+   "from": [
+    0.5,
+    0.56,
+    1.02
+   ],
+   "to": [
+    0.52,
+    0.5,
+    1.14
+   ]
+  },
+  {
+   "id": "greens",
+   "img": "src/greens.jpg",
+   "t": 49.2,
+   "from": [
+    0.5,
+    0.58,
+    1.1
+   ],
+   "to": [
+    0.5,
+    0.6,
+    1.24
+   ]
+  },
+  {
+   "id": "dates",
+   "img": "src/dates.jpg",
+   "t": 52.3,
+   "from": [
+    0.485,
+    0.52,
+    1.04
+   ],
+   "to": [
+    0.44,
+    0.54,
+    1.18
+   ]
+  },
+  {
+   "id": "kofa2",
+   "img": "src/kofa2.jpg",
+   "t": 57.2,
+   "from": [
+    0.5,
+    0.56,
+    1.03
+   ],
+   "to": [
+    0.5,
+    0.46,
+    1.03
+   ],
+   "grade": {
+    "sat": 0.9,
+    "contrast": 0.06
+   }
+  },
+  {
+   "id": "dunes",
+   "img": "src/dunes.jpg",
+   "t": 59.8,
+   "from": [
+    0.475,
+    0.55,
+    1.06
+   ],
+   "to": [
+    0.54,
+    0.52,
+    1.14
+   ]
+  },
+  {
+   "id": "kofa",
+   "img": "src/kofa.jpg",
+   "t": 62.8,
+   "xf": 0.7,
+   "from": [
+    0.49,
+    0.5,
+    1.03
+   ],
+   "to": [
+    0.51,
+    0.5,
+    1.07
+   ],
+   "grade": {
+    "sat": 0.9,
+    "contrast": 0.06
+   }
+  },
+  {
+   "id": "bighorn",
+   "img": "src/bighorn.jpg",
+   "t": 64.8,
+   "xf": 0.7,
+   "from": [
+    0.5,
+    0.52,
+    1.02
+   ],
+   "to": [
+    0.52,
+    0.48,
+    1.08
+   ]
+  },
+  {
+   "id": "river2",
+   "img": "src/river2.jpg",
+   "t": 66.6,
+   "from": [
+    0.515,
+    0.56,
+    1.04
+   ],
+   "to": [
+    0.46,
+    0.6,
+    1.14
+   ]
+  },
+  {
+   "id": "dunes2",
+   "img": "src/dunes2.jpg",
+   "t": 70.6,
+   "from": [
+    0.5,
+    0.52,
+    1.12
+   ],
+   "to": [
+    0.5,
+    0.485,
+    1.04
+   ]
+  },
+  {
+   "id": "sunset",
+   "img": "src/sunset.jpg",
+   "t": 74.0,
+   "from": [
+    0.5,
+    0.5,
+    1.02
+   ],
+   "to": [
+    0.54,
+    0.41,
+    1.16
+   ]
+  }
+ ],
+ "overlays": [
+  {
+   "type": "stat",
+   "t0": 11.5,
+   "t1": 15.3,
+   "big": "4,000+",
+   "small": "hours of sunshine\na year"
+  },
+  {
+   "type": "title",
+   "t0": 16.0,
+   "t1": 20.4,
+   "big": "Yuma",
+   "mid": "Arizona",
+   "tag": "The Sunniest City on Earth"
+  },
+  {
+   "type": "lower",
+   "t0": 21.2,
+   "t1": 23.5,
+   "text": "The Colorado River"
+  },
+  {
+   "type": "lower",
+   "t0": 24.0,
+   "t1": 27.7,
+   "text": "Yuma Crossing",
+   "sub": "Archive photograph",
+   "scrim": 1.0
+  },
+  {
+   "type": "lower",
+   "t0": 31.3,
+   "t1": 34.1,
+   "text": "Ocean-to-Ocean Bridge",
+   "sub": "Built 1915"
+  },
+  {
+   "type": "lower",
+   "t0": 34.9,
+   "t1": 38.3,
+   "text": "Yuma Territorial Prison",
+   "sub": "Opened 1876"
+  },
+  {
+   "type": "lower",
+   "t0": 39.2,
+   "t1": 42.3,
+   "text": "Historic Main Street",
+   "sub": "Downtown Yuma",
+   "scrim": 1.0
+  },
+  {
+   "type": "stat",
+   "t0": 49.4,
+   "t1": 52.3,
+   "big": "90%",
+   "small": "of America's winter\nleafy greens"
+  },
+  {
+   "type": "lower",
+   "t0": 53.3,
+   "t1": 56.9,
+   "text": "Medjool date groves"
+  },
+  {
+   "type": "lower",
+   "t0": 60.5,
+   "t1": 62.9,
+   "text": "Imperial Sand Dunes",
+   "sub": "20 minutes west",
+   "scrim": 0.8
+  },
+  {
+   "type": "lower",
+   "t0": 63.4,
+   "t1": 66.6,
+   "text": "Kofa National Wildlife Refuge",
+   "sub": "An hour north"
+  },
+  {
+   "type": "end",
+   "t0": 77.2,
+   "t1": 85.6,
+   "big": "Yuma, Arizona",
+   "lines": [
+    "Come for the sunshine.",
+    "Stay for everything else."
+   ],
+   "parts": [
+    "big"
+   ],
+   "fi": 0.9,
+   "y": 0.34
+  },
+  {
+   "type": "end",
+   "t0": 79.3,
+   "t1": 85.6,
+   "big": "Yuma, Arizona",
+   "lines": [
+    "Come for the sunshine.",
+    "Stay for everything else."
+   ],
+   "parts": [
+    0
+   ],
+   "y": 0.34
+  },
+  {
+   "type": "end",
+   "t0": 80.7,
+   "t1": 85.6,
+   "big": "Yuma, Arizona",
+   "lines": [
+    "Come for the sunshine.",
+    "Stay for everything else."
+   ],
+   "parts": [
+    1
+   ],
+   "y": 0.34
+  },
+  {
+   "type": "credits",
+   "t0": 85.3,
+   "t1": 92.0,
+   "fi": 0.9,
+   "dim": 0.88,
+   "rows": [
+    [
+     "h",
+     "Created by"
+    ],
+    [
+     "n",
+     "Shane Turner, DBA"
+    ],
+    [
+     "s",
+     ""
+    ],
+    [
+     "h",
+     "Photography"
+    ],
+    [
+     "t",
+     "Carol M. Highsmith, Library of Congress"
+    ],
+    [
+     "t",
+     "Charles O'Rear, DOCUMERICA, U.S. National Archives"
+    ],
+    [
+     "t",
+     "Bobby Baker, U.S. Department of Agriculture"
+    ],
+    [
+     "t",
+     "Alan Schmierer  ·  U.S. Fish and Wildlife Service  ·  Bureau of Land Management"
+    ],
+    [
+     "t",
+     "George Wharton James, California Historical Society Collection, USC"
+    ],
+    [
+     "s",
+     ""
+    ],
+    [
+     "h",
+     "Sound"
+    ],
+    [
+     "t",
+     "Narration: synthetic voice  ·  Music: original score"
+    ]
+   ]
+  }
+ ]
+}
