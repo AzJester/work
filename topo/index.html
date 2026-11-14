@@ -186,9 +186,18 @@
   <div class="progress" id="progress" role="alertdialog" aria-modal="true" aria-labelledby="progress-label" hidden>
     <div class="progress-card">
       <p id="progress-label">Working</p>
-      <progress id="progress-bar" max="1" value="0"></progress>
-      <p class="hint">Keep this tab open and in front while it renders.</p>
-      <button type="button" class="btn" id="progress-cancel">Cancel</button>
+      <div id="progress-working">
+        <progress id="progress-bar" max="1" value="0"></progress>
+        <p class="hint">Keep this tab open and in front while it renders.</p>
+        <button type="button" class="btn" id="progress-cancel">Cancel</button>
+      </div>
+      <div id="progress-done" hidden>
+        <p class="hint">Print it at <b>100% (actual size)</b>, not "fit to page", then check the scale bar with a ruler.</p>
+        <div class="buttonrow">
+          <a class="btn primary" id="progress-open" target="_blank" rel="noopener">Open the PDF to print</a>
+          <button type="button" class="btn" id="progress-close">Close</button>
+        </div>
+      </div>
     </div>
   </div>
 

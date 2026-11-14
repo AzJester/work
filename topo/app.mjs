@@ -231,6 +231,9 @@ map.on("mousemove", event => {
   $("read-cursor").textContent = toMgrs(lat, lon, 4) || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 });
 
+// The pointer reference describes where the pointer is, so it goes blank when the pointer leaves.
+map.on("mouseout", () => { $("read-cursor").textContent = ""; });
+
 // ---------------------------------------------------------------------------------------------
 // Pages
 // ---------------------------------------------------------------------------------------------
@@ -967,27 +970,54 @@ function pdfName() {
   return `topo-${stem}-${state.scale / 1000}k${state.pages.length > 1 ? `-${state.pages.length}pages` : ""}.pdf`;
 }
 
+/**
+ * Offer a finished PDF for printing. The new tab is opened by the visitor's own click on a link:
+ * a tab opened by script after a long render is treated as a pop-up and blocked, and one opened
+ * before the render would push this tab into the background, where browsers pause drawing.
+ */
+function offerPrint(blob) {
+  const dialog = $("progress"), link = $("progress-open");
+  const url = URL.createObjectURL(blob);
+  const previousFocus = document.activeElement;
+  const chrome = [document.querySelector(".layout"), document.querySelector(".topbar")];
+  const close = () => {
+    dialog.hidden = true;
+    $("progress-done").hidden = true;
+    $("progress-working").hidden = false;
+    for (const node of chrome) node.inert = false;
+    link.removeEventListener("click", close);
+    $("progress-close").removeEventListener("click", close);
+    dialog.removeEventListener("keydown", onKey);
+    setTimeout(() => URL.revokeObjectURL(url), 10 * 60_000);
+    previousFocus?.focus?.();
+  };
+  const onKey = event => { if (event.key === "Escape") close(); };
+  $("progress-label").textContent = "The map is ready to print";
+  $("progress-working").hidden = true;
+  $("progress-done").hidden = false;
+  link.href = url;
+  for (const node of chrome) node.inert = true;
+  dialog.hidden = false;
+  link.addEventListener("click", close);
+  $("progress-close").addEventListener("click", close);
+  dialog.addEventListener("keydown", onKey);
+  link.focus();
+}
+
 async function runPdf(kind) {
   if (!state.pages.length) return;
-  // Opened now, during the click, so the browser does not treat it as a pop-up later.
-  const printWindow = kind === "print" ? window.open("", "_blank") : null;
-  if (printWindow) printWindow.document.title = "Preparing the map…";
   const result = await withProgress("Preparing the map", async (signal, onProgress) => {
     await loadScript("vendor/jspdf-4.2.1/jspdf.umd.min.js", () => Boolean(globalThis.jspdf));
     return exportPdf({ maplibregl, jsPDF: globalThis.jspdf.jsPDF, terrain }, {
       pages: state.pages, scale: state.scale, orient: state.orient, options: state.options, legend: state.legend, onProgress, signal,
     });
   });
-  if (!result) {
-    printWindow?.close();
-    return;
-  }
-  if (printWindow && !printWindow.closed) {
-    printWindow.location.href = URL.createObjectURL(result.blob);
-    flash("The PDF opened in a new tab. Print it at 100% (actual size).", 8000);
+  if (!result) return;
+  if (kind === "print") {
+    offerPrint(result.blob);
   } else {
     saveBlob(result.blob, pdfName());
-    flash(kind === "print" ? "The browser blocked the new tab, so the PDF was downloaded instead. Print it at 100%." : "PDF downloaded.", 8000);
+    flash("PDF downloaded.", 8000);
   }
   if (result.missingTiles) flash(`Done, but ${result.missingTiles} map requests failed, so parts of a page may be blank.`, 10000);
 }

@@ -527,14 +527,19 @@ export function buildStyle(options, context) {
     });
   }
   if (on.peaks) {
-    const elevation = imperial
-      ? ["concat", ["to-string", ["coalesce", ["get", "ele_ft"], ["round", ["*", ["coalesce", ["get", "ele"], 0], FEET_PER_METRE]]]], " ft"]
-      : ["concat", ["to-string", ["coalesce", ["get", "ele"], 0]], " m"];
+    const name = ["coalesce", ["get", "name_en"], ["get", "name"], ""];
+    const height = imperial
+      ? ["coalesce", ["get", "ele_ft"], ["round", ["*", ["coalesce", ["get", "ele"], 0], FEET_PER_METRE]]]
+      : ["coalesce", ["get", "ele"], 0];
     omt("peak", "symbol", "mountain_peak", {
       filter: ["match", ["get", "class"], ["peak", "volcano"], true, false], minzoom: z(9),
       layout: {
         "icon-image": "peak", "icon-size": S,
-        "text-field": ["format", ["coalesce", ["get", "name_en"], ["get", "name"], ""], {}, "\n", {}, elevation, { "font-scale": 0.85 }],
+        // Some peaks carry no surveyed height; those show their name alone rather than a zero.
+        "text-field": ["case",
+          [">", ["to-number", height, 0], 0],
+          ["format", name, {}, "\n", {}, ["concat", ["to-string", height], imperial ? " ft" : " m"], { "font-scale": 0.85 }],
+          ["format", name, {}]],
         "text-anchor": "top", "text-offset": [0, 0.55], "text-max-width": 8,
         "symbol-sort-key": ["coalesce", ["get", "rank"], 9],
         ...text(10, FONT.italic),

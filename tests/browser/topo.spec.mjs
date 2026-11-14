@@ -8,6 +8,9 @@ import { test, expect, hasWebGl2 } from "./topo-fixtures.mjs";
 // in for those hosts with generated data, so they are repeatable and need no network, and any
 // request to a host the application is not meant to use fails the test.
 
+// Software WebGL on a shared runner can be several times slower than a desktop.
+test.describe.configure({ timeout: 180_000 });
+
 const MM_TO_PT = 72 / 25.4;
 const CORS = { "access-control-allow-origin": "*" };
 const PLACES = [
@@ -110,6 +113,8 @@ async function settle(page) {
 /** Open the application on mocked map data. Skips the test where the browser has no WebGL 2. */
 async function openApp(page, baseURL, suffix = "") {
   const record = await mockMapData(page, baseURL);
+  // With reduced motion the map jumps to a target instead of flying there, which keeps the tests quick.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
     globalThis.cspViolations = [];
     document.addEventListener("securitypolicyviolation", event => globalThis.cspViolations.push(`${event.violatedDirective}: ${event.blockedURI}`));
@@ -292,7 +297,8 @@ test("pages are picked, moved, undone and shared", async ({ page, baseURL, conte
   // The share link restores the same pages in a fresh browser profile.
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.locator("#share").click();
-  await expect(page.locator("#status")).toContainText("copied");
+  // A browser that withholds the clipboard gets the link in the address bar instead.
+  await expect(page.locator("#status")).toContainText(/copied|address bar/);
   const link = await page.evaluate(() => globalThis.topoApp.shareUrl());
   expect(link).toMatch(/[?&]s=50000/);
   expect(link).toMatch(/[?&]p=12N\.\d+\.\d+/);
@@ -329,7 +335,7 @@ test("a downloaded PDF places the map frame at true scale on US Letter", async (
   const bytes = readFileSync(file.path);
   expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
 
-  const doc = await getDocument({ data: new Uint8Array(bytes), useSystemFonts: false, disableFontFace: true }).promise;
+  const doc = await getDocument({ data: new Uint8Array(bytes), useSystemFonts: false, disableFontFace: true, verbosity: 0 }).promise;
   expect(doc.numPages, "two map pages and the legend").toBe(3);
   const sheet = await doc.getPage(1);
   expect(sheet.view.slice(2).map(value => Math.round(value))).toEqual([612, 792]);
@@ -376,7 +382,7 @@ test("a landscape sheet without a legend page keeps its collar beside the map", 
   await clickMap(page, 0.5, 0.5);
   await page.locator("#legend-page").uncheck();
   const file = await download(page, () => page.locator("#download").click());
-  const doc = await getDocument({ data: new Uint8Array(readFileSync(file.path)), useSystemFonts: false, disableFontFace: true }).promise;
+  const doc = await getDocument({ data: new Uint8Array(readFileSync(file.path)), useSystemFonts: false, disableFontFace: true, verbosity: 0 }).promise;
   expect(doc.numPages).toBe(1);
   const sheet = await doc.getPage(1);
   expect(sheet.view.slice(2).map(value => Math.round(value))).toEqual([792, 612]);
@@ -391,6 +397,41 @@ test("a landscape sheet without a legend page keeps its collar beside the map", 
   expect(Math.abs(title.transform[0])).toBeLessThan(0.01);
   expect(title.transform[1]).toBeGreaterThan(0);
   expect(title.transform[4]).toBeGreaterThan((8 + 240) * MM_TO_PT);
+});
+
+test("Print hands the finished PDF to a link the visitor opens", async ({ page, baseURL }) => {
+  test.setTimeout(180_000);
+  const problems = watchProblems(page);
+  await openApp(page, baseURL);
+  await clickMap(page, 0.5, 0.5);
+  const popups = [];
+  page.on("popup", popup => popups.push(popup));
+  await page.locator("#legend-page").uncheck();
+  await page.locator("#print").click();
+
+  // While it renders the dialog shows progress and the rest of the page is inert.
+  await expect(page.locator("#progress")).toBeVisible();
+  expect(await page.evaluate(() => document.querySelector(".layout").inert)).toBe(true);
+  const link = page.getByRole("link", { name: "Open the PDF to print" });
+  await expect(link).toBeVisible({ timeout: 150_000 });
+  await expect(link).toBeFocused();
+  await expect(page.locator("#progress-cancel")).toBeHidden();
+  await expect(page.locator("#progress-label")).toHaveText("The map is ready to print");
+  await expect(link).toHaveAttribute("target", "_blank");
+  // No tab is opened by script, which browsers block after a long render.
+  expect(popups).toEqual([]);
+
+  // The link points at the PDF held in this page. Its contents are checked by the download tests,
+  // which use the same exporter.
+  await expect(link).toHaveAttribute("href", new RegExp(`^blob:${new URL(baseURL).origin}/`));
+  expect(await page.evaluate(() => globalThis.cspViolations)).toEqual([]);
+
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.locator("#progress")).toBeHidden();
+  expect(await page.evaluate(() => document.querySelector(".layout").inert)).toBe(false);
+  await expect(page.locator("#print")).toBeFocused();
+  await expect(page.locator("#print")).toBeEnabled();
+  expect(problems).toEqual([]);
 });
 
 test("the Garmin export is a KMZ of baseline JPEG overlays within the device limit", async ({ page, baseURL }) => {
