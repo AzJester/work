@@ -147,6 +147,25 @@ test.describe("United States in Relief", () => {
     expect(Math.abs((await view(page)).bearing)).toBeLessThan(0.5);
     await page.getByRole("button", { name: "Switch between top-down and angled view" }).click();
     expect((await view(page)).pitch).toBeGreaterThan(70);
+    // One press is one whole step, whether it comes from a pointer or the keyboard.
+    const before = await view(page);
+    await page.getByRole("button", { name: "Zoom in" }).click();
+    expect((await view(page)).dist).toBeCloseTo(before.dist * 0.78, 0);
+    await page.getByRole("button", { name: "Zoom out" }).focus();
+    await page.keyboard.press("Enter");
+    expect((await view(page)).dist).toBeCloseTo(before.dist * 0.78 * 1.28, 0);
+    await page.getByRole("button", { name: "Rotate left" }).click();
+    expect((await view(page)).bearing).toBeCloseTo(before.bearing - 15, 1);
+    await page.getByRole("button", { name: "Rotate right" }).click();
+    await page.getByRole("button", { name: "Rotate right" }).click();
+    expect((await view(page)).bearing).toBeCloseTo(before.bearing + 15, 1);
+    await page.locator("#view").focus();
+    const here = await view(page);
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("q");
+    const moved = await view(page);
+    expect(Math.hypot(moved.x - here.x, moved.z - here.z)).toBeCloseTo(here.dist * 0.16, 0);
+    expect(moved.bearing).toBeCloseTo(here.bearing - 15, 1);
     await page.getByRole("button", { name: "Show the whole map" }).click();
     expect((await view(page)).dist).toBeGreaterThan(900);
 
@@ -166,17 +185,6 @@ test.describe("United States in Relief", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator("#card")).toBeHidden();
     await expect(page.locator("#tour-play")).toHaveText("Play guided tour");
-  });
-
-  test("zoom and rotate buttons work on a live map", async ({ page }) => {
-    // A small window with the scenery off keeps the software renderer quick enough to animate.
-    await page.setViewportSize({ width: 760, height: 420 });
-    await open(page, "q=low&trees=0&cities=0&hall=0", 3);
-    const before = await view(page);
-    await page.getByRole("button", { name: "Zoom in" }).click();
-    await expect.poll(async () => (await view(page)).dist, { timeout: 90_000 }).toBeLessThan(before.dist - 5);
-    await page.getByRole("button", { name: "Rotate left" }).click();
-    await expect.poll(async () => Math.abs((await view(page)).bearing - before.bearing), { timeout: 90_000 }).toBeGreaterThan(0.5);
   });
 
   test("share copies a link that reopens the same view, and saves an image", async ({ page, context }) => {

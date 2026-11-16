@@ -263,19 +263,21 @@ export function createUI(app, initial) {
   $('hide-ui').addEventListener('click', () => { setSheet(null); setBare(true); $('unbare').focus({ preventScroll: true }); });
   $('unbare').addEventListener('click', () => { setBare(false); view.focus({ preventScroll: true }); });
 
-  // ---- navigation cluster: every drag has a button, and holding one keeps it going ----
+  // ---- navigation cluster: every drag has a button ----
+  // A press moves one step at once, so it works however slowly frames arrive. Holding then keeps it going.
   for (const b of document.querySelectorAll('#nav [data-hold]')) {
     const name = b.dataset.hold;
-    let since = 0, token = 0;
-    const release = () => {
-      if (!since) return;
-      const mine = token, wait = Math.max(0, 200 - (performance.now() - since));
-      since = 0;
-      setTimeout(() => { if (mine === token) app.hold(name, false); }, wait);      // a quick click still moves a useful step
-    };
-    b.addEventListener('pointerdown', (e) => { if (e.button) return; token++; since = performance.now(); app.hold(name, true); b.setPointerCapture?.(e.pointerId); });
+    let timer = 0;
+    const release = () => { clearTimeout(timer); timer = 0; app.hold(name, false); };
+    b.addEventListener('pointerdown', (e) => {
+      if (e.button) return;
+      app.nudge(name);
+      clearTimeout(timer);
+      timer = setTimeout(() => app.hold(name, true), 380);
+      b.setPointerCapture?.(e.pointerId);
+    });
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(type, release);
-    b.addEventListener('click', (e) => { if (e.detail === 0) { const mine = ++token; app.hold(name, true); setTimeout(() => { if (mine === token) app.hold(name, false); }, 260); } });   // keyboard
+    b.addEventListener('click', (e) => { if (e.detail === 0) app.nudge(name); });      // keyboard activation has no pointer events
   }
   $('compass').addEventListener('click', () => app.north());
   $('tilt').addEventListener('click', () => app.tilt());
@@ -296,7 +298,7 @@ export function createUI(app, initial) {
     [...list.children].forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
     if (i >= 0) { input.setAttribute('aria-activedescendant', `so-${i}`); list.children[i].scrollIntoView({ block: 'nearest' }); } else input.removeAttribute('aria-activedescendant');
   };
-  const choose = (item) => { input.value = item.name; closeList(); stopTour(); if (narrow()) setSheet(null); item.go(); view.focus({ preventScroll: true }); };
+  const choose = (item) => { input.value = item.name; closeList(); stopTour(); if (narrow()) setSheet(null); item.go(); input.blur(); };
   const search = () => {
     const q = input.value.trim().toLowerCase();
     if (!q) { closeList(); return; }
@@ -323,7 +325,7 @@ export function createUI(app, initial) {
       if (!list.hidden && results[active]) choose(results[active]);
       e.preventDefault();
     } else if (e.key === 'Escape') {
-      if (!list.hidden) closeList(); else { input.value = ''; view.focus({ preventScroll: true }); }
+      if (!list.hidden) closeList(); else { input.value = ''; input.blur(); }
       e.stopPropagation();
     }
   });
