@@ -7,17 +7,20 @@
     "test:browser": "playwright test --grep-invert @production",
     "test:browser:production": "playwright test --grep @production",
     "test:roadmap": "node --test tests/roadmap-hardening.test.mjs",
-    "build:vendor": "node scripts/build-vendor.mjs"
+    "build:vendor": "node scripts/build-vendor.mjs",
+    "build:relief": "node relief-map/build.mjs"
   },
   "devDependencies": {
     "@maplibre/maplibre-gl-style-spec": "26.7.0",
     "@playwright/test": "1.61.1",
     "@supabase/supabase-js": "2.110.2",
+    "esbuild": "0.24.0",
     "jspdf": "4.2.1",
     "maplibre-contour": "0.1.1",
     "maplibre-gl": "6.18.0",
     "pdfjs-dist": "6.3.289",
-    "sql.js": "1.16.0"
+    "sql.js": "1.16.0",
+    "three": "0.170.0"
   },
   "engines": {
     "node": ">=22.13.0"

@@ -15,6 +15,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/astrion-division/ldawif/",
   "https://azjester.github.io/work/astrion/",
   "https://azjester.github.io/work/phx-digital-twin/",
+  "https://azjester.github.io/work/relief-map.html",
   "https://azjester.github.io/Black_Hat_Agent/",
   "https://azjester.github.io/work/solutions-architect/",
   "https://azjester.github.io/work/dashboard.html",
@@ -106,12 +107,13 @@ const workApplications = [
   "The AI Compendium",
   "USN Tactical AI Backbone",
   "Unified Project Management Suite",
+  "United States in Relief",
   "Weekly Status Tracker · Cloud",
   "Weekly Status Tracker · Lite",
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 30 work applications", () => {
+test("curated catalog lists exactly the 31 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),

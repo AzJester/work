@@ -114,6 +114,23 @@ It is a static site with no server, account or API key. The page and its librari
 
 It is an original application built on open data and open-source libraries. It carries no flood zones, power lines, pipelines, aeronautical obstacles or marine chart data, because no free worldwide tile source offers them, and it is not a substitute for an official map. Details, accuracy figures and limits are in [`topo/README.md`](topo/README.md).
 
+## United States in Relief
+
+An interactive 3D relief map of the contiguous United States, presented as a tabletop model in an exhibition hall. It is one self-contained HTML file of about 3.5 MB that makes no network requests, so it also runs from a double-click on a saved copy.
+
+### [Open United States in Relief](https://azjester.github.io/work/relief-map.html)
+
+- real terrain: elevation and sea floor from open terrain tiles, land cover from NLCD 2021, and coast, lakes, rivers and state lines from Natural Earth, all on one Albers Equal Area grid
+- snow above a latitude-dependent snowline, banded red rock and carved canyons on the Colorado Plateau, a farmland patchwork with pivot circles on the High Plains, autumn colour in the Northeast, and a sea coloured by real depth
+- about 120,000 trees placed from the land-cover data, saguaros in the Sonoran Desert, and skylines for 44 metropolitan areas sized by population
+- the map is a cut slab: rock strata where the land meets a border, a block of clear water where the sea does
+- sun shadows, sky lighting, ambient occlusion, bloom, filmic tone mapping and a depth-of-field blur that makes it read as a miniature
+- orbit, pan and zoom with mouse, touch or keys; nine fly-to tours; a time-of-day slider that runs into night with city lights; a vertical exaggeration slider; switches for place names, state lines, trees, cities, the hall and the blur
+- hover for the state, true elevation or sea depth, coordinates and the nearest named place
+- four quality levels, an automatic choice, and resolution that adapts to hold the frame rate
+
+Heights are exaggerated and the 2.5 km elevation grid rounds summits off, so it is a model to look at, not a map to navigate by. How it is built, how to rebuild the data, and its limits are in [`relief-map/README.md`](relief-map/README.md).
+
 ## Weekly Status Tracker
 
 A standalone, self-contained page for tracking your **weekly task status** and producing a
@@ -772,6 +789,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
 | `black-hat-agent/` | Forwards the old Black Hat Agent address to the current build, which lives in the [`Black_Hat_Agent`](https://github.com/AzJester/Black_Hat_Agent) repository. Also holds the vendored SheetJS library that the Solution Architect Workbench loads. |
+| `relief-map.html` / `relief-map/` | **United States in Relief**: an interactive 3D tabletop relief map of the contiguous United States. The HTML file is the whole application, generated from the sources, baked data and build script in the folder. |
 | `topo/` | **Topo Map Builder**: printable topographic maps with an MGRS grid at true scale, PDF export, and Garmin (KMZ) and ATAK (MBTiles) export, drawn in the browser from open map data. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
