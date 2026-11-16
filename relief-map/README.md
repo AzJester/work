@@ -38,16 +38,22 @@ The hover readout reports the true elevation from the embedded grid, not the exa
 
 ## Controls
 
-| Action | Mouse or touch | Keys |
-|---|---|---|
-| Orbit | Drag, or one finger | Q, E |
-| Pan | Right-drag or Shift-drag, or two fingers | Arrows, W A S D |
-| Zoom | Scroll or pinch; double-click flies to a spot | + and - |
-| Tours | Panel buttons | 1 to 9 |
-| Place names, state lines | Panel switches | L, B |
-| Hide the interface, reset the view | | H, R |
+| Action | Mouse or touch | Buttons | Keys |
+|---|---|---|---|
+| Orbit | Drag, or one finger | Arrows beside the compass | Q, E |
+| Face north | | Compass | |
+| Pan | Right-drag or Shift-drag, or two fingers | | Arrows, W A S D |
+| Zoom | Scroll or pinch; double-click flies to a spot | Plus and minus | + and - |
+| Top-down or angled | | Cube | |
+| Inspect a point | Click or tap | | |
+| Find a place | | Search box | / |
+| Tours | | Explore | 1 to 9 |
+| Place names, state lines | | Layers | L, B |
+| Whole map, hide the interface, help | | Home, More | R, H, ? |
 
-URL parameters: `q` (`low`, `medium`, `high`, `ultra`), `h` (hour, 5 to 21.5), `ex` (exaggeration, 20 to 90), `tour` (a tour id from `src/places.js`), `view` (`lon,lat,distance,bearing,pitch`), `ui=0`, and a layer name set to `0` or `1` (`labels`, `borders`, `trees`, `cities`, `hall`, `blur`).
+The interface is a search box, a navigation cluster, and a dock of five buttons (Explore, Light, Layers, Share, More) that each open one sheet. On phones the dock is a tab bar and the sheets rise from it. The reasoning is in [`ux-review.md`](ux-review.md).
+
+The address keeps the current view after the `#`, as `v=lon,lat,distance,bearing,pitch&h=hour&ex=exaggeration`. Share copies it. Query parameters: `q` (`low`, `medium`, `high`, `ultra`), `units` (`us`, `metric`), `tour` (a tour id from `src/places.js`), `ui=0`, a layer name set to `0` or `1` (`labels`, `borders`, `trees`, `cities`, `hall`, `blur`), and `view`, `h` and `ex` as in the hash.
 
 ## Layout
 
@@ -66,7 +72,7 @@ relief-map/
     props.js           trees, saguaros, skylines
     hall.js, sky.js    the hall, the sun and the sky
     post.js            occlusion, depth of field, bloom, tone mapping
-    ui.js, places.js   interface, labels, tours
+    ui.js, places.js   search, navigation cluster, dock and sheets, info card, labels, tours
 ```
 
 ## Rebuilding

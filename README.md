@@ -125,11 +125,13 @@ An interactive 3D relief map of the contiguous United States, presented as a tab
 - about 120,000 trees placed from the land-cover data, saguaros in the Sonoran Desert, and skylines for 44 metropolitan areas sized by population
 - the map is a cut slab: rock strata where the land meets a border, a block of clear water where the sea does
 - sun shadows, sky lighting, ambient occlusion, bloom, filmic tone mapping and a depth-of-field blur that makes it read as a miniature
-- orbit, pan and zoom with mouse, touch or keys; nine fly-to tours; a time-of-day slider that runs into night with city lights; a vertical exaggeration slider; switches for place names, state lines, trees, cities, the hall and the blur
-- hover for the state, true elevation or sea depth, coordinates and the nearest named place
+- orbit, pan and zoom with mouse, touch or keys, or with on-screen buttons: rotate, a compass that resets north, zoom, top-down or angled, and whole map
+- search for any state, city, peak or region; click or tap anywhere for elevation or sea depth, state and coordinates
+- a guided tour of nine places with a fact for each; time of day from sunrise into night with city lights; a vertical exaggeration slider; switches for place names, state lines, trees, cities, the hall and the blur
+- copy a link that reopens the exact view, save an image, switch between feet and metres, and pause all motion
 - four quality levels, an automatic choice, and resolution that adapts to hold the frame rate
 
-Heights are exaggerated and the 2.5 km elevation grid rounds summits off, so it is a model to look at, not a map to navigate by. How it is built, how to rebuild the data, and its limits are in [`relief-map/README.md`](relief-map/README.md).
+Heights are exaggerated and the 2.5 km elevation grid rounds summits off, so it is a model to look at, not a map to navigate by. How it is built, how to rebuild the data, and its limits are in [`relief-map/README.md`](relief-map/README.md). The interface review behind the current layout is in [`relief-map/ux-review.md`](relief-map/ux-review.md).
 
 ## Weekly Status Tracker
 

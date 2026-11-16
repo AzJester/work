@@ -13,69 +13,160 @@
 <style>__CSS__</style>
 </head>
 <body>
-<canvas id="view" role="img" aria-label="3D relief map of the contiguous United States"></canvas>
-<div id="labels"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-search"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4"/></g>
+    <g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
+    <g id="i-minus"><path d="M5 12h14"/></g>
+    <g id="i-home"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></g>
+    <g id="i-rotl"><path d="M4 4v5h5"/><path d="M4.5 9A8 8 0 1 1 4 13"/></g>
+    <g id="i-rotr"><path d="M20 4v5h-5"/><path d="M19.5 9A8 8 0 1 0 20 13"/></g>
+    <g id="i-tilt"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></g>
+    <g id="i-explore"><path d="M5 21V4h11l-2 4 2 4H5"/></g>
+    <g id="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g>
+    <g id="i-layers"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></g>
+    <g id="i-share"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></g>
+    <g id="i-more"><path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></g>
+    <g id="i-play"><path d="M8 5l11 7-11 7z" fill="currentColor"/></g>
+    <g id="i-pause"><path d="M8 5v14M16 5v14"/></g>
+    <g id="i-next"><path d="M6 5l9 7-9 7z" fill="currentColor"/><path d="M18 5v14"/></g>
+    <g id="i-prev"><path d="M18 5l-9 7 9 7z" fill="currentColor"/><path d="M6 5v14"/></g>
+    <g id="i-close"><path d="M6 6l12 12M18 6L6 18"/></g>
+    <g id="i-link"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></g>
+    <g id="i-camera"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></g>
+    <g id="i-full"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></g>
+  </defs>
+</svg>
 
-<header id="title">
-  <h1>United States in Relief</h1>
-  <p>A tabletop terrain model built from open elevation data</p>
+<canvas id="view" tabindex="0" role="application" aria-label="3D relief map of the contiguous United States" aria-describedby="view-help"></canvas>
+<p id="view-help" class="sr">Arrow keys pan, Q and E rotate, plus and minus zoom. Press slash to search for a place and question mark for help.</p>
+<div id="labels" aria-hidden="true"><div id="pin" hidden></div></div>
+
+<header id="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 24l8-12 4.5 6.5L20 9l9 15z" fill="#f2b45a"/><path d="M18.3 12.6L20 9l2.4 3.8-1.8 1.4z" fill="#fff"/></svg>
+    <h1>United States in Relief</h1>
+  </div>
+  <div class="search" role="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-search"/></svg>
+    <input id="search" type="text" role="combobox" aria-label="Find a state, city or peak" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="Find a state, city or peak">
+    <ul id="search-list" role="listbox" aria-label="Places" hidden></ul>
+  </div>
 </header>
 
-<button id="panel-toggle" type="button" aria-expanded="true" aria-controls="panel">Controls</button>
-<aside id="panel" aria-label="Map controls">
-  <section>
-    <h2>Tours</h2>
-    <div id="tours" class="chips"></div>
-  </section>
-  <section>
-    <label for="hour">Time of day <output id="hour-out" for="hour"></output></label>
-    <input id="hour" type="range" min="5" max="21.5" step="0.05">
-    <label for="exag">Vertical exaggeration <output id="exag-out" for="exag"></output></label>
-    <input id="exag" type="range" min="20" max="90" step="1">
-  </section>
-  <section>
-    <h2>Layers</h2>
-    <div class="toggles">
-      <label><input type="checkbox" data-layer="labels"> Place names</label>
-      <label><input type="checkbox" data-layer="borders"> State lines</label>
-      <label><input type="checkbox" data-layer="trees"> Trees</label>
-      <label><input type="checkbox" data-layer="cities"> Cities</label>
-      <label><input type="checkbox" data-layer="hall"> Exhibition hall</label>
-      <label><input type="checkbox" data-layer="blur"> Miniature blur</label>
-    </div>
-  </section>
-  <section>
-    <label for="quality">Quality</label>
-    <select id="quality">
-      <option value="auto">Automatic</option>
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-      <option value="ultra">Ultra</option>
-    </select>
-    <p class="hint" id="quality-hint"></p>
-  </section>
-  <div class="row">
-    <button id="shot" type="button">Save image</button>
-    <button id="reset" type="button">Reset view</button>
-    <button id="help-open" type="button">Help</button>
+<nav id="nav" aria-label="Map navigation">
+  <div class="group row">
+    <button type="button" data-hold="rotL" aria-label="Rotate left" title="Rotate left (Q)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-rotl"/></svg></button>
+    <button type="button" id="compass" aria-label="Face north" title="Face north"><svg viewBox="0 0 24 24" aria-hidden="true" id="needle"><path d="M12 3l3.4 9H8.6z" fill="#f2b45a" stroke="none"/><path d="M12 21l3.4-9H8.6z" fill="#8a949e" stroke="none"/></svg></button>
+    <button type="button" data-hold="rotR" aria-label="Rotate right" title="Rotate right (E)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-rotr"/></svg></button>
   </div>
-</aside>
+  <div class="group">
+    <button type="button" data-hold="in" aria-label="Zoom in" title="Zoom in (+)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button type="button" data-hold="out" aria-label="Zoom out" title="Zoom out (-)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-minus"/></svg></button>
+  </div>
+  <div class="group">
+    <button type="button" id="tilt" aria-label="Switch between top-down and angled view" title="Top-down or angled view"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tilt"/></svg></button>
+    <button type="button" id="home" aria-label="Show the whole map" title="Whole map (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-home"/></svg></button>
+  </div>
+</nav>
 
+<div id="dock" role="toolbar" aria-label="Map controls">
+  <button type="button" data-sheet="explore" aria-expanded="false" aria-controls="sheet-explore"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-explore"/></svg><span>Explore</span></button>
+  <button type="button" data-sheet="light" aria-expanded="false" aria-controls="sheet-light"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sun"/></svg><span>Light</span></button>
+  <button type="button" data-sheet="layers" aria-expanded="false" aria-controls="sheet-layers"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-layers"/></svg><span>Layers</span></button>
+  <button type="button" data-sheet="share" aria-expanded="false" aria-controls="sheet-share"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-share"/></svg><span>Share</span></button>
+  <button type="button" data-sheet="more" aria-expanded="false" aria-controls="sheet-more"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-more"/></svg><span>More</span></button>
+</div>
+
+<section id="sheet-explore" class="sheet" aria-labelledby="h-explore" hidden>
+  <div class="sheet-head"><h2 id="h-explore">Explore</h2><button type="button" class="sheet-close" aria-label="Close Explore"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <button type="button" id="tour-play" class="primary"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg><span>Play guided tour</span></button>
+  <ol id="tours" class="stops"></ol>
+</section>
+
+<section id="sheet-light" class="sheet" aria-labelledby="h-light" hidden>
+  <div class="sheet-head"><h2 id="h-light">Light</h2><button type="button" class="sheet-close" aria-label="Close Light"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="seg" id="light-presets" role="group" aria-label="Time of day presets">
+    <button type="button" data-hour="6.6">Sunrise</button><button type="button" data-hour="12.5">Midday</button><button type="button" data-hour="17.9">Golden hour</button><button type="button" data-hour="20.1">Dusk</button><button type="button" data-hour="21.3">Night</button>
+  </div>
+  <label for="hour">Time of day <output id="hour-out" for="hour"></output></label>
+  <input id="hour" type="range" min="5" max="21.5" step="0.05">
+  <button type="button" id="day-play" class="ghost" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg><span>Play the day</span></button>
+</section>
+
+<section id="sheet-layers" class="sheet" aria-labelledby="h-layers" hidden>
+  <div class="sheet-head"><h2 id="h-layers">Layers</h2><button type="button" class="sheet-close" aria-label="Close Layers"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="switches">
+    <label><input type="checkbox" role="switch" data-layer="labels"><span>Place names</span></label>
+    <label><input type="checkbox" role="switch" data-layer="borders"><span>State lines</span></label>
+    <label><input type="checkbox" role="switch" data-layer="trees"><span>Trees</span></label>
+    <label><input type="checkbox" role="switch" data-layer="cities"><span>Cities</span></label>
+    <label><input type="checkbox" role="switch" data-layer="hall"><span>Exhibition hall</span></label>
+    <label><input type="checkbox" role="switch" data-layer="blur"><span>Tilt-shift blur</span></label>
+  </div>
+  <label for="exag">Vertical exaggeration <output id="exag-out" for="exag"></output></label>
+  <input id="exag" type="range" min="20" max="90" step="1">
+  <h3>What the colours mean</h3>
+  <ul class="legend">
+    <li><i style="background:#25562e"></i>Conifer forest</li><li><i style="background:#4f8a2f"></i>Hardwood forest</li>
+    <li><i style="background:#d9741a"></i>Hardwoods in autumn</li><li><i style="background:#d9b95f"></i>Cropland</li>
+    <li><i style="background:#9ab04e"></i>Grass and pasture</li><li><i style="background:#cfa873"></i>Desert scrub</li>
+    <li><i style="background:#b5522a"></i>Red rock</li><li><i style="background:#8a8072"></i>Bare rock</li>
+    <li><i style="background:#f3f6fb"></i>Snow and ice</li><li><i style="background:#56753f"></i>Wetland</li>
+    <li><i style="background:#aaa49b"></i>Built-up land</li><li><i style="background:linear-gradient(90deg,#8fe3d2,#27b4ba,#1277ad,#0e4c84)"></i>Sea, shallow to deep</li>
+  </ul>
+</section>
+
+<section id="sheet-share" class="sheet" aria-labelledby="h-share" hidden>
+  <div class="sheet-head"><h2 id="h-share">Share</h2><button type="button" class="sheet-close" aria-label="Close Share"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="actions">
+    <button type="button" id="copy-link"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-link"/></svg><span>Copy link to this view</span></button>
+    <button type="button" id="shot"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-camera"/></svg><span>Save image</span></button>
+    <button type="button" id="fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-full"/></svg><span>Full screen</span></button>
+  </div>
+  <p class="note">The link reopens this exact view, time of day and exaggeration.</p>
+</section>
+
+<section id="sheet-more" class="sheet" aria-labelledby="h-more" hidden>
+  <div class="sheet-head"><h2 id="h-more">More</h2><button type="button" class="sheet-close" aria-label="Close More"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <label for="quality">Quality</label>
+  <select id="quality">
+    <option value="auto">Automatic</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option>
+  </select>
+  <p class="note" id="quality-hint"></p>
+  <span class="field-label" id="units-label">Units</span>
+  <div class="seg" id="units" role="group" aria-labelledby="units-label">
+    <button type="button" data-units="us">Feet and miles</button><button type="button" data-units="metric">Metres and kilometres</button>
+  </div>
+  <div class="switches one">
+    <label><input type="checkbox" role="switch" id="motion"><span>Pause moving water and animation</span></label>
+  </div>
+  <div class="actions">
+    <button type="button" id="help-open">Help and data credits</button>
+    <button type="button" id="hide-ui">Hide the interface</button>
+  </div>
+</section>
+
+<aside id="card" aria-live="polite" hidden></aside>
 <div id="readout" hidden></div>
-<div id="card" role="status" hidden></div>
-<footer id="credit">Elevation: Terrain Tiles (Mapzen, AWS Open Data). Land cover: NLCD 2021 (USGS). Coast, lakes, rivers, state lines: Natural Earth. Heights are exaggerated. Not for navigation.</footer>
+<div id="hint" hidden></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<button type="button" id="unbare">Show controls</button>
+<footer id="credit"><button type="button" id="credit-open">Data: Terrain Tiles, NLCD, Natural Earth. Heights exaggerated.</button></footer>
 
 <dialog id="help" aria-labelledby="help-title">
   <h2 id="help-title">How to move around</h2>
   <dl>
-    <dt>Orbit</dt><dd>Drag, or one finger. Keys Q and E.</dd>
+    <dt>Orbit</dt><dd>Drag, or one finger. Keys Q and E, or the arrows beside the compass.</dd>
     <dt>Pan</dt><dd>Right-drag or Shift-drag, or two fingers. Arrow keys or W A S D.</dd>
-    <dt>Zoom</dt><dd>Scroll or pinch. Keys + and -. Double-click to fly to a spot.</dd>
-    <dt>Tours</dt><dd>Keys 1 to 9.</dd>
-    <dt>Other keys</dt><dd>L place names, B state lines, H hide the interface, R reset the view.</dd>
+    <dt>Zoom</dt><dd>Scroll or pinch. Keys + and -, or the buttons. Double-click flies to a spot.</dd>
+    <dt>Inspect</dt><dd>Click or tap the map for elevation, state and coordinates.</dd>
+    <dt>Find</dt><dd>Press / and type a state, city or peak.</dd>
+    <dt>Tours</dt><dd>Keys 1 to 9, or Explore.</dd>
+    <dt>Other keys</dt><dd>L place names, B state lines, H hide the interface, R whole map, Esc close a panel, ? this help.</dd>
   </dl>
-  <p>Elevation is real, sampled at 2.5 km and then sharpened with generated detail. Regional height is exaggerated more than local relief so mountain ranges read as masses. Hover the map for true elevation, state and coordinates.</p>
+  <h3>About the data</h3>
+  <p>Elevation: Terrain Tiles (Mapzen, AWS Open Data). Land cover: NLCD 2021 (USGS). Coast, lakes, rivers, state lines: Natural Earth. Elevation is real, sampled at 2.5 km and then sharpened with generated detail, so summits read lower than their true height. Heights on screen are exaggerated, regional height more than local relief. The readout and the info card give true elevation. Trees and buildings are placed from land cover and population, not surveyed. Not for navigation.</p>
   <form method="dialog"><button type="submit">Close</button></form>
 </dialog>
 
