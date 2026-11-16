@@ -583,85 +583,73 @@ cloud sync, public browsing, and AI features naturally require the network.
 
 ## Roadmap &amp; Budget Planner
 
-A single-file, browser-only planner that puts **cost on a day-level timeline** and rolls it up
-into a budget. Schedule cost blocks in lanes (one per "engine"), keep undated work in a backlog,
-and read **Spent / Planned / Committed / Remaining** by year and by engine, pro-rated by day
-against a movable as-of date. Built to the Astrion 2026 brand standard.
+A single-file, browser-only planner that puts **labor hours and materials on a day-level
+timeline** and rolls them up by year and by engine. Schedule work blocks in lanes (one per
+"engine"), keep undated work in a backlog, log hours worked and materials spent as you go, and
+read **worked, forecast and total** for hours and for materials, priced out at an hourly rate
+against an annual budget. One application for people who track effort and for people who hold
+the budget. Built to the Astrion 2026 brand standard.
 
 ### → https://azjester.github.io/work/budget-planner.html
 
-- **Timeline** · two calendar years with month gridlines, one lane per engine, blocks stacked
-  into sub-rows when they overlap, and a cyan **As of** marker. Click a block to edit it; blocks
-  that run past the year range show a dashed edge.
-- **Backlog** · undated items with an engine and a cost. They sit outside the yearly totals until
-  you give them dates, and a scheduled block returns to the backlog if you clear its dates.
-- **Budget by year** · editable annual budget per year, then Spent (days before the as-of date),
-  Planned (the as-of day onward), Committed (spent plus planned) and Remaining (budget minus
-  committed, tagged **Over** when negative). A block that crosses December 31 splits between the
-  two columns by day; committed is allocated in whole dollars so it always equals the sum of the
-  scheduled costs.
-- **Committed by engine** · the same split per engine across all years, plus each engine's backlog.
-- **Editing** · **+ Add block**, **+ Backlog item**, click any block or card to edit, delete or
-  move it between the timeline and the backlog, or press **Delete** while a block has focus. The
-  **Blocks** list under the backlog shows every block with its dates and figures, a filter box
-  (name or engine), and an edit and a delete button per row; clicking a row opens the editor.
-  Backlog cards carry a **Schedule** button that opens the editor with dates already filled in.
-  **+ Year** extends the plan by one year per click (up to ten years); **Settings** renames,
-  reorders, adds and removes engines and sets the year range directly; **Clear all** empties the
-  plan with a one-click **Undo** (Ctrl/Cmd+Z also undoes the last change).
+- **Every block carries four figures** · a labor estimate in hours, hours logged to date, planned
+  materials in dollars and materials spent to date. Logged figures are optional: without one, the
+  elapsed share of the estimate counts as worked or spent; with one, that figure counts and the
+  rest of the estimate is carried as forecast, so an overrun shows above the estimate instead of
+  disappearing.
+- **Timeline** · month gridlines, one lane per engine, blocks stacked into sub-rows when they
+  overlap, a cyan **As of** marker, and a thin progress bar on blocks with a logged figure. Blocks
+  read like "640 h / 1,200 h · $12,000 / $18,500".
+- **Backlog** · undated items with an engine, an hours estimate and planned materials. They sit
+  outside the yearly totals until you schedule them (one click on **Schedule**).
+- **Labor hours** · Hours by year (editable **annual hours**, Worked, Forecast, Total, Remaining
+  tagged **Over** when the plan exceeds capacity) and Hours by engine (Worked, Forecast, Total,
+  Backlog).
+- **Materials** · Materials by year (Spent, Forecast, Total) and Materials by engine (Spent,
+  Forecast, Total, Backlog), in dollars.
+- **Cost** · labor is the hours above at the **rate** (default **$102.00** per hour, editable in
+  the Cost header or under Settings, saved with the plan) plus materials. Cost by year shows the
+  editable **annual budget**, Labor worked and forecast, Materials spent and forecast, Committed
+  and Remaining; Cost by engine shows Labor, Materials, Committed and Backlog. Leave an annual
+  figure blank and its Remaining line reads **Not set** instead of Over.
+- **Exact by construction** · every figure is a whole number rounded once per cell, committed
+  hours and materials are allocated across years so the columns always add up, and labor cost is
+  the whole hours times the rate, so any dollar on the page can be checked by hand.
+- **Editing** · **+ Add block**, **+ Backlog item**, click any block, card or Blocks row to edit
+  it, press **Delete** while a block has focus, filter the Blocks list by name or engine.
+  **+ Year** extends the plan by one year per click (up to ten years); **Settings** sets the rate,
+  the year range and the engines; **Clear all** empties the plan with a one-click **Undo**
+  (Ctrl/Cmd+Z also undoes the last change).
 - **Moving blocks** · drag a block along the timeline to move it, or drag either edge to change
   its start or end date; the dates preview on the block while you drag and the change lands as
   one undoable step. With a block focused, the arrow keys move it by a day (Shift for a week)
   and **+** / **-** lengthen or shorten its end. The board keeps its horizontal scroll position
   through every edit, centers the as-of marker when the as-of date changes, and returns keyboard
-  focus to the block you were working on. Blocks with a logged figure show a thin progress bar.
-- **Finding your way** · a sticky section bar under the header jumps to Timeline, Backlog,
-  Blocks, By year, By engine (and Cost in the hours edition) and marks the section in view; it
-  also shows the time of the last save. **Help** (or **?**) lists every mouse and keyboard
-  interaction; **N** adds a block and **B** a backlog item from anywhere on the page.
-- **Export / Import** · JSON (`budget-planner-YYYY-MM-DD.json`). Imports are fully validated
-  before anything changes, and Undo restores the previous plan.
-- **Saved in this browser** · `localStorage` key `budget_planner_v1`. The first open loads a sample
-  plan; **Clear all** then offers **Load sample plan** again from the empty state.
+  focus to the block you were working on.
+- **Finding your way** · a sticky section bar jumps to Timeline, Backlog, Blocks, Hours,
+  Materials and Cost, marks the section in view and shows the time of the last save. **Help**
+  (or **?**) lists every mouse and keyboard interaction; **N** adds a block and **B** a backlog
+  item from anywhere on the page.
+- **Export / Import** · JSON (`budget-planner-YYYY-MM-DD.json`, document version 2). Imports
+  are fully validated before anything changes, and Undo restores the previous plan. Files from
+  the earlier dollar and hours editions (version 1) import too: an hours plan carries straight
+  across, and a dollar plan's labor cost becomes hours at the rate.
+- **Saved in this browser** · `localStorage` key `budget_planner_v2`. On first open the app
+  carries over a plan saved by the earlier hours edition (`hours_planner_v1`) or, failing that,
+  the dollar edition (`budget_planner_v1`), and otherwise loads a sample plan. **Clear all**
+  then offers **Load sample plan** again from the empty state. `hours-planner.html` redirects
+  here.
 - **Astrion brand** · Carbon dark theme by default with a light toggle, Archivo and JetBrains Mono
   self-hosted from `assets/fonts/astrion/` (SIL OFL licenses beside the files), the supplied web
   wordmark, square corners and hairlines, one Ion signal per section, table text held between
   8 and 10 pt, and the provisional Astrion icon set (flagged as provisional in the footer). No
   CDN, no third-party requests.
-- **Logged actuals** · a scheduled block can carry an actual figure to date (actual spend, or
-  hours logged). When it does, that figure is what has been spent or worked and the rest of the
-  estimate is carried as planned or forecast, so an overrun shows as spent above the estimate
-  instead of disappearing.
-- **Tests** · `tests/budget-planner.test.mjs` exercises the budget engine (pro-ration, year
-  split, reconciliation, logged actuals, validation, lane stacking, the sample plan's reference
-  totals) and `tests/browser/budget-planner.spec.mjs` drives both editions in Chromium,
-  including the two brand hard rules. The development plan is in
-  [ROADMAP_BUDGET_PLANNER_PLAN.md](ROADMAP_BUDGET_PLANNER_PLAN.md).
-
-### Hours edition · **Roadmap &amp; Hours Planner**
-
-The same planner measured in hours instead of dollars, for people who track effort but do not
-see cost. It keeps its own saved plan (`localStorage` key `hours_planner_v1`) and its own sample,
-and shows no dollar figures anywhere:
-
-### → https://azjester.github.io/work/hours-planner.html
-
-- Each block carries an **estimate in hours** and, once work starts, **hours logged to date**.
-- **Worked** is the logged figure (or the elapsed share of the estimate if nothing is logged),
-  **Forecast** is the hours still to be worked, **Total** is worked plus forecast, and
-  **Remaining** is annual hours minus total, tagged **Over** when the plan exceeds capacity.
-- Move the **As of** date to see the forecast shift; the backlog holds estimated hours that have
-  no dates yet.
-- **Cost** · a section under the hours tables prices the plan: **labor** is hours at an hourly
-  **rate** (default **$102.00**, editable in the Cost header or under Settings, saved with the
-  plan) and **materials** are dollars entered per block (a block with 0 h and a materials figure
-  is a pure purchase). Cost by year shows labor worked and forecast, materials spent and
-  planned, and the committed total; Cost by engine shows labor, materials, committed and the
-  backlog's cost (backlog hours at the rate plus backlog materials). Materials pro-rate by day
-  like everything else and are unaffected by logged hours.
-- `hours-planner.html` opens `budget-planner.html?unit=hours`; the unit also lives in each saved
-  or exported plan and can be switched under **Settings**, so an exported hours plan reopens as
-  hours anywhere.
+- **Tests** · `tests/budget-planner.test.mjs` exercises the engine (pro-ration of hours and
+  materials, year split, reconciliation, logged figures, cost at the rate, validation, version 1
+  migration, lane stacking, the sample plan's reference totals) and
+  `tests/browser/budget-planner.spec.mjs` drives the app in Chromium, including drag and
+  keyboard moves, the carry-over of saved plans and the two brand hard rules. The development
+  plan is in [ROADMAP_BUDGET_PLANNER_PLAN.md](ROADMAP_BUDGET_PLANNER_PLAN.md).
 
 ## Astrion Company Site (team review build)
 
@@ -860,8 +848,8 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `roadmap.html` | The **Roadmap Builder** — build project roadmaps from templates, a form, or a plain-language description; edit lanes/milestones/statuses on a timeline; export JSON/PNG/PDF; optional cloud sync + read-only share links. |
-| `budget-planner.html` | The **Roadmap &amp; Budget Planner** · day-level cost blocks per engine, an unscheduled backlog, and Spent / Planned / Committed / Remaining by year and by engine, pro-rated against an as-of date. Astrion 2026 brand; fonts in `assets/fonts/astrion/`. |
-| `hours-planner.html` | The **hours edition** of the planner: opens `budget-planner.html?unit=hours`, which keeps its own saved plan, shows no dollars, and tracks hours worked and forecast by year and by engine. |
+| `budget-planner.html` | The **Roadmap &amp; Budget Planner** · day-level work blocks per engine with labor hours and materials (estimate, logged to date, worked or spent, forecast), an unscheduled backlog, and Hours, Materials and Cost by year and by engine at an hourly rate, pro-rated against an as-of date. Astrion 2026 brand; fonts in `assets/fonts/astrion/`. |
+| `hours-planner.html` | Redirects to `budget-planner.html`. The separate hours edition is merged into the planner, which now tracks labor hours and materials together and carries a saved hours plan over on first open. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `radar-signal-chain.html` | **How a Radar Measures Distance** — a guided, 9-stage interactive explainer that follows one pulse through a real (toy-scale) radar DSP chain (chirp → up/down conversion → matched filter → range), with an animated correlation scrubber and a full Explore dashboard mode. |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
