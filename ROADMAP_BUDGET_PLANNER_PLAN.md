@@ -49,6 +49,27 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**Evergreen (chosen look).** From three mocked-up options the owner chose Evergreen: Public
+Sans self-hosted in four weights (latin and latin-ext subsets, OFL license beside the files),
+cool gray-green neutrals (page #F3F7F6, panels #FFFFFF, lines #D3DEDB), teal accent #0F766E
+with #0E9F8C for bars and the as-of line, 8 px and 12 px corners, and a matching dark variant.
+The accent picker is gone; Settings keeps only the theme choice.
+
+**Version 3: the review items, minus shared storage, and a neutral look.** Document version 3
+adds dated `log` entries per block (date, hours, materials, note; the record of work when
+present, counted only up to the as-of date), an optional `rate` per engine, `fiscalStartMonth`
+(years become fiscal years labelled FY2027 and so on) and `workdays` (calendar days or
+weekdays for pro-ration). The engine gained `calendarOf`, `weekdayCount`, `loggedAsOf`,
+`rateOf` and `hoursByMonth`; cost now accumulates per engine so each engine's rate applies.
+The page gained a summary strip (four stat tiles with meters), a monthly load row on the
+timeline (hours per month against that month's share of annual hours, red when over),
+sortable Blocks columns with a CSV export, an engine filter from the lane names, a Log work
+dialog (clock button on a block, the L key, or the Blocks row), per-engine rates, fiscal year
+and weekday settings, theme and accent preferences, and a ring of eight backups taken before
+changes at most once a minute, restorable from Settings. The Astrion styling is gone: system
+sans, a validated neutral palette with a light default, fixed status colors paired with words,
+and an accent chosen in Settings.
+
 **Layout pass after review.** The wordmark is gone from the top bar by request, body text
 runs the full width of the page (no 90ch cap on the explanation), and the paired tables sit in
 equal halves that stack below 1200 px instead of a 3:4 split that clipped the by-year table on

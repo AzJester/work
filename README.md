@@ -607,7 +607,7 @@ timeline** and rolls them up by year and by engine. Schedule work blocks in lane
 "engine"), keep undated work in a backlog, log hours worked and materials spent as you go, and
 read **worked, forecast and total** for hours and for materials, priced out at an hourly rate
 against an annual budget. One application for people who track effort and for people who hold
-the budget. Built to the Astrion 2026 brand standard.
+the budget. Unbranded, with a neutral look you can tune under Settings.
 
 ### → https://azjester.github.io/work/budget-planner.html
 
@@ -658,11 +658,11 @@ the budget. Built to the Astrion 2026 brand standard.
   the dollar edition (`budget_planner_v1`), and otherwise loads a sample plan. **Clear all**
   then offers **Load sample plan** again from the empty state. `hours-planner.html` redirects
   here.
-- **Astrion brand** · Carbon dark theme by default with a light toggle, Archivo and JetBrains Mono
-  self-hosted from `assets/fonts/astrion/` (SIL OFL licenses beside the files), square corners
-  and hairlines, one Ion signal per section, table text held between 8 and 10 pt, and the
-  provisional Astrion icon set (flagged as provisional in the footer). No logo in the top bar by
-  request; text runs the full width of the page. No CDN, no third-party requests.
+- **Look and feel** · the "Evergreen" design: Public Sans (the US Web Design System face,
+  self-hosted from `assets/fonts/public-sans/` under the SIL Open Font License), cool gray-green
+  neutrals with a teal accent, rounded corners, a light theme by default with dark and
+  match-the-system options under Settings. Status colors are fixed (red for over, amber for
+  close) and always paired with a word. No logo, no CDN, no third-party requests.
 - **Tests** · `tests/budget-planner.test.mjs` exercises the engine (pro-ration of hours and
   materials, year split, reconciliation, logged figures, cost at the rate, validation, version 1
   migration, lane stacking, the sample plan's reference totals) and
@@ -868,7 +868,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `roadmap.html` | The **Roadmap Builder** — build project roadmaps from templates, a form, or a plain-language description; edit lanes/milestones/statuses on a timeline; export JSON/PNG/PDF; optional cloud sync + read-only share links. |
-| `budget-planner.html` | The **Roadmap &amp; Budget Planner** · day-level work blocks per engine with labor hours and materials (estimate, logged to date, worked or spent, forecast), an unscheduled backlog, and Hours, Materials and Cost by year and by engine at an hourly rate, pro-rated against an as-of date. Astrion 2026 brand; fonts in `assets/fonts/astrion/`. |
+| `budget-planner.html` | The **Roadmap &amp; Budget Planner** · day-level work blocks per engine with labor hours and materials (estimate, dated log entries, worked or spent, forecast), a monthly load row, an unscheduled backlog, and Hours, Materials and Cost by year and by engine at plan or per-engine rates, pro-rated by calendar day or weekday against an as-of date, with calendar or fiscal years. Neutral design, system fonts, no brand. |
 | `hours-planner.html` | Redirects to `budget-planner.html`. The separate hours edition is merged into the planner, which now tracks labor hours and materials together and carries a saved hours plan over on first open. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `radar-signal-chain.html` | **How a Radar Measures Distance** — a guided, 9-stage interactive explainer that follows one pulse through a real (toy-scale) radar DSP chain (chirp → up/down conversion → matched filter → range), with an animated correlation scrubber and a full Explore dashboard mode. |
