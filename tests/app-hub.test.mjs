@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
+import { collect, publishedPath, readCatalog, remoteDate, stamp } from "../scripts/app-updated.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const hub = readFileSync(resolve(root, "apps.html"), "utf8");
@@ -258,4 +259,58 @@ test("pins, layout, and theme are remembered through guarded browser storage", (
   assert.match(hub, /try \{\s+localStorage\.setItem\(`app-library:\$\{key\}`, value\);\s+\} catch \{/);
   assert.match(hub, /:root\[data-theme="light"\] \{/);
   assert.match(hub, /\.app-grid\[data-view="list"\]/);
+});
+
+test("every application carries the date it was last updated", () => {
+  const apps = readCatalog(hub), tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  assert.equal(apps.length, workApplications.length);
+  for (const app of apps) {
+    assert.match(app.updated, /^\d{4}-\d{2}-\d{2}$/, `${app.title} has no last-updated date`);
+    assert.ok(!Number.isNaN(Date.parse(app.updated)) && app.updated <= tomorrow && app.updated >= "2025-01-01", `${app.title} has an implausible date ${app.updated}`);
+  }
+  assert.match(hub, /<p class="updated" hidden>Updated <time><\/time><\/p>/);
+  assert.match(hub, /time\.dateTime = app\.updated;/);
+  assert.match(hub, /timeZone: "UTC"/, "dates are days in UTC and must not shift with the reader's zone");
+});
+
+test("dates for applications in this repository come from what each one publishes", () => {
+  const apps = new Map(readCatalog(hub).map((app) => [app.title, app]));
+  const expected = {
+    "LDAWIF": "index.html", "Roadmap Builder": "roadmap.html", "Map Builder": "geopresence", "Solution Architect Workbench": "solutions-architect",
+    "Astrion Division · LDAWIF": "astrion-division/ldawif", "PHX Sky Harbor Twin": "phx-digital-twin", "United States in Relief": "relief-map.html",
+  };
+  for (const [title, path] of Object.entries(expected)) assert.equal(publishedPath(apps.get(title)), path);
+  for (const app of apps.values()) {
+    const path = publishedPath(app);
+    if (app.repo === "work") assert.ok(path && existsSync(resolve(root, path)), `${app.title} publishes ${path}, which is not in the repository`);
+    else assert.equal(path, null, `${app.title} lives in another repository`);
+  }
+});
+
+test("stamping rewrites only the entries it has a date for, and a failed lookup keeps the old date", async () => {
+  const before = new Map(readCatalog(hub).map((app) => [app.title, app.updated]));
+  const stamped = stamp(hub, new Map([["Lotus Notes", "2031-02-03"], ["Not in the library", "2031-01-01"], ["LDAWIF", "last week"]]));
+  for (const app of readCatalog(stamped)) assert.equal(app.updated, app.title === "Lotus Notes" ? "2031-02-03" : before.get(app.title));
+  assert.equal(stamped.length, hub.length);
+  assert.equal(stamp(hub, new Map()), hub);
+
+  const answer = (body, ok = true) => async () => ({ ok, json: async () => body });
+  assert.equal(await remoteDate("AzJester/lotus", answer([{ commit: { committer: { date: "2031-04-05T06:07:08Z" } } }]), ""), "2031-04-05");
+  assert.equal(await remoteDate("AzJester/lotus", answer({ message: "Not Found" }, false), ""), null);
+  assert.equal(await remoteDate("AzJester/lotus", answer([]), ""), null);
+  assert.equal(await remoteDate("AzJester/lotus", async () => { throw new Error("offline"); }, ""), null);
+
+  const elsewhere = [...before.keys()].filter((title) => readCatalog(hub).find((app) => app.title === title).repo !== "work");
+  const offline = await collect(hub, { remote: true, fetchImpl: async () => { throw new Error("offline"); } });
+  for (const title of elsewhere) assert.ok(!offline.dates.has(title), `${title} must keep its committed date when GitHub does not answer`);
+  assert.equal(offline.notes.filter((note) => note.includes("no answer")).length, elsewhere.length);
+  const online = await collect(hub, { remote: true, fetchImpl: answer([{ commit: { committer: { date: "2031-04-05T06:07:08Z" } } }]) });
+  for (const title of elsewhere) assert.equal(online.dates.get(title), "2031-04-05");
+});
+
+test("the deploy stamps the published library from full history and cannot fail on it", () => {
+  assert.match(pagesWorkflow, /uses: actions\/checkout@v4\n\s+with:\n\s+#[^\n]*\n\s+fetch-depth: 0\n\n\s+- name: Configure Pages/);
+  assert.match(pagesWorkflow, /continue-on-error: true\n\s+env:\n\s+GITHUB_TOKEN: \$\{\{ github\.token \}\}\n\s+run: node scripts\/app-updated\.mjs --file _site\/apps\.html --remote/);
+  assert.ok(pagesWorkflow.indexOf("touch _site/.nojekyll") < pagesWorkflow.indexOf("app-updated.mjs"), "the copy must exist before it is stamped");
+  assert.ok(pagesWorkflow.indexOf("app-updated.mjs") < pagesWorkflow.indexOf("upload-pages-artifact"), "the stamp must land before the artifact is uploaded");
 });

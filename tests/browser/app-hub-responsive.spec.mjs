@@ -109,6 +109,30 @@ for (const view of ["cards", "list"]) {
   }
 }
 
+test("every application shows when it was last updated, in both layouts", async ({ page, baseURL }) => {
+  for (const view of ["cards", "list"]) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openHub(page, baseURL, { storage: { "app-library:view": view } });
+    const stamps = page.locator(".app-card .updated:visible");
+    await expect(stamps).toHaveCount(APP_COUNT);
+    for (const text of await stamps.allInnerTexts()) expect(text).toMatch(/^Updated [A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+    const relief = page.locator(".app-card").filter({ has: page.getByRole("heading", { name: "United States in Relief", exact: true }) });
+    await expect(relief.locator("time")).toHaveAttribute("datetime", /^2026-\d{2}-\d{2}$/);
+    await expect(relief.getByRole("link", { name: /Open app/ })).toHaveAttribute("href", "https://azjester.github.io/work/relief-map.html");
+  }
+});
+
+test.describe("far west of UTC", () => {
+  test.use({ timezoneId: "Pacific/Honolulu" });
+
+  test("a last-updated date is a day in UTC and reads the same wherever the visitor is", async ({ page, baseURL }) => {
+    await openHub(page, baseURL);
+    const shown = await page.locator(".app-card .updated time").evaluateAll((nodes) => nodes.map((n) => [n.dateTime, n.textContent]));
+    const format = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+    for (const [day, text] of shown) expect(text).toBe(format.format(new Date(`${day}T00:00:00Z`)));
+  });
+});
+
 test("the first applications are visible without scrolling on a laptop and a phone", async ({ page, baseURL }) => {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport);

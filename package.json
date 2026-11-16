@@ -8,7 +8,8 @@
     "test:browser:production": "playwright test --grep @production",
     "test:roadmap": "node --test tests/roadmap-hardening.test.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
-    "build:relief": "node relief-map/build.mjs"
+    "build:relief": "node relief-map/build.mjs",
+    "build:app-dates": "node scripts/app-updated.mjs"
   },
   "devDependencies": {
     "@maplibre/maplibre-gl-style-spec": "26.7.0",

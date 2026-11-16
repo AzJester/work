@@ -181,6 +181,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history: the Application Library is stamped with the date each application last changed.
+          fetch-depth: 0
 
       - name: Configure Pages
         # enablement: true turns Pages on automatically if it isn't already.
@@ -201,6 +204,14 @@ jobs:
           mkdir -p _site/astrion-film
           cp astrion-film/astrion-capabilities-film.html _site/astrion-film/index.html
           touch _site/.nojekyll
+
+      - name: Stamp the Application Library with last-updated dates
+        # Reads this repository's history and asks GitHub about the other repositories. A lookup that fails keeps the
+        # date committed in apps.html, and this step never fails the deploy.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/app-updated.mjs --file _site/apps.html --remote
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
