@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
@@ -547,10 +547,16 @@ test("the sample plan gives the reference hours, materials and cost totals", () 
   assert.equal(months.periods.reduce((s, p) => s + p.hours.committed, 0), 15829, "the months add up to the year");
 });
 
-test("the page is self-contained and set in the system sans without any brand furniture", () => {
+test("the page is self-contained, set in self-hosted Public Sans, without any brand furniture", () => {
   assert.ok(!/<link[^>]+href="https?:/.test(html) && !/<script[^>]+src="https?:/.test(html), "no CDN or third-party resources");
-  assert.ok(/--font:system-ui/.test(html), "the system sans stack is declared");
-  assert.ok(!/@font-face/.test(html), "no web fonts are loaded");
+  assert.ok(/--font:"Public Sans"/.test(html), "Public Sans leads the font stack");
+  const faces = [...html.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  assert.ok(faces.length >= 4, "Public Sans is declared in at least four weights");
+  for (const face of faces) {
+    assert.ok(/font-family:"Public Sans"/.test(face));
+    assert.ok(/url\(assets\/fonts\/public-sans\/[a-z0-9-]+\.woff2\)/.test(face), "each face loads from the repository, not the network");
+  }
+  assert.ok(existsSync(resolve(rootDir, "assets/fonts/public-sans/LICENSE.md")), "the font license ships beside the files");
   assert.ok(!/astrion\.us|wordmark|Archivo|JetBrains|Provisional set|brand kit/i.test(html), "no brand furniture remains in the page");
   assert.ok(!html.includes("—"), "no em dashes in the page");
   const title = html.match(/<title>([^<]*)<\/title>/)[1].trim();
