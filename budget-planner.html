@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light" data-accent="blue">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,36 +8,36 @@
 <title>Roadmap and Budget Planner</title>
 <meta name="description" content="Schedule work blocks on a day-level timeline, keep undated work in a backlog, log hours and materials as you go, and see labor hours and materials, worked or spent and forecast, roll up by month, by year and by engine and price out at hourly rates, pro-rated against a movable as-of date." />
 <style>
-  /* Neutral design system: system sans, one accent, fixed status colors, soft corners. */
+  /* Evergreen: Public Sans (self-hosted, SIL OFL), cool gray-green neutrals, one teal accent, fixed status colors, rounded corners. */
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:400; font-display:swap; src:url(assets/fonts/public-sans/public-sans-400.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:400; font-display:swap; src:url(assets/fonts/public-sans/public-sans-400-ext.woff2) format("woff2"); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:500; font-display:swap; src:url(assets/fonts/public-sans/public-sans-500.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:500; font-display:swap; src:url(assets/fonts/public-sans/public-sans-500-ext.woff2) format("woff2"); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:600; font-display:swap; src:url(assets/fonts/public-sans/public-sans-600.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:600; font-display:swap; src:url(assets/fonts/public-sans/public-sans-600-ext.woff2) format("woff2"); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:700; font-display:swap; src:url(assets/fonts/public-sans/public-sans-700.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family:"Public Sans"; font-style:normal; font-weight:700; font-display:swap; src:url(assets/fonts/public-sans/public-sans-700-ext.woff2) format("woff2"); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
   :root {
-    --font:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --bg:#f9f9f7; --surface:#fcfcfb; --surface-2:#f1f1ee; --surface-3:#e9e9e5;
-    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
-    --line:#e1e0d9; --line-2:#c3c2b7;
-    --accent:#2a78d6; --accent-ink:#ffffff; --mark:#2a78d6; --mark-track:rgba(42,120,214,.16); --accent-wash:rgba(42,120,214,.10);
-    --good:#006300; --warning:#fab219; --critical:#d03b3b; --critical-wash:rgba(208,59,59,.12); --warning-wash:rgba(250,178,25,.18);
-    --focus:#2a78d6; --backdrop:rgba(11,11,11,.45); --shadow:0 12px 32px rgba(11,11,11,.14), 0 2px 6px rgba(11,11,11,.08);
-    --radius:6px; --radius-lg:10px;
+    --font:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --bg:#F3F7F6; --surface:#FFFFFF; --surface-2:#EAF1EF; --surface-3:#DCE6E3;
+    --ink:#15201D; --ink-2:#4B5B57; --muted:#65746F;
+    --line:#D3DEDB; --line-2:#AEBFBB;
+    --accent:#0F766E; --accent-ink:#FFFFFF; --mark:#0E9F8C; --mark-track:rgba(14,159,140,.18); --accent-wash:#E0F2EF;
+    --good:#166534; --warning:#A15C00; --critical:#B42318; --critical-wash:#FDECEA; --warning-wash:#FBEFC6;
+    --focus:#0F766E; --backdrop:rgba(21,32,29,.45); --shadow:0 12px 32px rgba(21,32,29,.14), 0 2px 6px rgba(21,32,29,.08);
+    --radius:8px; --radius-lg:12px;
     --rail:200px; --block-h:36px; --block-gap:8px; --lane-pad:6px;
     color-scheme:light;
   }
   :root[data-theme="dark"] {
-    --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#242423; --surface-3:#2e2e2c;
-    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
-    --line:#2c2c2a; --line-2:#383835;
-    --mark:#3987e5; --mark-track:rgba(57,135,229,.22); --accent-wash:rgba(57,135,229,.16);
-    --good:#0ca30c; --critical-wash:rgba(208,59,59,.2); --warning-wash:rgba(250,178,25,.22);
-    --focus:#3987e5; --backdrop:rgba(0,0,0,.6); --shadow:0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4);
+    --bg:#0F1513; --surface:#18201E; --surface-2:#212B28; --surface-3:#2B3733;
+    --ink:#EEF3F1; --ink-2:#C2CECA; --muted:#93A29D;
+    --line:#2A3633; --line-2:#3C4B47;
+    --accent:#107A6D; --accent-ink:#FFFFFF; --mark:#2BBFA8; --mark-track:rgba(43,191,168,.22); --accent-wash:rgba(43,191,168,.16);
+    --good:#4ADE80; --warning:#E0A526; --critical:#F07167; --critical-wash:rgba(240,113,103,.2); --warning-wash:rgba(224,165,38,.22);
+    --focus:#2BBFA8; --backdrop:rgba(0,0,0,.6); --shadow:0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4);
     color-scheme:dark;
   }
-  :root[data-accent="teal"] { --accent:#0f7a66; --mark:#1baf7a; --mark-track:rgba(27,175,122,.18); --accent-wash:rgba(27,175,122,.12); --focus:#0f7a66; }
-  :root[data-accent="teal"][data-theme="dark"] { --mark:#199e70; --focus:#1baf7a; }
-  :root[data-accent="violet"] { --accent:#6250d6; --mark:#6250d6; --mark-track:rgba(98,80,214,.18); --accent-wash:rgba(98,80,214,.12); --focus:#6250d6; }
-  :root[data-accent="violet"][data-theme="dark"] { --mark:#9085e9; --focus:#9085e9; }
-  :root[data-accent="orange"] { --accent:#c94f1f; --mark:#eb6834; --mark-track:rgba(235,104,52,.18); --accent-wash:rgba(235,104,52,.12); --focus:#c94f1f; }
-  :root[data-accent="orange"][data-theme="dark"] { --mark:#d95926; --focus:#eb6834; }
-  :root[data-accent="graphite"] { --accent:#3d3d3a; --mark:#6b6a66; --mark-track:rgba(107,106,102,.2); --accent-wash:rgba(107,106,102,.14); --focus:#3d3d3a; }
-  :root[data-accent="graphite"][data-theme="dark"] { --accent:#c3c2b7; --accent-ink:#0b0b0b; --mark:#a3a29b; --focus:#c3c2b7; }
 
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
@@ -99,7 +99,7 @@
   .subnav-inner::-webkit-scrollbar { display:none; }
   .subnav a { display:inline-flex; align-items:center; min-height:40px; padding:0 10px; color:var(--ink-2); text-decoration:none; font:500 13px/1 var(--font); white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; }
   .subnav a:hover { color:var(--ink); }
-  .subnav a.active { color:var(--ink); border-bottom-color:var(--accent); }
+  .subnav a.active { color:var(--ink); border-bottom-color:var(--mark); }
   .subnav .spacer { flex:1; }
   .subnav .status { color:var(--muted); white-space:nowrap; padding-left:12px; font-size:12px; }
   main > section, .two-col > section { scroll-margin-top:56px; }
@@ -162,9 +162,9 @@
   .lane { position:relative; overflow:hidden; border-bottom:1px solid var(--line); height:calc(var(--rows) * (var(--block-h) + var(--block-gap)) - var(--block-gap) + 2 * var(--lane-pad)); min-height:calc(var(--block-h) + 2 * var(--lane-pad)); }
   .gridline { position:absolute; top:0; bottom:0; width:1px; background:var(--line); pointer-events:none; }
   .gridline.year { background:var(--line-2); }
-  .asof-line { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--accent); pointer-events:none; z-index:1; }
+  .asof-line { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--mark); pointer-events:none; z-index:1; }
   .asof-pill { position:absolute; top:5px; left:0; transform:translateX(-50%); background:var(--accent); color:var(--accent-ink); font:600 11px/1 var(--font); padding:5px 8px; border-radius:999px; white-space:nowrap; z-index:1; }
-  .block { position:absolute; height:var(--block-h); padding:4px 8px; margin:0; background:var(--surface-2); border:1px solid var(--line-2); border-radius:4px; color:var(--ink); text-align:left; cursor:grab; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:1px; font-family:var(--font); touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+  .block { position:absolute; height:var(--block-h); padding:4px 8px; margin:0; background:var(--surface-2); border:1px solid var(--line-2); border-radius:6px; color:var(--ink); text-align:left; cursor:grab; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:1px; font-family:var(--font); touch-action:pan-y; user-select:none; -webkit-user-select:none; }
   .block:hover, .block:focus-visible { border-color:var(--accent); background:var(--surface); }
   .block.dragging { border-color:var(--accent); cursor:grabbing; z-index:3; box-shadow:var(--shadow); }
   .block .name { font:500 12px/1.2 var(--font); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -533,9 +533,8 @@
       <h3>Appearance</h3>
       <div class="pair">
         <label class="field"><span>Theme</span><select name="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="system">Match the system</option></select></label>
-        <label class="field"><span>Accent color</span><select name="accent"><option value="blue">Blue</option><option value="teal">Teal</option><option value="violet">Violet</option><option value="orange">Orange</option><option value="graphite">Graphite</option></select></label>
       </div>
-      <p class="hint">Appearance applies right away and is remembered in this browser.</p>
+      <p class="hint">The theme applies right away and is remembered in this browser.</p>
       <h3>Backups</h3>
       <div class="backup-list" id="backupList"></div>
       <p class="hint">The last eight saves are kept in this browser, at most one a minute. Restore puts one back; Undo reverses that.</p>
@@ -1150,7 +1149,7 @@
   let blockFilter = "";
   let sortKey = null, sortDir = 1;
   let lastShown = [];
-  let prefs = { theme: "light", accent: "blue" };
+  let prefs = { theme: "light" };
 
   function todayISO() {
     const d = new Date();
@@ -1230,7 +1229,6 @@
     const saved = readJSON(PREFS_KEY);
     if (saved && typeof saved === "object") {
       if (["light", "dark", "system"].includes(saved.theme)) prefs.theme = saved.theme;
-      if (["blue", "teal", "violet", "orange", "graphite"].includes(saved.accent)) prefs.accent = saved.accent;
     } else {
       try { if (localStorage.getItem(LEGACY_THEME_KEY) === "dark") prefs.theme = "dark"; } catch (_) { /* default */ }
     }
@@ -1240,7 +1238,6 @@
   function applyPrefs() {
     const theme = resolvedTheme();
     document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.setAttribute("data-accent", prefs.accent);
     const btn = document.getElementById("themeBtn");
     btn.textContent = theme === "dark" ? "Light" : "Dark";
     btn.setAttribute("aria-label", theme === "dark" ? "Switch to the light theme" : "Switch to the dark theme");
@@ -2087,7 +2084,6 @@
     settingsForm.elements.startYear.value = doc.startYear;
     settingsForm.elements.endYear.value = doc.endYear;
     settingsForm.elements.theme.value = prefs.theme;
-    settingsForm.elements.accent.value = prefs.accent;
     document.getElementById("settingsError").textContent = "";
     syncFiscalHint();
     renderEngineRows();
@@ -2105,7 +2101,6 @@
   fiscalSelect.addEventListener("change", syncFiscalHint);
   settingsForm.elements.startYear.addEventListener("input", syncFiscalHint);
   settingsForm.elements.theme.addEventListener("change", () => savePrefs({ theme: settingsForm.elements.theme.value }));
-  settingsForm.elements.accent.addEventListener("change", () => savePrefs({ accent: settingsForm.elements.accent.value }));
   function blockCount(engineId) { return doc.blocks.filter((b) => b.engineId === engineId).length; }
   function renderEngineRows() {
     const host = document.getElementById("engineRows");

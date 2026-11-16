@@ -140,19 +140,21 @@ test.describe("Roadmap and Budget Planner", () => {
     expect(exported.blocks).toHaveLength(22);
   });
 
-  test("theme and accent are remembered in this browser", async ({ page, baseURL }) => {
+  test("the theme is remembered in this browser and the page is set in Public Sans", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-    await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
+    const fonts = await page.evaluate(async () => { await document.fonts.ready; return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family + " " + f.weight); });
+    expect(fonts.some((f) => f.startsWith("Public Sans"))).toBe(true);
+    expect(await page.locator("body").evaluate((b) => getComputedStyle(b).fontFamily)).toMatch(/Public Sans/);
     await page.click("#themeBtn");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.click("#settingsBtn");
-    await page.locator("#settingsDialog select[name='accent']").selectOption("teal");
-    await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
+    await page.locator("#settingsDialog select[name='theme']").selectOption("light");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await page.locator("#settingsDialog select[name='theme']").selectOption("dark");
     await page.keyboard.press("Escape");
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
   });
 
   test("a phone-width viewport scrolls the board, not the page", async ({ page, baseURL }) => {

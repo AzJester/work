@@ -49,6 +49,12 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**Evergreen (chosen look).** From three mocked-up options the owner chose Evergreen: Public
+Sans self-hosted in four weights (latin and latin-ext subsets, OFL license beside the files),
+cool gray-green neutrals (page #F3F7F6, panels #FFFFFF, lines #D3DEDB), teal accent #0F766E
+with #0E9F8C for bars and the as-of line, 8 px and 12 px corners, and a matching dark variant.
+The accent picker is gone; Settings keeps only the theme choice.
+
 **Version 3: the review items, minus shared storage, and a neutral look.** Document version 3
 adds dated `log` entries per block (date, hours, materials, note; the record of work when
 present, counted only up to the as-of date), an optional `rate` per engine, `fiscalStartMonth`

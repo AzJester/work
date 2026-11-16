@@ -658,11 +658,11 @@ the budget. Unbranded, with a neutral look you can tune under Settings.
   the dollar edition (`budget_planner_v1`), and otherwise loads a sample plan. **Clear all**
   then offers **Load sample plan** again from the empty state. `hours-planner.html` redirects
   here.
-- **Look and feel** · a neutral, unbranded design: the system sans (Segoe UI, SF, Roboto),
-  a light theme by default with dark and match-the-system options, and an accent color you pick
-  under Settings (blue, teal, violet, orange or graphite). Status colors are fixed (red for over,
-  amber for close) and always paired with a word. No logo, no web fonts, no CDN, no third-party
-  requests.
+- **Look and feel** · the "Evergreen" design: Public Sans (the US Web Design System face,
+  self-hosted from `assets/fonts/public-sans/` under the SIL Open Font License), cool gray-green
+  neutrals with a teal accent, rounded corners, a light theme by default with dark and
+  match-the-system options under Settings. Status colors are fixed (red for over, amber for
+  close) and always paired with a word. No logo, no CDN, no third-party requests.
 - **Tests** · `tests/budget-planner.test.mjs` exercises the engine (pro-ration of hours and
   materials, year split, reconciliation, logged figures, cost at the rate, validation, version 1
   migration, lane stacking, the sample plan's reference totals) and
