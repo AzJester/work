@@ -23,6 +23,7 @@ const PRESETS = {
 };
 const STORE = 'relief-map:quality';
 const HOLD = { rotL: 'q', rotR: 'e', in: '+', out: '-' };
+const STEP = { q: 'rotL', e: 'rotR', '+': 'in', '=': 'in', '-': 'out', _: 'out', ArrowUp: 'panU', w: 'panU', ArrowDown: 'panD', s: 'panD', ArrowLeft: 'panL', a: 'panL', ArrowRight: 'panR', d: 'panR' };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
@@ -320,6 +321,14 @@ async function start() {
     north() { userMoved(); flyTo({ ...viewNow(), bearing: 0 }, 700); },
     tilt() { userMoved(); const v = viewNow(); flyTo({ ...v, pitch: v.pitch < 60 ? 80 : 34 }, 800); },
     hold(name, on) { if (on) { userMoved(); keys.add(HOLD[name]); } else keys.delete(HOLD[name]); },
+    /** One step of rotation, zoom or pan, applied as a short flight so it lands whole even if the next frame is late. */
+    nudge(name) {
+      const from = flight ? flight.to : viewNow(), b = from.bearing * Math.PI / 180, step = from.dist * 0.16;
+      const ahead = name === 'panU' ? step : name === 'panD' ? -step : 0, across = name === 'panR' ? step : name === 'panL' ? -step : 0;
+      ui.userMoved();
+      flyTo({ ...from, x: from.x + Math.sin(b) * ahead + Math.cos(b) * across, z: from.z - Math.cos(b) * ahead + Math.sin(b) * across,
+        bearing: from.bearing + (name === 'rotL' ? -15 : name === 'rotR' ? 15 : 0), dist: from.dist * (name === 'in' ? 0.78 : name === 'out' ? 1.28 : 1) }, 240);
+    },
     goPlace(place) {
       const [x, z] = lonLatToWorld(place.lon, place.lat), v = viewNow();
       setPin(x, z, place.kind === 'city' ? 4 : 1);
@@ -376,9 +385,11 @@ async function start() {
     if (key === 'l' || key === 'b') { const name = key === 'l' ? 'labels' : 'borders'; app.setLayer(name, !layers[name]); ui.setLayerBox(name, layers[name]); return; }
     if (key === 'h') { ui.toggleBare(); return; }
     if (key === 'r') { ui.userMoved(); app.home(); return; }
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'q', 'e', '+', '=', '-', '_'].includes(key)) {
+    if (STEP[key]) {
       if (e.target instanceof HTMLButtonElement && key.startsWith('Arrow')) return;
-      keys.add(key); userMoved(); e.preventDefault();
+      // The first press is one whole step; a held key then moves continuously.
+      if (e.repeat) { keys.add(key); userMoved(); } else app.nudge(STEP[key]);
+      e.preventDefault();
     }
   });
   addEventListener('keyup', (e) => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
