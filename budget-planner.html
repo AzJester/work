@@ -104,7 +104,10 @@
 
   /* Timeline board */
   .board-scroll { overflow-x:auto; border:1px solid var(--hairline); }
-  .board { display:grid; grid-template-columns:var(--rail) minmax(1000px,1fr); min-width:100%; }
+  .board { display:grid; grid-template-columns:var(--rail) minmax(max(1000px, calc(var(--months, 24) * 42px)),1fr); min-width:100%; }
+  .caption { margin:10px 0 0; font-size:13px; color:var(--ink-muted); }
+  td.actions, th.actions { text-align:right; white-space:nowrap; padding-top:2px; padding-bottom:2px; }
+  .iconbtn.sm { width:28px; height:28px; }
   .rail-cell { position:sticky; left:0; z-index:2; background:var(--ground); border-right:1px solid var(--hairline-strong); }
   .axis-rail { border-bottom:1px solid var(--hairline-strong); display:flex; align-items:flex-end; padding:8px 12px; }
   .axis { position:relative; border-bottom:1px solid var(--hairline-strong); }
@@ -140,7 +143,7 @@
   .backlog-empty { padding:20px 0; color:var(--ink-muted); }
 
   /* Tables: every size in pt so table text stays between 8 and 10 pt */
-  .table-wrap { overflow-x:auto; }
+  .table-wrap { overflow-x:auto; position:relative; }
   table { width:100%; border-collapse:collapse; font:400 10pt/1.45 var(--font-sans); }
   th { font:500 9pt/1.3 var(--font-mono); text-transform:uppercase; letter-spacing:.06em; background:var(--gunmetal); color:var(--bone); text-align:left; }
   th, td { padding:6px 10px; border-bottom:1px solid var(--hairline); vertical-align:middle; }
@@ -225,6 +228,7 @@
   <symbol id="ast-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M20.5 4v3.5H17"/></symbol>
   <symbol id="ast-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
   <symbol id="ast-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="ast-outline" viewBox="0 0 24 24"><path d="M5 4v14.5h3M5 9.5h3M5 14h3M10.5 4.5H20M11.5 9.5H20M11.5 14H18M11.5 18.5H20"/><rect x="3.75" y="2.75" width="2.5" height="2.5" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <header class="topbar">
@@ -265,8 +269,11 @@
     <div class="section-head">
       <h2 id="timelineTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-schedule"/></svg>Timeline</h2>
       <span class="mono meta" id="timelineMeta"></span>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="addYearBtn" title="Extend the plan by one year"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Year</button>
     </div>
     <div id="timelineHost"></div>
+    <p class="caption" id="timelineHint">Click any block to edit or delete it, or press Delete while a block has focus. The Blocks list below has the same controls for every block.</p>
   </section>
 
   <section id="backlogSection" aria-labelledby="backlogTitle">
@@ -277,6 +284,14 @@
       <button type="button" class="btn" id="addBacklogBtn"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Backlog item</button>
     </div>
     <div id="backlogHost"></div>
+  </section>
+
+  <section id="blocksSection" aria-labelledby="blocksTitle">
+    <div class="section-head">
+      <h2 id="blocksTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-outline"/></svg>Blocks</h2>
+      <span class="mono meta" id="blocksMeta"></span>
+    </div>
+    <div class="table-wrap" id="blocksHost"></div>
   </section>
 
   <div class="two-col">
@@ -632,13 +647,13 @@
   const THEME_KEY = "budget_planner_theme";
   const LABELS = {
     USD: {
-      app: "Roadmap & Budget Planner", docTitle: "Roadmap and Budget Planner", unitWord: "USD", amount: "Cost · USD", actual: "Actual spend · USD",
+      app: "Roadmap & Budget Planner", docTitle: "Roadmap and Budget Planner", unitWord: "USD", amount: "Cost · USD", actual: "Actual spend · USD", estimateHead: "Cost", actualHead: "Actual",
       spent: "Spent", planned: "Planned", committed: "Committed", remaining: "Remaining", annual: "Annual budget",
       yearSection: "Budget by year", yearMeta: "Annual budget · Editable", yearNote: "Over = committed above budget", engineSection: "Committed by engine", file: "budget-planner-",
       explain: "Past portions of each scheduled block count as spent and future portions as planned, pro-rated by day across the dates the block spans. The as-of day itself is planned. A block with an actual spend logged uses that figure as spent and carries the rest of its cost as planned. Committed is spent plus planned, so a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual budget is editable.",
     },
     hours: {
-      app: "Roadmap & Hours Planner", docTitle: "Roadmap and Hours Planner", unitWord: "Hours", amount: "Estimate · Hours", actual: "Hours logged to date",
+      app: "Roadmap & Hours Planner", docTitle: "Roadmap and Hours Planner", unitWord: "Hours", amount: "Estimate · Hours", actual: "Hours logged to date", estimateHead: "Estimate", actualHead: "Logged",
       spent: "Worked", planned: "Forecast", committed: "Total", remaining: "Remaining", annual: "Annual hours",
       yearSection: "Hours by year", yearMeta: "Annual hours · Editable", yearNote: "Over = total above annual hours", engineSection: "Hours by engine", file: "hours-planner-",
       explain: "Past portions of each scheduled block count as worked and future portions as forecast, pro-rated by day across the dates the block spans. The as-of day itself is forecast. A block with hours logged uses the logged figure as worked and carries the rest of its estimate as forecast, so an overrun shows as worked hours above the estimate. Total is worked plus forecast, and a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual hours are editable.",
@@ -793,8 +808,60 @@
     renderHeader();
     renderTimeline();
     renderBacklog();
+    renderBlocksTable();
     renderYearTable();
     renderEngineTable();
+  }
+
+  function deleteBlock(id) {
+    const block = doc.blocks.find((b) => b.id === id);
+    if (!block) return;
+    const next = clone(doc);
+    next.blocks = next.blocks.filter((b) => b.id !== id);
+    if (blockDialog.open) blockDialog.close();
+    commit(next, { toast: "Deleted " + block.name });
+  }
+
+  function renderBlocksTable() {
+    const host = document.getElementById("blocksHost");
+    host.replaceChildren();
+    const l = L();
+    const order = new Map(doc.engines.map((e, i) => [e.id, i]));
+    const rows = doc.blocks.slice().sort((a, b) => {
+      const sa = E.isScheduled(a) ? 0 : 1, sb = E.isScheduled(b) ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      const ea = order.has(a.engineId) ? order.get(a.engineId) : 99, eb = order.has(b.engineId) ? order.get(b.engineId) : 99;
+      if (ea !== eb) return ea - eb;
+      if (sa === 0) { const d = E.parseISO(a.start) - E.parseISO(b.start); if (d) return d; }
+      return a.name.localeCompare(b.name);
+    });
+    const scheduled = rows.filter(E.isScheduled).length;
+    document.getElementById("blocksMeta").textContent = scheduled + " scheduled · " + (rows.length - scheduled) + " backlog";
+    if (!rows.length) {
+      host.append(el("p", { class: "backlog-empty", text: "No blocks yet. Add a block or a backlog item and it appears here with edit and delete controls." }));
+      return;
+    }
+    const table = el("table", { id: "blocksTable" });
+    table.append(el("thead", null, el("tr", null, [
+      el("th", { scope: "col", text: "Block" }), el("th", { scope: "col", text: "Engine" }), el("th", { scope: "col", text: "Start" }), el("th", { scope: "col", text: "End" }),
+      el("th", { scope: "col", class: "num", text: l.estimateHead }), el("th", { scope: "col", class: "num", text: l.actualHead }),
+      el("th", { scope: "col", class: "actions", "aria-label": "Actions" })
+    ])));
+    const tbody = el("tbody");
+    for (const b of rows) {
+      const onTimeline = E.isScheduled(b);
+      tbody.append(el("tr", { "data-block-row": b.id }, [
+        el("td", { text: b.name }), el("td", { text: engineName(b.engineId) }),
+        el("td", { class: "fig", text: onTimeline ? b.start : "Backlog" }), el("td", { class: "fig", text: onTimeline ? b.end : "" }),
+        el("td", { class: "num", text: fmt(b.cost) }), el("td", { class: "num", text: E.hasActual(b) ? fmt(b.actual) : "" }),
+        el("td", { class: "actions" }, [
+          el("button", { type: "button", class: "iconbtn sm", "aria-label": "Edit " + b.name, title: "Edit", onclick: () => openBlockDialog(b.id) }, icon("edit")),
+          el("button", { type: "button", class: "iconbtn sm", "aria-label": "Delete " + b.name, title: "Delete", onclick: () => deleteBlock(b.id) }, icon("delete"))
+        ])
+      ]));
+    }
+    table.append(tbody);
+    host.append(table);
   }
   function renderHeader() {
     const l = L();
@@ -823,6 +890,7 @@
     const scheduled = doc.blocks.filter(E.isScheduled);
     const byEngine = E.rollupByEngine(doc);
     document.getElementById("timelineMeta").textContent = scheduled.length + " blocks · " + doc.engines.length + " engines · As of " + effectiveAsOf();
+    document.getElementById("timelineHint").hidden = !doc.blocks.length;
 
     if (!scheduled.length && !doc.blocks.length) {
       host.append(el("div", { class: "empty-panel" }, [
@@ -836,7 +904,7 @@
       return;
     }
 
-    const board = el("div", { class: "board", role: "region", "aria-label": "Timeline board" });
+    const board = el("div", { class: "board", role: "region", "aria-label": "Timeline board", style: "--months:" + (years.length * 12) });
     const asOfMs = E.parseISO(effectiveAsOf());
     const asOfVisible = asOfMs >= rangeStart && asOfMs <= rangeEnd + E.DAY;
 
@@ -891,7 +959,8 @@
           "data-block": block.id,
           "aria-label": block.name + ", " + engine.name + ", " + amount + ", " + fmtDate(block.start) + " to " + fmtDate(block.end),
           title: block.name + " · " + amount + " · " + fmtDate(block.start) + " to " + fmtDate(block.end),
-          onclick: () => openBlockDialog(block.id)
+          onclick: () => openBlockDialog(block.id),
+          onkeydown: (ev) => { if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); deleteBlock(block.id); } }
         }, [el("span", { class: "name", text: block.name }), el("span", { class: "cost", text: amount })]);
         lane.append(btn);
       }
@@ -915,7 +984,8 @@
       grid.append(el("button", {
         type: "button", class: "card", "data-block": item.id,
         "aria-label": item.name + ", " + engineName(item.engineId) + ", " + fmt(item.cost) + ", unscheduled",
-        onclick: () => openBlockDialog(item.id)
+        onclick: () => openBlockDialog(item.id),
+        onkeydown: (ev) => { if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); deleteBlock(item.id); } }
       }, [el("span", { class: "name", text: item.name }), el("span", { class: "meta", text: engineName(item.engineId) + " · " + fmt(item.cost) })]));
     }
     host.append(grid);
@@ -1052,14 +1122,7 @@
     blockDialog.close();
     commit(next, { toast: editingId ? "Block updated" : (scheduled ? "Block added" : "Backlog item added") });
   });
-  document.getElementById("blockDeleteBtn").addEventListener("click", () => {
-    if (!editingId) return;
-    const block = doc.blocks.find((b) => b.id === editingId);
-    const next = clone(doc);
-    next.blocks = next.blocks.filter((b) => b.id !== editingId);
-    blockDialog.close();
-    commit(next, { toast: "Deleted " + block.name });
-  });
+  document.getElementById("blockDeleteBtn").addEventListener("click", () => { if (editingId) deleteBlock(editingId); });
 
   // ---------- Settings dialog ----------
   const settingsDialog = document.getElementById("settingsDialog");
@@ -1153,6 +1216,12 @@
   // ---------- Top bar actions ----------
   document.getElementById("addBlockBtn").addEventListener("click", () => openBlockDialog(null, true));
   document.getElementById("addBacklogBtn").addEventListener("click", () => openBlockDialog(null, false));
+  document.getElementById("addYearBtn").addEventListener("click", () => {
+    if (doc.endYear - doc.startYear + 1 >= E.MAX_SPAN_YEARS) { showToast("The plan already spans the maximum of " + E.MAX_SPAN_YEARS + " years", false); return; }
+    const next = clone(doc);
+    next.endYear += 1;
+    commit(next, { toast: "Added " + next.endYear });
+  });
   document.getElementById("settingsBtn").addEventListener("click", openSettings);
   document.getElementById("asOfInput").addEventListener("change", (ev) => {
     const value = ev.target.value;
