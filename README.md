@@ -657,10 +657,10 @@ the budget. Built to the Astrion 2026 brand standard.
   then offers **Load sample plan** again from the empty state. `hours-planner.html` redirects
   here.
 - **Astrion brand** · Carbon dark theme by default with a light toggle, Archivo and JetBrains Mono
-  self-hosted from `assets/fonts/astrion/` (SIL OFL licenses beside the files), the supplied web
-  wordmark, square corners and hairlines, one Ion signal per section, table text held between
-  8 and 10 pt, and the provisional Astrion icon set (flagged as provisional in the footer). No
-  CDN, no third-party requests.
+  self-hosted from `assets/fonts/astrion/` (SIL OFL licenses beside the files), square corners
+  and hairlines, one Ion signal per section, table text held between 8 and 10 pt, and the
+  provisional Astrion icon set (flagged as provisional in the footer). No logo in the top bar by
+  request; text runs the full width of the page. No CDN, no third-party requests.
 - **Tests** · `tests/budget-planner.test.mjs` exercises the engine (pro-ration of hours and
   materials, year split, reconciliation, logged figures, cost at the rate, validation, version 1
   migration, lane stacking, the sample plan's reference totals) and
