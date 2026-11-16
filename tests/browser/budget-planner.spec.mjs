@@ -15,6 +15,16 @@ test.describe("Roadmap and Budget Planner", () => {
     await openPlanner(page, baseURL);
     await expect(page.locator(".block")).toHaveCount(15);
     await expect(page.locator(".card")).toHaveCount(7);
+    const tiles = page.locator(".tile");
+    await expect(tiles).toHaveCount(4);
+    await expect(tiles.nth(0)).toContainText("15.8K h");
+    await expect(tiles.nth(0)).toContainText("2,393 h over");
+    await expect(tiles.nth(1)).toContainText("$21K");
+    await expect(tiles.nth(2)).toContainText("$1.64M");
+    await expect(tiles.nth(2)).toContainText("$64,442 left");
+    await expect(tiles.nth(3)).toContainText("2,010 h");
+    await expect(page.locator(".load-cell")).toHaveCount(24);
+    expect(await page.locator(".load-cell.over").count()).toBeGreaterThan(0);
     await expect(page.locator("#backlogMeta")).toContainText("2,010 h");
     await expect(page.locator("#backlogMeta")).toContainText("$4,000 materials");
     await expect(page.locator("#hoursYearTable tr[data-row='committed']")).toContainText("15,829 h");
@@ -34,6 +44,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(costCore).toContainText("$140,900");
     await expect(page.locator(".lane-label").first()).toContainText("$140,900");
     await expect(page.locator(".block[data-block='b02']")).toContainText("$12,000 / $18,500");
+    await expect(page.locator("tr[data-block-row='b07']")).toContainText("700 h");
     await expect(page.locator(".asof-pill")).toHaveText(/As of 2026-07-17/i);
   });
 
@@ -48,6 +59,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await dialog.locator("input[name='materials']").fill("1,000");
     await dialog.locator("input[name='start']").fill("2026-01-01");
     await dialog.locator("input[name='end']").fill("2026-12-31");
+    await expect(page.locator("#dateSummary")).toContainText("365 days (261 weekdays)");
     await dialog.locator("button[type='submit']").click();
     await expect(dialog).toBeHidden();
     await expect(page.locator(".block")).toHaveCount(16);
@@ -91,11 +103,12 @@ test.describe("Roadmap and Budget Planner", () => {
     await hoursInput.fill("20,000");
     await hoursInput.press("Enter");
     await expect(page.locator("#hoursYearTable tr[data-row='remaining']")).toContainText("4,171 h");
+    await expect(page.locator(".tile").nth(0)).toContainText("4,171 h left");
     const budgetInput = page.locator("input[data-budget-year='2026']");
     await budgetInput.fill("");
     await budgetInput.press("Enter");
-    const remaining = page.locator("#costYearTable tr[data-row='remaining'] td").first();
-    await expect(remaining).toContainText("Not set");
+    await expect(page.locator("#costYearTable tr[data-row='remaining'] td").first()).toContainText("Not set");
+    await expect(page.locator(".tile").nth(2)).toContainText("labor");
     await page.locator("input[data-budget-year='2026']").fill("2,000,000");
     await page.locator("input[data-budget-year='2026']").press("Enter");
     await expect(page.locator("#costYearTable tr[data-row='remaining']")).toContainText("$364,442");
@@ -112,27 +125,34 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator(".block")).toHaveCount(15);
   });
 
-  test("export downloads a version 2 document that validates and matches the page", async ({ page, baseURL }) => {
+  test("export downloads a version 3 document that validates and matches the page", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#exportBtn")]);
     expect(download.suggestedFilename()).toMatch(/^budget-planner-\d{4}-\d{2}-\d{2}\.json$/);
     const path = await download.path();
     const { readFileSync } = await import("node:fs");
     const exported = JSON.parse(readFileSync(path, "utf8"));
-    expect(exported.version).toBe(2);
+    expect(exported.version).toBe(3);
     expect(exported.rate).toBe(102);
+    expect(exported.fiscalStartMonth).toBe(1);
     const result = await page.evaluate((json) => window.BudgetEngine.validateDoc(json), exported);
     expect(result.ok).toBe(true);
     expect(exported.blocks).toHaveLength(22);
   });
 
-  test("theme toggle flips the document theme and remembers it", async ({ page, baseURL }) => {
+  test("theme and accent are remembered in this browser", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
     await page.click("#themeBtn");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.click("#settingsBtn");
+    await page.locator("#settingsDialog select[name='accent']").selectOption("teal");
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
+    await page.keyboard.press("Escape");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "teal");
   });
 
   test("a phone-width viewport scrolls the board, not the page", async ({ page, baseURL }) => {
@@ -148,7 +168,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.waitForURL(/budget-planner\.html$/);
     await expect(page.locator(".lane")).toHaveCount(6);
     await expect(page).toHaveTitle("Roadmap and Budget Planner");
-    await expect(page.locator("#subtitle")).toContainText("Hours and materials");
+    await expect(page.locator("#subtitle")).toContainText("Calendar days");
     await expect(page.locator("#subtitle")).toContainText("$102.00/h");
     const core = page.locator("#hoursEngineTable tr[data-engine='core']");
     await expect(core).toContainText("640 h");
@@ -165,6 +185,8 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.click(".block[data-block='b01']");
     const dialog = page.locator("#blockDialog");
     await expect(dialog.locator("input[name='hoursActual']")).toHaveValue("640");
+    await expect(dialog.locator("input[name='hoursActual']")).toBeEnabled();
+    await expect(dialog.locator("#logHint")).toBeHidden();
     await expect(dialog.locator("#materialsActualField")).toBeVisible();
     await dialog.locator("input[name='hoursActual']").fill("1,300");
     await dialog.locator("input[name='materials']").fill("500");
@@ -181,6 +203,136 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(row).toContainText("$500");
     await expect(row).toContainText("$200");
     await expect(page.locator(".block[data-block='b01']")).toContainText("1,300 h / 1,200 h · $200 / $500");
+  });
+
+  test("logs work as dated entries that the plan counts up to the as-of date", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.locator(".block[data-block='b01']").focus();
+    await page.keyboard.press("l");
+    const dialog = page.locator("#logDialog");
+    await expect(dialog).toBeVisible();
+    await expect(page.locator("#logTitle")).toContainText("CORE Foundation MVP");
+    await expect(page.locator("#logTotals")).toContainText("running totals of 640 h");
+    await dialog.locator("input[name='date']").fill("2026-07-10");
+    await dialog.locator("input[name='hours']").fill("100");
+    await dialog.locator("input[name='note']").fill("Week 28");
+    await dialog.locator("button[type='submit']").click();
+    await expect(page.locator("#logEntries tbody tr")).toHaveCount(1);
+    await expect(page.locator("#logEntries")).toContainText("Week 28");
+    await dialog.locator("input[name='date']").fill("2026-08-01");
+    await dialog.locator("input[name='hours']").fill("50");
+    await dialog.locator("input[name='materials']").fill("300");
+    await dialog.locator("button[type='submit']").click();
+    await expect(page.locator("#logEntries tbody tr")).toHaveCount(2);
+    await expect(page.locator("#logTotals")).toContainText("Counted as of 2026-07-17: 100 h and $0 (1 of 2 entries)");
+    await expect(page.locator("#logTotals")).toContainText("All entries: 150 h and $300");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    const core = page.locator("#hoursEngineTable tr[data-engine='core']");
+    await expect(core).toContainText("100 h");
+    await expect(core).toContainText("1,100 h");
+    await expect(page.locator("tr[data-block-row='b01']")).toContainText("100 h");
+    await page.click(".block[data-block='b01']");
+    const blockDialog = page.locator("#blockDialog");
+    await expect(blockDialog.locator("input[name='hoursActual']")).toBeDisabled();
+    await expect(blockDialog.locator("input[name='hoursActual']")).toHaveValue("150");
+    await expect(blockDialog.locator("#logHint")).toContainText("From 2 log entries");
+    await blockDialog.locator("#blockLogBtn").click();
+    await expect(dialog).toBeVisible();
+    await page.locator("#logEntries button[aria-label='Delete entry 2026-08-01']").click();
+    await expect(page.locator("#logEntries tbody tr")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await page.fill("#asOfInput", "2026-07-01");
+    await page.locator("#asOfInput").dispatchEvent("change");
+    await expect(core).toContainText("0 h");
+    await expect(page.locator(".block[data-block='b01']")).toContainText("0 h / 1,200 h");
+  });
+
+  test("sorts the Blocks list from its headings and exports the rows as CSV", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const rows = page.locator("#blocksTable tbody tr");
+    await expect(rows.first()).toContainText("CORE Foundation MVP");
+    await page.locator("#blocksTable button[aria-label='Sort by Hours']").click();
+    await expect(page.locator("#blocksTable th", { hasText: "Hours" }).first()).toHaveAttribute("aria-sort", "descending");
+    await expect(rows.first()).toContainText("Meridian v1");
+    await page.locator("#blocksTable button[aria-label='Sort by Hours']").click();
+    await expect(rows.first()).toContainText("0 h");
+    await page.locator("#blocksTable button[aria-label='Sort by Hours']").click();
+    await expect(rows.first()).toContainText("CORE Foundation MVP");
+    await page.locator("#blocksTable button[aria-label='Sort by Engine']").click();
+    await expect(rows.first()).toContainText("AI Initiative");
+    await page.fill("#blockFilter", "horizon");
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#csvBtn")]);
+    expect(download.suggestedFilename()).toMatch(/^blocks-\d{4}-\d{2}-\d{2}\.csv$/);
+    const { readFileSync } = await import("node:fs");
+    const lines = readFileSync(await download.path(), "utf8").trim().split(/\r?\n/);
+    expect(lines[0]).toBe("Block,Engine,Start,End,Hours,Hours logged,Materials planned,Materials spent,Status,Log entries");
+    expect(lines).toHaveLength(1 + 9);
+    expect(lines.some((l) => l.startsWith("Deploy Horizon MVP,Horizon,2026-03-24,2026-08-27,900,700,0,0,Scheduled,4"))).toBe(true);
+    expect(lines.some((l) => l.includes(",Backlog,"))).toBe(true);
+    await expect(page.locator("#toastText")).toContainText("Exported 9 blocks");
+  });
+
+  test("an engine's name on the timeline isolates that engine everywhere", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.locator(".lane-btn[data-engine='core']").click();
+    await expect(page.locator(".lane")).toHaveCount(1);
+    await expect(page.locator("#scopeChip")).toBeVisible();
+    await expect(page.locator("#scopeText")).toHaveText("Core only");
+    await expect(page.locator(".tile").nth(0)).toContainText("Core hours");
+    await expect(page.locator(".tile").nth(0)).toContainText("1,200 h");
+    await expect(page.locator("#hoursEngineTable tbody tr")).toHaveCount(1);
+    await expect(page.locator("#hoursYearTable tr[data-row='budget']")).toHaveCount(0);
+    await expect(page.locator("#hoursYearTable tr[data-row='committed']")).toContainText("1,200 h");
+    await expect(page.locator(".card")).toHaveCount(2);
+    await expect(page.locator("#blocksMeta")).toHaveText("2 scheduled · 2 backlog");
+    await expect(page.locator(".load-cell.capped")).toHaveCount(0);
+    await page.click("#addBlockBtn");
+    await expect(page.locator("#blockDialog select[name='engineId']")).toHaveValue("core");
+    await page.keyboard.press("Escape");
+    await page.click("#scopeClear");
+    await expect(page.locator(".lane")).toHaveCount(6);
+    await expect(page.locator("#scopeChip")).toBeHidden();
+    await expect(page.locator("#hoursYearTable tr[data-row='budget']")).toHaveCount(1);
+  });
+
+  test("settings: fiscal year, weekday pro-ration and an engine rate", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.click("#settingsBtn");
+    const dialog = page.locator("#settingsDialog");
+    await dialog.locator("select[name='fiscalStartMonth']").selectOption("10");
+    await expect(page.locator("#fiscalHint")).toContainText("FY2026 runs Oct 1, 2025 to Sep 30, 2026");
+    await dialog.locator("select[name='workdays']").selectOption("weekdays");
+    await dialog.locator("#engineRows .engine-row").first().locator("input.rate").fill("50");
+    await dialog.locator("button[type='submit']").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator("#subtitle")).toContainText("FY2026 – FY2027 · Weekdays");
+    await expect(page.locator(".axis .years > div").first()).toHaveText("FY2026");
+    await expect(page.locator(".axis .months > div").first()).toHaveText("Oct");
+    await expect(page.locator("#hoursYearTable thead")).toContainText("FY2027");
+    await expect(page.locator("#costEngineTable tr[data-engine='core']")).toContainText("$60,000");
+    await expect(page.locator("#costMeta")).toContainText("1 engine has its own rate");
+    await expect(page.locator(".lane-label").first()).toContainText("$50.00/h");
+    await expect(page.locator("#hoursYearTable tr[data-row='committed']")).toContainText("15,829 h");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#subtitle")).toContainText("FY2026 – FY2027 · Weekdays");
+  });
+
+  test("keeps a backup before each change and restores it from Settings", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.locator(".block[data-block='b02']").focus();
+    await page.keyboard.press("Delete");
+    await expect(page.locator(".block")).toHaveCount(14);
+    await page.click("#settingsBtn");
+    const rows = page.locator("#backupList .backup-row");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText("22 blocks");
+    await rows.first().locator("button", { hasText: "Restore" }).click();
+    await expect(page.locator("#settingsDialog")).toBeHidden();
+    await expect(page.locator(".block")).toHaveCount(15);
+    await expect(page.locator("#toastText")).toContainText("Restored the backup");
+    await page.click("#toastUndo");
+    await expect(page.locator(".block")).toHaveCount(14);
   });
 
   test("carries over plans saved by the earlier hours and dollar editions", async ({ page, baseURL }) => {
@@ -225,6 +377,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.click("#addYearBtn");
     await expect(page.locator(".axis .years > div")).toHaveCount(3);
     await expect(page.locator(".axis .years > div").nth(2)).toHaveText("2028");
+    await expect(page.locator(".load-cell")).toHaveCount(36);
     await expect(page.locator("#hoursYearTable thead")).toContainText("2028");
     await expect(page.locator("#costYearTable thead")).toContainText("2028");
     await expect(page.locator("#subtitle")).toContainText("2026 – 2028");
@@ -322,6 +475,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.keyboard.press("Escape");
     await page.fill("#blockFilter", "nothing matches this");
     await expect(page.locator("#blocksHost")).toContainText("No block or engine matches");
+    await expect(page.locator("#csvBtn")).toBeDisabled();
     await page.fill("#blockFilter", "");
     await expect(page.locator("#blocksTable tbody tr")).toHaveCount(22);
     await page.locator("button[aria-label='Schedule Site Survey POC']").click();
@@ -343,25 +497,19 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator("#helpDialog")).toBeVisible();
   });
 
-  test("keeps the Astrion hard rules: no heading ends in a period and table text is 8 to 10 pt", async ({ page, baseURL }) => {
+  test("layout audit: no page overflow at any width, no clipped tables on a desktop, readable table text", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
-    const audit = await page.evaluate(() => {
-      const heads = [];
-      document.querySelectorAll("h1,h2,h3,h4,h5,h6,th,caption,[role=heading],title").forEach((e) => heads.push((e.innerText || e.textContent || "").trim()));
-      const cells = [];
-      document.querySelectorAll("table *").forEach((e) => {
-        const own = [...e.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).map((n) => n.textContent.trim()).join(" ");
-        if (own) cells.push([parseFloat(getComputedStyle(e).fontSize) * 0.75, own]);
-      });
-      document.querySelectorAll("table input").forEach((i) => cells.push([parseFloat(getComputedStyle(i).fontSize) * 0.75, i.value]));
-      return { heads, cells };
-    });
-    expect(audit.heads.length).toBeGreaterThan(5);
-    for (const text of audit.heads) expect(text, `heading "${text}"`).not.toMatch(/[^.]\.$/);
-    expect(audit.cells.length).toBeGreaterThan(20);
-    for (const [pt, text] of audit.cells) {
-      expect(pt, `table text "${text}" is ${pt} pt`).toBeGreaterThanOrEqual(8);
-      expect(pt, `table text "${text}" is ${pt} pt`).toBeLessThanOrEqual(10);
+    for (const width of [1440, 1280, 1100, 900, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.waitForTimeout(100);
+      const audit = await page.evaluate(() => ({
+        overflow: document.scrollingElement.scrollWidth - window.innerWidth,
+        scrolling: [...document.querySelectorAll(".table-wrap")].filter((w) => w.scrollWidth > w.clientWidth + 1).map((w) => (w.querySelector("table") || {}).id || "?"),
+        smallest: Math.min(...[...document.querySelectorAll("table td, table th")].map((c) => parseFloat(getComputedStyle(c).fontSize))),
+      }));
+      expect(audit.overflow, `page overflow at ${width}px`).toBeLessThanOrEqual(0);
+      if (width >= 1100) expect(audit.scrolling, `tables scrolling at ${width}px`).toEqual([]);
+      expect(audit.smallest, `smallest table text at ${width}px`).toBeGreaterThanOrEqual(12);
     }
   });
 });
