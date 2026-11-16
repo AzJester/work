@@ -26,9 +26,9 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 
 // The seed is defined inside the app script; evaluate only the seedDoc function source.
 const appSource = html.split('<script id="budget-engine">')[1].split("</script>")[1];
-const seedMatch = appSource.match(/function seedDoc\(\) \{[\s\S]*?\n  \}\n/);
-assert.ok(seedMatch, "Expected seedDoc() in the app script");
-const seedDoc = vm.runInNewContext(`(${seedMatch[0]})`, {});
+const seedMatch = appSource.match(/function seedDoc\(unit\) \{[\s\S]*?\n  \}\n/);
+assert.ok(seedMatch, "Expected seedDoc(unit) in the app script");
+const seedDoc = vm.runInNewContext(`(${seedMatch[0]})`, { PAGE_UNIT: "USD" });
 
 function doc(overrides) {
   return {
@@ -208,7 +208,9 @@ test("validateDoc rejects malformed documents with specific messages", () => {
     [doc({ engines: [] }), /At least one engine/],
     [doc({ engines: [{ id: "a", name: "A" }, { id: "a", name: "B" }] }), /duplicated/],
     [doc({ blocks: [{ id: "1", name: "x", engineId: "zz", cost: 1, start: null, end: null }] }), /unknown engine/],
-    [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1.5, start: null, end: null }] }), /whole number of dollars/],
+    [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1.5, start: null, end: null }] }), /cost must be a whole number/],
+    [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 10, actual: -1, start: "2026-01-01", end: "2026-01-02" }] }), /actual must be a whole number/],
+    [doc({ unit: "days" }), /Unit must be USD or hours/],
     [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1, start: "2026-01-01", end: null }] }), /both start and end/],
     [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1, start: "2026-02-02", end: "2026-02-01" }] }), /ends before it starts/],
     [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1, start: null, end: null }, { id: "1", name: "y", engineId: "a", cost: 1, start: null, end: null }] }), /repeats id/],
@@ -226,6 +228,78 @@ test("fmtMoney formats whole dollars with a leading sign", () => {
   assert.equal(E.fmtMoney(1343616), "$1,343,616");
   assert.equal(E.fmtMoney(-239230), "-$239,230");
   assert.equal(E.fmtMoney(12.9), "$12");
+});
+
+test("fmtAmount formats hours with a unit suffix and falls back to dollars", () => {
+  assert.equal(E.fmtAmount(1234, "hours"), "1,234 h");
+  assert.equal(E.fmtAmount(-5, "hours"), "-5 h");
+  assert.equal(E.fmtAmount(0, "hours"), "0 h");
+  assert.equal(E.fmtAmount(99, "USD"), "$99");
+  assert.equal(E.fmtAmount(99, "furlongs"), "$99");
+});
+
+test("a logged actual replaces the elapsed-schedule estimate and keeps the remaining estimate as planned", () => {
+  const years = [2026, 2027];
+  const block = { cost: 100, start: "2026-07-01", end: "2026-07-10" };
+  const mid = E.proRate({ ...block, actual: 70 }, "2026-07-05", years).byYear[2026];
+  assert.equal(mid.spent, 70);
+  assert.equal(mid.planned, 30);
+  const over = E.proRate({ ...block, actual: 120 }, "2026-07-05", years).byYear[2026];
+  assert.equal(over.spent, 120, "an overrun shows as spent above the estimate");
+  assert.equal(over.planned, 0);
+  const future = E.proRate({ ...block, actual: 10 }, "2026-06-01", years).byYear[2026];
+  assert.equal(future.spent, 10, "hours logged before the block starts still count as spent");
+  assert.equal(future.planned, 90);
+  const past = E.proRate({ ...block, actual: 40 }, "2026-12-01", years).byYear[2026];
+  assert.equal(past.spent, 40);
+  assert.equal(past.planned, 60, "a finished block with hours left in the estimate still forecasts them");
+  const none = E.proRate({ ...block, actual: null }, "2026-07-05", years).byYear[2026];
+  assert.ok(Math.abs(none.spent - 40) < 1e-9, "a null actual means the elapsed-schedule estimate");
+});
+
+test("a logged actual splits across years by elapsed and remaining days", () => {
+  const years = [2026, 2027];
+  const block = { cost: 100, actual: 50, start: "2026-12-30", end: "2027-01-02" };
+  const { byYear } = E.proRate(block, "2027-01-01", years);
+  assert.equal(byYear[2026].spent, 50, "all elapsed days are in 2026");
+  assert.equal(byYear[2026].planned, 0);
+  assert.equal(byYear[2027].spent, 0);
+  assert.equal(byYear[2027].planned, 50, "all remaining days are in 2027");
+  const rolled = E.rollupByYear(doc({ asOf: "2027-01-01", blocks: [{ id: "1", name: "x", engineId: "a", ...block }] }));
+  assert.equal(rolled.byYear[2026].spent, 50);
+  assert.equal(rolled.byYear[2027].planned, 50);
+  assert.equal(rolled.total.committed, 100);
+});
+
+test("validateDoc carries unit and actual through and defaults them", () => {
+  const plainDoc = E.validateDoc(doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 10, start: "2026-01-01", end: "2026-01-02" }] }));
+  assert.ok(plainDoc.ok);
+  assert.equal(plainDoc.doc.unit, "USD");
+  assert.equal(plainDoc.doc.blocks[0].actual, null);
+  const hours = E.validateDoc(doc({ unit: "hours", blocks: [{ id: "1", name: "x", engineId: "a", cost: 10, actual: 4, start: "2026-01-01", end: "2026-01-02" }] }));
+  assert.ok(hours.ok, hours.errors.join("\n"));
+  assert.equal(hours.doc.unit, "hours");
+  assert.equal(hours.doc.blocks[0].actual, 4);
+});
+
+test("the hours sample is the plan in hours with two blocks logged and no dollars", () => {
+  const hours = seedDoc("hours");
+  assert.equal(hours.unit, "hours");
+  const result = E.validateDoc(hours);
+  assert.ok(result.ok, result.errors.join("\n"));
+  const b01 = hours.blocks.find((b) => b.id === "b01");
+  assert.equal(b01.cost, 1200);
+  assert.equal(b01.actual, 640);
+  const engine = E.rollupByEngine(result.doc);
+  const core = engine.rows.find((r) => r.engineId === "core");
+  assert.equal(core.spent, 640, "worked hours come from the logged figure");
+  assert.equal(core.planned, 560, "forecast is the estimate still to be worked");
+  const year = E.rollupByYear(result.doc);
+  const scheduledEstimate = result.doc.blocks.filter(E.isScheduled).reduce((s, b) => s + Math.max(b.cost, b.actual || 0), 0);
+  assert.equal(year.total.committed, scheduledEstimate);
+  assert.equal(year.byYear[2026].budget, 13436);
+  assert.equal(E.backlogTotal(result.doc), 2010);
+  assert.equal(seedDoc("USD").unit, "USD");
 });
 
 test("the seed plan reproduces the reference screenshot totals", () => {

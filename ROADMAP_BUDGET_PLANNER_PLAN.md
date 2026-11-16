@@ -34,6 +34,15 @@ below during the build:
 
 Icons come from the provisional Astrion icon set and the page says so in its footer.
 
+**Hours edition (added after the first build).** The document carries a `unit` (`USD` or
+`hours`), and `budget-planner.html?unit=hours` (reached through `hours-planner.html`) opens a
+separate saved plan with hours labels (Worked / Forecast / Total / Remaining, annual hours)
+and no dollar figures. Blocks gained an optional `actual` (actual spend or hours logged to
+date): when present it replaces the elapsed-schedule estimate as spent, spread over the
+elapsed days by year, and the rest of the estimate is carried as planned over the remaining
+days, so an overrun shows as spent above the estimate. The unit can also be switched under
+Settings and travels with exported plans.
+
 ---
 
 ## 1. What the reference shows (feature spec)

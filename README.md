@@ -465,11 +465,33 @@ against a movable as-of date. Built to the Astrion 2026 brand standard.
   wordmark, square corners and hairlines, one Ion signal per section, table text held between
   8 and 10 pt, and the provisional Astrion icon set (flagged as provisional in the footer). No
   CDN, no third-party requests.
+- **Logged actuals** · a scheduled block can carry an actual figure to date (actual spend, or
+  hours logged). When it does, that figure is what has been spent or worked and the rest of the
+  estimate is carried as planned or forecast, so an overrun shows as spent above the estimate
+  instead of disappearing.
 - **Tests** · `tests/budget-planner.test.mjs` exercises the budget engine (pro-ration, year
-  split, reconciliation, validation, lane stacking, the sample plan's reference totals) and
-  `tests/browser/budget-planner.spec.mjs` drives the page in Chromium, including the two brand
-  hard rules. The development plan is in
+  split, reconciliation, logged actuals, validation, lane stacking, the sample plan's reference
+  totals) and `tests/browser/budget-planner.spec.mjs` drives both editions in Chromium,
+  including the two brand hard rules. The development plan is in
   [ROADMAP_BUDGET_PLANNER_PLAN.md](ROADMAP_BUDGET_PLANNER_PLAN.md).
+
+### Hours edition · **Roadmap &amp; Hours Planner**
+
+The same planner measured in hours instead of dollars, for people who track effort but do not
+see cost. It keeps its own saved plan (`localStorage` key `hours_planner_v1`) and its own sample,
+and shows no dollar figures anywhere:
+
+### → https://azjester.github.io/work/hours-planner.html
+
+- Each block carries an **estimate in hours** and, once work starts, **hours logged to date**.
+- **Worked** is the logged figure (or the elapsed share of the estimate if nothing is logged),
+  **Forecast** is the hours still to be worked, **Total** is worked plus forecast, and
+  **Remaining** is annual hours minus total, tagged **Over** when the plan exceeds capacity.
+- Move the **As of** date to see the forecast shift; the backlog holds estimated hours that have
+  no dates yet.
+- `hours-planner.html` opens `budget-planner.html?unit=hours`; the unit also lives in each saved
+  or exported plan and can be switched under **Settings**, so an exported hours plan reopens as
+  hours anywhere.
 
 ## Astrion Division Landing Page (team review build)
 
@@ -615,6 +637,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `dashboard.html` | A **read-only shared dashboard** — opens a secret share link (no login) to KPIs + weekly reports for leadership. |
 | `roadmap.html` | The **Roadmap Builder** — build project roadmaps from templates, a form, or a plain-language description; edit lanes/milestones/statuses on a timeline; export JSON/PNG/PDF; optional cloud sync + read-only share links. |
 | `budget-planner.html` | The **Roadmap &amp; Budget Planner** · day-level cost blocks per engine, an unscheduled backlog, and Spent / Planned / Committed / Remaining by year and by engine, pro-rated against an as-of date. Astrion 2026 brand; fonts in `assets/fonts/astrion/`. |
+| `hours-planner.html` | The **hours edition** of the planner: opens `budget-planner.html?unit=hours`, which keeps its own saved plan, shows no dollars, and tracks hours worked and forecast by year and by engine. |
 | `index.html` | The standalone LDAWIF site (the whole app). |
 | `radar-signal-chain.html` | **How a Radar Measures Distance** — a guided, 9-stage interactive explainer that follows one pulse through a real (toy-scale) radar DSP chain (chirp → up/down conversion → matched filter → range), with an animated correlation scrubber and a full Explore dashboard mode. |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |

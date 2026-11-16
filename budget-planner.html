@@ -237,7 +237,7 @@
       </a>
       <span class="divider" aria-hidden="true"></span>
       <div class="titles">
-        <h1>Roadmap &amp; Budget Planner</h1>
+        <h1 id="pageTitle">Roadmap &amp; Budget Planner</h1>
         <div class="mono" id="subtitle">2026 – 2027 · Day-level · USD</div>
       </div>
     </div>
@@ -282,22 +282,22 @@
   <div class="two-col">
     <section id="yearSection" aria-labelledby="yearTitle">
       <div class="section-head">
-        <h2 id="yearTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-budget"/></svg>Budget by year</h2>
-        <span class="mono meta">Annual budget · Editable</span>
+        <h2 id="yearTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-budget"/></svg><span id="yearTitleText">Budget by year</span></h2>
+        <span class="mono meta" id="yearMeta">Annual budget · Editable</span>
       </div>
       <div class="table-wrap" id="yearHost"></div>
-      <p class="table-note mono">Over = committed above budget</p>
+      <p class="table-note mono" id="yearNote">Over = committed above budget</p>
     </section>
     <section id="engineSection" aria-labelledby="engineTitle">
       <div class="section-head">
-        <h2 id="engineTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-table"/></svg>Committed by engine</h2>
+        <h2 id="engineTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-table"/></svg><span id="engineTitleText">Committed by engine</span></h2>
         <span class="mono meta">All years in range</span>
       </div>
       <div class="table-wrap" id="engineHost"></div>
     </section>
   </div>
 
-  <p class="explain">Past portions of each scheduled block count as spent and future portions as planned, pro-rated by day across the dates the block spans. The as-of day itself is planned. Committed is spent plus planned, so a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual budget is editable.</p>
+  <p class="explain" id="explain">Past portions of each scheduled block count as spent and future portions as planned, pro-rated by day across the dates the block spans. The as-of day itself is planned. Committed is spent plus planned, so a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual budget is editable.</p>
 </main>
 
 <footer>
@@ -317,12 +317,13 @@
     <div class="fields">
       <label class="field"><span>Name</span><input type="text" name="name" maxlength="120" autocomplete="off" required /></label>
       <label class="field"><span>Engine</span><select name="engineId"></select></label>
-      <label class="field"><span>Cost · USD</span><input type="text" name="cost" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
+      <label class="field"><span id="amountLabel">Cost · USD</span><input type="text" name="cost" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
       <label class="check"><input type="checkbox" name="scheduled" /> On the timeline</label>
       <div class="dates" id="dateFields">
         <label class="field"><span>Start</span><input type="date" name="start" /></label>
         <label class="field"><span>End</span><input type="date" name="end" /></label>
       </div>
+      <label class="field" id="actualField"><span id="actualLabel">Actual spend · USD</span><input type="text" name="actual" inputmode="numeric" autocomplete="off" placeholder="Not logged" /></label>
       <p class="form-error" id="blockError" role="alert"></p>
     </div>
     <footer>
@@ -341,6 +342,7 @@
       <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
     </header>
     <div class="fields">
+      <label class="field"><span>Unit</span><select name="unit"><option value="USD">Dollars · USD</option><option value="hours">Hours</option></select></label>
       <div class="years-row">
         <label class="field"><span>Start year</span><input type="number" name="startYear" min="1970" max="2200" step="1" /></label>
         <label class="field"><span>End year</span><input type="number" name="endYear" min="1970" max="2200" step="1" /></label>
@@ -414,20 +416,39 @@
 
   // Per-block raw (unrounded) dollars by calendar year, split at the as-of day.
   // Days before asOf are spent; the as-of day and everything after it are planned.
+  function hasActual(block) { return block.actual != null && Number.isFinite(Number(block.actual)); }
   function proRate(block, asOf, years) {
     const byYear = {};
     if (!isScheduled(block)) return { byYear, totalDays: 0 };
     const s = parseISO(block.start), e = parseISO(block.end), asOfMs = parseISO(asOf);
     const totalDays = dayCount(s, e);
     if (!(totalDays > 0) || Number.isNaN(asOfMs)) return { byYear, totalDays: 0 };
-    const rate = Number(block.cost) / totalDays;
+    const cost = Number(block.cost);
+    const days = [];
     for (const y of years) {
       const a = Math.max(s, yearStart(y)), b = Math.min(e, yearEnd(y));
       if (b < a) continue;
-      const spentDays = dayCount(a, Math.min(b, asOfMs - DAY));
-      const plannedDays = dayCount(Math.max(a, asOfMs), b);
-      byYear[y] = { spent: spentDays * rate, planned: plannedDays * rate };
+      days.push({ y, spent: dayCount(a, Math.min(b, asOfMs - DAY)), planned: dayCount(Math.max(a, asOfMs), b) });
     }
+    if (!days.length) return { byYear, totalDays };
+    if (!hasActual(block)) {
+      const rate = cost / totalDays;
+      for (const d of days) byYear[d.y] = { spent: d.spent * rate, planned: d.planned * rate };
+      return { byYear, totalDays };
+    }
+    // A logged actual replaces the elapsed-schedule estimate: spent is the logged figure, spread over
+    // the elapsed days by year (or put in the first in-range year when nothing has elapsed yet), and
+    // planned is whatever estimate remains, spread over the remaining days (or put in the last
+    // in-range year when the block is already over). An overrun shows as spent above the estimate.
+    const actual = Math.trunc(Number(block.actual));
+    const remaining = Math.max(0, cost - actual);
+    const elapsedDays = days.reduce((t, d) => t + d.spent, 0);
+    const remainingDays = days.reduce((t, d) => t + d.planned, 0);
+    for (const d of days) byYear[d.y] = { spent: 0, planned: 0 };
+    if (elapsedDays > 0) for (const d of days) byYear[d.y].spent = actual * d.spent / elapsedDays;
+    else byYear[days[0].y].spent = actual;
+    if (remainingDays > 0) for (const d of days) byYear[d.y].planned = remaining * d.planned / remainingDays;
+    else byYear[days[days.length - 1].y].planned = remaining;
     return { byYear, totalDays };
   }
 
@@ -523,8 +544,9 @@
     const isInt = (v) => typeof v === "number" && Number.isInteger(v);
     if (!input || typeof input !== "object" || Array.isArray(input)) return { ok: false, errors: ["The file is not a planner document."], doc: null };
     if (input.version !== 1) err("Unsupported version; expected 1.");
-    const doc = { version: 1, title: "Roadmap & Budget Planner", currency: "USD", startYear: 0, endYear: 0, asOf: null, budgets: {}, engines: [], blocks: [] };
+    const doc = { version: 1, title: "Roadmap & Budget Planner", unit: "USD", currency: "USD", startYear: 0, endYear: 0, asOf: null, budgets: {}, engines: [], blocks: [] };
     if (input.title != null) { if (typeof input.title === "string" && input.title.length <= 120) doc.title = input.title; else err("Title must be text of at most 120 characters."); }
+    if (input.unit != null) { if (UNITS[input.unit]) doc.unit = input.unit; else err("Unit must be USD or hours."); }
     if (input.currency != null && input.currency !== "USD") err("Only USD is supported.");
     if (!isInt(input.startYear) || input.startYear < 1970 || input.startYear > 2200) err("Start year must be a whole number between 1970 and 2200.");
     if (!isInt(input.endYear) || input.endYear < 1970 || input.endYear > 2200) err("End year must be a whole number between 1970 and 2200.");
@@ -540,7 +562,7 @@
       if (typeof input.budgets !== "object" || Array.isArray(input.budgets)) err("Budgets must be an object keyed by year.");
       else for (const [k, v] of Object.entries(input.budgets)) {
         if (!/^\d{4}$/.test(k)) { err("Budget year " + JSON.stringify(k) + " is not a four-digit year."); continue; }
-        if (!isInt(v) || v < 0 || v > 1e12) { err("Budget for " + k + " must be a whole number of dollars from 0 to 1,000,000,000,000."); continue; }
+        if (!isInt(v) || v < 0 || v > 1e12) { err("Budget for " + k + " must be a whole number from 0 to 1,000,000,000,000."); continue; }
         doc.budgets[k] = v;
       }
     }
@@ -565,7 +587,12 @@
       if (blockIds.has(b.id)) { err(where + " repeats id " + JSON.stringify(b.id) + "."); return; }
       if (typeof b.name !== "string" || !b.name.trim() || b.name.length > 120) { err(where + " needs a name of 1 to 120 characters."); return; }
       if (!engineIds.has(b.engineId)) { err(where + " (" + b.name + ") points at an unknown engine."); return; }
-      if (!isInt(b.cost) || b.cost < 0 || b.cost > 1e12) { err(where + " (" + b.name + ") cost must be a whole number of dollars from 0 to 1,000,000,000,000."); return; }
+      if (!isInt(b.cost) || b.cost < 0 || b.cost > 1e12) { err(where + " (" + b.name + ") cost must be a whole number from 0 to 1,000,000,000,000."); return; }
+      let actual = null;
+      if (b.actual != null) {
+        if (!isInt(b.actual) || b.actual < 0 || b.actual > 1e12) { err(where + " (" + b.name + ") actual must be a whole number from 0 to 1,000,000,000,000."); return; }
+        actual = b.actual;
+      }
       const hasStart = b.start != null, hasEnd = b.end != null;
       if (hasStart !== hasEnd) { err(where + " (" + b.name + ") needs both start and end, or neither."); return; }
       let start = null, end = null;
@@ -576,18 +603,22 @@
         start = b.start; end = b.end;
       }
       blockIds.add(b.id);
-      doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, cost: b.cost, start, end });
+      doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, cost: b.cost, actual, start, end });
     });
     return { ok: errors.length === 0, errors, doc: errors.length === 0 ? doc : null };
   }
 
-  function fmtMoney(n) {
+  // Units a document can be measured in. Both are whole numbers; only the formatting differs.
+  const UNITS = { USD: { prefix: "$", suffix: "" }, hours: { prefix: "", suffix: " h" } };
+  function fmtAmount(n, unit) {
+    const u = UNITS[unit] || UNITS.USD;
     const v = Math.trunc(Number(n) || 0);
     const abs = Math.abs(v).toLocaleString("en-US");
-    return (v < 0 ? "-$" : "$") + abs;
+    return (v < 0 ? "-" : "") + u.prefix + abs + u.suffix;
   }
+  function fmtMoney(n) { return fmtAmount(n, "USD"); }
 
-  root.BudgetEngine = { DAY, parseISO, toISO, dayCount, isScheduled, yearsOf, proRate, settle, allocateCommitted, rollupByYear, rollupByEngine, backlogTotal, stackLane, validateDoc, fmtMoney, MAX_SPAN_YEARS };
+  root.BudgetEngine = { DAY, UNITS, parseISO, toISO, dayCount, isScheduled, hasActual, yearsOf, proRate, settle, allocateCommitted, rollupByYear, rollupByEngine, backlogTotal, stackLane, validateDoc, fmtAmount, fmtMoney, MAX_SPAN_YEARS };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 
@@ -595,14 +626,32 @@
 (function () {
   "use strict";
   const E = window.BudgetEngine;
-  const LS_KEY = "budget_planner_v1";
+  // ?unit=hours opens the hours planner: its own saved plan and sample, no dollars anywhere.
+  const PAGE_UNIT = new URLSearchParams(window.location.search).get("unit") === "hours" ? "hours" : "USD";
+  const LS_KEY = PAGE_UNIT === "hours" ? "hours_planner_v1" : "budget_planner_v1";
   const THEME_KEY = "budget_planner_theme";
+  const LABELS = {
+    USD: {
+      app: "Roadmap & Budget Planner", docTitle: "Roadmap and Budget Planner", unitWord: "USD", amount: "Cost · USD", actual: "Actual spend · USD",
+      spent: "Spent", planned: "Planned", committed: "Committed", remaining: "Remaining", annual: "Annual budget",
+      yearSection: "Budget by year", yearMeta: "Annual budget · Editable", yearNote: "Over = committed above budget", engineSection: "Committed by engine", file: "budget-planner-",
+      explain: "Past portions of each scheduled block count as spent and future portions as planned, pro-rated by day across the dates the block spans. The as-of day itself is planned. A block with an actual spend logged uses that figure as spent and carries the rest of its cost as planned. Committed is spent plus planned, so a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual budget is editable.",
+    },
+    hours: {
+      app: "Roadmap & Hours Planner", docTitle: "Roadmap and Hours Planner", unitWord: "Hours", amount: "Estimate · Hours", actual: "Hours logged to date",
+      spent: "Worked", planned: "Forecast", committed: "Total", remaining: "Remaining", annual: "Annual hours",
+      yearSection: "Hours by year", yearMeta: "Annual hours · Editable", yearNote: "Over = total above annual hours", engineSection: "Hours by engine", file: "hours-planner-",
+      explain: "Past portions of each scheduled block count as worked and future portions as forecast, pro-rated by day across the dates the block spans. The as-of day itself is forecast. A block with hours logged uses the logged figure as worked and carries the rest of its estimate as forecast, so an overrun shows as worked hours above the estimate. Total is worked plus forecast, and a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual hours are editable.",
+    },
+  };
+  function L() { return LABELS[doc && doc.unit === "hours" ? "hours" : "USD"]; }
+  function fmt(n) { return E.fmtAmount(n, doc ? doc.unit : PAGE_UNIT); }
   const HISTORY_MAX = 25;
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  function seedDoc() {
-    return {
-      version: 1, title: "Roadmap & Budget Planner", currency: "USD", startYear: 2026, endYear: 2027, asOf: "2026-07-17",
+  function seedDoc(unit) {
+    const base = {
+      version: 1, title: "Roadmap & Budget Planner", unit: "USD", currency: "USD", startYear: 2026, endYear: 2027, asOf: "2026-07-17",
       budgets: { "2026": 1343616, "2027": 0 },
       engines: [
         { id: "core", name: "Core" }, { id: "horizon", name: "Horizon" }, { id: "colossus", name: "Colossus" },
@@ -633,6 +682,15 @@
         { id: "k07", name: "Seabed Security", engineId: "core", cost: 0, start: null, end: null }
       ]
     };
+    if ((unit || PAGE_UNIT) !== "hours") return base;
+    // The hours sample is the same plan as effort, about one hour per hundred dollars, with two blocks logged.
+    base.unit = "hours";
+    base.title = "Roadmap & Hours Planner";
+    base.budgets = { "2026": 13436, "2027": 0 };
+    for (const b of base.blocks) b.cost = Math.round(b.cost / 100);
+    base.blocks.find((b) => b.id === "b01").actual = 640;
+    base.blocks.find((b) => b.id === "b07").actual = 700;
+    return base;
   }
   window.BudgetPlannerSeed = seedDoc;
 
@@ -663,10 +721,10 @@
         if (result.ok) return result.doc;
       } catch (_) { /* fall through to the seed */ }
     }
-    return raw === null && storageOk ? seedDoc() : emptyDoc();
+    return raw === null && storageOk ? seedDoc(PAGE_UNIT) : emptyDoc();
   }
   function emptyDoc() {
-    return { version: 1, title: "Roadmap & Budget Planner", currency: "USD", startYear: 2026, endYear: 2027, asOf: null, budgets: {}, engines: [{ id: "core", name: "Core" }], blocks: [] };
+    return { version: 1, title: LABELS[PAGE_UNIT].app, unit: PAGE_UNIT, currency: "USD", startYear: 2026, endYear: 2027, asOf: null, budgets: {}, engines: [{ id: "core", name: "Core" }], blocks: [] };
   }
   function persist() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(doc)); storageOk = true; }
@@ -739,9 +797,19 @@
     renderEngineTable();
   }
   function renderHeader() {
+    const l = L();
     const span = doc.startYear === doc.endYear ? String(doc.startYear) : doc.startYear + " – " + doc.endYear;
-    document.getElementById("subtitle").textContent = span + " · Day-level · USD";
+    document.title = l.docTitle;
+    document.getElementById("pageTitle").textContent = l.app;
+    document.getElementById("subtitle").textContent = span + " · Day-level · " + l.unitWord;
     document.getElementById("asOfInput").value = effectiveAsOf();
+    document.getElementById("yearTitleText").textContent = l.yearSection;
+    document.getElementById("yearMeta").textContent = l.yearMeta;
+    document.getElementById("yearNote").textContent = l.yearNote;
+    document.getElementById("engineTitleText").textContent = l.engineSection;
+    document.getElementById("explain").textContent = l.explain;
+    document.getElementById("amountLabel").textContent = l.amount;
+    document.getElementById("actualLabel").textContent = l.actual;
   }
 
   function renderTimeline() {
@@ -762,7 +830,7 @@
         el("p", { text: "Add a block to put cost on the timeline, add a backlog item to hold undated work, or load the sample plan to see how the budget math behaves." }),
         el("div", { class: "actions" }, [
           el("button", { type: "button", class: "btn primary", onclick: () => openBlockDialog(null, true) }, [icon("add"), "Add block"]),
-          el("button", { type: "button", class: "btn", id: "loadSampleBtn", onclick: () => commit(seedDoc(), { toast: "Sample plan loaded" }) }, [icon("refresh"), "Load sample plan"])
+          el("button", { type: "button", class: "btn", id: "loadSampleBtn", onclick: () => commit(seedDoc(doc.unit), { toast: "Sample plan loaded" }) }, [icon("refresh"), "Load sample plan"])
         ])
       ]));
       return;
@@ -804,7 +872,7 @@
       const stats = byEngine.rows.find((r) => r.engineId === engine.id);
       const label = el("div", { class: "rail-cell lane-label" }, [
         el("div", { class: "name", text: engine.name, title: engine.name }),
-        el("div", { class: "mono", text: laneBlocks.length + (laneBlocks.length === 1 ? " block · " : " blocks · ") + E.fmtMoney(stats ? stats.committed : 0) })
+        el("div", { class: "mono", text: laneBlocks.length + (laneBlocks.length === 1 ? " block · " : " blocks · ") + fmt(stats ? stats.committed : 0) })
       ]);
       const lane = el("div", { class: "lane", style: "--rows:" + rows, "data-engine": engine.id });
       for (const edge of monthEdges) lane.append(el("div", { class: "gridline" + (edge.year ? " year" : ""), style: "left:" + pct(edge.ms) + "%" }));
@@ -815,15 +883,16 @@
         const right = Math.min(100, pct(e + E.DAY));
         if (right <= left) continue;
         const top = 6 + row * 44;
+        const amount = E.hasActual(block) ? fmt(block.actual) + " / " + fmt(block.cost) : fmt(block.cost);
         const btn = el("button", {
           type: "button",
           class: "block" + (s < rangeStart ? " clipped-start" : "") + (e > rangeEnd ? " clipped-end" : ""),
           style: "left:" + left + "%; width:" + (right - left) + "%; top:" + top + "px",
           "data-block": block.id,
-          "aria-label": block.name + ", " + engine.name + ", " + E.fmtMoney(block.cost) + ", " + fmtDate(block.start) + " to " + fmtDate(block.end),
-          title: block.name + " · " + E.fmtMoney(block.cost) + " · " + fmtDate(block.start) + " to " + fmtDate(block.end),
+          "aria-label": block.name + ", " + engine.name + ", " + amount + ", " + fmtDate(block.start) + " to " + fmtDate(block.end),
+          title: block.name + " · " + amount + " · " + fmtDate(block.start) + " to " + fmtDate(block.end),
           onclick: () => openBlockDialog(block.id)
-        }, [el("span", { class: "name", text: block.name }), el("span", { class: "cost", text: E.fmtMoney(block.cost) })]);
+        }, [el("span", { class: "name", text: block.name }), el("span", { class: "cost", text: amount })]);
         lane.append(btn);
       }
       if (asOfVisible) lane.append(el("div", { class: "asof-line", style: "left:" + pct(asOfMs) + "%" }));
@@ -836,18 +905,18 @@
     const host = document.getElementById("backlogHost");
     host.replaceChildren();
     const items = doc.blocks.filter((b) => !E.isScheduled(b));
-    document.getElementById("backlogMeta").textContent = "Unscheduled · " + items.length + (items.length === 1 ? " item · " : " items · ") + E.fmtMoney(E.backlogTotal(doc));
+    document.getElementById("backlogMeta").textContent = "Unscheduled · " + items.length + (items.length === 1 ? " item · " : " items · ") + fmt(E.backlogTotal(doc));
     if (!items.length) {
-      host.append(el("p", { class: "backlog-empty", text: "No unscheduled work. Backlog items carry an engine and a cost but no dates, so they stay out of the yearly totals until you schedule them." }));
+      host.append(el("p", { class: "backlog-empty", text: "No unscheduled work. Backlog items carry an engine and an estimate but no dates, so they stay out of the yearly totals until you schedule them." }));
       return;
     }
     const grid = el("div", { class: "cards" });
     for (const item of items) {
       grid.append(el("button", {
         type: "button", class: "card", "data-block": item.id,
-        "aria-label": item.name + ", " + engineName(item.engineId) + ", " + E.fmtMoney(item.cost) + ", unscheduled",
+        "aria-label": item.name + ", " + engineName(item.engineId) + ", " + fmt(item.cost) + ", unscheduled",
         onclick: () => openBlockDialog(item.id)
-      }, [el("span", { class: "name", text: item.name }), el("span", { class: "meta", text: engineName(item.engineId) + " · " + E.fmtMoney(item.cost) })]));
+      }, [el("span", { class: "name", text: item.name }), el("span", { class: "meta", text: engineName(item.engineId) + " · " + fmt(item.cost) })]));
     }
     host.append(grid);
   }
@@ -856,27 +925,28 @@
     const host = document.getElementById("yearHost");
     host.replaceChildren();
     const { years, byYear, total } = E.rollupByYear(doc);
+    const l = L();
     const table = el("table", { id: "yearTable" });
-    const thead = el("thead", null, el("tr", null, [el("th", { scope: "col", text: "Budget by year" })].concat(years.map((y) => el("th", { scope: "col", class: "num", text: String(y) })), [el("th", { scope: "col", class: "num", text: "Total" })])));
+    const thead = el("thead", null, el("tr", null, [el("th", { scope: "col", text: l.yearSection })].concat(years.map((y) => el("th", { scope: "col", class: "num", text: String(y) })), [el("th", { scope: "col", class: "num", text: "Total" })])));
     const tbody = el("tbody");
-    const budgetRow = el("tr", null, el("th", { scope: "row", text: "Annual budget" }));
+    const budgetRow = el("tr", null, el("th", { scope: "row", text: l.annual }));
     for (const y of years) {
       const input = el("input", { type: "text", class: "cell", inputmode: "numeric", "aria-label": "Annual budget " + y, "data-year": String(y), value: byYear[y].budget.toLocaleString("en-US") });
       input.addEventListener("change", onBudgetChange);
       input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); input.blur(); } });
       budgetRow.append(el("td", { class: "num" }, input));
     }
-    budgetRow.append(el("td", { class: "num", text: E.fmtMoney(total.budget) }));
+    budgetRow.append(el("td", { class: "num", text: fmt(total.budget) }));
     tbody.append(budgetRow);
-    const rowSpec = [["Spent", "spent"], ["Planned", "planned"], ["Committed", "committed"]];
+    const rowSpec = [[l.spent, "spent"], [l.planned, "planned"], [l.committed, "committed"]];
     for (const [label, key] of rowSpec) {
-      const tr = el("tr", { class: key === "committed" ? "strong" : "" }, el("th", { scope: "row", text: label }));
-      for (const y of years) tr.append(el("td", { class: "num", text: E.fmtMoney(byYear[y][key]) }));
-      tr.append(el("td", { class: "num", text: E.fmtMoney(total[key]) }));
+      const tr = el("tr", { class: key === "committed" ? "strong" : "", "data-row": key }, el("th", { scope: "row", text: label }));
+      for (const y of years) tr.append(el("td", { class: "num", text: fmt(byYear[y][key]) }));
+      tr.append(el("td", { class: "num", text: fmt(total[key]) }));
       tbody.append(tr);
     }
-    const remaining = el("tr", { class: "highlight strong" }, el("th", { scope: "row", text: "Remaining" }));
-    const cellFor = (v) => { const td = el("td", { class: "num", text: E.fmtMoney(v) }); if (v < 0) td.append(" ", el("span", { class: "tag", text: "Over" })); return td; };
+    const remaining = el("tr", { class: "highlight strong", "data-row": "remaining" }, el("th", { scope: "row", text: l.remaining }));
+    const cellFor = (v) => { const td = el("td", { class: "num", text: fmt(v) }); if (v < 0) td.append(" ", el("span", { class: "tag", text: "Over" })); return td; };
     for (const y of years) remaining.append(cellFor(byYear[y].remaining));
     remaining.append(cellFor(total.remaining));
     tbody.append(remaining);
@@ -888,21 +958,22 @@
     const host = document.getElementById("engineHost");
     host.replaceChildren();
     const { rows, total } = E.rollupByEngine(doc);
+    const l = L();
     const table = el("table", { id: "engineTable" });
     table.append(el("thead", null, el("tr", null, [
-      el("th", { scope: "col", text: "Engine" }), el("th", { scope: "col", class: "num", text: "Spent" }), el("th", { scope: "col", class: "num", text: "Planned" }),
-      el("th", { scope: "col", class: "num", text: "Committed" }), el("th", { scope: "col", class: "num", text: "Backlog" })
+      el("th", { scope: "col", text: "Engine" }), el("th", { scope: "col", class: "num", text: l.spent }), el("th", { scope: "col", class: "num", text: l.planned }),
+      el("th", { scope: "col", class: "num", text: l.committed }), el("th", { scope: "col", class: "num", text: "Backlog" })
     ])));
     const tbody = el("tbody");
     for (const r of rows) {
       tbody.append(el("tr", { "data-engine": r.engineId }, [
-        el("td", { text: r.name }), el("td", { class: "num", text: E.fmtMoney(r.spent) }), el("td", { class: "num", text: E.fmtMoney(r.planned) }),
-        el("td", { class: "num", text: E.fmtMoney(r.committed) }), el("td", { class: "num", text: E.fmtMoney(r.backlog) })
+        el("td", { text: r.name }), el("td", { class: "num", text: fmt(r.spent) }), el("td", { class: "num", text: fmt(r.planned) }),
+        el("td", { class: "num", text: fmt(r.committed) }), el("td", { class: "num", text: fmt(r.backlog) })
       ]));
     }
     tbody.append(el("tr", { class: "strong" }, [
-      el("th", { scope: "row", text: "Total" }), el("td", { class: "num", text: E.fmtMoney(total.spent) }), el("td", { class: "num", text: E.fmtMoney(total.planned) }),
-      el("td", { class: "num", text: E.fmtMoney(total.committed) }), el("td", { class: "num", text: E.fmtMoney(total.backlog) })
+      el("th", { scope: "row", text: "Total" }), el("td", { class: "num", text: fmt(total.spent) }), el("td", { class: "num", text: fmt(total.planned) }),
+      el("td", { class: "num", text: fmt(total.committed) }), el("td", { class: "num", text: fmt(total.backlog) })
     ]));
     table.append(tbody);
     host.append(table);
@@ -933,6 +1004,7 @@
     blockForm.elements.name.value = block ? block.name : "";
     select.value = block ? block.engineId : doc.engines[0].id;
     blockForm.elements.cost.value = block ? block.cost.toLocaleString("en-US") : "";
+    blockForm.elements.actual.value = block && E.hasActual(block) ? block.actual.toLocaleString("en-US") : "";
     const scheduled = block ? E.isScheduled(block) : preferScheduled !== false;
     blockForm.elements.scheduled.checked = scheduled;
     const asOf = effectiveAsOf();
@@ -946,6 +1018,7 @@
   function syncDateFields() {
     const on = blockForm.elements.scheduled.checked;
     document.getElementById("dateFields").hidden = !on;
+    document.getElementById("actualField").hidden = !on;
   }
   blockForm.elements.scheduled.addEventListener("change", syncDateFields);
   blockForm.addEventListener("submit", (ev) => {
@@ -957,10 +1030,13 @@
     const scheduled = blockForm.elements.scheduled.checked;
     const start = scheduled ? blockForm.elements.start.value : null;
     const end = scheduled ? blockForm.elements.end.value : null;
+    const actualRaw = blockForm.elements.actual.value.trim();
+    const actual = scheduled && actualRaw !== "" ? parseMoneyInput(actualRaw) : null;
     if (!name) { error.textContent = "Give the block a name."; blockForm.elements.name.focus(); return; }
     if (name.length > 120) { error.textContent = "Keep the name to 120 characters."; return; }
     if (!doc.engines.some((e) => e.id === engineId)) { error.textContent = "Pick an engine."; return; }
-    if (Number.isNaN(cost)) { error.textContent = "Cost must be a whole number of dollars."; blockForm.elements.cost.focus(); return; }
+    if (Number.isNaN(cost)) { error.textContent = "The estimate must be a whole number."; blockForm.elements.cost.focus(); return; }
+    if (actual !== null && Number.isNaN(actual)) { error.textContent = "The logged figure must be a whole number, or blank."; blockForm.elements.actual.focus(); return; }
     if (scheduled) {
       const s = E.parseISO(start), e = E.parseISO(end);
       if (Number.isNaN(s) || Number.isNaN(e)) { error.textContent = "Scheduled blocks need a start and an end date."; return; }
@@ -969,9 +1045,9 @@
     const next = clone(doc);
     if (editingId) {
       const target = next.blocks.find((b) => b.id === editingId);
-      Object.assign(target, { name, engineId, cost, start, end });
+      Object.assign(target, { name, engineId, cost, actual, start, end });
     } else {
-      next.blocks.push({ id: makeId(scheduled ? "b" : "k"), name, engineId, cost, start, end });
+      next.blocks.push({ id: makeId(scheduled ? "b" : "k"), name, engineId, cost, actual, start, end });
     }
     blockDialog.close();
     commit(next, { toast: editingId ? "Block updated" : (scheduled ? "Block added" : "Backlog item added") });
@@ -992,6 +1068,7 @@
 
   function openSettings() {
     draftEngines = clone(doc.engines);
+    settingsForm.elements.unit.value = doc.unit;
     settingsForm.elements.startYear.value = doc.startYear;
     settingsForm.elements.endYear.value = doc.endYear;
     document.getElementById("settingsError").textContent = "";
@@ -1027,6 +1104,7 @@
     const startYear = Number(settingsForm.elements.startYear.value);
     const endYear = Number(settingsForm.elements.endYear.value);
     const next = clone(doc);
+    next.unit = settingsForm.elements.unit.value;
     next.startYear = startYear; next.endYear = endYear;
     next.engines = draftEngines.map((e) => ({ id: e.id, name: e.name.trim() }));
     if (next.engines.some((e) => !e.name)) { error.textContent = "Every engine needs a name."; return; }
@@ -1085,10 +1163,11 @@
   document.getElementById("exportBtn").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = el("a", { href: url, download: "budget-planner-" + todayISO() + ".json" });
+    const fileName = L().file + todayISO() + ".json";
+    const a = el("a", { href: url, download: fileName });
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast("Exported budget-planner-" + todayISO() + ".json", false);
+    showToast("Exported " + fileName, false);
   });
   const importFile = document.getElementById("importFile");
   document.getElementById("importBtn").addEventListener("click", () => { importFile.value = ""; importFile.click(); });

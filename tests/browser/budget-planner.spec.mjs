@@ -114,6 +114,35 @@ test.describe("Roadmap and Budget Planner", () => {
     expect(board).toBe(true);
   });
 
+  test("the hours edition shows hours only, keeps its own plan, and logs worked hours", async ({ page, baseURL }) => {
+    await page.goto(new URL("../hours-planner.html", new URL(baseURL)).href, { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/budget-planner\.html\?unit=hours$/);
+    await expect(page.locator(".lane")).toHaveCount(6);
+    await expect(page).toHaveTitle("Roadmap and Hours Planner");
+    await expect(page.locator("#pageTitle")).toHaveText("Roadmap & Hours Planner");
+    await expect(page.locator("#subtitle")).toContainText("Hours");
+    await expect(page.locator("#yearTable thead")).toContainText("Hours by year");
+    await expect(page.locator("#engineTable thead")).toContainText("Worked");
+    await expect(page.locator("#engineTable thead")).toContainText("Forecast");
+    await expect(page.locator("main")).not.toContainText("$");
+    const core = page.locator("#engineTable tr[data-engine='core']");
+    await expect(core).toContainText("640 h");
+    await expect(core).toContainText("560 h");
+    await expect(page.locator(".block[data-block='b01']")).toContainText("640 h / 1,200 h");
+    await page.click(".block[data-block='b01']");
+    const dialog = page.locator("#blockDialog");
+    await expect(dialog.locator("#actualLabel")).toHaveText("Hours logged to date");
+    await expect(dialog.locator("input[name='actual']")).toHaveValue("640");
+    await dialog.locator("input[name='actual']").fill("1,300");
+    await dialog.locator("button[type='submit']").click();
+    await expect(core).toContainText("1,300 h");
+    await expect(page.locator("#yearTable tr[data-row='remaining']")).toContainText("Over");
+    // The dollars edition is a separate saved plan.
+    await page.goto(plannerUrl(baseURL), { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#pageTitle")).toHaveText("Roadmap & Budget Planner");
+    await expect(page.locator("#engineTable tr[data-engine='core']")).toContainText("$59,341");
+  });
+
   test("keeps the Astrion hard rules: no heading ends in a period and table text is 8 to 10 pt", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     const audit = await page.evaluate(() => {
