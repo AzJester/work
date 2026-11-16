@@ -124,13 +124,27 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator("#yearTable thead")).toContainText("Hours by year");
     await expect(page.locator("#engineTable thead")).toContainText("Worked");
     await expect(page.locator("#engineTable thead")).toContainText("Forecast");
-    await expect(page.locator("main")).not.toContainText("$");
+    await expect(page.locator("#yearTable")).not.toContainText("$");
+    await expect(page.locator("#engineTable")).not.toContainText("$");
     const core = page.locator("#engineTable tr[data-engine='core']");
     await expect(core).toContainText("640 h");
     await expect(core).toContainText("560 h");
     await expect(page.locator(".block[data-block='b01']")).toContainText("640 h / 1,200 h");
+    // Cost: labor at the hourly rate plus materials, with the rate editable in place.
+    await expect(page.locator("#costSection")).toBeVisible();
+    await expect(page.locator("#rateInput")).toHaveValue("102.00");
+    const costCore = page.locator("#costEngineTable tr[data-engine='core']");
+    await expect(costCore).toContainText("$122,400");
+    await expect(costCore).toContainText("$18,500");
+    await expect(page.locator("#costYearTable tr[data-row='committed']")).toContainText("$1,635,558");
+    await expect(page.locator("#blocksTable thead")).toContainText("Materials");
+    await page.fill("#rateInput", "100");
+    await page.press("#rateInput", "Enter");
+    await expect(costCore).toContainText("$120,000");
+    await expect(page.locator("#costMeta")).toContainText("$100.00");
     await page.click(".block[data-block='b01']");
     const dialog = page.locator("#blockDialog");
+    await expect(dialog.locator("#materialsField")).toBeVisible();
     await expect(dialog.locator("#actualLabel")).toHaveText("Hours logged to date");
     await expect(dialog.locator("input[name='actual']")).toHaveValue("640");
     await dialog.locator("input[name='actual']").fill("1,300");
@@ -141,6 +155,9 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.goto(plannerUrl(baseURL), { waitUntil: "domcontentloaded" });
     await expect(page.locator("#pageTitle")).toHaveText("Roadmap & Budget Planner");
     await expect(page.locator("#engineTable tr[data-engine='core']")).toContainText("$59,341");
+    await expect(page.locator("#costSection")).toBeHidden();
+    await page.click("#addBlockBtn");
+    await expect(page.locator("#blockDialog #materialsField")).toBeHidden();
   });
 
   test("adds a year with one click, and edits or deletes blocks from the list and the keyboard", async ({ page, baseURL }) => {

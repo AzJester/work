@@ -87,14 +87,17 @@
   .actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
   .asof { display:inline-flex; align-items:center; gap:10px; padding:0 0 0 12px; border:1px solid var(--hairline-strong); min-height:36px; }
   .asof label { white-space:nowrap; }
-  .asof input[type="date"] { font:500 12px/1 var(--font-mono); letter-spacing:.06em; color:var(--ink); background:var(--input-bg); border:0; border-left:1px solid var(--hairline-strong); border-right:1px solid var(--hairline-strong); padding:8px 10px; min-height:34px; border-radius:0; color-scheme:dark; }
-  :root[data-theme="light"] .asof input[type="date"] { color-scheme:light; }
+  .asof input[type="date"], .asof input[type="text"] { font:500 12px/1 var(--font-mono); letter-spacing:.06em; color:var(--ink); background:var(--input-bg); border:0; border-left:1px solid var(--hairline-strong); border-right:1px solid var(--hairline-strong); padding:8px 10px; min-height:34px; border-radius:0; color-scheme:dark; }
+  .asof input[type="text"] { width:7.5em; text-align:right; }
+  .asof input:last-child { border-right:0; }
+  :root[data-theme="light"] .asof input[type="date"], :root[data-theme="light"] .asof input[type="text"] { color-scheme:light; }
+  .cost-grid h3 { margin:0 0 10px; }
   .asof .btn { border:0; min-height:34px; }
   .actions .group { display:flex; gap:10px; flex-wrap:wrap; }
 
   /* Layout */
   main { max-width:1600px; margin:0 auto; padding:24px 24px 48px; display:grid; gap:40px; }
-  main > *, .two-col > section { min-width:0; }
+  main > *, .two-col > * { min-width:0; }
   section > .section-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--hairline); }
   .section-head h2 { display:inline-flex; align-items:center; gap:10px; }
   .section-head .meta { color:var(--ink-muted); }
@@ -312,6 +315,23 @@
     </section>
   </div>
 
+  <section id="costSection" aria-labelledby="costTitle" hidden>
+    <div class="section-head">
+      <h2 id="costTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-budget"/></svg>Cost</h2>
+      <span class="mono meta" id="costMeta"></span>
+      <span class="spacer"></span>
+      <div class="asof">
+        <label class="mono" for="rateInput">Rate · $/h</label>
+        <input type="text" id="rateInput" inputmode="decimal" autocomplete="off" aria-label="Hourly rate in dollars" />
+      </div>
+    </div>
+    <div class="two-col cost-grid">
+      <div><h3>Cost by year</h3><div class="table-wrap" id="costYearHost"></div></div>
+      <div><h3>Cost by engine</h3><div class="table-wrap" id="costEngineHost"></div></div>
+    </div>
+    <p class="caption">Labor is hours multiplied by the rate, using logged hours where they exist. Materials are pro-rated by day across each block's dates. Backlog cost is backlog hours at the rate plus backlog materials.</p>
+  </section>
+
   <p class="explain" id="explain">Past portions of each scheduled block count as spent and future portions as planned, pro-rated by day across the dates the block spans. The as-of day itself is planned. Committed is spent plus planned, so a block that crosses a year boundary splits between the two columns by day. Backlog items have no dates, so they sit outside the yearly totals. Annual budget is editable.</p>
 </main>
 
@@ -339,6 +359,7 @@
         <label class="field"><span>End</span><input type="date" name="end" /></label>
       </div>
       <label class="field" id="actualField"><span id="actualLabel">Actual spend · USD</span><input type="text" name="actual" inputmode="numeric" autocomplete="off" placeholder="Not logged" /></label>
+      <label class="field" id="materialsField"><span>Materials · USD</span><input type="text" name="materials" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
       <p class="form-error" id="blockError" role="alert"></p>
     </div>
     <footer>
@@ -358,6 +379,7 @@
     </header>
     <div class="fields">
       <label class="field"><span>Unit</span><select name="unit"><option value="USD">Dollars · USD</option><option value="hours">Hours</option></select></label>
+      <label class="field" id="rateField"><span>Rate · $ per hour</span><input type="text" name="rate" inputmode="decimal" autocomplete="off" /></label>
       <div class="years-row">
         <label class="field"><span>Start year</span><input type="number" name="startYear" min="1970" max="2200" step="1" /></label>
         <label class="field"><span>End year</span><input type="number" name="endYear" min="1970" max="2200" step="1" /></label>
@@ -439,6 +461,7 @@
     const totalDays = dayCount(s, e);
     if (!(totalDays > 0) || Number.isNaN(asOfMs)) return { byYear, totalDays: 0 };
     const cost = Number(block.cost);
+    const materials = Math.trunc(Number(block.materials) || 0);
     const days = [];
     for (const y of years) {
       const a = Math.max(s, yearStart(y)), b = Math.min(e, yearEnd(y));
@@ -446,9 +469,12 @@
       days.push({ y, spent: dayCount(a, Math.min(b, asOfMs - DAY)), planned: dayCount(Math.max(a, asOfMs), b) });
     }
     if (!days.length) return { byYear, totalDays };
+    // Materials are dollars and pro-rate by day whether or not hours have been logged.
+    const materialsRate = materials / totalDays;
+    for (const d of days) byYear[d.y] = { spent: 0, planned: 0, materialsSpent: d.spent * materialsRate, materialsPlanned: d.planned * materialsRate };
     if (!hasActual(block)) {
       const rate = cost / totalDays;
-      for (const d of days) byYear[d.y] = { spent: d.spent * rate, planned: d.planned * rate };
+      for (const d of days) { byYear[d.y].spent = d.spent * rate; byYear[d.y].planned = d.planned * rate; }
       return { byYear, totalDays };
     }
     // A logged actual replaces the elapsed-schedule estimate: spent is the logged figure, spread over
@@ -459,7 +485,6 @@
     const remaining = Math.max(0, cost - actual);
     const elapsedDays = days.reduce((t, d) => t + d.spent, 0);
     const remainingDays = days.reduce((t, d) => t + d.planned, 0);
-    for (const d of days) byYear[d.y] = { spent: 0, planned: 0 };
     if (elapsedDays > 0) for (const d of days) byYear[d.y].spent = actual * d.spent / elapsedDays;
     else byYear[days[0].y].spent = actual;
     if (remainingDays > 0) for (const d of days) byYear[d.y].planned = remaining * d.planned / remainingDays;
@@ -528,6 +553,44 @@
     return { rows, total };
   }
 
+  // Money view. In an hours plan labor is hours multiplied by the hourly rate (logged hours where they
+  // exist); in a dollar plan the cost already is money. Materials are dollars in both and pro-rate by day.
+  const DEFAULT_RATE = 102;
+  function rollupCost(doc) {
+    const years = yearsOf(doc);
+    const factor = doc.unit === "hours" ? Number(doc.rate) || 0 : 1;
+    const raw = {};
+    for (const y of years) raw[y] = { ls: 0, lp: 0, ms: 0, mp: 0 };
+    const eng = new Map(doc.engines.map((e) => [e.id, { ls: 0, lp: 0, ms: 0, mp: 0, backlog: 0 }]));
+    for (const block of doc.blocks) {
+      const acc = eng.get(block.engineId);
+      if (!acc) continue;
+      if (!isScheduled(block)) { acc.backlog += Math.trunc(Number(block.cost) || 0) * factor + Math.trunc(Number(block.materials) || 0); continue; }
+      const { byYear } = proRate(block, doc.asOf, years);
+      for (const y of years) {
+        const c = byYear[y];
+        if (!c) continue;
+        raw[y].ls += c.spent * factor; raw[y].lp += c.planned * factor; raw[y].ms += c.materialsSpent; raw[y].mp += c.materialsPlanned;
+        acc.ls += c.spent * factor; acc.lp += c.planned * factor; acc.ms += c.materialsSpent; acc.mp += c.materialsPlanned;
+      }
+    }
+    const byYear = {};
+    const total = { laborSpent: 0, laborPlanned: 0, labor: 0, materialsSpent: 0, materialsPlanned: 0, materials: 0, spent: 0, planned: 0, committed: 0 };
+    for (const y of years) {
+      const l = settle(raw[y].ls, raw[y].lp), m = settle(raw[y].ms, raw[y].mp);
+      byYear[y] = { laborSpent: l.spent, laborPlanned: l.planned, labor: l.committed, materialsSpent: m.spent, materialsPlanned: m.planned, materials: m.committed,
+        spent: l.spent + m.spent, planned: l.planned + m.planned, committed: l.committed + m.committed };
+      for (const k of Object.keys(total)) total[k] += byYear[y][k];
+    }
+    const rows = doc.engines.map((engine) => {
+      const a = eng.get(engine.id);
+      const labor = roundCell(a.ls + a.lp), materials = roundCell(a.ms + a.mp);
+      return { engineId: engine.id, name: engine.name, labor, materials, committed: labor + materials, backlog: roundCell(a.backlog) };
+    });
+    const engineTotal = rows.reduce((t, r) => ({ labor: t.labor + r.labor, materials: t.materials + r.materials, committed: t.committed + r.committed, backlog: t.backlog + r.backlog }), { labor: 0, materials: 0, committed: 0, backlog: 0 });
+    return { years, factor, byYear, total, rows, engineTotal };
+  }
+
   function backlogTotal(doc) {
     return doc.blocks.reduce((sum, b) => sum + (isScheduled(b) ? 0 : Math.trunc(Number(b.cost) || 0)), 0);
   }
@@ -559,9 +622,13 @@
     const isInt = (v) => typeof v === "number" && Number.isInteger(v);
     if (!input || typeof input !== "object" || Array.isArray(input)) return { ok: false, errors: ["The file is not a planner document."], doc: null };
     if (input.version !== 1) err("Unsupported version; expected 1.");
-    const doc = { version: 1, title: "Roadmap & Budget Planner", unit: "USD", currency: "USD", startYear: 0, endYear: 0, asOf: null, budgets: {}, engines: [], blocks: [] };
+    const doc = { version: 1, title: "Roadmap & Budget Planner", unit: "USD", currency: "USD", rate: DEFAULT_RATE, startYear: 0, endYear: 0, asOf: null, budgets: {}, engines: [], blocks: [] };
     if (input.title != null) { if (typeof input.title === "string" && input.title.length <= 120) doc.title = input.title; else err("Title must be text of at most 120 characters."); }
     if (input.unit != null) { if (UNITS[input.unit]) doc.unit = input.unit; else err("Unit must be USD or hours."); }
+    if (input.rate != null) {
+      if (typeof input.rate === "number" && Number.isFinite(input.rate) && input.rate >= 0 && input.rate <= 1e6) doc.rate = Math.round(input.rate * 100) / 100;
+      else err("Rate must be a number of dollars per hour from 0 to 1,000,000.");
+    }
     if (input.currency != null && input.currency !== "USD") err("Only USD is supported.");
     if (!isInt(input.startYear) || input.startYear < 1970 || input.startYear > 2200) err("Start year must be a whole number between 1970 and 2200.");
     if (!isInt(input.endYear) || input.endYear < 1970 || input.endYear > 2200) err("End year must be a whole number between 1970 and 2200.");
@@ -608,6 +675,11 @@
         if (!isInt(b.actual) || b.actual < 0 || b.actual > 1e12) { err(where + " (" + b.name + ") actual must be a whole number from 0 to 1,000,000,000,000."); return; }
         actual = b.actual;
       }
+      let materials = 0;
+      if (b.materials != null) {
+        if (!isInt(b.materials) || b.materials < 0 || b.materials > 1e12) { err(where + " (" + b.name + ") materials must be a whole number of dollars from 0 to 1,000,000,000,000."); return; }
+        materials = b.materials;
+      }
       const hasStart = b.start != null, hasEnd = b.end != null;
       if (hasStart !== hasEnd) { err(where + " (" + b.name + ") needs both start and end, or neither."); return; }
       let start = null, end = null;
@@ -618,7 +690,7 @@
         start = b.start; end = b.end;
       }
       blockIds.add(b.id);
-      doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, cost: b.cost, actual, start, end });
+      doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, cost: b.cost, actual, materials, start, end });
     });
     return { ok: errors.length === 0, errors, doc: errors.length === 0 ? doc : null };
   }
@@ -633,7 +705,7 @@
   }
   function fmtMoney(n) { return fmtAmount(n, "USD"); }
 
-  root.BudgetEngine = { DAY, UNITS, parseISO, toISO, dayCount, isScheduled, hasActual, yearsOf, proRate, settle, allocateCommitted, rollupByYear, rollupByEngine, backlogTotal, stackLane, validateDoc, fmtAmount, fmtMoney, MAX_SPAN_YEARS };
+  root.BudgetEngine = { DAY, UNITS, DEFAULT_RATE, parseISO, toISO, dayCount, isScheduled, hasActual, yearsOf, proRate, settle, allocateCommitted, rollupByYear, rollupByEngine, rollupCost, backlogTotal, stackLane, validateDoc, fmtAmount, fmtMoney, MAX_SPAN_YEARS };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 
@@ -705,6 +777,10 @@
     for (const b of base.blocks) b.cost = Math.round(b.cost / 100);
     base.blocks.find((b) => b.id === "b01").actual = 640;
     base.blocks.find((b) => b.id === "b07").actual = 700;
+    base.rate = 102;
+    base.blocks.find((b) => b.id === "b02").materials = 18500;
+    base.blocks.find((b) => b.id === "b05").materials = 2500;
+    base.blocks.find((b) => b.id === "k01").materials = 4000;
     return base;
   }
   window.BudgetPlannerSeed = seedDoc;
@@ -739,7 +815,7 @@
     return raw === null && storageOk ? seedDoc(PAGE_UNIT) : emptyDoc();
   }
   function emptyDoc() {
-    return { version: 1, title: LABELS[PAGE_UNIT].app, unit: PAGE_UNIT, currency: "USD", startYear: 2026, endYear: 2027, asOf: null, budgets: {}, engines: [{ id: "core", name: "Core" }], blocks: [] };
+    return { version: 1, title: LABELS[PAGE_UNIT].app, unit: PAGE_UNIT, currency: "USD", rate: E.DEFAULT_RATE, startYear: 2026, endYear: 2027, asOf: null, budgets: {}, engines: [{ id: "core", name: "Core" }], blocks: [] };
   }
   function persist() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(doc)); storageOk = true; }
@@ -811,6 +887,61 @@
     renderBlocksTable();
     renderYearTable();
     renderEngineTable();
+    renderCost();
+  }
+
+  function money(n) { return E.fmtAmount(n, "USD"); }
+  function parseRateInput(text) {
+    const cleaned = String(text || "").replace(/[$,\s]/g, "");
+    if (cleaned === "" || !/^\d+(\.\d{1,2})?$/.test(cleaned)) return NaN;
+    const n = Number(cleaned);
+    return n > 1e6 ? NaN : n;
+  }
+  function currentRate() { return Number(doc.rate) || 0; }
+
+  function renderCost() {
+    const section = document.getElementById("costSection");
+    const on = doc.unit === "hours";
+    section.hidden = !on;
+    if (!on) return;
+    const c = E.rollupCost(doc);
+    const rateInput = document.getElementById("rateInput");
+    if (document.activeElement !== rateInput) rateInput.value = currentRate().toFixed(2);
+    document.getElementById("costMeta").textContent = "Labor at $" + currentRate().toFixed(2) + " per hour plus materials";
+    const yearHost = document.getElementById("costYearHost");
+    yearHost.replaceChildren();
+    const yearTable = el("table", { id: "costYearTable" });
+    yearTable.append(el("thead", null, el("tr", null, [el("th", { scope: "col", text: "Cost by year" })].concat(c.years.map((y) => el("th", { scope: "col", class: "num", text: String(y) })), [el("th", { scope: "col", class: "num", text: "Total" })]))));
+    const yearBody = el("tbody");
+    const rowSpec = [["Labor · Worked", "laborSpent", ""], ["Labor · Forecast", "laborPlanned", ""], ["Materials · Spent", "materialsSpent", ""], ["Materials · Planned", "materialsPlanned", ""], ["Committed", "committed", "highlight strong"]];
+    for (const [label, key, cls] of rowSpec) {
+      const tr = el("tr", { class: cls, "data-row": key }, el("th", { scope: "row", text: label }));
+      for (const y of c.years) tr.append(el("td", { class: "num", text: money(c.byYear[y][key]) }));
+      tr.append(el("td", { class: "num", text: money(c.total[key]) }));
+      yearBody.append(tr);
+    }
+    yearTable.append(yearBody);
+    yearHost.append(yearTable);
+    const engineHost = document.getElementById("costEngineHost");
+    engineHost.replaceChildren();
+    const engineTable = el("table", { id: "costEngineTable" });
+    engineTable.append(el("thead", null, el("tr", null, [
+      el("th", { scope: "col", text: "Engine" }), el("th", { scope: "col", class: "num", text: "Labor" }), el("th", { scope: "col", class: "num", text: "Materials" }),
+      el("th", { scope: "col", class: "num", text: "Committed" }), el("th", { scope: "col", class: "num", text: "Backlog" })
+    ])));
+    const engineBody = el("tbody");
+    for (const r of c.rows) {
+      engineBody.append(el("tr", { "data-engine": r.engineId }, [
+        el("td", { text: r.name }), el("td", { class: "num", text: money(r.labor) }), el("td", { class: "num", text: money(r.materials) }),
+        el("td", { class: "num", text: money(r.committed) }), el("td", { class: "num", text: money(r.backlog) })
+      ]));
+    }
+    engineBody.append(el("tr", { class: "strong" }, [
+      el("th", { scope: "row", text: "Total" }), el("td", { class: "num", text: money(c.engineTotal.labor) }), el("td", { class: "num", text: money(c.engineTotal.materials) }),
+      el("td", { class: "num", text: money(c.engineTotal.committed) }), el("td", { class: "num", text: money(c.engineTotal.backlog) })
+    ]));
+    engineTable.append(engineBody);
+    engineHost.append(engineTable);
   }
 
   function deleteBlock(id) {
@@ -841,10 +972,12 @@
       host.append(el("p", { class: "backlog-empty", text: "No blocks yet. Add a block or a backlog item and it appears here with edit and delete controls." }));
       return;
     }
+    const withMaterials = doc.unit === "hours";
     const table = el("table", { id: "blocksTable" });
     table.append(el("thead", null, el("tr", null, [
       el("th", { scope: "col", text: "Block" }), el("th", { scope: "col", text: "Engine" }), el("th", { scope: "col", text: "Start" }), el("th", { scope: "col", text: "End" }),
       el("th", { scope: "col", class: "num", text: l.estimateHead }), el("th", { scope: "col", class: "num", text: l.actualHead }),
+      withMaterials ? el("th", { scope: "col", class: "num", text: "Materials" }) : null,
       el("th", { scope: "col", class: "actions", "aria-label": "Actions" })
     ])));
     const tbody = el("tbody");
@@ -854,6 +987,7 @@
         el("td", { text: b.name }), el("td", { text: engineName(b.engineId) }),
         el("td", { class: "fig", text: onTimeline ? b.start : "Backlog" }), el("td", { class: "fig", text: onTimeline ? b.end : "" }),
         el("td", { class: "num", text: fmt(b.cost) }), el("td", { class: "num", text: E.hasActual(b) ? fmt(b.actual) : "" }),
+        withMaterials ? el("td", { class: "num", text: b.materials ? money(b.materials) : "" }) : null,
         el("td", { class: "actions" }, [
           el("button", { type: "button", class: "iconbtn sm", "aria-label": "Edit " + b.name, title: "Edit", onclick: () => openBlockDialog(b.id) }, icon("edit")),
           el("button", { type: "button", class: "iconbtn sm", "aria-label": "Delete " + b.name, title: "Delete", onclick: () => deleteBlock(b.id) }, icon("delete"))
@@ -986,7 +1120,7 @@
         "aria-label": item.name + ", " + engineName(item.engineId) + ", " + fmt(item.cost) + ", unscheduled",
         onclick: () => openBlockDialog(item.id),
         onkeydown: (ev) => { if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); deleteBlock(item.id); } }
-      }, [el("span", { class: "name", text: item.name }), el("span", { class: "meta", text: engineName(item.engineId) + " · " + fmt(item.cost) })]));
+      }, [el("span", { class: "name", text: item.name }), el("span", { class: "meta", text: engineName(item.engineId) + " · " + fmt(item.cost) + (doc.unit === "hours" && item.materials ? " · " + money(item.materials) + " materials" : "") })]));
     }
     host.append(grid);
   }
@@ -1075,6 +1209,8 @@
     select.value = block ? block.engineId : doc.engines[0].id;
     blockForm.elements.cost.value = block ? block.cost.toLocaleString("en-US") : "";
     blockForm.elements.actual.value = block && E.hasActual(block) ? block.actual.toLocaleString("en-US") : "";
+    blockForm.elements.materials.value = block && block.materials ? block.materials.toLocaleString("en-US") : "";
+    document.getElementById("materialsField").hidden = doc.unit !== "hours";
     const scheduled = block ? E.isScheduled(block) : preferScheduled !== false;
     blockForm.elements.scheduled.checked = scheduled;
     const asOf = effectiveAsOf();
@@ -1102,11 +1238,15 @@
     const end = scheduled ? blockForm.elements.end.value : null;
     const actualRaw = blockForm.elements.actual.value.trim();
     const actual = scheduled && actualRaw !== "" ? parseMoneyInput(actualRaw) : null;
+    const existing = editingId ? doc.blocks.find((b) => b.id === editingId) : null;
+    const materialsRaw = blockForm.elements.materials.value.trim();
+    const materials = doc.unit === "hours" ? (materialsRaw === "" ? 0 : parseMoneyInput(materialsRaw)) : (existing ? existing.materials || 0 : 0);
     if (!name) { error.textContent = "Give the block a name."; blockForm.elements.name.focus(); return; }
     if (name.length > 120) { error.textContent = "Keep the name to 120 characters."; return; }
     if (!doc.engines.some((e) => e.id === engineId)) { error.textContent = "Pick an engine."; return; }
     if (Number.isNaN(cost)) { error.textContent = "The estimate must be a whole number."; blockForm.elements.cost.focus(); return; }
     if (actual !== null && Number.isNaN(actual)) { error.textContent = "The logged figure must be a whole number, or blank."; blockForm.elements.actual.focus(); return; }
+    if (Number.isNaN(materials)) { error.textContent = "Materials must be a whole number of dollars, or blank."; blockForm.elements.materials.focus(); return; }
     if (scheduled) {
       const s = E.parseISO(start), e = E.parseISO(end);
       if (Number.isNaN(s) || Number.isNaN(e)) { error.textContent = "Scheduled blocks need a start and an end date."; return; }
@@ -1115,9 +1255,9 @@
     const next = clone(doc);
     if (editingId) {
       const target = next.blocks.find((b) => b.id === editingId);
-      Object.assign(target, { name, engineId, cost, actual, start, end });
+      Object.assign(target, { name, engineId, cost, actual, materials, start, end });
     } else {
-      next.blocks.push({ id: makeId(scheduled ? "b" : "k"), name, engineId, cost, actual, start, end });
+      next.blocks.push({ id: makeId(scheduled ? "b" : "k"), name, engineId, cost, actual, materials, start, end });
     }
     blockDialog.close();
     commit(next, { toast: editingId ? "Block updated" : (scheduled ? "Block added" : "Backlog item added") });
@@ -1132,12 +1272,16 @@
   function openSettings() {
     draftEngines = clone(doc.engines);
     settingsForm.elements.unit.value = doc.unit;
+    settingsForm.elements.rate.value = currentRate().toFixed(2);
     settingsForm.elements.startYear.value = doc.startYear;
     settingsForm.elements.endYear.value = doc.endYear;
     document.getElementById("settingsError").textContent = "";
+    syncRateField();
     renderEngineRows();
     settingsDialog.showModal();
   }
+  function syncRateField() { document.getElementById("rateField").hidden = settingsForm.elements.unit.value !== "hours"; }
+  settingsForm.elements.unit.addEventListener("change", syncRateField);
   function blockCount(engineId) { return doc.blocks.filter((b) => b.engineId === engineId).length; }
   function renderEngineRows() {
     const host = document.getElementById("engineRows");
@@ -1168,6 +1312,11 @@
     const endYear = Number(settingsForm.elements.endYear.value);
     const next = clone(doc);
     next.unit = settingsForm.elements.unit.value;
+    if (next.unit === "hours") {
+      const rate = parseRateInput(settingsForm.elements.rate.value);
+      if (Number.isNaN(rate)) { error.textContent = "Rate must be dollars per hour, up to two decimals."; settingsForm.elements.rate.focus(); return; }
+      next.rate = rate;
+    }
     next.startYear = startYear; next.endYear = endYear;
     next.engines = draftEngines.map((e) => ({ id: e.id, name: e.name.trim() }));
     if (next.engines.some((e) => !e.name)) { error.textContent = "Every engine needs a name."; return; }
@@ -1216,6 +1365,16 @@
   // ---------- Top bar actions ----------
   document.getElementById("addBlockBtn").addEventListener("click", () => openBlockDialog(null, true));
   document.getElementById("addBacklogBtn").addEventListener("click", () => openBlockDialog(null, false));
+  const rateInput = document.getElementById("rateInput");
+  rateInput.addEventListener("change", () => {
+    const value = parseRateInput(rateInput.value);
+    if (Number.isNaN(value)) { rateInput.value = currentRate().toFixed(2); showToast("Rate must be dollars per hour, up to two decimals", false); return; }
+    if (value === currentRate()) { rateInput.value = value.toFixed(2); return; }
+    const next = clone(doc);
+    next.rate = value;
+    commit(next, { toast: "Rate set to $" + value.toFixed(2) + " per hour" });
+  });
+  rateInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); rateInput.blur(); } });
   document.getElementById("addYearBtn").addEventListener("click", () => {
     if (doc.endYear - doc.startYear + 1 >= E.MAX_SPAN_YEARS) { showToast("The plan already spans the maximum of " + E.MAX_SPAN_YEARS + " years", false); return; }
     const next = clone(doc);

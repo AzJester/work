@@ -49,6 +49,14 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**Rate and materials (follow-up).** The document carries `rate` (dollars per hour, default
+102.00, two decimals) and each block carries `materials` (whole dollars, default 0). The
+hours edition prices the plan in a Cost section: labor is hours at the rate (logged hours
+where they exist), materials pro-rate by day regardless of logged hours, and backlog cost is
+backlog hours at the rate plus backlog materials. The rate is editable in the Cost header and
+under Settings; the Materials field appears in the block dialog and the Blocks list in the
+hours edition only (a dollar plan's cost already is money).
+
 ---
 
 ## 1. What the reference shows (feature spec)
