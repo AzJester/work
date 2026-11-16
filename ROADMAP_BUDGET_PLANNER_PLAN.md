@@ -49,6 +49,12 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**Layout pass after review.** The wordmark is gone from the top bar by request, body text
+runs the full width of the page (no 90ch cap on the explanation), and the paired tables sit in
+equal halves that stack below 1200 px instead of a 3:4 split that clipped the by-year table on
+mid-width screens. The by-year tables' corner header names the figure (Hours, Materials, Cost)
+rather than repeating the heading above it.
+
 **One application, hours and materials (v2).** The dollar and hours editions are merged. Every
 block carries `hours`, `hoursActual`, `materials` and `materialsActual`; the document carries
 `rate`, `hoursBudgets` (annual hours) and `budgets` (annual dollars), version 2. The engine
