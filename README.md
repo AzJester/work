@@ -14,6 +14,13 @@ card for it. Visitors can search, filter by category, pin the applications they 
 switch between card and list layouts, and choose a light or dark theme. Those choices
 are stored in the visitor's own browser and nowhere else.
 
+Every card shows when its application was last updated. The dates are not maintained by
+hand: on each deploy, [`scripts/app-updated.mjs`](scripts/app-updated.mjs) stamps the
+published page with the date of the last commit that touched what each application
+publishes (for applications in this repository) or the last commit on the default
+branch (for applications in other repositories). The dates committed in `apps.html`
+are the fallback when a lookup fails; `npm run build:app-dates` refreshes them.
+
 ### [Open the Application Library](https://azjester.github.io/work/apps.html)
 
 ## Solution Architect Workbench

@@ -472,6 +472,16 @@
       gap: 6px 14px;
     }
 
+    .updated {
+      flex: 1 0 100%;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .updated[hidden] { display: none; }
+
     .availability {
       display: inline-flex;
       align-items: center;
@@ -870,6 +880,7 @@
     .app-grid[data-view="list"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
     .app-grid[data-view="list"] .app-card { flex-direction: row; align-items: center; gap: 18px; padding: 14px 18px; }
     .app-grid[data-view="list"] .card-top { justify-content: flex-start; }
+    .app-grid[data-view="list"] .updated { flex: 0 1 auto; }
     .app-grid[data-view="list"] .app-card h3 { margin-top: 6px; font-size: 1.08rem; letter-spacing: -0.02em; }
     .app-grid[data-view="list"] .description { margin: 4px 0 0; -webkit-line-clamp: 1; }
     .app-grid[data-view="list"] .development-stamp { margin: 8px 0 0; }
@@ -1046,6 +1057,7 @@
         <div class="card-top">
           <p class="category"></p>
           <span class="availability"></span>
+          <p class="updated" hidden>Updated <time></time></p>
         </div>
         <p class="development-stamp" hidden></p>
         <h3></h3>
@@ -1069,6 +1081,7 @@
           liveUrl: "https://azjester.github.io/work/roadmap.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/roadmap.html",
           repo: "work",
+          updated: "2026-08-27",
           tags: ["Roadmaps", "Portfolio", "AI-assisted"],
           featured: true
         },
@@ -1080,6 +1093,7 @@
           liveUrl: "https://azjester.github.io/work/geopresence/",
           repoUrl: "https://github.com/AzJester/work/tree/main/geopresence",
           repo: "work",
+          updated: "2026-11-13",
           tags: ["Geospatial", "Export", "Offline"],
           featured: true
         },
@@ -1091,6 +1105,7 @@
           liveUrl: "https://azjester.github.io/work/",
           repoUrl: "https://github.com/AzJester/work/blob/main/index.html",
           repo: "work",
+          updated: "2026-06-23",
           tags: ["CJADC2", "Simulation", "F2T2EA"],
           featured: true
         },
@@ -1102,6 +1117,7 @@
           liveUrl: "https://azjester.github.io/Black_Hat_Agent/",
           repoUrl: "https://github.com/AzJester/Black_Hat_Agent",
           repo: "Black_Hat_Agent",
+          updated: "2026-10-30",
           tags: ["Analysis", "Evidence", "Reports"]
         },
         {
@@ -1113,6 +1129,7 @@
           liveUrl: "https://azjester.github.io/work/solutions-architect/",
           repoUrl: "https://github.com/AzJester/work/tree/main/solutions-architect",
           repo: "work",
+          updated: "2026-09-01",
           tags: ["Architecture", "Win themes", "Decision packages"]
         },
         {
@@ -1123,6 +1140,7 @@
           liveUrl: "https://azjester.github.io/work/tracker.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/tracker.html",
           repo: "work",
+          updated: "2026-07-11",
           tags: ["Status", "KPIs", "Supabase"]
         },
         {
@@ -1133,6 +1151,7 @@
           liveUrl: "https://azjester.github.io/work/weekly-task-tracker.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/weekly-task-tracker.html",
           repo: "work",
+          updated: "2026-06-24",
           tags: ["Tasks", "Offline", "Reports"]
         },
         {
@@ -1143,6 +1162,7 @@
           liveUrl: "https://azjester.github.io/work/status.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/status.html",
           repo: "work",
+          updated: "2026-06-23",
           tags: ["Status", "One-page", "Export"]
         },
         {
@@ -1153,6 +1173,7 @@
           liveUrl: "https://azjester.github.io/work/dashboard.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/dashboard.html",
           repo: "work",
+          updated: "2026-07-11",
           tags: ["Dashboard", "KPIs", "Read-only"]
         },
         {
@@ -1163,6 +1184,7 @@
           liveUrl: "https://azjester.github.io/work/radar-signal-chain.html",
           repoUrl: "https://github.com/AzJester/work/blob/main/radar-signal-chain.html",
           repo: "work",
+          updated: "2026-07-11",
           tags: ["Radar", "DSP", "Interactive"]
         },
         {
@@ -1173,6 +1195,7 @@
           liveUrl: "https://azjester.github.io/work/astrion-division/ldawif/",
           repoUrl: "https://github.com/AzJester/work/tree/main/astrion-division/ldawif",
           repo: "work",
+          updated: "2026-11-12",
           tags: ["Astrion", "C-UAS", "Concept"]
         },
         {
@@ -1183,6 +1206,7 @@
           liveUrl: "https://azjester.github.io/work/astrion/",
           repoUrl: "https://github.com/AzJester/work/tree/main/astrion",
           repo: "work",
+          updated: "2026-10-03",
           tags: ["Astrion", "Mission segments", "Concept"]
         },
         {
@@ -1193,6 +1217,7 @@
           liveUrl: "https://azjester.github.io/work/phx-digital-twin/",
           repoUrl: "https://github.com/AzJester/work/tree/main/phx-digital-twin",
           repo: "work",
+          updated: "2026-11-11",
           tags: ["Digital twin", "3D", "ADS-B"]
         },
         {
@@ -1203,6 +1228,7 @@
           liveUrl: "https://azjester.github.io/work/relief-map.html",
           repoUrl: "https://github.com/AzJester/work/tree/main/relief-map",
           repo: "work",
+          updated: "2026-11-16",
           tags: ["3D", "Terrain", "WebGL"]
         },
         {
@@ -1213,6 +1239,7 @@
           liveUrl: "https://azjester.github.io/J-C_Replace/",
           repoUrl: "https://github.com/AzJester/J-C_Replace",
           repo: "J-C_Replace",
+          updated: "2026-08-25",
           tags: ["Projects", "Service desk", "Knowledge"]
         },
         {
@@ -1223,6 +1250,7 @@
           liveUrl: "https://compliance.insightfuldefense.com/",
           repoUrl: "https://github.com/AzJester/compliance",
           repo: "compliance",
+          updated: "2026-08-10",
           tags: ["RFP", "Compliance", "Reports"]
         },
         {
@@ -1233,6 +1261,7 @@
           liveUrl: "https://azjester.github.io/usn-ai-tac-sim/",
           repoUrl: "https://github.com/AzJester/usn-ai-tac-sim",
           repo: "usn-ai-tac-sim",
+          updated: "2026-07-29",
           tags: ["USN", "Simulation", "Assurance"]
         },
         {
@@ -1243,6 +1272,7 @@
           liveUrl: "https://insightfuldefense.com/",
           repoUrl: "https://github.com/AzJester/insightfuldefense",
           repo: "insightfuldefense",
+          updated: "2026-07-12",
           tags: ["Defense", "Analysis", "Publishing"]
         },
         {
@@ -1253,6 +1283,7 @@
           liveUrl: "https://infostyles.onrender.com/",
           repoUrl: "https://github.com/AzJester/InfoStyles",
           repo: "InfoStyles",
+          updated: "2026-09-27",
           tags: ["Prompt library", "Visual styles", "Infographics"]
         },
         {
@@ -1263,6 +1294,7 @@
           liveUrl: "https://cuas.insightfuldefense.com/",
           repoUrl: "https://github.com/AzJester/C-UASC2",
           repo: "C-UASC2",
+          updated: "2026-09-12",
           tags: ["C-UAS", "C2", "Architecture"]
         },
         {
@@ -1273,6 +1305,7 @@
           liveUrl: "https://azjester.github.io/SEG-SCHEDULE/",
           repoUrl: "https://github.com/AzJester/SEG-SCHEDULE",
           repo: "SEG-SCHEDULE",
+          updated: "2026-06-29",
           tags: ["Scheduling", "Forecasting", "Excel"]
         },
         {
@@ -1283,6 +1316,7 @@
           liveUrl: "https://azjester.github.io/lotus/",
           repoUrl: "https://github.com/AzJester/lotus",
           repo: "lotus",
+          updated: "2026-09-23",
           tags: ["Productivity", "Local-first", "Recreation"]
         },
         {
@@ -1293,6 +1327,7 @@
           liveUrl: "https://ai-training.st-dba.com/",
           repoUrl: "https://github.com/AzJester/AI-TRAINING",
           repo: "AI-TRAINING",
+          updated: "2026-08-17",
           tags: ["Training", "Practice", "Skills"]
         },
         {
@@ -1303,6 +1338,7 @@
           liveUrl: "https://azjester.github.io/agile-pricer/",
           repoUrl: "https://github.com/AzJester/agile-pricer",
           repo: "agile-pricer",
+          updated: "2026-06-11",
           tags: ["Pricing", "BOE", "Federal"]
         },
         {
@@ -1313,6 +1349,7 @@
           liveUrl: "https://intel.insightfuldefense.com/",
           repoUrl: "https://github.com/AzJester/DefenseIntel",
           repo: "DefenseIntel",
+          updated: "2026-10-21",
           tags: ["Competitive intel", "Capture", "Read-only"]
         },
         {
@@ -1323,6 +1360,7 @@
           liveUrl: "https://linkbudget.st-dba.com/",
           repoUrl: "https://github.com/AzJester/LinkAnalysisTool",
           repo: "LinkAnalysisTool",
+          updated: "2026-09-17",
           tags: ["RF", "Terrain", "Fresnel"]
         },
         {
@@ -1333,6 +1371,7 @@
           liveUrl: "https://azjester.github.io/passive_sensor_demo_F5.2/",
           repoUrl: "https://github.com/AzJester/passive_sensor_demo_F5.2",
           repo: "passive_sensor_demo_F5.2",
+          updated: "2026-11-10",
           tags: ["C-UAS", "Acoustics", "Simulated"]
         },
         {
@@ -1344,6 +1383,7 @@
           liveUrl: "https://azjester.github.io/Talent-Acquisition-Agent/",
           repoUrl: "https://github.com/AzJester/Talent-Acquisition-Agent",
           repo: "Talent-Acquisition-Agent",
+          updated: "2026-11-01",
           tags: ["Recruiting", "Rubrics", "AI-assisted"]
         },
         {
@@ -1354,6 +1394,7 @@
           liveUrl: "",
           repoUrl: "https://github.com/AzJester/roadmap-lite/blob/main/RoadmapBuilder.html",
           repo: "roadmap-lite",
+          updated: "2026-08-27",
           tags: ["Roadmaps", "Standalone", "Offline"]
         },
         {
@@ -1364,6 +1405,7 @@
           liveUrl: "",
           repoUrl: "https://github.com/AzJester/legal-app/blob/main/legal-ai-value-tracker.html",
           repo: "legal-app",
+          updated: "2026-07-22",
           tags: ["Legal", "AI value", "Standalone"]
         },
         {
@@ -1374,12 +1416,15 @@
           liveUrl: "",
           repoUrl: "https://github.com/AzJester/ai-metrics",
           repo: "ai-metrics",
+          updated: "2026-06-12",
           tags: ["Metrics", "ROI", "Streamlit"]
         }
       ];
 
       const categoryOrder = ["All", "Pinned", "Operations", "Defense", "Research", "Design & Graphics", "AI & Learning", "Source only"];
       const accessLabels = { Public: "Live", Account: "Sign-in required", Source: "Source only" };
+      // Dates are days in UTC, written by scripts/app-updated.mjs; format them without shifting into the reader's zone.
+      const updatedFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
       const pinIcon = '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M8 1.9l1.85 3.75 4.15.6-3 2.93.7 4.12L8 11.35 4.3 13.3l.7-4.12-3-2.93 4.15-.6z"/></svg>';
 
       // Pins, layout, and theme are remembered in this browser only. Every read and
@@ -1512,6 +1557,13 @@
           if (app.status) {
             developmentStamp.hidden = false;
             developmentStamp.textContent = app.status.toLocaleUpperCase();
+          }
+          const updated = card.querySelector(".updated");
+          if (/^\d{4}-\d{2}-\d{2}$/.test(app.updated || "")) {
+            const time = updated.querySelector("time");
+            time.dateTime = app.updated;
+            time.textContent = updatedFormat.format(new Date(`${app.updated}T00:00:00Z`));
+            updated.hidden = false;
           }
           card.querySelector(".category").textContent = app.category;
           card.querySelector("h3").textContent = app.title;
