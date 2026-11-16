@@ -607,7 +607,7 @@ timeline** and rolls them up by year and by engine. Schedule work blocks in lane
 "engine"), keep undated work in a backlog, log hours worked and materials spent as you go, and
 read **worked, forecast and total** for hours and for materials, priced out at an hourly rate
 against an annual budget. One application for people who track effort and for people who hold
-the budget. Built to the Astrion 2026 brand standard.
+the budget. Unbranded, with a neutral look you can tune under Settings.
 
 ### → https://azjester.github.io/work/budget-planner.html
 
