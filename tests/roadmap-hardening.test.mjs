@@ -249,8 +249,8 @@ test("legacy migration is claimed once and cloud Trash is cross-device", () => {
   assert.match(roadmap, /LEGACY_CLAIM_KEY\s*=\s*["']roadmap_builder_v1_claimed_by["']/, "Claim the legacy browser copy to exactly one account");
   const loadStore = extractFunctionSource(roadmap, "loadStore");
   assert.match(loadStore, /legacyClaim[\s\S]{0,500}userId/, "Only the account that claimed v1 may inherit it");
-  const ownerReads = roadmap.match(/roadmap_owner_portfolio[\s\S]{0,160}p_include_deleted\s*:\s*true/g) ?? [];
-  assert.ok(ownerReads.length >= 2, "Both owner load paths must include soft-deleted roadmaps for cross-device Trash");
+  const ownerReads = roadmap.match(/roadmap_accessible_portfolio[\s\S]{0,160}p_include_deleted\s*:\s*true/g) ?? [];
+  assert.ok(ownerReads.length >= 2, "Both access-aware load paths must include owner soft-deleted roadmaps for cross-device Trash");
   const merge = extractFunctionSource(roadmap, "mergeCloudRoadmaps");
   assert.match(merge, /r\.deleted_at[\s\S]{0,800}store\.trash/, "Deleted server rows must be installed into local Trash");
   assert.match(merge, /r\.deleted_at[\s\S]{0,900}activeLocal[\s\S]{0,900}Recovered before cloud deletion/, "Unsynced active edits must be copied before accepting another device's deletion");
@@ -275,9 +275,9 @@ test("the additive migration snapshots existing rows and exposes only bounded RP
   assert.match(roadmapMigration, /before\s+delete\s+on\s+public\.roadmaps/i, "Hard deletes must be blocked");
 });
 
-test("owner, save, delete, public, and share traffic uses the hardened RPC surface", () => {
+test("portfolio, save, delete, public, and share traffic uses the hardened RPC surface", () => {
   const requiredRpcs = [
-    "roadmap_owner_portfolio",
+    "roadmap_accessible_portfolio",
     "roadmap_save_atomic",
     "roadmap_soft_delete",
     "roadmap_restore",

@@ -4,6 +4,105 @@ All notable changes to Map Builder are documented here.
 
 Created by Dr. Shane Turner.
 
+## [4.0.0] - 2026-11-13
+
+Pins now mark the place. This changes how existing maps are drawn, so it is a major version: saved projects keep every location and setting, and their pins move onto their true points.
+
+### Changed
+
+- every pin's tip sits exactly on its place; the layout no longer moves pins away from state abbreviations or from each other, and the fan arrangement and its leader lines are gone
+- places closer than about 21 miles share one pin on their midpoint
+- a place with several location types, or several merged places, shows one numbered pin in the form of its highest tier; a key under the map lists each number's places and location types with counts
+- state abbreviations give way: one moves inside its state to clear a pin or a place label, and hides when the state has no room
+- place labels sit beside their own pin; when that is not possible a label is drawn on a short leader, within about 250 miles and nearer its own pin than any other, or is hidden
+- label backing plates no longer touch each other
+- pins are painted south to north so overlapping pins keep both tips visible
+- the map moves down when a northern pin would reach the subtitle
+
+### Added
+
+- warnings under the map for hidden state abbreviations, labels on a leader, hidden labels, and a key that cannot list every entry
+- browser tests that measure every pin tip against its catalog point, including a 1,000-row import
+
+### Removed
+
+- the collision layout that fanned pins around an anchor
+
+## [3.5.1] - 2026-11-13
+
+### Fixed
+
+- on a window shorter than 620 px the map no longer pins itself in place, which had left the status line and reference note below the bottom edge with no way to scroll to them
+- location rows show the name and its Edit and Remove buttons on one line with the place details on a full-width line below; the details had been wrapping to three lines in the rail
+
+## [3.5.0] - 2026-11-13
+
+### Changed
+
+- rebuilt the page as a workspace: the map sits on the left, sized to the window, and one rail on the right holds Add a location, Locations, and Map settings; on a 1440 x 900 or 1280 x 720 screen the whole map and the add form are in view without scrolling
+- the map stays in place while the rail scrolls; on a phone the map comes first
+- replaced the large heading block with one line of guidance, and moved the status line under the map
+- one 4 px corner radius and flat hairline panels throughout, as on astrion.us; the preview stage is drawn as an artboard
+- the location list is a compact scrolling list with hairline rows
+- Full screen now uses the whole window, and zooming above 100% enlarges the map instead of adding blank scroll
+
+### Added
+
+- a persistent Undo button in the map header, with Ctrl+Z, that can step back through up to 20 changes; previously Undo existed only in a message that disappeared after eight seconds
+- the state, source, and type are kept after a location is added; pressing Enter in a field adds the location and returns the cursor to the name field
+- keyboard focus is now visible on Open project, and returns to the export button after an export
+
+### Fixed
+
+- pressing Tab in the city or installation field no longer leaves its list open over the next field
+- an undone change is no longer offered again after a reload
+- invalid fields are marked on the field itself as well as by the message under it
+- the selected match in the city list is visible in Windows high-contrast mode
+- the reduced-motion setting now also stops the disclosure arrow animation
+
+## [3.4.0] - 2026-11-13
+
+### Changed
+
+- set the editor in the Astrion Brand Kit typefaces: Archivo for display and body, JetBrains Mono for utility labels, versions, and compact metadata
+- set all map text in Archivo in place of Verdana: heading, subtitle, state abbreviations, place labels, counts, and legend
+- replaced the pin tile in the header with the outlined Astrion wordmark from the Brand Kit
+- PNG and Copy PNG now carry Archivo inside the image they are drawn from, so the exported graphic matches the preview on computers that do not have the font installed
+- the heading is fitted again once the brand font has loaded, so a long title is sized against the real letterforms
+
+### Fixed
+
+- headquarters pins on the Light and Clean white themes are now Ion inside a Void outline; in 3.3.0 they were Void and too close to the gray site pins (2.3:1), now 4.7:1
+- placeholder text in form fields now uses Steel (5.3:1) in place of the browser default, which fell below contrast requirements on the dark fields
+- the Remove buttons have a visible outline again; the 3.3.0 outline was too faint to bound the control
+- the preview status line and layout warning now take their intended compact style; the rule for them never matched the markup
+
+### Notes
+
+- downloaded SVG files name Archivo with Arial as the fallback and embed nothing; install the Brand Kit desktop fonts to see Archivo in PowerPoint or Illustrator
+- fonts are self-hosted under the SIL Open Font License; the page still reads only same-origin files through one loader
+- colors were checked against the Brand Kit palette sheet: all seven tokens match to the hex
+
+## [3.3.0] - 2026-11-13
+
+### Changed
+
+- moved the editor to the current Astrion website colors: a Void ground, Carbon panels, Gunmetal fields, Bone text, Steel labels, and Ion as the single accent for primary actions, links, and focus rings
+- recolored the three map themes: Dark is Void with Gunmetal land and Steel boundaries, Light is Bone with a Steel-tinted land, and Clean white keeps a white page with Bone land
+- replaced the Force, Sky, Water, and Midnight heading accents with Astrion Ion, Steel, Bone, and Void; Ion is the default
+- replaced the eleven category hues with three pin forms drawn from the palette: an Ion pin for Headquarters and Regional headquarters, a solid neutral pin for other Astrion sites, and an outlined pin for Contract, Future, Customer, and Partner sites; interior symbols are unchanged
+- pin fill now follows the land the pin sits on and the outline follows whatever is behind the map, so pins stay legible on transparent exports for light and dark destinations
+- warnings, errors, and destructive actions no longer use red or amber, which the palette does not include; weight, outline, and wording carry the state
+- replaced the gradient tile in the header with an Ion pin mark
+
+### Migration
+
+- a saved browser project or project file that uses a retired heading accent opens with the closest current accent; nothing else in a saved project changes
+
+### Preserved
+
+- typeface, layout, corner radius, export sizes, the eleven categories and their symbols, the CSV and project formats, local-only persistence, and attribution to Dr. Shane Turner
+
 ## [3.2.3] - 2026-07-14
 
 ### Fixed

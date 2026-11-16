@@ -89,8 +89,8 @@ test("service worker caches the GeoPresence shell and same-origin catalogs", () 
 });
 
 test("version, creator, and changelog are published", () => {
-  assert.match(inlineScript, /const APP_VERSION="3\.2\.3"/);
-  assert.match(html, /Version 3\.2\.3/);
+  assert.match(inlineScript, /const APP_VERSION="4\.0\.0"/);
+  assert.match(html, /Version 4\.0\.0/);
   assert.match(html, /Created by Dr\. Shane Turner/);
   assert.match(changelog, /^# Changelog/m);
   assert.match(changelog, /Created by Dr\. Shane Turner/);
@@ -278,31 +278,50 @@ test("site categories retain distinct pin interiors and accessible contrast", ()
   for (const [value, meta] of Object.entries(expectedTypes)) {
     assert.match(typeSelector, new RegExp(`<option\\s+value="${value}"[^>]*>\\s*${meta.label}\\s*</option>`, "i"));
   }
+  // The palette has one accent, so three pin forms group the categories instead of eleven hues.
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.tone])),
+    {
+      headquarters: "lead", regional: "lead",
+      hub: "site", program: "site", operations: "site", test: "site", manufacturing: "site",
+      contract: "presence", future: "presence", customer: "presence", partner: "presence"
+    }
+  );
+  // Contrast is checked against the surfaces the themes actually draw, read from the palette itself.
+  const paletteSource = inlineScript.match(/function palette\(\)\{[^\n]*\}\}/)?.[0];
+  assert.ok(paletteSource, "theme palette function was not found");
+  const paletteFor = theme => vm.runInNewContext(`let model={theme:${JSON.stringify(theme)}};${paletteSource};palette()`);
   for (const [type, meta] of Object.entries(types)) {
-    assert.ok(contrastRatio(meta.color, "#ffffff") >= 4.5, `${type} light marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.color, "#dfe3e8") >= 4, `${type} light marker must contrast with light land`);
-    assert.ok(contrastRatio(meta.darkColor, "#171722") >= 4.5, `${type} dark marker must contrast with its plate`);
-    assert.ok(contrastRatio(meta.darkColor, "#3c3852") >= 4, `${type} dark marker must contrast with dark land`);
+    for (const theme of ["light", "clean"]) {
+      const surface = paletteFor(theme);
+      assert.ok(contrastRatio(meta.color, surface.panel) >= 4.5, `${type} ${theme} marker must contrast with its plate`);
+      assert.ok(contrastRatio(meta.color, surface.land) >= 4, `${type} ${theme} marker must contrast with the land`);
+    }
+    const dark = paletteFor("dark");
+    assert.ok(contrastRatio(meta.darkColor, dark.panel) >= 4.5, `${type} dark marker must contrast with its plate`);
+    assert.ok(contrastRatio(meta.darkColor, dark.land) >= 4, `${type} dark marker must contrast with dark land`);
   }
   assert.match(inlineScript, /function markerToken\(meta,cx,cy,size,p\)/);
   assert.match(inlineScript, /class="[^"]*\bmarker-pin\b[^"]*"/);
   assert.doesNotMatch(inlineScript, /class="marker-backplate"/);
 });
 
-test("co-located tokens and globally nearby locations share collision occupancy", () => {
+test("pins stay on their points: places merge into clusters and nothing shifts a marker", () => {
   const mapMarkup = sectionFromLast("function mapMarkup(){", "function comboConfig(kind)");
   assert.match(mapMarkup, /const anchorGroups=new Map\(\)/);
   assert.match(mapMarkup, /const groups=\[\.\.\.anchorGroups\.values\(\)\]\.sort/);
-  assert.match(mapMarkup, /markerOffsets\(group\.typeGroups\.length\)/);
-  assert.match(mapMarkup, /markerFootprints\(group\.offsets,group\.typeGroups\)/);
-  assert.match(mapMarkup, /occupiedMarkerFootprints/);
-  assert.match(mapMarkup, /markerShiftCandidates/);
-  assert.match(mapMarkup, /occupiedMarkerFootprints\.every/);
-  assert.match(mapMarkup, /stateLabelBoxes\.some/);
-  assert.match(mapMarkup, /markerCollisionBoxes\.some/);
-  assert.match(mapMarkup, /globalOccupancy:occupiedMarkerFootprints\.length/);
-  assert.match(mapMarkup, /unplacedMarkers/);
-  assert.match(mapMarkup, /class="marker-leader"/);
+  assert.match(mapMarkup, /clusterPlaces\(groups\)/, "one pin per place, with nearby places merged onto their centroid");
+  assert.match(mapMarkup, /cluster\.boxes=pinBoxes\(cluster\.x,cluster\.y,cluster\.hasBadge\)/, "each pin's box is fixed at its own point");
+  assert.match(mapMarkup, /markerCollisionBoxes\.push\(box\)/, "labels are laid out around the fixed pin boxes");
+  assert.match(mapMarkup, /placeStateLabels\(/, "state abbreviations give way to pins");
+  assert.match(mapMarkup, /groupMarkerToken\(/, "a place with several types, or several merged places, shows a numbered group pin");
+  assert.match(mapMarkup, /groupKeyMarkup\(/, "the key explains each numbered pin");
+  assert.match(mapMarkup, /keyOverflow:/);
+  assert.match(mapMarkup, /hiddenStateLabels:/);
+  assert.match(mapMarkup, /\.sort\(\(a,b\)=>b\.y-a\.y/, "pins are painted south to north so every tip stays on top");
+  for (const retired of [/markerOffsets/, /markerFootprints/, /markerShiftCandidates/, /occupiedMarkerFootprints/, /unplacedMarkers/, /globalOccupancy/, /marker-leader/, /marker-fan-stem/, /function legacyMapMarkup/]) {
+    assert.doesNotMatch(inlineScript, retired, `${retired} belongs to the retired displacement layout`);
+  }
 });
 
 test("state initials, counts, markers, and place labels remain in protected layers", () => {
@@ -313,7 +332,11 @@ test("state initials, counts, markers, and place labels remain in protected laye
   assert.match(mapMarkup, /class="state-callout-leader"/);
   assert.match(mapMarkup, /class="state-count-inline"/);
   assert.match(mapMarkup, /class="state-label"[\s\S]*?<rect/);
-  assert.match(mapMarkup, /const labelBoxes=stateLabelBoxes\.map/);
+  // Place labels settle beside their pins first; state plates then give way to pins and to those labels, and join the
+  // occupied set before any remaining place label looks for a fallback position.
+  assert.match(mapMarkup, /stateLabelBoxes\.forEach\(box=>\{labelBoxes\.push\(\[\.\.\.box\]\);labelIndex\.add\(box\)\}\)/);
+  assert.ok(mapMarkup.indexOf("const pendingLabels=labelJobs.filter(") < mapMarkup.indexOf("const stateLabelLayout=placeStateLabels("), "place labels take their first-choice spots before state labels are placed");
+  assert.ok(mapMarkup.indexOf("const stateLabelLayout=placeStateLabels(") < mapMarkup.indexOf("pendingLabels.forEach("), "fallback place labels are placed after state labels");
   assert.match(mapMarkup, /placeLabelCandidates/);
   assert.match(mapMarkup, /hiddenLabels/);
   assert.ok(mapMarkup.indexOf('class="location-layer"') < mapMarkup.indexOf('class="state-label-layer"'), "state initials must render above locations");
@@ -347,9 +370,10 @@ test("project files are portable, schema-checked, and sanitized", () => {
 
 test("CSV location upload publishes one accessible, documented file contract", () => {
   const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
-  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
-  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations and Add a location panels were not found");
-  assert.match(html.slice(locationsStart, addStart), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
+  const locationsEnd = html.indexOf("</section>", locationsStart);
+  assert.ok(locationsStart >= 0 && locationsEnd > locationsStart, "the Locations panel was not found");
+  assert.ok(html.includes('<section class="panel add-panel" aria-labelledby="addTitle"'), "the Add a location panel was not found");
+  assert.match(html.slice(locationsStart, locationsEnd), /id="locationImportOpen"[^>]+aria-haspopup="dialog"[^>]*>Upload locations<\/button>/);
 
   const dialogStart = html.indexOf('<dialog class="import-dialog" id="locationImportDialog"');
   const dialogEnd = html.indexOf("</dialog>", dialogStart);
@@ -543,14 +567,24 @@ test("preview supports zoom, full screen, layout warnings, and fitted text", () 
   assert.match(inlineScript, /function setPreviewZoom\(value\)/);
   assert.match(inlineScript, /Math\.min\(2\.5,Math\.max\(\.5,value\)\)/);
   assert.match(inlineScript, /function openFullscreenPreview\(\)/);
-  assert.match(inlineScript, /warnings\.unplacedMarkers/);
+  assert.match(inlineScript, /warnings\.keyOverflow/);
+  assert.match(inlineScript, /warnings\.hiddenStateLabels/);
+  assert.match(inlineScript, /warnings\.labelFallback/);
   assert.match(inlineScript, /warnings\.hiddenLabels/);
   assert.match(inlineScript, /warnings\.fittedTextCount/);
 });
 
 test("current layout keeps controls within responsive columns", () => {
-  assert.match(styles, /\.workspace\{[^}]*grid-template-columns:330px minmax\(0,1fr\)/);
-  assert.match(styles, /\.below\{[^}]*grid-template-columns:minmax\(420px,1fr\) minmax\(330px,\.72fr\)/);
+  // The map is the work area; Add a location, Locations and Map settings share one rail beside it.
+  assert.match(styles, /\.workspace\{[^}]*grid-template-columns:minmax\(0,1fr\) 392px/);
+  assert.match(styles, /\.rail\{display:grid;[^}]*min-width:0/);
+  assert.match(styles, /\.preview-panel\{position:sticky;/, "the map stays in view while the rail scrolls");
+  const workspaceStart = html.indexOf('<div class="workspace">');
+  const order = ['<section class="panel preview-panel"', '<div class="rail">', '<section class="panel add-panel"', '<section class="panel locations-panel"', '<aside class="panel controls"']
+    .map(marker => html.indexOf(marker, workspaceStart));
+  assert.ok(order.every(index => index > workspaceStart), "a workspace region was not found");
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "reading order is map, add a location, locations, settings");
+  assert.doesNotMatch(html, /class="below"/, "the second row of panels was folded into the rail");
   assert.match(styles, /\.add-grid\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)[^}]*min-width:0/);
   assert.match(styles, /\.add-grid input,\.add-grid select\{width:100%;min-width:0;max-width:100%/);
   assert.match(styles, /\.preview-stage\{[^}]*overflow:auto/);
@@ -574,15 +608,117 @@ test("clear locations remains in the Locations panel", () => {
   const previewStart = html.indexOf('<section class="panel preview-panel"');
   const previewEnd = html.indexOf("</section>", previewStart);
   const locationsStart = html.indexOf('<section class="panel locations-panel" aria-labelledby="locationsTitle"');
-  const addStart = html.indexOf('<section class="panel" aria-labelledby="addTitle"');
+  const locationsEnd = html.indexOf("</section>", locationsStart);
   assert.ok(previewStart >= 0 && previewEnd > previewStart, "preview panel was not found");
-  assert.ok(locationsStart >= 0 && addStart > locationsStart, "Locations panel was not found");
+  assert.ok(locationsStart >= 0 && locationsEnd > locationsStart, "Locations panel was not found");
   assert.doesNotMatch(html.slice(previewStart, previewEnd), /id="clearPins"/);
-  assert.match(html.slice(locationsStart, addStart), /id="clearPins"[^>]*>Clear locations<\/button>/);
+  assert.match(html.slice(locationsStart, locationsEnd), /id="clearPins"[^>]*>Clear locations<\/button>/);
 });
 
 test("obsolete standalone and statewide copy remain absent", () => {
   assert.doesNotMatch(html, /Standalone\s*[·•]\s*No map service required/);
   assert.doesNotMatch(html, /Standalone browser application/);
   assert.doesNotMatch(html, />Statewide</);
+});
+
+test("every color comes from the Astrion website tokens", () => {
+  const tokens = ["#050607", "#0b0d10", "#171b22", "#eeede7", "#8a8f99", "#23cef0", "#e2fdff"];
+  // Solid tints for exported graphics, each one token laid over another (documented in the README).
+  const tints = ["#b4b3af", "#4b4b4a", "#6e6e6c", "#d0d1d0"];
+  // White stands in for a white page (Clean white theme, light destination preview); black is shadow only.
+  const neutral = ["#ffffff", "#fff", "#000"];
+  const retired = ["#442c81", "#29aae1", "#307eef", "#222230"];
+  const allowed = new Set([...tokens, ...tints, ...neutral]);
+
+  const migration = html.match(/retiredAccents=\{[^}]*\}/)?.[0] || "";
+  for (const color of retired) assert.ok(migration.includes(color), `${color} should only survive in the accent migration map`);
+  const page = html.replace(migration, "");
+  const hexColors = new Set((page.match(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi) || []).map(value => value.toLowerCase()));
+  for (const color of hexColors) assert.ok(allowed.has(color), `${color} is not an Astrion website color`);
+  for (const color of tokens) assert.ok(hexColors.has(color), `${color} should be in use`);
+
+  const tokenChannels = new Set(tokens.map(color => color.match(/[a-f\d]{2}/gi).map(value => Number.parseInt(value, 16)).join(",")));
+  const translucent = [...styles.matchAll(/rgba?\((\d+),\s*(\d+),\s*(\d+)/g)].map(match => match.slice(1, 4).join(","));
+  assert.ok(translucent.length > 0, "the stylesheet should use tokens at reduced opacity for hairlines");
+  for (const channels of translucent) {
+    assert.ok(tokenChannels.has(channels), `rgba(${channels}) is not an Astrion website color at reduced opacity`);
+  }
+  assert.doesNotMatch(styles, /--(?:force|sky|green|daylight|zenith|midnight|silver|orange|red|water)\b/,
+    "legacy palette variables must not return");
+  assert.match(html, /<meta name="theme-color" content="#0b0d10">/);
+});
+
+test("heading accents are brand tokens and retired accents migrate", () => {
+  const accentSelect = html.match(/<select id="accent">[\s\S]*?<\/select>/)?.[0] || "";
+  const options = [...accentSelect.matchAll(/<option value="(#[0-9a-f]{6})">([^<]+)<\/option>/g)].map(match => [match[1], match[2]]);
+  assert.deepEqual(options, [
+    ["#23cef0", "Astrion Ion"],
+    ["#8a8f99", "Astrion Steel"],
+    ["#eeede7", "Astrion Bone"],
+    ["#050607", "Astrion Void"]
+  ]);
+  const source = inlineScript.match(/const accentOptions=[^\n]*\n\s*const resolveAccent=[^\n]*\n/)?.[0];
+  assert.ok(source, "accent resolution was not found");
+  const resolveAccent = vm.runInNewContext(`${source};resolveAccent`);
+  assert.equal(resolveAccent("#442c81"), "#23cef0", "Force becomes Ion");
+  assert.equal(resolveAccent("#29AAE1"), "#23cef0", "Sky becomes Ion, whatever its letter case");
+  assert.equal(resolveAccent("#307eef"), "#23cef0", "Water becomes Ion");
+  assert.equal(resolveAccent("#222230"), "#050607", "Midnight becomes Void");
+  assert.equal(resolveAccent("#8A8F99"), "#8a8f99", "a current accent is kept");
+  for (const value of [undefined, null, "", "red", "#123456", "javascript:alert(1)"]) {
+    assert.equal(resolveAccent(value), "#23cef0", `${String(value)} falls back to Ion`);
+  }
+  assert.match(inlineScript, /out\.accent=resolveAccent\(raw\.accent\);/);
+  assert.match(inlineScript, /accent:"#23cef0"/, "Ion is the default heading accent");
+});
+
+test("typography follows the Astrion Brand Kit with self-hosted fonts", () => {
+  const fontFaces = [...styles.matchAll(/@font-face\{([^}]*)\}/g)].map(match => match[1]);
+  assert.equal(fontFaces.length, 2, "Archivo and JetBrains Mono are the only declared faces");
+  const sources = fontFaces.map(rule => rule.match(/src:url\("([^"]+)"\)/)?.[1]);
+  assert.deepEqual(sources, [
+    "assets/fonts/Archivo-latin-wght-normal.woff2",
+    "assets/fonts/JetBrainsMono-latin-wght-normal.woff2"
+  ]);
+  for (const source of sources) {
+    const bytes = readFileSync(resolve(root, "geopresence", source));
+    assert.equal(bytes.subarray(0, 4).toString("latin1"), "wOF2", `${source} must be a WOFF2 file`);
+  }
+  for (const license of ["ARCHIVO-LICENSE.txt", "JETBRAINS-MONO-LICENSE.txt"]) {
+    assert.match(readFileSync(resolve(root, "geopresence/assets/fonts", license), "utf8"), /SIL Open Font License/i);
+  }
+  assert.match(styles, /--sans:"Archivo",system-ui,sans-serif/);
+  assert.match(styles, /--mono:"JetBrains Mono",/);
+  assert.match(styles, /body\{font-family:var\(--sans\)/);
+  for (const selector of ["\\.brand small", "\\.section-label", "\\.settings-summary-status", "\\.status", "footer", "code"]) {
+    assert.match(styles, new RegExp(`(?:^|[}\\s])${selector}\\{[^}]*font-family:var\\(--mono\\)`), `${selector} is a utility label and takes the mono face`);
+  }
+  assert.doesNotMatch(html, /Verdana/i, "the earlier brand typeface must not return");
+  assert.doesNotMatch(styles.replace(/\/\*[\s\S]*?\*\//g, ""), /Space Grotesk/i, "the outlined wordmark needs no font, so the wordmark face is never declared");
+  assert.doesNotMatch(html, /fonts\.(?:googleapis|gstatic)\.com/i, "fonts are self-hosted");
+});
+
+test("the header shows the outlined Astrion wordmark", () => {
+  const wordmarkTag = html.match(/<img class="wordmark"[^>]*>/)?.[0] || "";
+  assert.match(wordmarkTag, /src="assets\/astrion-wordmark-light\.svg"/);
+  assert.match(wordmarkTag, /alt="Astrion"/);
+  assert.match(wordmarkTag, /width="137" height="20"/);
+  const wordmark = readFileSync(resolve(root, "geopresence/assets/astrion-wordmark-light.svg"), "utf8");
+  assert.match(wordmark, /<title>Astrion website wordmark<\/title>/);
+  assert.match(wordmark, /viewBox="-100 -800 6159 900"/, "the supplied artwork carries its own clear space");
+  assert.doesNotMatch(wordmark, /<text\b|font-family/, "the wordmark is outlined, so it needs no font");
+  assert.doesNotMatch(html, /class="brand-mark"/);
+});
+
+test("map text uses the brand typeface and PNG export carries it", () => {
+  assert.match(inlineScript, /const MAP_FONT="Archivo,Arial,sans-serif",MAP_FONT_FILE="\.\/assets\/fonts\/Archivo-latin-wght-normal\.woff2";/);
+  const literalFamilies = [...inlineScript.matchAll(/font-family="([^"]+)"/g)].map(match => match[1]);
+  assert.ok(literalFamilies.length >= 10, "map text elements were not found");
+  assert.deepEqual([...new Set(literalFamilies)], ["${MAP_FONT}"], "every map text element takes the one font constant");
+  assert.match(inlineScript, /context\.font=`\$\{weight\} \$\{size\}px \$\{MAP_FONT\}`/, "text fitting measures in the same face it draws");
+  // An SVG drawn as an image cannot load the page's fonts, so the PNG path embeds the font; the SVG download stays plain.
+  assert.match(inlineScript, /async function mapFontCss\(\)\{[^\n]*loadFile\(MAP_FONT_FILE\)[^\n]*data:font\/woff2;base64,/);
+  assert.match(inlineScript, /async function pngBlob\(\)\{[^\n]*withMapFont\(serializedSvg\(\),fontCss\)/);
+  assert.match(inlineScript, /function exportSvg\(\)\{[^\n]*new Blob\(\[serializedSvg\(\)\]/, "the downloadable SVG embeds nothing");
+  assert.match(inlineScript, /mapFontCss\(\)\{[^\n]*catch\(error\)\{return""\}/, "a missing font file must not stop an export");
 });

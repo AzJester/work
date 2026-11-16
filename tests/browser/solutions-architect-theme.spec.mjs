@@ -1,0 +1,447 @@
+import { expect, test } from "@playwright/test";
+
+const APP_PATH = "../solutions-architect/";
+const THEME_KEY = "solution_architect_theme_v1";
+
+test.use({ serviceWorkers: "block" });
+
+async function gotoFresh(page, route = "dashboard") {
+  const response = await page.goto(`${APP_PATH}#${route}`, { waitUntil: "domcontentloaded" });
+  if (response) expect(response.status()).toBe(200);
+  else await expect(page).toHaveURL(new RegExp(`solutions-architect/#${route}$`));
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("#workspace")).toBeVisible();
+}
+
+async function expectResolvedTheme(page, preference, resolved, { toggleSelector = "#theme-toggle", themeColor = true } = {}) {
+  const toggle = page.locator(toggleSelector);
+  await expect(toggle).toHaveAttribute("role", "switch");
+  await expect(toggle).toHaveAttribute("aria-label", "Dark theme");
+  await expect(toggle).toHaveAttribute("aria-checked", resolved === "dark" ? "true" : "false");
+  await expect(page.locator("html")).toHaveAttribute("data-theme-preference", preference);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", resolved);
+  if (themeColor) await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", resolved === "dark" ? "#0b1119" : "#eef3f6");
+}
+
+async function expectCoreContrast(page) {
+  const ratios = await page.evaluate(() => {
+    const styles = getComputedStyle(document.documentElement);
+    const value = name => styles.getPropertyValue(name).trim();
+    const luminance = hex => {
+      const channels = hex.match(/[a-f\d]{2}/gi).map(channel => parseInt(channel, 16) / 255);
+      const linear = channels.map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+      return .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
+    };
+    const contrast = (foreground, background) => {
+      const first = luminance(value(foreground));
+      const second = luminance(value(background));
+      return (Math.max(first, second) + .05) / (Math.min(first, second) + .05);
+    };
+    return [
+      contrast("--ink", "--ground"),
+      contrast("--muted", "--panel"),
+      contrast("--quiet", "--panel"),
+      contrast("--cyan", "--panel"),
+      contrast("--accent-ink", "--cyan")
+    ];
+  });
+  for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+}
+
+function parseRgb(color) {
+  const match = color.match(/^rgba?\(([^)]+)\)$/);
+  expect(match, `Expected an rgb/rgba color, received ${color}`).not.toBeNull();
+  const channels = match[1].split(/[\s,\/]+/).filter(Boolean).map(Number);
+  return { red: channels[0], green: channels[1], blue: channels[2], alpha: channels[3] ?? 1 };
+}
+
+function relativeLuminance({ red, green, blue }) {
+  const linear = [red, green, blue].map(channel => {
+    const normalized = channel / 255;
+    return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
+  });
+  return .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2];
+}
+
+function contrastRatio(foreground, background) {
+  const first = relativeLuminance(foreground);
+  const second = relativeLuminance(background);
+  return (Math.max(first, second) + .05) / (Math.min(first, second) + .05);
+}
+
+test("a fresh theme defaults to Light and the switch persists the explicit opposite", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await gotoFresh(page);
+
+  const toggle = page.locator("#theme-toggle");
+  await expectResolvedTheme(page, "light", "light");
+  await expectCoreContrast(page);
+  expect(await page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBeNull();
+  await toggle.focus();
+  await expect(toggle).toBeFocused();
+
+  await toggle.click();
+  await expectResolvedTheme(page, "dark", "dark");
+  await expectCoreContrast(page);
+  await expect(page.locator(".toast")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBe("dark");
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expectResolvedTheme(page, "dark", "dark");
+});
+
+test("stored System follows OS changes and Use device theme restores that behavior", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await gotoFresh(page);
+
+  await page.evaluate(key => localStorage.setItem(key, "system"), THEME_KEY);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expectResolvedTheme(page, "system", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expectResolvedTheme(page, "system", "light");
+
+  await page.locator("#theme-toggle").click();
+  await expectResolvedTheme(page, "dark", "dark");
+  await expect(page.locator(".toast")).toHaveCount(0);
+  await page.getByRole("button", { name: "Workspace tools", exact: true }).click();
+  const useDeviceTheme = page.getByRole("dialog", { name: "Workspace tools" }).getByRole("button", { name: "Use device theme", exact: true });
+  await expect(useDeviceTheme).toHaveAttribute("aria-pressed", "false");
+  await useDeviceTheme.click();
+  await expectResolvedTheme(page, "system", "light");
+  await expect(page.locator(".toast")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBe("system");
+});
+
+test("a theme persistence failure remains visible without restoring routine theme toasts", async ({ page }) => {
+  await gotoFresh(page);
+  await page.evaluate(() => {
+    Storage.prototype.setItem = function syntheticThemeStorageFailure() {
+      throw new DOMException("Synthetic theme quota failure", "QuotaExceededError");
+    };
+  });
+
+  await page.locator("#theme-toggle").click();
+  await expectResolvedTheme(page, "dark", "dark");
+  await expect(page.locator(".toast.error")).toHaveText("Theme changed for this session, but the preference could not be saved.");
+  await expect(page.locator(".toast.ok, .toast.info")).toHaveCount(0);
+});
+
+test("dark select options are opaque and retain readable contrast", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await gotoFresh(page);
+  await page.locator("#theme-toggle").click();
+  await expectResolvedTheme(page, "dark", "dark");
+
+  const optionStyles = await page.locator("select option").evaluateAll(options => options.map(option => {
+    const styles = getComputedStyle(option);
+    return { color: styles.color, backgroundColor: styles.backgroundColor };
+  }));
+  expect(optionStyles.length).toBeGreaterThan(0);
+  for (const style of optionStyles) {
+    const foreground = parseRgb(style.color);
+    const background = parseRgb(style.backgroundColor);
+    expect(foreground.alpha).toBe(1);
+    expect(background.alpha).toBe(1);
+    expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test("explicit Dark remains stable and the compact switch fits a narrow screen", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.emulateMedia({ colorScheme: "light" });
+  await gotoFresh(page);
+
+  const toggle = page.locator("#theme-toggle");
+  await expectResolvedTheme(page, "light", "light");
+  await expect(toggle).toBeVisible();
+  const box = await toggle.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.width).toBeLessThanOrEqual(48);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeLessThanOrEqual(48);
+
+  await toggle.click();
+  await expectResolvedTheme(page, "dark", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expectResolvedTheme(page, "dark", "dark");
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("Capture and grouped Workspace tools remain reachable across responsive breakpoints", async ({ page }) => {
+  for (const width of [1240, 980, 650, 360]) {
+    await test.step(`${width}px`, async () => {
+      await page.setViewportSize({ width, height: 900 });
+      await gotoFresh(page);
+
+      await expect(page.locator("#theme-toggle")).toBeVisible();
+      const capture = page.getByRole("button", { name: /Capture$/ });
+      const workspaceTools = page.getByRole("button", { name: "Workspace tools", exact: true });
+      await expect(capture).toBeVisible();
+      await expect(workspaceTools).toBeVisible();
+
+      await capture.click();
+      const captureDialog = page.getByRole("dialog", { name: "Quick capture" });
+      await expect(captureDialog).toBeVisible();
+      await captureDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+
+      await workspaceTools.click();
+      const toolsDialog = page.getByRole("dialog", { name: "Workspace tools" });
+      await expect(toolsDialog).toBeVisible();
+      for (const action of ["Open local files", "AI assist", "Create a new solution", "Review capture inbox"]) {
+        await expect(toolsDialog.getByRole("button", { name: new RegExp(`^${action}\\b`) })).toBeVisible();
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+      await page.getByRole("button", { name: "Close dialog" }).click();
+    });
+  }
+});
+
+test("workspace actions use one compact, aligned rail in both themes", async ({ page }) => {
+  for (const theme of ["light", "dark"]) {
+    for (const width of [1240, 650, 360, 320]) {
+      await test.step(`${theme} at ${width}px`, async () => {
+        await page.setViewportSize({ width, height: 900 });
+        await gotoFresh(page);
+        if (theme === "dark") await page.locator("#theme-toggle").click();
+
+        const rail = page.locator(".top-actions");
+        const actions = rail.locator(".top-action");
+        await expect(rail).toHaveAttribute("role", "group");
+        await expect(rail).toHaveAttribute("aria-label", "Workspace actions");
+        await expect(actions).toHaveCount(3);
+
+        const layout = await rail.evaluate(node => {
+          const rect = element => {
+            const box = element.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: box.top, width: box.width, height: box.height };
+          };
+          return {
+            rail: rect(node),
+            actions: [...node.querySelectorAll(".top-action")].map(rect),
+            pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+          };
+        });
+
+        expect(layout.rail.left).toBeGreaterThanOrEqual(-1);
+        expect(layout.rail.right).toBeLessThanOrEqual(width + 1);
+        expect(layout.rail.width).toBeLessThanOrEqual(340);
+        expect(layout.pageOverflow).toBeLessThanOrEqual(1);
+        for (const [index, action] of layout.actions.entries()) {
+          expect(action.height).toBeGreaterThanOrEqual(44);
+          expect(action.width).toBeLessThan(140);
+          expect(Math.abs(action.height - layout.actions[0].height)).toBeLessThanOrEqual(1);
+          expect(Math.abs(action.top - layout.actions[0].top)).toBeLessThanOrEqual(1);
+          if (index) expect(action.left).toBeGreaterThanOrEqual(layout.actions[index - 1].right - 1);
+        }
+
+        const inbox = page.locator('[data-action="open-capture-inbox"]');
+        await expect(inbox).toHaveAttribute("aria-label", "Open capture inbox, 0 pending");
+        await expect(inbox.locator(".inbox-count")).toBeHidden();
+        await expect(actions.locator(".top-action-icon")).toHaveCount(3);
+      });
+    }
+  }
+
+  await page.setViewportSize({ width: 360, height: 740 });
+  await gotoFresh(page);
+  await page.locator('[data-action="open-capture-inbox"]').click();
+  await expect(page.getByRole("dialog", { name: "Review capture inbox" })).toBeVisible();
+});
+
+test("decision package exports use one accessible, responsive format menu", async ({ page }) => {
+  for (const theme of ["light", "dark"]) {
+    for (const width of [1240, 760, 390, 320]) {
+      await test.step(`${theme} export menu at ${width}px`, async () => {
+        await page.setViewportSize({ width, height: 900 });
+        await gotoFresh(page, "decision-package");
+        if (theme === "dark") await page.locator("#theme-toggle").click();
+
+        const trigger = page.getByRole("button", { name: "Export decision package", exact: true });
+        const menu = page.getByRole("menu", { name: "Decision package export formats", exact: true });
+        await expect(trigger).toBeVisible();
+        await expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+        await expect(trigger).toHaveAttribute("aria-controls", "decision-export-menu");
+        await expect(menu).toBeHidden();
+        await expect(page.locator(".decision-export-actions button:visible")).toHaveCount(1);
+
+        await trigger.click();
+        await expect(trigger).toHaveAttribute("aria-expanded", "true");
+        await expect(menu).toBeVisible();
+        const items = menu.getByRole("menuitem");
+        await expect(items).toHaveCount(5);
+        for (const name of [
+          "Download decision package as PDF",
+          "Download decision package as Microsoft Word",
+          "Download decision workbook as Microsoft Excel",
+          "Download decision package as standalone HTML",
+          "Download decision package as Markdown"
+        ]) await expect(menu.getByRole("menuitem", { name, exact: true })).toBeVisible();
+
+        const layout = await page.locator(".decision-export-actions").evaluate(node => {
+          const rect = element => {
+            const box = element.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+          };
+          return {
+            trigger: rect(node.querySelector(".decision-export-trigger")),
+            menu: rect(node.querySelector(".decision-export-menu")),
+            items: [...node.querySelectorAll(".decision-export-item")].map(rect),
+            pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+          };
+        });
+        expect(layout.trigger.height).toBeGreaterThanOrEqual(44);
+        expect(layout.menu.left).toBeGreaterThanOrEqual(-1);
+        expect(layout.menu.right).toBeLessThanOrEqual(width + 1);
+        expect(layout.pageOverflow).toBeLessThanOrEqual(1);
+        for (const item of layout.items) expect(item.height).toBeGreaterThanOrEqual(44);
+
+        await page.locator(".decision-export-toolbar h3").click();
+        await expect(menu).toBeHidden();
+        await expect(trigger).toHaveAttribute("aria-expanded", "false");
+      });
+    }
+  }
+
+  await page.setViewportSize({ width: 390, height: 820 });
+  await gotoFresh(page, "decision-package");
+  const trigger = page.getByRole("button", { name: "Export decision package", exact: true });
+  const menu = page.getByRole("menu", { name: "Decision package export formats", exact: true });
+  await trigger.focus();
+  await trigger.press("Enter");
+  const items = menu.getByRole("menuitem");
+  await expect(items.first()).toBeFocused();
+  await items.first().press("Shift+Tab");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await trigger.press("Space");
+  await expect(menu).toBeVisible();
+  await expect(items.first()).toBeFocused();
+  await items.first().press("End");
+  await expect(items.last()).toBeFocused();
+  await items.last().press("ArrowUp");
+  await expect(items.nth(3)).toBeFocused();
+  await items.nth(3).press("Home");
+  await expect(items.first()).toBeFocused();
+  await items.first().press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("tablet navigation stays labeled and exposes the current page while Tools remains visible", async ({ page }) => {
+  await page.setViewportSize({ width: 980, height: 900 });
+  await gotoFresh(page);
+
+  const navigation = page.locator("#lifecycle-navigation");
+  await expect(navigation).toBeVisible();
+  for (const route of ["dashboard", "discover", "shape", "assess", "architect", "prove", "propose", "transition", "knowledge-base", "decision-package"]) {
+    await expect.soft(navigation.locator(`.stage-link[data-route="${route}"] .label`), `${route} should remain labeled at 980px`).toBeVisible();
+  }
+
+  const dashboard = navigation.locator('.stage-link[data-route="dashboard"]');
+  await expect(dashboard).toHaveAttribute("aria-current", "page");
+  await navigation.locator('.stage-link[data-route="discover"]').click();
+  await expect(navigation.locator('.stage-link[data-route="discover"]')).toHaveAttribute("aria-current", "page");
+  await expect(navigation.locator('.stage-link[data-route="dashboard"]')).not.toHaveAttribute("aria-current", "page");
+
+  const tools = page.getByRole("button", { name: "Workspace tools", exact: true });
+  await expect(tools).toBeVisible();
+  await expect(tools.locator(".tools-label")).toBeVisible();
+  await expect(tools).toContainText("Tools");
+});
+
+test("representative controls, labels, and long-form fields meet the readable sizing floor", async ({ page }) => {
+  await page.setViewportSize({ width: 1240, height: 900 });
+  await gotoFresh(page, "discover");
+
+  const selectors = [
+    "#solution-select",
+    '[data-solution-field="name"]',
+    '[data-action="quick-capture"]',
+    '[data-action="open-tools"]',
+    '.hot-button-panel .small-button',
+    '.sidebar-actions .text-button',
+    '.delete-record',
+  ];
+  for (const selector of selectors) {
+    const control = page.locator(selector).first();
+    await expect(control).toBeVisible();
+    const height = await control.evaluate(node => node.getBoundingClientRect().height);
+    expect.soft(height, `${selector} should provide a 44px interaction target`).toBeGreaterThanOrEqual(44);
+  }
+
+  const inputFontSize = await page.locator('[data-solution-field="name"]').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  expect(inputFontSize).toBeGreaterThanOrEqual(15);
+
+  const labelFontSize = await page.locator('.field:has([data-solution-field="name"]) > span').evaluate(node => parseFloat(getComputedStyle(node).fontSize));
+  expect(labelFontSize).toBeGreaterThanOrEqual(13);
+
+  const missionProblem = page.locator('textarea[data-solution-nested="mission.problem"]');
+  await expect(missionProblem).toBeVisible();
+  const textareaHeight = await missionProblem.evaluate(node => node.getBoundingClientRect().height);
+  expect(textareaHeight).toBeGreaterThanOrEqual(112);
+});
+
+test("mobile navigation is labeled, viewport-contained, and closes with Escape", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await gotoFresh(page, "discover");
+
+  const trigger = page.locator('[data-action="toggle-nav"]');
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-label", "Open workspace navigation");
+  await expect(trigger).toHaveAttribute("aria-controls", "sidebar");
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).toHaveAttribute("aria-label", "Close workspace navigation");
+  await expect(page.locator("#workspace")).toHaveAttribute("inert", "");
+
+  const navigation = page.locator("#lifecycle-navigation");
+  await expect(navigation).toBeVisible();
+  for (const label of ["Command view", "Discover", "Shape", "Assess", "Architect", "Prove", "Propose", "Transition", "Knowledge base", "Decision package"]) {
+    await expect(navigation.locator(".stage-link .label", { hasText: label }).first()).toBeVisible();
+  }
+  await expect(navigation.locator('.stage-link[data-route="discover"]')).toHaveAttribute("aria-current", "page");
+
+  const box = await navigation.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect.soft(box.y + box.height, "open mobile navigation should remain inside the viewport").toBeLessThanOrEqual(601);
+
+  await page.getByRole("button", { name: "Recovery", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#theme-toggle")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("button", { name: "Recovery", exact: true })).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(navigation).toBeHidden();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveAttribute("aria-label", "Open workspace navigation");
+  await expect(page.locator("#workspace")).not.toHaveAttribute("inert", "");
+  await expect(trigger).toBeFocused();
+});
+
+test("the rendered task guide is semantic, responsive, and shares the theme preference", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto(`${APP_PATH}guide.html`, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("heading", { level: 1, name: "Solution Architect Workbench User Guide" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Ingest a meeting transcript or summary" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open workbench" })).toHaveAttribute("href", "./");
+  const toggle = page.locator("#guide-theme-toggle");
+  const guideTheme = { toggleSelector: "#guide-theme-toggle" };
+  await expectResolvedTheme(page, "light", "light", guideTheme);
+  await toggle.click();
+  await expectResolvedTheme(page, "dark", "dark", guideTheme);
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), THEME_KEY)).toBe("dark");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expectResolvedTheme(page, "dark", "dark", guideTheme);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});

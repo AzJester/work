@@ -95,6 +95,7 @@ supabase functions deploy task-actions --no-verify-jwt
 supabase functions deploy plan-day --no-verify-jwt
 supabase functions deploy build-roadmap --no-verify-jwt
 supabase functions deploy roadmap-summary --no-verify-jwt
+supabase functions deploy solution-assist --no-verify-jwt
 ```
 
 Set tighter endpoint-specific origins, email allowlists, quotas, models, or timeouts with

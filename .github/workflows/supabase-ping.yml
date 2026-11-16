@@ -11,6 +11,9 @@ on:
     - cron: "23 6 * * *"   # daily at 06:23 UTC
   workflow_dispatch: {}     # allow manual runs from the Actions tab
 
+permissions:
+  contents: read
+
 concurrency:
   group: supabase-ping
   cancel-in-progress: false
@@ -18,24 +21,34 @@ concurrency:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - name: Ping Supabase REST API
         run: |
           URL="https://hqqwlkmggwgaoiyzgrhy.supabase.co"
           KEY="sb_publishable_HmSmGVio0b9HQCBocjeuYA_eleacS3u"
-          # a real table query so the request reaches Postgres (PostgREST -> DB)
+          # Call the public read-only share RPC with a token that cannot match.
+          # The function still performs a database lookup, but returns null and
+          # exposes no user data. Opaque sb_publishable keys belong only in the
+          # apikey header; sending one as a Bearer token is rejected as invalid JWT.
           code=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
+            -X POST \
             -o /dev/null -w "%{http_code}" \
-            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
-            "$URL/rest/v1/reports?select=id&limit=1" || echo "000")
-          echo "reports query -> HTTP $code"
-          # fallback: the REST root also introspects the schema from the DB
-          root=$(curl -sS --max-time 30 --retry 3 --retry-delay 5 \
-            -o /dev/null -w "%{http_code}" \
-            -H "apikey: $KEY" "$URL/rest/v1/" || echo "000")
-          echo "rest root -> HTTP $root"
-          if [ "$code" = "000" ] && [ "$root" = "000" ]; then
-            echo "::error::No response from Supabase (both requests failed)"
-            exit 1
-          fi
+            -H "apikey: $KEY" \
+            -H "Content-Type: application/json" \
+            --data '{"p_token":"00000000-0000-0000-0000-000000000000"}' \
+            "$URL/rest/v1/rpc/secure_shared_dashboard" || echo "000")
+          echo "secure shared-dashboard lookup -> HTTP $code"
+
+          # A network response alone is not enough: paused projects (HTTP 540),
+          # bad keys, and missing routes must fail the workflow instead of
+          # producing a false keep-alive success.
+          case "$code" in
+            2??) ;;
+            *)
+              echo "::error::Supabase did not return a successful database response (query=$code)"
+              exit 1
+              ;;
+          esac
+
           echo "Supabase responded — activity registered, project stays warm."

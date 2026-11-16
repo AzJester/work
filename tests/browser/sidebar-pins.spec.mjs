@@ -16,6 +16,11 @@ const LOCATION_TYPES = [
   ["manufacturing", "Manufacturing facility", "factory"],
 ];
 
+const CATEGORY_CITIES = [
+  ["WA", "Seattle"], ["CO", "Denver"], ["AZ", "Phoenix"], ["TX", "Dallas"], ["MN", "Minneapolis"], ["IL", "Chicago"],
+  ["GA", "Atlanta"], ["FL", "Miami"], ["MA", "Boston"], ["TN", "Memphis"], ["NE", "Omaha"],
+];
+
 function details(page, id) {
   return page.locator(`details#${id}`);
 }
@@ -123,8 +128,10 @@ test("all location categories use distinct accessible icons inside the same tear
     LOCATION_TYPES.map(([value, label]) => ({ value, label })),
   );
 
-  for (const [type, label] of LOCATION_TYPES) {
-    await addCity(page, { name: `${label} browser test`, state: "VA", city: "Arlington", type });
+  // One pin per place: a place holding several categories shows a numbered group pin, so each category gets its own city.
+  for (const [index, [type, label]] of LOCATION_TYPES.entries()) {
+    const [state, city] = CATEGORY_CITIES[index];
+    await addCity(page, { name: `${label} browser test`, state, city, type });
   }
 
   const result = await page.evaluate(({ types }) => {
@@ -151,6 +158,7 @@ test("all location categories use distinct accessible icons inside the same tear
       const legendIcon = legendItem?.querySelector(".map-pin-icon");
       const rect = pin?.getBoundingClientRect();
       const bodyBox = body?.getBBox();
+      const tip = body?.getPointAtLength(0);
       output[type] = {
         markerLabel: marker?.getAttribute("aria-label") || null,
         pinCount: marker?.querySelectorAll(".map-pin").length || 0,
@@ -161,6 +169,9 @@ test("all location categories use distinct accessible icons inside the same tear
         mapIconKind: icon?.getAttribute("data-icon") || null,
         legendIconKind: legendIcon?.getAttribute("data-icon") || null,
         center: rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null,
+        tip: tip ? { x: tip.x, y: tip.y } : null,
+        anchorId: marker?.closest(".place-group")?.getAttribute("data-anchor-id") || null,
+        keyNumbers: marker?.querySelectorAll(".map-pin-number").length || 0,
         mapIconSignature: icon ? iconSignature(icon) : null,
         legendIconSignature: legendIcon ? iconSignature(legendIcon) : null,
       };
@@ -187,13 +198,25 @@ test("all location categories use distinct accessible icons inside the same tear
   const iconSignatures = LOCATION_TYPES.map(([type]) => result[type].mapIconSignature);
   expect(new Set(iconSignatures).size, "every category has a distinct interior icon").toBe(LOCATION_TYPES.length);
 
+  // Each pin stands on its own city's catalog point: nothing fans out or shifts.
+  const catalogPoints = await page.evaluate(async () => {
+    const places = await (await fetch("./data/places-2025.json")).json();
+    return Object.fromEntries(places.map(place => [`place:${place[1]}`, [place[4], place[5]]]));
+  });
+  for (const [type, label] of LOCATION_TYPES) {
+    const pin = result[type];
+    const expected = catalogPoints[pin.anchorId];
+    expect(expected, `${label} pin belongs to one catalog place`).toBeTruthy();
+    expect(Math.hypot(pin.tip.x - expected[0], pin.tip.y - expected[1]), `${label} pin tip is on its catalog point`).toBeLessThanOrEqual(0.1);
+    expect(pin.keyNumbers, `${label} pin shows its symbol, not a key number`).toBe(0);
+  }
   for (let index = 0; index < LOCATION_TYPES.length; index += 1) {
     for (let other = index + 1; other < LOCATION_TYPES.length; other += 1) {
       const left = result[LOCATION_TYPES[index][0]].center;
       const right = result[LOCATION_TYPES[other][0]].center;
       expect(
         Math.hypot(left.x - right.x, left.y - right.y),
-        `${LOCATION_TYPES[index][1]} and ${LOCATION_TYPES[other][1]} fan to distinct positions`,
+        `${LOCATION_TYPES[index][1]} and ${LOCATION_TYPES[other][1]} stand at distinct positions`,
       ).toBeGreaterThan(4);
     }
   }
@@ -209,7 +232,8 @@ test("all location categories use distinct accessible icons inside the same tear
       legendBox: legendBox ? { x: legendBox.x, y: legendBox.y, width: legendBox.width, height: legendBox.height } : null,
       legendLabels: items.map(item => item.getAttribute("aria-label")),
       legendRows: new Set(items.map(item => Math.round(item.getBoundingClientRect().y))).size,
-      fanStemCount: svg.querySelectorAll(".marker-fan-stem").length,
+      linkCount: svg.querySelectorAll(".marker-fan-stem, .marker-leader").length,
+      keyCount: svg.querySelectorAll(".group-key").length,
     };
   });
   expect(layout.legendBox, "the used-type legend is rendered").not.toBeNull();
@@ -221,7 +245,8 @@ test("all location categories use distinct accessible icons inside the same tear
   expect(layout.legendBox.y).toBeGreaterThanOrEqual(layout.viewBox.y - 0.5);
   expect(layout.legendBox.x + layout.legendBox.width).toBeLessThanOrEqual(layout.viewBox.x + layout.viewBox.width + 0.5);
   expect(layout.legendBox.y + layout.legendBox.height).toBeLessThanOrEqual(layout.viewBox.y + layout.viewBox.height + 0.5);
-  expect(layout.fanStemCount, "fanned categories keep a visible stem back to their shared anchor").toBeGreaterThan(0);
+  expect(layout.linkCount, "no pin is linked to another position by a stem or leader").toBe(0);
+  expect(layout.keyCount, "single-category pins need no numbered key").toBe(0);
 });
 
 test("the legend renders pins for used categories only", async ({ page }) => {
@@ -260,7 +285,7 @@ test("pin outlines retain destination contrast in light, dark, and transparent m
     { name: "light map", theme: "light", transparent: false },
     { name: "dark map", theme: "dark", transparent: false },
     { name: "transparent light destination", theme: "light", transparent: true, preview: "light", destination: "#ffffff" },
-    { name: "transparent dark destination", theme: "light", transparent: true, preview: "dark", destination: "#222230" },
+    { name: "transparent dark destination", theme: "light", transparent: true, preview: "dark", destination: "#050607" },
   ];
   const outlineColors = new Set();
 
@@ -293,4 +318,55 @@ test("pin outlines retain destination contrast in light, dark, and transparent m
   }
 
   expect(outlineColors.size, "outline tone adapts between light and dark destinations").toBeGreaterThanOrEqual(2);
+});
+
+test("pin forms follow the Astrion palette on light and dark land", async ({ page }) => {
+  // Three separate places, so each location type keeps its own pin form instead of sharing a numbered group pin.
+  await addCity(page, { name: "Form headquarters", state: "VA", city: "Arlington", type: "headquarters" });
+  await addCity(page, { name: "Form site", state: "OH", city: "Dayton", type: "hub" });
+  await addCity(page, { name: "Form contract", state: "AL", city: "Huntsville", type: "contract" });
+
+  const readPins = () => page.evaluate(() => Object.fromEntries(["headquarters", "hub", "contract"].map(type => {
+    const pin = document.querySelector(`#mapSvg .location-layer .site-marker[data-location-type="${type}"] .map-pin`);
+    const body = pin.querySelector(".map-pin-body");
+    const symbol = pin.querySelector(".map-pin-icon [fill]:not([fill='none']), .map-pin-icon [stroke]");
+    const symbolColor = symbol.getAttribute("fill") && symbol.getAttribute("fill") !== "none" ? symbol.getAttribute("fill") : symbol.getAttribute("stroke");
+    return [type, { fill: body.getAttribute("fill"), ring: body.getAttribute("stroke"), symbol: symbolColor }];
+  })));
+
+  await (await revealControl(page, "#theme")).selectOption("dark");
+  expect(await readPins(), "dark land: Ion headquarters, Bone site, outlined contract site").toEqual({
+    headquarters: { fill: "#23cef0", ring: "#eeede7", symbol: "#050607" },
+    hub: { fill: "#eeede7", ring: "#eeede7", symbol: "#050607" },
+    contract: { fill: "#0b0d10", ring: "#eeede7", symbol: "#eeede7" },
+  });
+
+  for (const [theme, plate] of [["light", "#eeede7"], ["clean", "#ffffff"]]) {
+    await (await revealControl(page, "#theme")).selectOption(theme);
+    expect(await readPins(), `${theme} land: Ion headquarters in a Void outline, gray site, outlined contract site`).toEqual({
+      headquarters: { fill: "#23cef0", ring: "#050607", symbol: "#050607" },
+      hub: { fill: "#4b4b4a", ring: "#050607", symbol: "#eeede7" },
+      contract: { fill: plate, ring: "#050607", symbol: "#050607" },
+    });
+  }
+
+  // A transparent light-theme map headed for a dark slide switches the outline to a light one, so the pin
+  // separates from whatever is behind the map. Ion inside a light outline would vanish into the light land,
+  // so the headquarters pin takes a Void fill there and keeps Ion for its symbol.
+  await (await revealControl(page, "#theme")).selectOption("light");
+  await (await revealControl(page, "#transparent")).check();
+  await (await revealControl(page, "#transparentPreview")).selectOption("dark");
+  const onDarkDestination = await readPins();
+  expect(onDarkDestination.headquarters).toEqual({ fill: "#050607", ring: "#eeede7", symbol: "#23cef0" });
+  expect(onDarkDestination.contract).toEqual({ fill: "#eeede7", ring: "#050607", symbol: "#050607" });
+
+  const rows = await page.locator("#pinList .pin-row .pin-dot").evaluateAll(dots => dots.map(dot => ({
+    tone: dot.dataset.tone,
+    color: dot.style.getPropertyValue("--dot"),
+  })));
+  expect(rows, "the locations list repeats each pin form").toEqual([
+    { tone: "lead", color: "#23cef0" },
+    { tone: "site", color: "#eeede7" },
+    { tone: "presence", color: "#eeede7" },
+  ]);
 });

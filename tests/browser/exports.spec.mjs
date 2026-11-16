@@ -88,13 +88,13 @@ test("transparent exports use a high-contrast header and legend text tone for ev
   await (await revealControl(page, "#cleanSvg")).uncheck();
 
   const cases = [
-    { preview: "light", tone: "auto", expected: "#20202e" },
-    { preview: "checker", tone: "auto", expected: "#20202e" },
-    { preview: "dark", tone: "auto", expected: "#ffffff" },
-    { preview: "custom", backdrop: "#111111", tone: "auto", expected: "#ffffff" },
-    { preview: "custom", backdrop: "#ffffff", tone: "auto", expected: "#20202e" },
-    { preview: "light", tone: "light", expected: "#ffffff" },
-    { preview: "dark", tone: "dark", expected: "#20202e" },
+    { preview: "light", tone: "auto", expected: "#050607" },
+    { preview: "checker", tone: "auto", expected: "#050607" },
+    { preview: "dark", tone: "auto", expected: "#eeede7" },
+    { preview: "custom", backdrop: "#111111", tone: "auto", expected: "#eeede7" },
+    { preview: "custom", backdrop: "#ffffff", tone: "auto", expected: "#050607" },
+    { preview: "light", tone: "light", expected: "#eeede7" },
+    { preview: "dark", tone: "dark", expected: "#050607" },
   ];
 
   for (const scenario of cases) {
@@ -126,9 +126,9 @@ test("transparent exports use a high-contrast header and legend text tone for ev
     expect(colors.stateLabels.length, `${scenario.preview}/${scenario.tone} includes state labels`).toBeGreaterThan(0);
     expect(colors.stateCounts.length, `${scenario.preview}/${scenario.tone} includes state counts`).toBeGreaterThan(0);
     expect(colors.placeLabels.length, `${scenario.preview}/${scenario.tone} includes place labels`).toBeGreaterThan(0);
-    expect(new Set(colors.stateLabels), `${scenario.preview}/${scenario.tone} keeps state text light on dark state plates`).toEqual(new Set(["#ffffff"]));
-    expect(new Set(colors.stateCounts), `${scenario.preview}/${scenario.tone} keeps state counts light on dark state plates`).toEqual(new Set(["#ffffff"]));
-    expect(new Set(colors.placeLabels), `${scenario.preview}/${scenario.tone} keeps place text light on dark label plates`).toEqual(new Set(["#ffffff"]));
+    expect(new Set(colors.stateLabels), `${scenario.preview}/${scenario.tone} keeps state text light on dark state plates`).toEqual(new Set(["#eeede7"]));
+    expect(new Set(colors.stateCounts), `${scenario.preview}/${scenario.tone} keeps state counts light on dark state plates`).toEqual(new Set(["#eeede7"]));
+    expect(new Set(colors.placeLabels), `${scenario.preview}/${scenario.tone} keeps place text light on dark label plates`).toEqual(new Set(["#eeede7"]));
   }
 });
 
@@ -137,9 +137,9 @@ test("map-surface labels retain contrast across every theme and transparent text
   await (await revealControl(page, "#showCounts")).check();
 
   const themes = [
-    { value: "light", text: "#20202e", land: "#dfe3e8", panel: "#ffffff" },
-    { value: "dark", text: "#ffffff", land: "#3c3852", panel: "#2f2c43" },
-    { value: "clean", text: "#20202e", land: "#f1f2f5", panel: "#ffffff" },
+    { value: "light", text: "#050607", land: "#d0d1d0", panel: "#eeede7" },
+    { value: "dark", text: "#eeede7", land: "#171b22", panel: "#0b0d10" },
+    { value: "clean", text: "#050607", land: "#eeede7", panel: "#ffffff" },
   ];
   const presentations = [
     { name: "opaque", transparent: false },

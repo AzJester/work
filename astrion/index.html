@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astrion · Mission Solutions Portfolio</title>
+<meta name="description" content="Astrion's mission solutions portfolio: six mission segments and twenty-one solution areas, from integrated air and missile defense to lunar surface operations.">
+<meta name="theme-color" content="#090A0B">
+<!-- Review build on a public URL: keep it out of search indexes until cleared for release. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="canonical" href="https://azjester.github.io/work/astrion/">
+<link rel="preload" href="assets/fonts/Archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/JetBrainsMono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Astrion">
+<meta property="og:title" content="Astrion · Mission Solutions Portfolio">
+<meta property="og:description" content="Missions are won at the seams. Six mission segments and twenty-one solution areas, each with a stated promise and the ways Astrion plays.">
+<meta property="og:url" content="https://azjester.github.io/work/astrion/">
+<meta property="og:image" content="https://azjester.github.io/work/astrion/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script>(function(){var h=document.documentElement;h.classList.add('js');if(matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('still');})();</script>
+<style>
+  /* ============================================================
+     ASTRION · MISSION SOLUTIONS PORTFOLIO
+     Layout follows the Astrion site direction (astrion3 reference):
+     a full-height typographic hero, mission cards with photography,
+     a split band, a light Bone band, a call to action and a ruled
+     footer. Built to the Astrion Brand Guide 2026: Carbon through
+     Bone carry the page, Ion Cyan marks one moment per region,
+     Archivo for display and text, JetBrains Mono for labels.
+     Square corners, 1px hairlines, no shadows, no gradients.
+     ============================================================ */
+
+  @font-face { font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("assets/fonts/Archivo-latin-wght-normal.woff2") format("woff2"); }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 100 800; font-display: swap; src: url("assets/fonts/JetBrainsMono-latin-wght-normal.woff2") format("woff2"); }
+
+  :root {
+    /* palette: the ten values from the guide, nothing tinted or interpolated */
+    --marine-blue: #102A47;
+    --ion-cyan: #33C7EB;
+    --flare: #DEFBFD;
+    --carbon: #090A0B;
+    --gunmetal: #0E0F11;
+    --graphite: #1C1E22;
+    --slate: #3E3F41;
+    --steel: #7F848E;
+    --muted-gray: #8E8E8D;
+    --bone: #E7E5DF;
+
+    /* role tokens, dark theme */
+    --surface: var(--carbon);
+    --surface-raised: var(--gunmetal);
+    --surface-sunken: var(--graphite);
+    --surface-inverse: var(--bone);
+    --ink: var(--bone);
+    --ink-muted: var(--muted-gray);
+    --ink-subtle: var(--steel);
+    --ink-inverse: var(--carbon);
+    --accent: var(--ion-cyan);
+    --ink-on-accent: var(--carbon);
+    --accent-text: var(--ion-cyan);
+    --border-hairline: var(--slate);
+    --border-control: var(--steel);
+    --focus-ring: var(--ion-cyan);
+
+    --font-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+    --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+
+    --maxw: 1360px;
+    --pad: clamp(16px, 5.8vw, 84px);
+    --nav-h: 72px;
+    --section: clamp(80px, 13vh, 144px);
+  }
+  /* the light band: the guide's Light theme, used as one inverted section */
+  .light {
+    --surface: var(--bone);
+    --surface-raised: var(--bone);
+    --ink: var(--carbon);
+    --ink-muted: var(--slate);
+    --ink-subtle: var(--slate);
+    --accent-text: var(--marine-blue);
+    --border-hairline: var(--muted-gray);
+    --border-control: var(--slate);
+    --focus-ring: var(--marine-blue);
+    background: var(--surface); color: var(--ink);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px; line-height: 25px; font-weight: 400;
+    color: var(--ink);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4, p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  ul, ol { list-style: none; margin: 0; padding: 0; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .skip { position: absolute; left: -999px; top: 0; z-index: 300; background: var(--surface-inverse); color: var(--ink-inverse); padding: 10px 16px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  .skip:focus { left: 12px; top: 12px; }
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  /* provisional icon set: 24 grid, 1.5 stroke, square caps, miter joins */
+  .icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter; }
+
+  /* ---------------- TYPE ---------------- */
+  .display { font-weight: 800; text-transform: uppercase; color: var(--ink); text-wrap: balance; }
+  h1.display { font-size: clamp(27px, 8.2vw, 104px); line-height: .9; letter-spacing: -.025em; }
+  h2.display { font-size: clamp(32px, 4.4vw, 60px); line-height: .92; letter-spacing: -.02em; }
+  .lead { font-size: 17px; line-height: 27px; color: var(--ink-muted); max-width: 44ch; }
+  .mono-label, .k { font-family: var(--font-mono); font-size: 11px; line-height: 14px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-muted); }
+  .mono-meta { font-family: var(--font-mono); font-size: 12px; line-height: 18px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+
+  /* ---------------- CONTROLS ---------------- */
+  .btn { font-family: var(--font-mono); font-weight: 500; font-size: 12px; line-height: 16px; letter-spacing: .2em; text-transform: uppercase;
+    padding: 16px 30px; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; cursor: pointer;
+    color: var(--ink); background: transparent; border: 1px solid var(--border-control); border-radius: 0;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .btn:hover { background: var(--surface-inverse); color: var(--ink-inverse); border-color: var(--surface-inverse); }
+  .light .btn:hover { background: var(--carbon); color: var(--bone); border-color: var(--carbon); }
+  .btn .short { display: none; }
+  /* text link with an underline rule, the reference's "Explore missions" device */
+  .textlink { display: inline-flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--ink-muted);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink);
+    transition: color .15s ease, border-color .15s ease; }
+  .textlink:hover { color: var(--accent-text); border-color: var(--accent-text); }
+  .textlink .icon { transition: transform .15s ease; }
+  .textlink:hover .icon { transform: translateX(2px); }
+
+  /* ---------------- NAV ---------------- */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--nav-h);
+    background: var(--surface); border-bottom: 1px solid transparent; transition: border-color .25s ease; }
+  .nav.scrolled { border-bottom-color: var(--border-hairline); }
+  .nav-in { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--space-6); height: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad); }
+  .logo { display: inline-flex; align-items: center; justify-self: start; }
+  /* the wordmark alone, Bone ink: the guide's space-conscious signature, as on the Astrion site */
+  .logo img { height: 15px; width: auto; }
+  .nav-links { display: flex; align-items: center; gap: clamp(24px, 3vw, 44px); }
+  .nav-links a, .nav-util a.link { font-family: var(--font-mono); font-size: 12px; line-height: 16px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; transition: color .15s ease; }
+  .nav-links a:hover, .nav-util a.link:hover { color: var(--ink); }
+  .nav-util { justify-self: end; display: flex; align-items: center; gap: var(--space-5); }
+  .nav .btn { padding: 10px 16px; letter-spacing: .16em; }
+
+  /* ---------------- HERO ---------------- */
+  /* No photograph: a full-height Carbon field, the headline low-left, and the guide cover's
+     ghost word set in Graphite behind it. */
+  .hero { position: relative; overflow: hidden; min-height: clamp(560px, 100svh, 1000px); display: flex; align-items: flex-end; border-bottom: 1px solid var(--border-hairline); }
+  .hero .ghost { position: absolute; right: -0.04em; bottom: -0.2em; font-weight: 300; font-size: clamp(110px, 21vw, 340px); line-height: 1; letter-spacing: -.04em;
+    color: var(--graphite); white-space: nowrap; pointer-events: none; user-select: none; }
+  .hero-in { position: relative; width: 100%; padding-top: calc(var(--nav-h) + var(--space-9)); padding-bottom: clamp(64px, 12vh, 128px); }
+  .hero h1 { max-width: 11em; }
+  .hero .lead { margin-top: var(--space-6); max-width: 46ch; }
+  .hero .btn { margin-top: var(--space-7); }
+
+  /* ---------------- SECTIONS ---------------- */
+  section.band { padding: var(--section) 0; }
+  section.raised { background: var(--surface-raised); }
+  .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-7); align-items: start; margin-bottom: var(--space-8); }
+  .head .side { padding-top: var(--space-2); max-width: 46ch; }
+  .head .side .textlink { margin-top: var(--space-5); }
+
+  /* ---------------- MISSION CARDS ---------------- */
+  .missions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8) var(--space-6); }
+  .mission a { display: block; }
+  .mission .ph { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface-sunken); border-bottom: 1px solid var(--border-hairline); }
+  .mission .ph img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+  .mission a:hover .ph img { transform: scale(1.03); }
+  .mission .snum { display: block; margin-top: var(--space-5); font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; color: var(--ink-subtle); }
+  .mission h3 { margin-top: var(--space-2); font-size: 17px; line-height: 21px; font-weight: 800; letter-spacing: -.005em; text-transform: uppercase; color: var(--ink); }
+  .mission p { margin-top: var(--space-3); font-size: 14px; line-height: 21px; color: var(--ink-muted); max-width: 40ch; }
+  .mission p .icon { display: inline-block; vertical-align: -3px; margin-left: 6px; color: var(--ink-subtle); transition: color .15s ease, transform .15s ease; }
+  .mission a:hover h3 { color: var(--accent-text); }
+  .mission a:hover p .icon { color: var(--accent-text); transform: translateX(2px); }
+  .mission .count { display: block; margin-top: var(--space-4); }
+
+  /* ---------------- PORTFOLIO ---------------- */
+  .filter { display: none; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+  html.js .filter { display: flex; }
+  .chip { font-family: var(--font-mono); font-size: 12px; line-height: 16px; letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+    padding: 9px 14px; display: inline-flex; gap: 10px; align-items: baseline; white-space: nowrap;
+    color: var(--ink); background: transparent; border: 1px solid var(--border-control); border-radius: 0;
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  .chip .n { color: var(--ink-subtle); transition: color .15s ease; }
+  .chip:hover { border-color: var(--ink); }
+  .chip[aria-pressed="true"] { background: var(--surface-inverse); color: var(--ink-inverse); border-color: var(--surface-inverse); }
+  .chip[aria-pressed="true"] .n { color: var(--slate); }
+  .pf-status { min-height: 18px; margin-bottom: var(--space-7); }
+
+  .pf-group + .pf-group { margin-top: var(--space-8); }
+  .pf-group[hidden] { display: none; }
+  .pf-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-5); row-gap: var(--space-3); align-items: baseline; padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink); }
+  .pf-head .pf-num { grid-column: 1; grid-row: 1; font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; color: var(--ink-subtle); }
+  .pf-head .pf-count { grid-column: 2; grid-row: 1; justify-self: end; }
+  .pf-head h3 { grid-column: 1 / -1; grid-row: 2; font-size: clamp(22px, 2.2vw, 28px); line-height: 1.05; font-weight: 800; letter-spacing: -.01em; text-transform: uppercase; }
+  .pf-head .pf-tag { grid-column: 1 / -1; grid-row: 3; color: var(--ink-muted); font-size: 14px; line-height: 21px; }
+
+  .sol { position: relative; display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr); gap: var(--space-7);
+    padding: var(--space-6) 0; border-bottom: 1px solid var(--border-hairline); }
+  .sol::before { content: ""; position: absolute; left: calc(-1 * var(--space-5)); top: var(--space-6); bottom: var(--space-6); width: 2px; background: var(--accent); opacity: 0; transition: opacity .3s ease; }
+  /* the one accent in this region: the row a visitor just navigated to */
+  .sol:target::before { opacity: 1; }
+  .sol-code { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-subtle); margin-bottom: var(--space-3); }
+  .sol h4 { font-size: 24px; line-height: 28px; font-weight: 700; letter-spacing: -.005em; color: var(--ink); text-wrap: balance; }
+  .sol-tag { margin-top: var(--space-2); font-size: 14px; line-height: 21px; color: var(--ink-muted); max-width: 36ch; }
+  .sol .k { display: block; margin-bottom: var(--space-2); }
+  .sol .promise { font-size: 16px; line-height: 25px; font-weight: 500; color: var(--ink); }
+  .sol .purpose { margin-top: var(--space-5); }
+  .sol .purpose p:last-child { font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+  .plays li { position: relative; padding: 8px 0 8px 18px; border-top: 1px solid var(--border-hairline); font-size: 14px; line-height: 20px; color: var(--ink); }
+  .plays li:last-child { border-bottom: 1px solid var(--border-hairline); }
+  .plays li::before { content: ""; position: absolute; left: 0; top: 15px; width: 6px; height: 6px; background: var(--ink-subtle); }
+
+  /* ---------------- SPLIT BAND ---------------- */
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-9); align-items: center; }
+  .split .lead { margin-top: var(--space-6); }
+  .split .btn { margin-top: var(--space-7); }
+  .split figure { margin: 0; }
+  .split figure img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; background: var(--surface-sunken); }
+
+  /* ---------------- LIGHT BAND ---------------- */
+  .light .head .lead { color: var(--ink-muted); }
+  .lifecycle { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
+  .lifecycle li { padding: var(--space-5) var(--space-5) 0 0; }
+  .lifecycle li + li { padding-left: var(--space-5); border-left: 1px solid var(--border-hairline); }
+  .lifecycle .k { display: block; margin-bottom: var(--space-6); }
+  .lifecycle .nh { display: block; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.2; overflow-wrap: anywhere; font-weight: 800; text-transform: uppercase; letter-spacing: -.005em; color: var(--ink); margin-bottom: var(--space-3); }
+  .lifecycle p { font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+  .caps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-8); }
+  .cap { border-top: 1px solid var(--border-hairline); padding-top: var(--space-4); }
+  .cap b { display: block; font-family: var(--font-mono); font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); margin-bottom: var(--space-2); }
+  .cap span { font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+
+  /* ---------------- CALL TO ACTION ---------------- */
+  .cta { background: var(--surface-raised); }
+  .cta .head { margin-bottom: 0; align-items: center; }
+
+  /* ---------------- FOOTER ---------------- */
+  footer { background: var(--surface-raised); }
+  /* the business card's painted edge, carried onto the page as the footer's top rule: the one accent here */
+  .foot-rule { height: 1px; background: var(--accent); }
+  .foot { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: var(--space-6); padding-top: var(--space-8); padding-bottom: var(--space-8); }
+  .foot .logo img { height: 14px; }
+  .foot h2 { font-family: var(--font-mono); font-size: 11px; line-height: 14px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-subtle); margin: var(--space-6) 0 var(--space-4); }
+  .foot .col h2 { margin-top: 0; }
+  .foot address { font-style: normal; font-size: 14px; line-height: 21px; color: var(--ink-muted); }
+  .foot address a { display: inline-block; margin-top: var(--space-3); color: var(--ink); }
+  .foot ul li + li { margin-top: var(--space-3); }
+  .foot ul a { font-size: 14px; line-height: 20px; color: var(--ink); transition: color .15s ease; }
+  .foot ul a:hover { color: var(--accent-text); }
+  .bottom { border-top: 1px solid var(--border-hairline); }
+  .bottom .wrap { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); justify-content: space-between; padding-top: var(--space-5); padding-bottom: var(--space-5); }
+  .bottom p { font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-subtle); }
+
+  /* ---------------- RESPONSIVE ---------------- */
+  @media (max-width: 1080px) {
+    .missions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sol { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-5) var(--space-7); }
+    .sol .sol-plays { grid-column: 2; }
+    .caps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lifecycle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lifecycle li:nth-child(-n+2) { padding-bottom: var(--space-5); }
+    .lifecycle li:nth-child(3) { padding-left: 0; border-left: none; }
+    .lifecycle li:nth-child(n+3) { border-top: 1px solid var(--border-hairline); }
+    .foot { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .foot .brand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 920px) {
+    .nav-in { grid-template-columns: 1fr auto; }
+    .nav-links { display: none; }
+    .head, .split { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+  }
+  @media (max-width: 680px) {
+    .missions { grid-template-columns: minmax(0, 1fr); gap: var(--space-7); }
+    .sol { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+    .sol .sol-plays { grid-column: auto; }
+    .sol::before { left: -10px; }
+    .caps { grid-template-columns: minmax(0, 1fr); }
+    .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .lifecycle { grid-template-columns: minmax(0, 1fr); }
+    .lifecycle li, .lifecycle li + li { padding-left: 0; border-left: none; }
+    .lifecycle li:nth-child(-n+2) { padding-bottom: 0; }
+    .lifecycle li + li { margin-top: var(--space-5); border-top: 1px solid var(--border-hairline); }
+  }
+  @media (max-width: 480px) {
+    .nav-util a.link { display: none; }
+    .nav .btn .long { display: none; }
+    .nav .btn .short { display: inline; }
+  }
+
+  /* hidden state gated on the js class so content stays visible without JavaScript */
+  .reveal { transition: opacity .7s ease, translate .7s ease; }
+  html.js .reveal { opacity: 0; translate: 0 16px; }
+  html.js .reveal.in { opacity: 1; translate: none; }
+  html.still { scroll-behavior: auto; }
+  html.still *, html.still *::before, html.still *::after { animation: none !important; transition: none !important; }
+  html.still .reveal { opacity: 1 !important; translate: none !important; }
+  @media print {
+    html.js .reveal { opacity: 1 !important; translate: none !important; transition: none !important; }
+    .nav { position: absolute; }
+  }
+</style>
+</head>
+<body>
+<!-- Provisional Astrion icon set (not part of the 2026 brand guide): only the symbols this page uses. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ast-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15.5M14 6l6 6-6 6"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- NAV: wordmark left, sections center, one utility action right -->
+<header class="nav" id="nav">
+  <div class="nav-in">
+    <a class="logo" href="https://astrion.us" aria-label="Astrion home">
+      <img src="assets/astrion-wordmark-bone.svg" alt="Astrion" width="99" height="15" decoding="async">
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#missions">Missions</a>
+      <a href="#portfolio">Portfolio</a>
+      <a href="#approach">Approach</a>
+      <a href="#lifecycle">Lifecycle</a>
+    </nav>
+    <div class="nav-util">
+      <a class="link" href="https://astrion.us">astrion.us</a>
+      <a href="#contact" class="btn"><span class="long">Contact</span><span class="short">Contact</span></a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <span class="ghost" aria-hidden="true">seams</span>
+    <div class="wrap hero-in">
+      <h1 class="display" id="hero-title">Missions are won at the seams.</h1>
+      <p class="lead">Astrion engineers, build, test and integrate the products and systems our National Security depends on. Embedded with our customers, we turn mission knowledge into advanced technology and connected capability, closing gaps between systems, platforms and domains.</p>
+      <a class="btn" href="#missions">Build the mission</a>
+    </div>
+  </section>
+
+  <!-- MISSIONS -->
+  <section class="band" id="missions">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 class="display">From air defense to lunar operations.</h2>
+        <div class="side">
+          <p class="lead">Inside customer programs, our teams help develop, field and sustain critical capability. Six mission segments, twenty-one solution areas, and the technical work behind each.</p>
+          <a class="textlink" href="#portfolio">Explore the portfolio <svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></a>
+        </div>
+      </div>
+      <ol class="missions" id="segments">
+        <li class="mission reveal" id="iamd"><a href="#pf-iamd">
+          <div class="ph"><img src="assets/img/iamd-radar.jpg" alt="A phased-array radar on a ridge at night, its beam sweeping the sky." width="1600" height="1067" loading="lazy" decoding="async"></div>
+          <span class="snum">01</span>
+          <h3>Integrated Air and Missile Defense</h3>
+          <p>Connect sensors, battle management and effectors against air and missile threats.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">03 solution areas</span>
+        </a></li>
+        <li class="mission reveal" id="lifecycle-cyber"><a href="#pf-lcmcw">
+          <div class="ph"><img src="assets/img/sustainment-crew.jpg" alt="Engineers working on an airframe in a hangar at night." width="1600" height="901" loading="lazy" decoding="async"></div>
+          <span class="snum">02</span>
+          <h3>Lifecycle Management and Cyber Warfare</h3>
+          <p>Test, modernize and sustain critical systems as technology and cyber threats change.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">04 solution areas</span>
+        </a></li>
+        <li class="mission reveal" id="ldawif"><a href="#pf-ldawif">
+          <div class="ph"><img src="assets/img/field-test-desert-dusk.jpg" alt="A field engineer and a Marine work over a rugged laptop at dusk." width="1669" height="942" loading="lazy" decoding="async"></div>
+          <span class="snum">03</span>
+          <h3>Layered Defense, Autonomous Warfare &amp; Integrated Fires</h3>
+          <p>Coordinate autonomous platforms, sensors and fires across a layered defense.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">03 solution areas</span>
+        </a></li>
+        <li class="mission reveal" id="space"><a href="#pf-space">
+          <div class="ph"><img src="assets/img/space-orbit.jpg" alt="A satellite above the curve of the Earth at night." width="1600" height="900" loading="lazy" decoding="async"></div>
+          <span class="snum">04</span>
+          <h3>Space Warfighting</h3>
+          <p>Support mission operations, space access and control in contested environments.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">04 solution areas</span>
+        </a></li>
+        <li class="mission reveal" id="cip"><a href="#pf-cip">
+          <div class="ph"><img src="assets/img/flight-line-night.jpg" alt="An engineer reads a rugged tablet on a wet flight line at blue hour." width="1670" height="942" loading="lazy" decoding="async"></div>
+          <span class="snum">05</span>
+          <h3>Critical Infrastructure Protection</h3>
+          <p>Strengthen the energy, transportation and industrial systems missions depend on.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">03 solution areas</span>
+        </a></li>
+        <li class="mission reveal" id="lunar"><a href="#pf-elp">
+          <div class="ph"><img src="assets/img/lunar-surface.jpg" alt="A lander and a rover on the lunar surface, the Earth in the black sky." width="1600" height="900" loading="lazy" decoding="async"></div>
+          <span class="snum">06</span>
+          <h3>Exploration and Lunar Presence</h3>
+          <p>Advance launch readiness, mission assurance and infrastructure for sustained lunar operations.<svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></p>
+          <span class="k count">04 solution areas</span>
+        </a></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- PORTFOLIO: the 21 solution areas from the Mission Solutions Portfolio (16 Sep 2026).
+       Each row carries the one-pager's tagline, strategic promise, purpose, and ways to play.
+       The one-pagers' internal objectives are deliberately left off this public review page. -->
+  <section class="band raised" id="portfolio">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 class="display">Twenty-one solution areas. Every one closes a seam.</h2>
+        <div class="side">
+          <p class="lead">Each solution area states the promise it makes, the mission it serves, and the ways Astrion plays. Filter by segment, or read the full set.</p>
+          <p class="mono-meta" style="margin-top: var(--space-4)">Source · Mission Solutions Portfolio · 16 Sep 2026</p>
+        </div>
+      </div>
+
+      <div class="filter" id="pf-filter" role="group" aria-label="Filter solution areas by mission segment">
+        <button type="button" class="chip" data-filter="all" aria-pressed="true">All <span class="n">21</span></button>
+        <button type="button" class="chip" data-filter="iamd" aria-pressed="false">IAMD <span class="n">03</span></button>
+        <button type="button" class="chip" data-filter="lcmcw" aria-pressed="false">LCM &amp; CW <span class="n">04</span></button>
+        <button type="button" class="chip" data-filter="ldawif" aria-pressed="false">LDAWIF <span class="n">03</span></button>
+        <button type="button" class="chip" data-filter="space" aria-pressed="false">Space <span class="n">04</span></button>
+        <button type="button" class="chip" data-filter="cip" aria-pressed="false">CIP <span class="n">03</span></button>
+        <button type="button" class="chip" data-filter="elp" aria-pressed="false">E&amp;LP <span class="n">04</span></button>
+      </div>
+      <p class="mono-meta pf-status" id="pf-status" aria-live="polite">Showing all 21 solution areas</p>
+
+      <!-- 01 IAMD -->
+      <div class="pf-group" id="pf-iamd" data-seg="iamd" data-label="Integrated Air and Missile Defense">
+        <div class="pf-head">
+          <span class="pf-num">01</span>
+          <h3>Integrated Air and Missile Defense</h3>
+          <span class="k pf-count">03 solution areas</span>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-bmc2">
+            <div class="sol-id"><span class="sol-code">IAMD / 01</span><h4>BMC2</h4><p class="sol-tag">Directing the layers of the missile defeat fight at the speed of battle.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Connect and orchestrate the IAMD enterprise to optimize theater and strategic defense at the scale and complexity of today's threat.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Integrate command, control, communications, computers, intelligence, surveillance, and reconnaissance into a resilient BMC2 environment that gives commanders a trusted operational picture and the tools to act on it.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Connect the enterprise</li><li>Fuse data into decisions</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-sensor-fusion">
+            <div class="sol-id"><span class="sol-code">IAMD / 02</span><h4>Sensors &amp; Sensor Fusion</h4><p class="sol-tag">Trusted tracking using modern tip-and-cue webs for maximum real-time coverage.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Track the threat from left-of-launch to elimination.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Enhance the quality, veracity, and precision of today's sensor networks while preparing for the evolution of tomorrow's sensing capabilities. Combine multi-phenomenology insights to ensure kill web closure.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Integrate and modernize sensors and sensor networks</li><li>Correlate, assess, and validate actionable tracks</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-effectors">
+            <div class="sol-id"><span class="sol-code">IAMD / 03</span><h4>Effector Solutions</h4><p class="sol-tag">Layered defense for the theater and the homeland.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Optimize the kill chain. Expand defeat options. Deliver affordable capacity.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Integrate kinetic and non-kinetic effectors into strategic layered defenses that respond to theater and strategic threats, including missiles, aircraft, and emerging kinetic threats to the U.S. and its allies.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Integrate layered effects</li><li>Scale affordable defeat capacity</li></ul></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 02 LCM & CW -->
+      <div class="pf-group" id="pf-lcmcw" data-seg="lcmcw" data-label="Lifecycle Management and Cyber Warfare">
+        <div class="pf-head">
+          <span class="pf-num">02</span>
+          <h3>Lifecycle Management and Cyber Warfare</h3>
+          <span class="k pf-count">04 solution areas</span>
+          <p class="pf-tag">America's mission readiness and modernization business.</p>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-cyber-warfare">
+            <div class="sol-id"><span class="sol-code">LCM &amp; CW / 01</span><h4>Cyber Warfare</h4><p class="sol-tag">Cyber operations, EW, and cryptology, united for mission assurance.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Seize and hold the initiative in the cyber domain.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Make cyber warfare operationally decisive. Unite cyber operations, EW, and cryptology to preserve mission assurance, freedom of action, and combat advantage across contested domains and connected environments.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Hunt, harden, and recover across enterprise and contested environments</li><li>Shape the fight</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-tet">
+            <div class="sol-id"><span class="sol-code">LCM &amp; CW / 02</span><h4>Test, Evaluation &amp; Training</h4><p class="sol-tag">Realistic ranges, digital environments, and operational scenarios.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Accelerate test-to-field. Generate V&amp;V evidence. Build mission confidence.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Test, evaluate, and train the force in realistic ranges, digital environments, and operational scenarios, turning mission data into the evidence, insight, and warfighter confidence needed to reduce risk, accelerate fielding, and prevail in contested environments.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Mimic real-world complexity in realistic ranges; modernize and scale test infrastructure</li><li>Advance test environments for next-generation weapon systems</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-sustainment">
+            <div class="sol-id"><span class="sol-code">LCM &amp; CW / 03</span><h4>Sustainment &amp; Modernization</h4><p class="sol-tag">Ready for today's mission, prepared for tomorrow's fight.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Assure mission readiness. Accelerate modernization. Enable combat overmatch.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Continuously test, sustain, modernize, and validate the mission systems that make up America's Arsenal of Democracy, so warfighters stay ready for today's mission and prepared for tomorrow's fight.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Sustain and modernize existing weapon systems</li><li>Integrated multi-domain capabilities for mission-ready advantage</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-ngws">
+            <div class="sol-id"><span class="sol-code">LCM &amp; CW / 04</span><h4>Next Generation Weapon Systems</h4><p class="sol-tag">Emerging technology, turned into mission-ready capability.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Rapidly integrate new capabilities. Quantify risk. Scale mission advantage.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Connect sensors, platforms, software, and operators across domains to give the Department the speed, interoperability, and technological advantage needed to deter and prevail against near-peer threats.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Integrate new capabilities at mission speed for effects at range and accuracy</li><li>Deliver overmatch in contested environments</li></ul></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 03 LDAWIF -->
+      <div class="pf-group" id="pf-ldawif" data-seg="ldawif" data-label="Layered Defense, Autonomous Warfare &amp; Integrated Fires">
+        <div class="pf-head">
+          <span class="pf-num">03</span>
+          <h3>Layered Defense, Autonomous Warfare &amp; Integrated Fires</h3>
+          <span class="k pf-count">03 solution areas</span>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-layered-defense">
+            <div class="sol-id"><span class="sol-code">LDAWIF / 01</span><h4>Layered Defense</h4><p class="sol-tag">Innovative solutions to complex threats.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Create insurmountable tactical challenges for the enemy.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Develop, deploy, and sustain layered defensive systems for C-UAS that operate across the spectrum of conflict, from the homeland to hostile environments.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Mission assurance</li><li>Training</li><li>Test and evaluation</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-autonomous-warfare">
+            <div class="sol-id"><span class="sol-code">LDAWIF / 02</span><h4>Autonomous Warfare</h4><p class="sol-tag">The new modern battlefield.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Deliver smart and independent capability to the fighting edge.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Enable modern autonomous warfare through intelligent systems, resilient communications, and robust system design.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>All-domain autonomy</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-integrated-fires">
+            <div class="sol-id"><span class="sol-code">LDAWIF / 03</span><h4>Integrated Fires</h4><p class="sol-tag">Connecting the battlefield.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Deliver precision targeting and rapid counter-barrage capability that closes the sensor-to-shooter gap across every echelon.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Fuse targeting, sensor, and fires data into a single engagement picture, enabling precision strikes and rapid counter-battery response at the point of contact.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Create the combat information layer</li></ul></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 04 SPACE WARFIGHTING -->
+      <div class="pf-group" id="pf-space" data-seg="space" data-label="Space Warfighting">
+        <div class="pf-head">
+          <span class="pf-num">04</span>
+          <h3>Space Warfighting</h3>
+          <span class="k pf-count">04 solution areas</span>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-gmo">
+            <div class="sol-id"><span class="sol-code">Space / 01</span><h4>Global Mission Operations</h4><p class="sol-tag">Mission integration solutions that turn space data into decision advantage.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Deliver a mission-ready, data-connected space enterprise that turns sensing, targeting, threat, and cyber information into faster, trusted decisions.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Integrate proven digital engineering, AI-enabled mission solutions, and test capabilities across space sensing, targeting, missile tracking, security, and cybersecurity to optimize the mission systems the U.S. and its allies depend on for space support to operations.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Mission operations</li><li>Targeting &amp; tracking</li><li>Space awareness</li><li>Cyber operations</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-space-control">
+            <div class="sol-id"><span class="sol-code">Space / 02</span><h4>Space Control</h4><p class="sol-tag">Integrating EW, OW, and Space C2 for space superiority.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Enable joint and coalition decision advantage by integrating EW, OW, and Space C2 into a resilient, AI-enabled mission-engineering ecosystem, connecting space-defined kill webs and multi-domain effects from detection through execution.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Turn operational credibility, mission access, and engineering depth into reusable Space Control solutions that close integration seams and improve decision speed across the future fight.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Electronic warfare</li><li>Space C2</li><li>Orbital warfare</li><li>Mission engineering + AI</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-space-access">
+            <div class="sol-id"><span class="sol-code">Space / 03</span><h4>Space Access</h4><p class="sol-tag">Delivering responsive launch and engineering modernization.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Ensure the U.S. and its allies can deliver payloads to orbit when and where they need to, while enhancing the space vehicles already on orbit.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Build assured access to orbit through resiliency, availability, and reliability, from the range through ascent, payload deployment, on-orbit servicing, and global mission operations.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Launch vehicle certification</li><li>On-orbit servicing</li><li>Range operations and next-gen range services</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-space-energy">
+            <div class="sol-id"><span class="sol-code">Space / 04</span><h4>Space Energy &amp; Wargaming</h4><p class="sol-tag">Winning in, from, and to space.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Own the energy advantage in orbit: power, propulsion, and the wargaming tools to prove it before the fight.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Advance chemical, photovoltaic, and nuclear power and propulsion across every orbital regime, and deliver the modeling, simulation, and visualization tools that let U.S. warfighters and allies design, train to, and validate future force structure.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Space operational energy: power and propulsion</li><li>EL-CID wargaming and force structure analysis</li></ul></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 05 CRITICAL INFRASTRUCTURE -->
+      <div class="pf-group" id="pf-cip" data-seg="cip" data-label="Critical Infrastructure Protection">
+        <div class="pf-head">
+          <span class="pf-num">05</span>
+          <h3>Critical Infrastructure Protection</h3>
+          <span class="k pf-count">03 solution areas</span>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-transportation">
+            <div class="sol-id"><span class="sol-code">CIP / 01</span><h4>Transportation Infrastructure</h4><p class="sol-tag">Building resilience into the systems that move America.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Modernize and safeguard the systems that move America through mission-threaded engineering, test, safety, and cyber resilience.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Advance mission continuity across FAA, TSA, CBP, airports, ports, and selected maritime systems as transportation becomes more connected, automated, and cyber-dependent.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>FAA and the National Airspace System</li><li>Readiness and safety</li><li>Cyber-physical assurance</li><li>Critical site security</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-energy">
+            <div class="sol-id"><span class="sol-code">CIP / 02</span><h4>Energy Infrastructure</h4><p class="sol-tag">Resilience for high-consequence energy systems.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Harden high-consequence energy systems with nuclear-grade engineering, cyber assurance, test, and operate-through resilience.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Equip NRC, DOE/NNSA, national labs, utilities, SMR developers, and other energy owners to assess, validate, and sustain high-consequence systems across cyber, safety, reliability, and operations.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Nuclear cyber</li><li>Energy resilience</li><li>OT/ICS assurance and digital twin</li><li>Nu-Clear and SMRs</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-dib">
+            <div class="sol-id"><span class="sol-code">CIP / 03</span><h4>Defense Industrial Base Infrastructure</h4><p class="sol-tag">Sustaining the industrial base behind defense.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Convert cyber-physical risk into mission evidence, readiness decisions, and resilient operations for defense-critical operators.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Secure mission continuity across DoD, depots, shipyards, industrial facilities, production sites, and defense suppliers by mapping dependencies, testing degraded operations, and validating recovery.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Site resilience</li><li>Industrial digital twin</li><li>Production readiness</li><li>OT assurance, C-UAS, and T&amp;E</li></ul></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 06 EXPLORATION AND LUNAR PRESENCE -->
+      <div class="pf-group" id="pf-elp" data-seg="elp" data-label="Exploration and Lunar Presence">
+        <div class="pf-head">
+          <span class="pf-num">06</span>
+          <h3>Exploration and Lunar Presence</h3>
+          <span class="k pf-count">04 solution areas</span>
+          <p class="pf-tag">Lunar mission assurance for building the next world.</p>
+        </div>
+        <ol class="pf-list">
+          <li class="sol reveal" id="sol-launch-landing">
+            <div class="sol-id"><span class="sol-code">E&amp;LP / 01</span><h4>Launch, Landing &amp; Mission Readiness</h4><p class="sol-tag">Flight readiness, multi-vendor integration, and digital engineering.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Know the risk. Assure the mission before it launches.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Integrate multi-provider systems, verify safety-critical interfaces, and convert NASA and Rapid Capabilities Office mission heritage into reusable assurance, V&amp;V, and digital-engineering offerings.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Flight safety tools: ORCA and FAWS</li><li>Multi-vendor mission integration built on terrestrial capabilities</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-lunar-construction">
+            <div class="sol-id"><span class="sol-code">E&amp;LP / 02</span><h4>Lunar Construction &amp; Surface Infrastructure</h4><p class="sol-tag">Safe habitation and expansion on the Moon and beyond.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Safely site, operate, and protect infrastructure on the Moon.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Support safe habitation and expansion on the Moon and beyond by capturing, characterizing, and mitigating power and infrastructure risk as part of an integrated lunar architecture.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Dust and debris risk modeling for lunar habitation and infrastructure</li><li>IPEx RASSOR lunar site prep demonstration with NASA</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-lunar-autonomy">
+            <div class="sol-id"><span class="sol-code">E&amp;LP / 03</span><h4>Lunar Autonomy &amp; Surface Operations</h4><p class="sol-tag">Assure, prove, operate, commercialize.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Operate the Moon as a managed system-of-systems.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Coordinate crewed and uncrewed assets, landing zones, hazard areas, traffic routes, power and comms nodes, logistics, and sustainment using bounded autonomy and trusted operational data.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Situational awareness across crewed and uncrewed vehicles</li></ul></div>
+          </li>
+          <li class="sol reveal" id="sol-tmsma">
+            <div class="sol-id"><span class="sol-code">E&amp;LP / 04</span><h4>Testing, Modeling, Simulation &amp; Mission Assurance</h4><p class="sol-tag">Assurance for building the next world.</p></div>
+            <div class="sol-body">
+              <span class="k">Strategic promise</span>
+              <p class="promise">Prove capability in mission-relevant environments.</p>
+              <div class="purpose"><span class="k">Purpose</span><p>Model, simulate, test, and validate payloads, autonomy, and mission systems before deployment, so NASA and commercial providers are ready for the hostile space environment.</p></div>
+            </div>
+            <div class="sol-plays"><span class="k">Ways to play</span><ul class="plays"><li>Modeling, simulation, and HWIL testing for spaceflight avionics</li><li>Mission assurance and test to predict real-world performance and ops needs</li></ul></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- APPROACH: the split band -->
+  <section class="band" id="approach">
+    <div class="wrap split">
+      <div class="reveal">
+        <h2 class="display">We deliver proof, not promises.</h2>
+        <p class="lead">Astrion stands at the intersection of innovation and operational reality. We turn breakthrough ideas into field-ready capability: fast, proven, and mission-informed.</p>
+        <a class="btn" href="#lifecycle">See the lifecycle</a>
+      </div>
+      <figure class="reveal">
+        <img src="assets/img/desert-ground-station.jpg" alt="Two engineers work at laptops on equipment cases beside an antenna mast at sunset." width="1670" height="942" loading="lazy" decoding="async">
+      </figure>
+    </div>
+  </section>
+
+  <!-- LIFECYCLE: the light band -->
+  <section class="band light" id="lifecycle">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 class="display">Engineer it. Prove it. Keep it current.</h2>
+        <div class="side">
+          <p class="lead">Engineering discipline, software, AI, and mission expertise combine so a capability performs in the field the way it performed in test.</p>
+        </div>
+      </div>
+      <ol class="lifecycle reveal" aria-label="The lifecycle Astrion covers end to end">
+        <li><span class="k">01 · Engineer</span><span class="nh">Design and model</span><p>Requirements, architecture, and digital models built against the mission, not the demo.</p></li>
+        <li><span class="k">02 · Integrate</span><span class="nh">Systems and terrain</span><p>Sensors, effectors, software, and platforms brought together across domains and services.</p></li>
+        <li><span class="k">03 · Prove</span><span class="nh">Test and evaluation</span><p>Validated in the lab, on the range, and in the field under conditions that mirror the fight.</p></li>
+        <li><span class="k">04 · Sustain</span><span class="nh">Lifecycle and modernization</span><p>Kept current as threats, data, and missions change.</p></li>
+      </ol>
+      <div class="caps reveal">
+        <div class="cap"><b>Technology-agnostic</b><span>The right tools and methods for the operational problem, not the newest ones.</span></div>
+        <div class="cap"><b>Digital + physical</b><span>Designed and modeled in integrated digital environments, proven in real-world conditions.</span></div>
+        <div class="cap"><b>AI-enabled insight</b><span>Data that accelerates understanding, prediction, and performance decisions across the lifecycle.</span></div>
+        <div class="cap"><b>Mission-focused T&amp;E</b><span>Test what matters, when it matters, under the conditions operators will face.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="band cta" id="contact">
+    <div class="wrap">
+      <div class="head reveal">
+        <h2 class="display">Bring us a hard mission problem.</h2>
+        <div class="side">
+          <p class="lead">Program offices, primes, and technology partners: start with a conversation about where you need capability proven, not just promised.</p>
+          <a class="textlink" href="https://astrion.us">Visit astrion.us <svg class="icon" aria-hidden="true"><use href="#ast-arrow-right"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-rule" aria-hidden="true"></div>
+  <div class="wrap foot">
+    <div class="brand">
+      <a class="logo" href="https://astrion.us" aria-label="Astrion home"><img src="assets/astrion-wordmark-bone.svg" alt="Astrion" width="92" height="14" loading="lazy" decoding="async"></a>
+      <h2>Headquarters</h2>
+      <address>1100 Redstone Gateway<br>Suite 300<br>Huntsville, AL 35808<br><a href="tel:+12566506263">256-650-6263</a></address>
+    </div>
+    <div class="col">
+      <h2>Explore</h2>
+      <ul><li><a href="#missions">Missions</a></li><li><a href="#portfolio">Portfolio</a></li><li><a href="#approach">Approach</a></li><li><a href="#lifecycle">Lifecycle</a></li></ul>
+    </div>
+    <div class="col">
+      <h2>Segments</h2>
+      <ul><li><a href="#pf-iamd">IAMD</a></li><li><a href="#pf-lcmcw">LCM &amp; CW</a></li><li><a href="#pf-ldawif">LDAWIF</a></li><li><a href="#pf-space">Space</a></li><li><a href="#pf-cip">CIP</a></li><li><a href="#pf-elp">E&amp;LP</a></li></ul>
+    </div>
+    <div class="col">
+      <h2>Connect</h2>
+      <ul><li><a href="#contact">Contact</a></li><li><a href="https://astrion.us">astrion.us</a></li></ul>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="wrap">
+      <p>&copy; <span id="yr">2026</span> Astrion. Defend This World. Build the Next.</p>
+      <p>Team review build · Icons provisional pending Astrion approval</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var still = document.documentElement.classList.contains('still');
+
+  // nav: a hairline appears once the page moves
+  (function(){
+    var nav = document.getElementById('nav');
+    function update(){ nav.classList.toggle('scrolled', window.scrollY > 8); }
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  })();
+
+  // scroll reveals, honored against reduced motion
+  var els = document.querySelectorAll('.reveal');
+  if (still || !('IntersectionObserver' in window)) {
+    els.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+    els.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---- portfolio filter: one segment at a time, or all 21 ---- */
+  (function(){
+    var bar = document.getElementById('pf-filter');
+    if (!bar) return;
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll('button[data-filter]'));
+    var groups = Array.prototype.slice.call(document.querySelectorAll('.pf-group'));
+    var status = document.getElementById('pf-status');
+    function set(seg){
+      var shown = 0, label = '';
+      buttons.forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-filter') === seg)); });
+      groups.forEach(function(g){
+        var on = seg === 'all' || g.getAttribute('data-seg') === seg;
+        g.hidden = !on;
+        if (on) { shown += g.querySelectorAll('.sol').length; label = g.getAttribute('data-label'); }
+      });
+      if (status) status.textContent = seg === 'all' ? 'Showing all ' + shown + ' solution areas' : 'Showing ' + shown + ' solution areas · ' + label;
+    }
+    bar.addEventListener('click', function(e){
+      var b = e.target.closest('button[data-filter]');
+      if (b) set(b.getAttribute('data-filter'));
+    });
+    // a link to a group or solution the current filter hides opens that segment first,
+    // so the browser's own jump lands on a visible row; a link to a group narrows to it
+    function openFor(hash, narrow){
+      if (!hash || hash.length < 2) return;
+      var id = hash.slice(1);
+      try { id = decodeURIComponent(id); } catch (e) {}
+      var target = document.getElementById(id);
+      var group = target && target.closest('.pf-group');
+      if (!group) return;
+      if (group.hidden || (narrow && target === group)) set(group.getAttribute('data-seg'));
+    }
+    document.addEventListener('click', function(e){
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest('a[href^="#"]');
+      if (a) openFor(a.getAttribute('href'), true);
+    });
+    window.addEventListener('hashchange', function(){ openFor(location.hash, false); });
+    openFor(location.hash, true);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "source": "auto",
+  "note": "auto picks the first reachable source whose sample is at least 60% as sharp as the sharpest. Set to a source name from fetch_imagery.py to force one."
+}

@@ -1,0 +1,44 @@
+/* Compatibility print overrides for previously cached decision-package pages.
+   New exports carry the same print rules inline so standalone HTML and PDF stay aligned. */
+@page {
+  size: Letter portrait;
+  margin: .62in .62in .68in;
+}
+
+@media print {
+  body {
+    margin: 0;
+    color: #15222d;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .decision-document { width: auto; margin: 0; border: 0; box-shadow: none; }
+  .decision-hero { min-height: 9in; break-after: page; }
+  .document-nav { display: none; }
+  .doc-section { break-before: auto; }
+  .architecture-figure + .architecture-figure { break-before: page; }
+  h1, h2, h3, caption { break-after: avoid-page; }
+  .overview-card,
+  .narrative-card,
+  .priority-card,
+  .theme-card,
+  .trade-card,
+  .metric,
+  figure { break-inside: avoid; }
+  .candidate-card { overflow: visible; break-inside: auto; }
+  .candidate-card > header,
+  .readiness-basis { break-inside: avoid; }
+  #architecture > .architecture-figure:first-of-type { break-before: auto; }
+  #architecture > .subsection { break-before: page; }
+  #evidence > .subsection:last-child { break-before: page; }
+  .diagram-frame svg {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 4.8in;
+    margin-inline: auto;
+  }
+  thead { display: table-header-group; }
+  p, li { orphans: 3; widows: 3; }
+}

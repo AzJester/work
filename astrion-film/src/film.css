@@ -1,0 +1,81 @@
+/* Astrion capabilities film. Layout: one fixed 16:9 stage, letterboxed on black.
+   Brand tokens are taken from the astrion.us stylesheet (OKLCH converted to sRGB). */
+@font-face{font-family:"Archivo";font-weight:800;font-stretch:78%;font-style:normal;font-display:block;src:url(data:font/woff2;base64,__FONT_DISPLAY__) format("woff2")}
+@font-face{font-family:"Archivo";font-weight:400 600;font-stretch:100%;font-style:normal;font-display:block;src:url(data:font/woff2;base64,__FONT_TEXT__) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:500;font-style:normal;font-display:block;src:url(data:font/woff2;base64,__FONT_MONO__) format("woff2")}
+
+:root{
+  color-scheme:dark;
+  --void:#050607; --carbon:#0B0D10; --gunmetal:#171B22; --steel:#8A8F99; --bone:#EEEDE7; --flare:#E2FDFF; --ion:#23CEF0;
+  --font-display:"Archivo","Arial Narrow",sans-serif;
+  --font-sans:"Archivo",system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,monospace;
+  --z-base:0; --z-sticky:10; --z-overlay:20; --z-modal:30;
+  --sw:min(100vw,calc(100vh * 16 / 9));   /* stage width */
+  --u:calc(var(--sw) / 1920);             /* one design pixel of the 1920 by 1080 master grid */
+}
+@supports (height:100dvh){ :root{ --sw:min(100vw,calc(100dvh * 16 / 9)) } }
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#000;overflow:hidden}
+body{display:grid;place-items:center;font-family:var(--font-sans);color:var(--bone);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+
+#stage{position:relative;width:var(--sw);aspect-ratio:16 / 9;background:var(--void);overflow:hidden;user-select:none;-webkit-user-select:none}
+#stage.idle.playing{cursor:none}
+#stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* Text sits on these: a left scrim that follows the text block, and a corner plate for the watermark. */
+#scrim{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(90deg,rgba(5,6,7,.92) 0,rgba(5,6,7,.92) var(--se,40%),rgba(5,6,7,0) calc(var(--se,40%) + 18%))}
+#corner{position:absolute;left:0;bottom:0;width:max(200px,calc(var(--u) * 430));height:max(52px,calc(var(--u) * 150));pointer-events:none;z-index:var(--z-overlay);
+  background:radial-gradient(100% 100% at 0 100%,rgba(5,6,7,1) 0,rgba(5,6,7,1) 44%,rgba(5,6,7,.55) 68%,rgba(5,6,7,0) 100%)}
+
+/* Type. Sizes are set on the 1080p grid and scale with the stage; no text renders below 14px. */
+.card{position:absolute;display:flex;flex-direction:column;gap:calc(var(--u) * 60);pointer-events:none}
+.card.left{left:calc(var(--u) * 120);top:0;height:90%;justify-content:center;align-items:flex-start}
+.card.center{left:0;right:0;top:0;height:100%;justify-content:center;align-items:center;text-align:center}
+.cue{opacity:0;visibility:hidden;will-change:opacity,transform}
+.hl{margin:0;font-family:var(--font-display);font-weight:800;font-stretch:78%;text-transform:uppercase;letter-spacing:-.01em;line-height:.92;color:var(--bone);white-space:nowrap;font-size:max(18px,calc(var(--u) * 74))}
+.hl.hero{font-size:max(20px,calc(var(--u) * 116))}
+.hl.domain{font-size:max(20px,calc(var(--u) * 104))}
+.hl.tag{font-size:max(18px,calc(var(--u) * 84))}
+.hl sup{font-size:.34em;line-height:0;vertical-align:.95em;letter-spacing:0;margin-left:.06em}
+.sup{margin:0;font-family:var(--font-sans);font-weight:400;font-size:max(14px,calc(var(--u) * 30));line-height:1.36;color:var(--bone);max-width:min(46ch,calc(var(--sw) * .58))}
+.kick{margin:0;display:flex;align-items:center;gap:calc(var(--u) * 20);font-family:var(--font-mono);font-weight:500;text-transform:uppercase;letter-spacing:.22em;font-size:max(14px,calc(var(--u) * 28));line-height:1.2;color:var(--bone);white-space:nowrap}
+.kick::before{content:"";flex:none;width:calc(var(--u) * 48);height:max(1px,calc(var(--u) * 2));background:var(--ion)}
+.lbl{position:absolute;margin:0;font-family:var(--font-mono);font-weight:500;text-transform:uppercase;letter-spacing:.22em;font-size:max(14px,calc(var(--u) * 22));line-height:1.2;color:var(--bone);white-space:nowrap;pointer-events:none}
+.logo{display:block;width:max(200px,calc(var(--u) * 640));height:auto;aspect-ratio:1886 / 281;object-fit:contain}
+
+/* Watermark: pinned to the far lower-left for the whole film. The corner is reserved for it. */
+#wm{position:absolute;left:max(6px,calc(var(--u) * 24));bottom:max(6px,calc(var(--u) * 24));margin:0;z-index:calc(var(--z-modal) + 1);
+  font-family:var(--font-sans);font-weight:500;font-size:max(14px,calc(var(--u) * 16));line-height:1.2;letter-spacing:.02em;color:var(--bone);opacity:.65;white-space:nowrap;pointer-events:none}
+
+/* Play screen. */
+#gate{position:absolute;inset:0;z-index:var(--z-modal);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:max(18px,calc(var(--u) * 64));
+  background:radial-gradient(ellipse at 50% 46%,#0B0D10 0,#050607 62%);transition:opacity .45s ease}
+#gate.off{opacity:0;pointer-events:none}
+#gate .rule{width:min(70%,calc(var(--u) * 900));height:1px;background:linear-gradient(90deg,transparent,rgba(35,206,240,.85),transparent)}
+#gate .lbl{position:static}
+.cta{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.9em;min-height:48px;padding:max(14px,calc(var(--u) * 22)) max(28px,calc(var(--u) * 44));
+  font-family:var(--font-mono);font-weight:500;font-size:max(14px,calc(var(--u) * 22));letter-spacing:.24em;text-transform:uppercase;color:var(--bone);
+  background:rgba(11,13,16,.6);border:1px solid rgba(238,237,231,.45);border-radius:4px;cursor:pointer;transition:border-color .5s,background-color .5s}
+.cta:hover{border-color:rgba(238,237,231,.8);background:rgba(11,13,16,.9)}
+.cta::after{content:"";position:absolute;left:12%;right:12%;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--flare),var(--ion),transparent);opacity:.75;box-shadow:0 0 22px 3px rgba(35,206,240,.55)}
+.cta .tri{width:0;height:0;border-left:.7em solid currentColor;border-top:.44em solid transparent;border-bottom:.44em solid transparent}
+:focus-visible{outline:3px solid var(--flare);outline-offset:3px}
+
+/* Controls: bottom right, hidden after two seconds without input. Never in the lower-left corner. */
+#controls{position:absolute;right:max(8px,calc(var(--u) * 24));bottom:max(8px,calc(var(--u) * 24));z-index:calc(var(--z-modal) + 2);display:flex;gap:max(4px,calc(var(--u) * 10));transition:opacity .3s ease}
+#controls button{display:grid;place-items:center;width:max(44px,calc(var(--u) * 56));height:max(44px,calc(var(--u) * 56));padding:0;color:var(--bone);background:rgba(11,13,16,.72);border:1px solid rgba(238,237,231,.28);border-radius:4px;cursor:pointer;transition:border-color .3s,background-color .3s}
+#controls button:hover{border-color:rgba(238,237,231,.8);background:rgba(11,13,16,.95)}
+#controls svg{width:44%;height:44%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#controls svg .solid{fill:currentColor;stroke:none}
+#prog{position:absolute;left:0;right:0;top:0;height:max(14px,calc(var(--u) * 18));z-index:calc(var(--z-modal) + 2);cursor:pointer;transition:opacity .3s ease}
+#prog i{position:absolute;left:0;top:0;height:max(2px,calc(var(--u) * 3));width:100%;background:rgba(238,237,231,.14)}
+#prog b{position:absolute;left:0;top:0;height:max(2px,calc(var(--u) * 3));width:0;background:var(--ion)}
+#stage.idle #controls,#stage.idle #prog,#stage.gated #controls,#stage.gated #prog{opacity:0;pointer-events:none}
+#stage.idle #controls:focus-within{opacity:1;pointer-events:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{transition:none!important;animation:none!important} }

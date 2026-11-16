@@ -1,0 +1,3776 @@
+{
+ "file": "file:///home/user/work/astrion-film/astrion-capabilities-film.html",
+ "generated": "2026-11-10T21:05:00.896Z",
+ "viewports": {
+  "1920x1080": {
+   "shots": [
+    {
+     "id": "open-logo",
+     "t": 3.2,
+     "beat": 5.6,
+     "minGapPx": 473.7,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "logoA",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        640.3,
+        492.4,
+        639.3,
+        95.2
+       ],
+       "opacity": 1,
+       "contrast": 19.18
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.38
+      }
+     ]
+    },
+    {
+     "id": "open-headline",
+     "t": 6.571,
+     "beat": 11.5,
+     "minGapPx": 390.1,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "hero",
+       "kind": "headline",
+       "text": "Missions are wonat the seams.",
+       "fontPx": 116,
+       "box": [
+        480.1,
+        433.3,
+        959.8,
+        213.4
+       ],
+       "opacity": 1,
+       "contrast": 17.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.38
+      }
+     ]
+    },
+    {
+     "id": "descent-orbital",
+     "t": 10.229,
+     "beat": 17.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d0",
+       "kind": "headline",
+       "text": "Orbital",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        379,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 15.3
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-atmosphere",
+     "t": 12.514,
+     "beat": 21.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d1",
+       "kind": "headline",
+       "text": "Atmosphere",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        611.1,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 16.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-terrain",
+     "t": 14.8,
+     "beat": 25.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d2",
+       "kind": "headline",
+       "text": "Terrain",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        390.3,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 16.21
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-maritime",
+     "t": 17.086,
+     "beat": 29.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d3",
+       "kind": "headline",
+       "text": "Maritime",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        452.1,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 16.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-subsea",
+     "t": 19.371,
+     "beat": 33.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d4",
+       "kind": "headline",
+       "text": "Subsea",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        355.9,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 16.21
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-cyber",
+     "t": 21.657,
+     "beat": 37.9,
+     "minGapPx": 503,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "d5",
+       "kind": "headline",
+       "text": "Cyber",
+       "fontPx": 104,
+       "box": [
+        120,
+        438.2,
+        300,
+        95.7
+       ],
+       "opacity": 1,
+       "contrast": 16.52
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-1",
+     "t": 26.571,
+     "beat": 46.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m1h",
+       "kind": "headline",
+       "text": "Layered Defense,Autonomous Warfare+ Integrated Fires",
+       "fontPx": 74,
+       "box": [
+        120,
+        313.1,
+        772.5,
+        204.2
+       ],
+       "opacity": 1,
+       "contrast": 14.95
+      },
+      {
+       "id": "m1s",
+       "kind": "support",
+       "text": "Coordinate autonomous platforms, sensors and fires across a layered defense.",
+       "fontPx": 30,
+       "box": [
+        120,
+        577.3,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 15.93
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-2",
+     "t": 33.429,
+     "beat": 58.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m2h",
+       "kind": "headline",
+       "text": "Integrated Air+ Missile Defense",
+       "fontPx": 74,
+       "box": [
+        120,
+        347.1,
+        603.4,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 16.32
+      },
+      {
+       "id": "m2s",
+       "kind": "support",
+       "text": "Connect sensors, battle management and effectors against air and missile threats.",
+       "fontPx": 30,
+       "box": [
+        120,
+        543.3,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 15.82
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-3",
+     "t": 40.286,
+     "beat": 70.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m3h",
+       "kind": "headline",
+       "text": "Lifecycle Management+ Cyber Warfare",
+       "fontPx": 74,
+       "box": [
+        120,
+        347.1,
+        808.1,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 15.75
+      },
+      {
+       "id": "m3s",
+       "kind": "support",
+       "text": "Test, modernize and sustain critical systems as technology and cyber threats change.",
+       "fontPx": 30,
+       "box": [
+        120,
+        543.3,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 16.69
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-4",
+     "t": 47.143,
+     "beat": 82.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m4h",
+       "kind": "headline",
+       "text": "Critical InfrastructureResilience",
+       "fontPx": 74,
+       "box": [
+        120,
+        347.1,
+        872.7,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 16.79
+      },
+      {
+       "id": "m4s",
+       "kind": "support",
+       "text": "Strengthen the energy, transportation and industrial systems missions depend on.",
+       "fontPx": 30,
+       "box": [
+        120,
+        543.3,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 16.79
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-5",
+     "t": 54,
+     "beat": 94.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m5h",
+       "kind": "headline",
+       "text": "Space Warfighting",
+       "fontPx": 74,
+       "box": [
+        120,
+        381.2,
+        663.8,
+        68.1
+       ],
+       "opacity": 1,
+       "contrast": 15.42
+      },
+      {
+       "id": "m5s",
+       "kind": "support",
+       "text": "Support mission operations, space access and control in contested environments.",
+       "fontPx": 30,
+       "box": [
+        120,
+        509.2,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 15.16
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-6",
+     "t": 60.857,
+     "beat": 106.5,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "m6h",
+       "kind": "headline",
+       "text": "Exploration+ Lunar Presence",
+       "fontPx": 74,
+       "box": [
+        120,
+        347.1,
+        610.6,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 15.16
+      },
+      {
+       "id": "m6s",
+       "kind": "support",
+       "text": "Advance launch readiness, mission assurance and infrastructure for sustained lunar operations.",
+       "fontPx": 30,
+       "box": [
+        120,
+        543.3,
+        790.7,
+        81.6
+       ],
+       "opacity": 1,
+       "contrast": 15.99
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "tech",
+     "t": 66.171,
+     "beat": 115.8,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "techk",
+       "kind": "support",
+       "text": "Tech",
+       "fontPx": 28,
+       "box": [
+        120,
+        371.1,
+        159.8,
+        33.6
+       ],
+       "opacity": 1,
+       "contrast": 17.08
+      },
+      {
+       "id": "techh",
+       "kind": "headline",
+       "text": "From digital modelsto working systems.",
+       "fontPx": 74,
+       "box": [
+        120,
+        464.7,
+        727.4,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 16.81
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "orchestration-headline",
+     "t": 70.4,
+     "beat": 123.2,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "orchk",
+       "kind": "support",
+       "text": "Orchestration",
+       "fontPx": 28,
+       "box": [
+        120,
+        371.1,
+        366.5,
+        33.6
+       ],
+       "opacity": 1,
+       "contrast": 17.08
+      },
+      {
+       "id": "orchh",
+       "kind": "headline",
+       "text": "Change the technology.Preserve the mission.",
+       "fontPx": 74,
+       "box": [
+        120,
+        464.7,
+        855.5,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 16.36
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "orchestration-diagram",
+     "t": 76.114,
+     "beat": 133.2,
+     "minGapPx": 205.8,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "lc",
+       "kind": "label",
+       "text": "Context",
+       "fontPx": 22,
+       "box": [
+        1638,
+        759.2,
+        126.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 11.63
+      },
+      {
+       "id": "lr",
+       "kind": "label",
+       "text": "Reasoning",
+       "fontPx": 22,
+       "box": [
+        1638,
+        527,
+        162.4,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 11.81
+      },
+      {
+       "id": "la",
+       "kind": "label",
+       "text": "Action",
+       "fontPx": 22,
+       "box": [
+        1638,
+        294.8,
+        108.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.31
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "edge",
+     "t": 79.886,
+     "beat": 139.8,
+     "minGapPx": 60,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "edgek",
+       "kind": "support",
+       "text": "Edge",
+       "fontPx": 28,
+       "box": [
+        120,
+        371.1,
+        159.8,
+        33.6
+       ],
+       "opacity": 1,
+       "contrast": 16.24
+      },
+      {
+       "id": "edgeh",
+       "kind": "headline",
+       "text": "Trust your informationat point of use.",
+       "fontPx": 74,
+       "box": [
+        120,
+        464.7,
+        846.9,
+        136.2
+       ],
+       "opacity": 1,
+       "contrast": 16.14
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "close-domains",
+     "t": 83.657,
+     "beat": 146.4,
+     "minGapPx": 124.8,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "z0",
+       "kind": "label",
+       "text": "Orbital",
+       "fontPx": 22,
+       "box": [
+        897,
+        149,
+        126.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.26
+      },
+      {
+       "id": "z1",
+       "kind": "label",
+       "text": "Atmosphere",
+       "fontPx": 22,
+       "box": [
+        870,
+        300.2,
+        180.4,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z2",
+       "kind": "label",
+       "text": "Terrain",
+       "fontPx": 22,
+       "box": [
+        897,
+        451.4,
+        126.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z3",
+       "kind": "label",
+       "text": "Maritime",
+       "fontPx": 22,
+       "box": [
+        888,
+        602.6,
+        144.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z4",
+       "kind": "label",
+       "text": "Subsea",
+       "fontPx": 22,
+       "box": [
+        906,
+        753.8,
+        108.3,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z5",
+       "kind": "label",
+       "text": "Cyber",
+       "fontPx": 22,
+       "box": [
+        915,
+        905,
+        90.2,
+        26.4
+       ],
+       "opacity": 1,
+       "contrast": 12.26
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.38
+      }
+     ]
+    },
+    {
+     "id": "close-logo-tagline",
+     "t": 90,
+     "beat": 157.5,
+     "minGapPx": 60.1,
+     "requiredGapPx": 48,
+     "canvas": [
+      1920,
+      1080
+     ],
+     "texts": [
+      {
+       "id": "logoB",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        640.5,
+        385.1,
+        639.1,
+        95.2
+       ],
+       "opacity": 1,
+       "contrast": 20.04
+      },
+      {
+       "id": "tag",
+       "kind": "headline",
+       "text": "Defend this world.Build the next.™",
+       "fontPx": 84,
+       "box": [
+        582.6,
+        540.4,
+        754.8,
+        154.5
+       ],
+       "opacity": 1,
+       "contrast": 17.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 16,
+       "box": [
+        24,
+        1036.8,
+        142.6,
+        19.2
+       ],
+       "opacity": 0.65,
+       "contrast": 7.38
+      }
+     ]
+    }
+   ],
+   "sweep": {
+    "frames": 938,
+    "minGapPx": 59,
+    "maxTexts": 7,
+    "stepSeconds": 0.1,
+    "requiredGapPx": 48,
+    "failures": 0
+   },
+   "gate": {
+    "visible": true,
+    "labelFontPx": 22,
+    "buttonFontPx": 22
+   },
+   "controls": {
+    "box": [
+     1642,
+     1000,
+     254,
+     56
+    ],
+    "gapToCornerZonePx": 1427.4,
+    "shownOnInput": true,
+    "hiddenAfter2s": true
+   },
+   "console": {
+    "errors": [],
+    "warnings": [],
+    "external": []
+   }
+  },
+  "1366x768": {
+   "shots": [
+    {
+     "id": "open-logo",
+     "t": 3.2,
+     "beat": 5.6,
+     "minGapPx": 316.3,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "logoA",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        455.3,
+        350.1,
+        454.6,
+        67.7
+       ],
+       "opacity": 1,
+       "contrast": 19.18
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "open-headline",
+     "t": 6.571,
+     "beat": 11.5,
+     "minGapPx": 274.3,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "hero",
+       "kind": "headline",
+       "text": "Missions are wonat the seams.",
+       "fontPx": 82.49,
+       "box": [
+        341.5,
+        308.1,
+        682.3,
+        151.8
+       ],
+       "opacity": 1,
+       "contrast": 17.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-orbital",
+     "t": 10.229,
+     "beat": 17.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d0",
+       "kind": "headline",
+       "text": "Orbital",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        269.4,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 15.45
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-atmosphere",
+     "t": 12.514,
+     "beat": 21.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d1",
+       "kind": "headline",
+       "text": "Atmosphere",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        434.5,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 16.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "descent-terrain",
+     "t": 14.8,
+     "beat": 25.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d2",
+       "kind": "headline",
+       "text": "Terrain",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        277.5,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 16.21
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-maritime",
+     "t": 17.086,
+     "beat": 29.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d3",
+       "kind": "headline",
+       "text": "Maritime",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        321.4,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 16.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "descent-subsea",
+     "t": 19.371,
+     "beat": 33.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d4",
+       "kind": "headline",
+       "text": "Subsea",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        253,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 16.21
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "descent-cyber",
+     "t": 21.657,
+     "beat": 37.9,
+     "minGapPx": 354.5,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "d5",
+       "kind": "headline",
+       "text": "Cyber",
+       "fontPx": 73.96,
+       "box": [
+        85.3,
+        311.6,
+        213.3,
+        68
+       ],
+       "opacity": 1,
+       "contrast": 16.62
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-1",
+     "t": 26.571,
+     "beat": 46.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m1h",
+       "kind": "headline",
+       "text": "Layered Defense,Autonomous Warfare+ Integrated Fires",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        222.6,
+        549.2,
+        145.2
+       ],
+       "opacity": 1,
+       "contrast": 14.95
+      },
+      {
+       "id": "m1s",
+       "kind": "support",
+       "text": "Coordinate autonomous platforms, sensors and fires across a layered defense.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        410.5,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 15.94
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-2",
+     "t": 33.429,
+     "beat": 58.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m2h",
+       "kind": "headline",
+       "text": "Integrated Air+ Missile Defense",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        246.8,
+        429,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 16.32
+      },
+      {
+       "id": "m2s",
+       "kind": "support",
+       "text": "Connect sensors, battle management and effectors against air and missile threats.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        386.3,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 15.82
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "mission-3",
+     "t": 40.286,
+     "beat": 70.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m3h",
+       "kind": "headline",
+       "text": "Lifecycle Management+ Cyber Warfare",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        246.8,
+        574.5,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 15.99
+      },
+      {
+       "id": "m3s",
+       "kind": "support",
+       "text": "Test, modernize and sustain critical systems as technology and cyber threats change.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        386.3,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 16.69
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-4",
+     "t": 47.143,
+     "beat": 82.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m4h",
+       "kind": "headline",
+       "text": "Critical InfrastructureResilience",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        246.8,
+        620.4,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 16.79
+      },
+      {
+       "id": "m4s",
+       "kind": "support",
+       "text": "Strengthen the energy, transportation and industrial systems missions depend on.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        386.3,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 16.79
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-5",
+     "t": 54,
+     "beat": 94.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m5h",
+       "kind": "headline",
+       "text": "Space Warfighting",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        271,
+        471.9,
+        48.4
+       ],
+       "opacity": 1,
+       "contrast": 15.45
+      },
+      {
+       "id": "m5s",
+       "kind": "support",
+       "text": "Support mission operations, space access and control in contested environments.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        362.1,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 15.3
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "mission-6",
+     "t": 60.857,
+     "beat": 106.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "m6h",
+       "kind": "headline",
+       "text": "Exploration+ Lunar Presence",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        246.8,
+        434.1,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 15.16
+      },
+      {
+       "id": "m6s",
+       "kind": "support",
+       "text": "Advance launch readiness, mission assurance and infrastructure for sustained lunar operations.",
+       "fontPx": 21.33,
+       "box": [
+        85.3,
+        386.3,
+        562.2,
+        58
+       ],
+       "opacity": 1,
+       "contrast": 15.99
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "tech",
+     "t": 66.171,
+     "beat": 115.8,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "techk",
+       "kind": "support",
+       "text": "Tech",
+       "fontPx": 19.91,
+       "box": [
+        85.3,
+        263.9,
+        113.6,
+        23.9
+       ],
+       "opacity": 1,
+       "contrast": 17.08
+      },
+      {
+       "id": "techh",
+       "kind": "headline",
+       "text": "From digital modelsto working systems.",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        330.4,
+        517.1,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 16.81
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "orchestration-headline",
+     "t": 70.4,
+     "beat": 123.2,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "orchk",
+       "kind": "support",
+       "text": "Orchestration",
+       "fontPx": 19.91,
+       "box": [
+        85.3,
+        263.9,
+        260.6,
+        23.9
+       ],
+       "opacity": 1,
+       "contrast": 17.08
+      },
+      {
+       "id": "orchh",
+       "kind": "headline",
+       "text": "Change the technology.Preserve the mission.",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        330.4,
+        608.2,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 16.38
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "orchestration-diagram",
+     "t": 76.114,
+     "beat": 133.2,
+     "minGapPx": 146.3,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "lc",
+       "kind": "label",
+       "text": "Context",
+       "fontPx": 15.64,
+       "box": [
+        1165,
+        539.6,
+        89.7,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 11.68
+      },
+      {
+       "id": "lr",
+       "kind": "label",
+       "text": "Reasoning",
+       "fontPx": 15.64,
+       "box": [
+        1165,
+        374.5,
+        115.4,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 11.84
+      },
+      {
+       "id": "la",
+       "kind": "label",
+       "text": "Action",
+       "fontPx": 15.64,
+       "box": [
+        1165,
+        209.4,
+        76.9,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.31
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.33
+      }
+     ]
+    },
+    {
+     "id": "edge",
+     "t": 79.886,
+     "beat": 139.8,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "edgek",
+       "kind": "support",
+       "text": "Edge",
+       "fontPx": 19.91,
+       "box": [
+        85.3,
+        263.9,
+        113.6,
+        23.9
+       ],
+       "opacity": 1,
+       "contrast": 16.24
+      },
+      {
+       "id": "edgeh",
+       "kind": "headline",
+       "text": "Trust your informationat point of use.",
+       "fontPx": 52.62,
+       "box": [
+        85.3,
+        330.4,
+        602.1,
+        96.8
+       ],
+       "opacity": 1,
+       "contrast": 16.14
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.36
+      }
+     ]
+    },
+    {
+     "id": "close-domains",
+     "t": 83.657,
+     "beat": 146.4,
+     "minGapPx": 88.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "z0",
+       "kind": "label",
+       "text": "Orbital",
+       "fontPx": 15.64,
+       "box": [
+        637.7,
+        105.7,
+        89.7,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.26
+      },
+      {
+       "id": "z1",
+       "kind": "label",
+       "text": "Atmosphere",
+       "fontPx": 15.64,
+       "box": [
+        618.7,
+        213.2,
+        128.2,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z2",
+       "kind": "label",
+       "text": "Terrain",
+       "fontPx": 15.64,
+       "box": [
+        637.7,
+        320.7,
+        89.7,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z3",
+       "kind": "label",
+       "text": "Maritime",
+       "fontPx": 15.64,
+       "box": [
+        631.2,
+        428.3,
+        102.5,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z4",
+       "kind": "label",
+       "text": "Subsea",
+       "fontPx": 15.64,
+       "box": [
+        644.2,
+        535.8,
+        76.9,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.22
+      },
+      {
+       "id": "z5",
+       "kind": "label",
+       "text": "Cyber",
+       "fontPx": 15.64,
+       "box": [
+        650.7,
+        643.3,
+        64.1,
+        18.8
+       ],
+       "opacity": 1,
+       "contrast": 12.26
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    },
+    {
+     "id": "close-logo-tagline",
+     "t": 90,
+     "beat": 157.5,
+     "minGapPx": 42.7,
+     "requiredGapPx": 34.1,
+     "canvas": [
+      1364,
+      768
+     ],
+     "texts": [
+      {
+       "id": "logoB",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        455.4,
+        273.9,
+        454.5,
+        67.7
+       ],
+       "opacity": 1,
+       "contrast": 20.04
+      },
+      {
+       "id": "tag",
+       "kind": "headline",
+       "text": "Defend this world.Build the next.™",
+       "fontPx": 59.73,
+       "box": [
+        414.4,
+        384.3,
+        536.6,
+        109.9
+       ],
+       "opacity": 1,
+       "contrast": 17.09
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        17.1,
+        734.1,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.37
+      }
+     ]
+    }
+   ],
+   "sweep": {
+    "frames": 938,
+    "minGapPx": 41.9,
+    "maxTexts": 7,
+    "stepSeconds": 0.1,
+    "requiredGapPx": 34.1,
+    "failures": 0
+   },
+   "gate": {
+    "visible": true,
+    "labelFontPx": 15.6444,
+    "buttonFontPx": 15.6444
+   },
+   "controls": {
+    "box": [
+     1150.9,
+     706.9,
+     197.3,
+     44
+    ],
+    "gapToCornerZonePx": 975,
+    "shownOnInput": true,
+    "hiddenAfter2s": true
+   },
+   "console": {
+    "errors": [],
+    "warnings": [],
+    "external": []
+   }
+  },
+  "390x844": {
+   "shots": [
+    {
+     "id": "open-logo",
+     "t": 3.2,
+     "beat": 5.6,
+     "minGapPx": 72,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "logoA",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        95.1,
+        94.8,
+        199.8,
+        29.8
+       ],
+       "opacity": 1,
+       "contrast": 21
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "open-headline",
+     "t": 6.571,
+     "beat": 11.5,
+     "minGapPx": 65.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "hero",
+       "kind": "headline",
+       "text": "Missions are wonat the seams.",
+       "fontPx": 23.56,
+       "box": [
+        97.6,
+        88,
+        194.8,
+        43.3
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-orbital",
+     "t": 10.229,
+     "beat": 17.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d0",
+       "kind": "headline",
+       "text": "Orbital",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        76.9,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-atmosphere",
+     "t": 12.514,
+     "beat": 21.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d1",
+       "kind": "headline",
+       "text": "Atmosphere",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        124,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-terrain",
+     "t": 14.8,
+     "beat": 25.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d2",
+       "kind": "headline",
+       "text": "Terrain",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        79.2,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-maritime",
+     "t": 17.086,
+     "beat": 29.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d3",
+       "kind": "headline",
+       "text": "Maritime",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        91.8,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-subsea",
+     "t": 19.371,
+     "beat": 33.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d4",
+       "kind": "headline",
+       "text": "Subsea",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        72.3,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "descent-cyber",
+     "t": 21.657,
+     "beat": 37.9,
+     "minGapPx": 88.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "d5",
+       "kind": "headline",
+       "text": "Cyber",
+       "fontPx": 21.13,
+       "box": [
+        24.4,
+        89,
+        60.9,
+        19.4
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-1",
+     "t": 26.571,
+     "beat": 46.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m1h",
+       "kind": "headline",
+       "text": "Layered Defense,Autonomous Warfare+ Integrated Fires",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        39.3,
+        187.9,
+        49.6
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m1s",
+       "kind": "support",
+       "text": "Coordinate autonomous platforms, sensors and fires across a layered defense.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        101.1,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-2",
+     "t": 33.429,
+     "beat": 58.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m2h",
+       "kind": "headline",
+       "text": "Integrated Air+ Missile Defense",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        47.5,
+        146.8,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m2s",
+       "kind": "support",
+       "text": "Connect sensors, battle management and effectors against air and missile threats.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        92.8,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-3",
+     "t": 40.286,
+     "beat": 70.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m3h",
+       "kind": "headline",
+       "text": "Lifecycle Management+ Cyber Warfare",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        47.5,
+        196.6,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m3s",
+       "kind": "support",
+       "text": "Test, modernize and sustain critical systems as technology and cyber threats change.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        92.8,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-4",
+     "t": 47.143,
+     "beat": 82.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m4h",
+       "kind": "headline",
+       "text": "Critical InfrastructureResilience",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        47.5,
+        212.3,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m4s",
+       "kind": "support",
+       "text": "Strengthen the energy, transportation and industrial systems missions depend on.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        92.8,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-5",
+     "t": 54,
+     "beat": 94.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m5h",
+       "kind": "headline",
+       "text": "Space Warfighting",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        55.8,
+        161.5,
+        16.5
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m5s",
+       "kind": "support",
+       "text": "Support mission operations, space access and control in contested environments.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        84.5,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "mission-6",
+     "t": 60.857,
+     "beat": 106.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "m6h",
+       "kind": "headline",
+       "text": "Exploration+ Lunar Presence",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        47.5,
+        148.5,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "m6s",
+       "kind": "support",
+       "text": "Advance launch readiness, mission assurance and infrastructure for sustained lunar operations.",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        92.8,
+        226.2,
+        57.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "tech",
+     "t": 66.171,
+     "beat": 115.8,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "techk",
+       "kind": "support",
+       "text": "Tech",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        67.7,
+        59.7,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "techh",
+       "kind": "headline",
+       "text": "From digital modelsto working systems.",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        96.7,
+        176.9,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "orchestration-headline",
+     "t": 70.4,
+     "beat": 123.2,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "orchk",
+       "kind": "support",
+       "text": "Orchestration",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        67.7,
+        163.1,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "orchh",
+       "kind": "headline",
+       "text": "Change the technology.Preserve the mission.",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        96.7,
+        208.1,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "orchestration-diagram",
+     "t": 76.114,
+     "beat": 133.2,
+     "minGapPx": 30.4,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "lc",
+       "kind": "label",
+       "text": "Context",
+       "fontPx": 14,
+       "box": [
+        262.6,
+        148.4,
+        80.4,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "lr",
+       "kind": "label",
+       "text": "Reasoning",
+       "fontPx": 14,
+       "box": [
+        262.6,
+        101.2,
+        103.3,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "la",
+       "kind": "label",
+       "text": "Action",
+       "fontPx": 14,
+       "box": [
+        262.6,
+        54,
+        68.9,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "edge",
+     "t": 79.886,
+     "beat": 139.8,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "edgek",
+       "kind": "support",
+       "text": "Edge",
+       "fontPx": 14,
+       "box": [
+        24.4,
+        67.7,
+        59.7,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "edgeh",
+       "kind": "headline",
+       "text": "Trust your informationat point of use.",
+       "fontPx": 18,
+       "box": [
+        24.4,
+        96.7,
+        206,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "close-domains",
+     "t": 83.657,
+     "beat": 146.4,
+     "minGapPx": 13.9,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "z0",
+       "kind": "label",
+       "text": "Orbital",
+       "fontPx": 14,
+       "box": [
+        155,
+        24.4,
+        80.4,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "z1",
+       "kind": "label",
+       "text": "Atmosphere",
+       "fontPx": 14,
+       "box": [
+        137.5,
+        55.1,
+        114.8,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "z2",
+       "kind": "label",
+       "text": "Terrain",
+       "fontPx": 14,
+       "box": [
+        155,
+        85.8,
+        80.4,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "z3",
+       "kind": "label",
+       "text": "Maritime",
+       "fontPx": 14,
+       "box": [
+        149,
+        116.5,
+        91.8,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "z4",
+       "kind": "label",
+       "text": "Subsea",
+       "fontPx": 14,
+       "box": [
+        160.5,
+        147.3,
+        68.9,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "z5",
+       "kind": "label",
+       "text": "Cyber",
+       "fontPx": 14,
+       "box": [
+        166.5,
+        178,
+        57.4,
+        16.8
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    },
+    {
+     "id": "close-logo-tagline",
+     "t": 90,
+     "beat": 157.5,
+     "minGapPx": 12.2,
+     "requiredGapPx": 9.8,
+     "canvas": [
+      390,
+      220
+     ],
+     "texts": [
+      {
+       "id": "logoB",
+       "kind": "logo",
+       "text": "",
+       "fontPx": 16,
+       "box": [
+        95.1,
+        72.2,
+        199.7,
+        29.8
+       ],
+       "opacity": 1,
+       "contrast": 21
+      },
+      {
+       "id": "tag",
+       "kind": "headline",
+       "text": "Defend this world.Build the next.™",
+       "fontPx": 18,
+       "box": [
+        114.1,
+        114.1,
+        161.7,
+        33.1
+       ],
+       "opacity": 1,
+       "contrast": 17.9
+      },
+      {
+       "id": "watermark",
+       "kind": "watermark",
+       "text": "Shane Turner, DBA",
+       "fontPx": 14,
+       "box": [
+        6,
+        196.6,
+        124.8,
+        16.8
+       ],
+       "opacity": 0.65,
+       "contrast": 7.45
+      }
+     ]
+    }
+   ],
+   "sweep": {
+    "frames": 938,
+    "minGapPx": 11.9,
+    "maxTexts": 7,
+    "stepSeconds": 0.1,
+    "requiredGapPx": 9.8,
+    "failures": 0
+   },
+   "gate": {
+    "visible": true,
+    "labelFontPx": 14,
+    "buttonFontPx": 14
+   },
+   "controls": {
+    "box": [
+     194,
+     167.4,
+     188,
+     44
+    ],
+    "gapToCornerZonePx": 53.5,
+    "shownOnInput": true,
+    "hiddenAfter2s": true
+   },
+   "console": {
+    "errors": [],
+    "warnings": [],
+    "external": []
+   }
+  }
+ },
+ "timeline": {
+  "bpm": 105,
+  "beats": 164,
+  "seconds": 93.71428571428571,
+  "sceneCutsOnBeat": true,
+  "textEntrancesOnBeat": true,
+  "cuts": [
+   {
+    "scene": "open",
+    "beat": 0,
+    "t": 0
+   },
+   {
+    "scene": "descent",
+    "beat": 16,
+    "t": 9.143
+   },
+   {
+    "scene": "m1",
+    "beat": 40,
+    "t": 22.857
+   },
+   {
+    "scene": "m2",
+    "beat": 52,
+    "t": 29.714
+   },
+   {
+    "scene": "m3",
+    "beat": 64,
+    "t": 36.571
+   },
+   {
+    "scene": "m4",
+    "beat": 76,
+    "t": 43.429
+   },
+   {
+    "scene": "m5",
+    "beat": 88,
+    "t": 50.286
+   },
+   {
+    "scene": "m6",
+    "beat": 100,
+    "t": 57.143
+   },
+   {
+    "scene": "tech",
+    "beat": 112,
+    "t": 64
+   },
+   {
+    "scene": "orch",
+    "beat": 120,
+    "t": 68.571
+   },
+   {
+    "scene": "edge",
+    "beat": 136,
+    "t": 77.714
+   },
+   {
+    "scene": "close",
+    "beat": 144,
+    "t": 82.286
+   }
+  ],
+  "entrances": [
+   {
+    "id": "logoA",
+    "beat": 3,
+    "t": 1.714,
+    "goneBy": 4.471
+   },
+   {
+    "id": "hero",
+    "beat": 8,
+    "t": 4.571,
+    "goneBy": 8.914
+   },
+   {
+    "id": "d0",
+    "beat": 16,
+    "t": 9.143,
+    "goneBy": 11.314
+   },
+   {
+    "id": "d1",
+    "beat": 20,
+    "t": 11.429,
+    "goneBy": 13.6
+   },
+   {
+    "id": "d2",
+    "beat": 24,
+    "t": 13.714,
+    "goneBy": 15.886
+   },
+   {
+    "id": "d3",
+    "beat": 28,
+    "t": 16,
+    "goneBy": 18.171
+   },
+   {
+    "id": "d4",
+    "beat": 32,
+    "t": 18.286,
+    "goneBy": 20.457
+   },
+   {
+    "id": "d5",
+    "beat": 36,
+    "t": 20.571,
+    "goneBy": 22.743
+   },
+   {
+    "id": "m1h",
+    "beat": 40,
+    "t": 22.857,
+    "goneBy": 29.314
+   },
+   {
+    "id": "m1s",
+    "beat": 42,
+    "t": 24,
+    "goneBy": 29.314
+   },
+   {
+    "id": "m2h",
+    "beat": 52,
+    "t": 29.714,
+    "goneBy": 36.171
+   },
+   {
+    "id": "m2s",
+    "beat": 54,
+    "t": 30.857,
+    "goneBy": 36.171
+   },
+   {
+    "id": "m3h",
+    "beat": 64,
+    "t": 36.571,
+    "goneBy": 43.029
+   },
+   {
+    "id": "m3s",
+    "beat": 66,
+    "t": 37.714,
+    "goneBy": 43.029
+   },
+   {
+    "id": "m4h",
+    "beat": 76,
+    "t": 43.429,
+    "goneBy": 49.886
+   },
+   {
+    "id": "m4s",
+    "beat": 78,
+    "t": 44.571,
+    "goneBy": 49.886
+   },
+   {
+    "id": "m5h",
+    "beat": 88,
+    "t": 50.286,
+    "goneBy": 56.743
+   },
+   {
+    "id": "m5s",
+    "beat": 90,
+    "t": 51.429,
+    "goneBy": 56.743
+   },
+   {
+    "id": "m6h",
+    "beat": 100,
+    "t": 57.143,
+    "goneBy": 63.6
+   },
+   {
+    "id": "m6s",
+    "beat": 102,
+    "t": 58.286,
+    "goneBy": 63.6
+   },
+   {
+    "id": "techk",
+    "beat": 112,
+    "t": 64,
+    "goneBy": 68.229
+   },
+   {
+    "id": "techh",
+    "beat": 112,
+    "t": 64,
+    "goneBy": 68.229
+   },
+   {
+    "id": "orchk",
+    "beat": 120,
+    "t": 68.571,
+    "goneBy": 72.171
+   },
+   {
+    "id": "orchh",
+    "beat": 120,
+    "t": 68.571,
+    "goneBy": 72.171
+   },
+   {
+    "id": "lc",
+    "beat": 127,
+    "t": 72.571,
+    "goneBy": 77.371
+   },
+   {
+    "id": "lr",
+    "beat": 129,
+    "t": 73.714,
+    "goneBy": 77.371
+   },
+   {
+    "id": "la",
+    "beat": 131,
+    "t": 74.857,
+    "goneBy": 77.371
+   },
+   {
+    "id": "edgek",
+    "beat": 136,
+    "t": 77.714,
+    "goneBy": 81.943
+   },
+   {
+    "id": "edgeh",
+    "beat": 136,
+    "t": 77.714,
+    "goneBy": 81.943
+   },
+   {
+    "id": "z0",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "z1",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "z2",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "z3",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "z4",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "z5",
+    "beat": 144,
+    "t": 82.286,
+    "goneBy": 84.914
+   },
+   {
+    "id": "logoB",
+    "beat": 152,
+    "t": 86.857,
+    "goneBy": 92.771
+   },
+   {
+    "id": "tag",
+    "beat": 154,
+    "t": 88,
+    "goneBy": 92.771
+   }
+  ],
+  "smallestGapBetweenTextsSeconds": 0.1,
+  "taglineHoldSeconds": 3.07
+ },
+ "score": {
+  "bands": {
+   "lowBelow120HzDb": -18.2,
+   "mid120To2000HzDb": -21.4,
+   "highAbove2000HzDb": -35.4
+  },
+  "seconds": 93.71429166666667,
+  "samples": 4498286,
+  "sampleRate": 48000,
+  "peak": 0.9366,
+  "peakDb": -0.6,
+  "samplesAtCeiling": 0,
+  "rmsDb": -16.2,
+  "lowShareDb": -2,
+  "lastQuarterSecondDb": -75.5,
+  "last50msDb": -101.3,
+  "tailAt90sDb": -24.7,
+  "barsDb": [
+   -16.1,
+   -22.8,
+   -17.8,
+   -18.5,
+   -16.1,
+   -18.5,
+   -18.1,
+   -17,
+   -16.8,
+   -15.4,
+   -14.6,
+   -17.9,
+   -16.9,
+   -14.1,
+   -17.9,
+   -16.6,
+   -15,
+   -18,
+   -16.6,
+   -14.7,
+   -17.5,
+   -16.5,
+   -13.7,
+   -18,
+   -16.5,
+   -14.9,
+   -17.7,
+   -15.7,
+   -16.5,
+   -18.1,
+   -15.2,
+   -17.7,
+   -15.9,
+   -16.6,
+   -13.5,
+   -16,
+   -15.7,
+   -13.7,
+   -10.8,
+   -24,
+   -33.9
+  ],
+  "cuts": [
+   {
+    "beat": 16,
+    "t": 9.143,
+    "preDb": -19.6,
+    "postDb": -8.4,
+    "jumpDb": 11.2
+   },
+   {
+    "beat": 40,
+    "t": 22.857,
+    "preDb": -14.5,
+    "postDb": -8.1,
+    "jumpDb": 6.4
+   },
+   {
+    "beat": 52,
+    "t": 29.714,
+    "preDb": -12.1,
+    "postDb": -7.9,
+    "jumpDb": 4.2
+   },
+   {
+    "beat": 64,
+    "t": 36.571,
+    "preDb": -12,
+    "postDb": -7.7,
+    "jumpDb": 4.3
+   },
+   {
+    "beat": 76,
+    "t": 43.429,
+    "preDb": -11.9,
+    "postDb": -7.3,
+    "jumpDb": 4.6
+   },
+   {
+    "beat": 88,
+    "t": 50.286,
+    "preDb": -11.4,
+    "postDb": -7.8,
+    "jumpDb": 3.6
+   },
+   {
+    "beat": 100,
+    "t": 57.143,
+    "preDb": -11.3,
+    "postDb": -7.7,
+    "jumpDb": 3.6
+   },
+   {
+    "beat": 112,
+    "t": 64,
+    "preDb": -11.3,
+    "postDb": -9,
+    "jumpDb": 2.3
+   },
+   {
+    "beat": 120,
+    "t": 68.571,
+    "preDb": -12.1,
+    "postDb": -8.3,
+    "jumpDb": 3.8
+   },
+   {
+    "beat": 136,
+    "t": 77.714,
+    "preDb": -11.7,
+    "postDb": -7.6,
+    "jumpDb": 4.1
+   },
+   {
+    "beat": 144,
+    "t": 82.286,
+    "preDb": -11.3,
+    "postDb": -8.8,
+    "jumpDb": 2.5
+   },
+   {
+    "beat": 152,
+    "t": 86.857,
+    "preDb": -10.3,
+    "postDb": -6.7,
+    "jumpDb": 3.6
+   }
+  ]
+ },
+ "playback": {
+  "audioStarted": true,
+  "sampleRate": 44100,
+  "pauseHolds": true,
+  "resumes": true,
+  "mute": {
+   "levelBefore": 0.073,
+   "levelMuted": 0,
+   "pressed": "true"
+  },
+  "smoothness": {
+   "frames": 354,
+   "frameIntervalMs": {
+    "median": 16.7,
+    "p95": 17.6,
+    "max": 56.4
+   },
+   "clockVersusWallPerFrameMs": {
+    "median": 0.09,
+    "p95": 0.29,
+    "max": 3.31
+   },
+   "framesWhereTimeStoodStill": 0,
+   "framesWhereTimeWentBack": 0,
+   "logo": {
+    "framesOnScreen": 162,
+    "framesWithoutMovement": 0,
+    "framesMovingBackwards": 0
+   }
+  },
+  "samples": 347,
+  "audioClockDriftSeconds": {
+   "min": -0.001,
+   "max": 0.024
+  },
+  "pictureBehindAudioSeconds": {
+   "median": 0.022,
+   "max": 1.352,
+   "note": "picture time is read from the audio clock on every frame; the offset seen here is the age of the last painted frame in a software renderer"
+  },
+  "fractionOfSamplesWithSound": 1,
+  "lastAudioTime": 93.59,
+  "filmSeconds": 93.714,
+  "ended": true,
+  "pictureTimeAtEnd": 93.714,
+  "audioClosedAtEnd": true,
+  "replayOffered": true,
+  "playedSilent": false,
+  "console": {
+   "errors": [],
+   "warnings": [],
+   "external": []
+  }
+ },
+ "failures": []
+}

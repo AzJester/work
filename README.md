@@ -1,9 +1,78 @@
 # work
 My Work Repository
 
+## Application Library
+
+A searchable launch point for the work applications built across the
+[`AzJester`](https://github.com/AzJester) repositories. The catalog includes live
+products, account-gated tools, and source-only applications that have not been
+published yet.
+
+The library is work-only and fully curated. Every card is written into the page, so
+it loads nothing at run time and a new repository appears only when someone adds a
+card for it. Visitors can search, filter by category, pin the applications they use,
+switch between card and list layouts, and choose a light or dark theme. Those choices
+are stored in the visitor's own browser and nowhere else.
+
+### [Open the Application Library](https://azjester.github.io/work/apps.html)
+
+## Solution Architect Workbench
+
+A browser-local workbench for practicing defense solution architects. It keeps the
+mission problem, customer hot buttons, requirements, source evidence, technology assessments, architecture,
+technical decisions, proposal inputs, and transition obligations in one validated
+solution workspace instead of turning the work into a calendar or task schedule.
+
+### [Open Solution Architect Workbench](https://azjester.github.io/work/solutions-architect/)
+
+- move among the iterative **Discover → Shape → Assess → Architect → Prove → Propose
+  → Transition** work lenses while the command view surfaces unscheduled obligations
+- manage multiple isolated solutions with automatic local saves, bounded recovery
+  points, duplication, and validated full-workspace JSON import/export
+- classify each solution against one or more of the six company mission segments and
+  carry that alignment into decision-package and reviewed AI outputs
+- capture approved facts quickly, then classify them through a separate per-solution
+  Review inbox before they can become authoritative workspace records
+- paste permitted meeting transcripts or summaries, tag them to the applicable
+  mission segments, and preserve only deliberately selected evidence excerpts
+- open bounded TXT, Markdown, CSV, JSON, PDF, DOCX, PPTX, XLS, XLSX, ODS, PNG, JPEG,
+  and WebP files locally; only reviewed excerpts/metadata persist, images use manual
+  captions rather than OCR, and original binary bytes are never stored or uploaded
+- ingest customer hot buttons from a bounded pasted list, preserve source and
+  confidence, validate them separately, and trace them into requirements
+- build win themes that connect a customer priority to value, a differentiator, and
+  evidence-backed proof instead of storing disconnected proposal slogans
+- compare hardware, software, tools, vendors, platforms, and integrated options using
+  weighted 0–5 criteria, explicit unknown values, rationale, evidence confidence, and
+  optional TRL 1–9, MRL 1–10, and IRL 0–9 candidate summaries; rankings remain
+  provisional until coverage and evidence are comparable
+- create fit-for-purpose mission, mission-thread, system-interface, data-flow, and
+  deployment/transition views with accessible tables and SVG/PNG export
+- generate a decision package as Markdown, standalone HTML, or a print-ready browser
+  view for PDF output
+- start in the Light theme, use a compact theme toggle, or opt into the device theme
+  without changing workspace content
+- optionally send an exact, user-reviewed subset of approved workspace facts to the
+  authenticated `solution-assist` Edge Function; AI responses remain drafts and cannot
+  overwrite authored records
+
+Workspace content stays in the current browser unless the user downloads an export or
+explicitly approves an AI payload. The public site and browser storage are not an
+authorization boundary: the published release is approved-unclassified/non-CUI only.
+Do not enter classified, CUI, export-controlled, proprietary, or customer-restricted
+content.
+
+Start locally from the repository root with `python -m http.server 8000`, then open
+`http://localhost:8000/solutions-architect/`. See the app's
+[README](solutions-architect/README.md), [rendered user guide](solutions-architect/guide.html),
+[guide source](solutions-architect/docs/USER_GUIDE.md),
+[architecture](solutions-architect/docs/ARCHITECTURE.md),
+[deployment guide](solutions-architect/docs/DEPLOYMENT.md), and
+[security guide](solutions-architect/docs/SECURITY.md).
+
 ## Map Builder
 
-A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **3.2.3**, created by **Dr. Shane Turner**:
+A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **4.0.0**, created by **Dr. Shane Turner**:
 
 ### [Open Map Builder](https://azjester.github.io/work/geopresence/)
 
@@ -11,7 +80,7 @@ A browser application for building a branded geographic U.S. location map and ex
 - search 887 selectable public-reference military-installation anchors covering all 51 state/DC codes
 - use compact progressive-disclosure Map settings: Quick setup opens immediately, while Map details, Advanced, and Project stay collapsed with concise live summaries
 - use familiar generic teardrop pins with distinct interiors for eleven built-in types: Headquarters, Regional headquarters, Site, Contract site, Future site, Program office, Operations center, Customer site, Partner site, Test or range site, and Manufacturing facility
-- combine repeated locations of one type behind a count badge and fan different pin types apart with leader lines
+- draw every pin with its tip on the place it marks; places too close to tell apart share one numbered pin, and a key under the map lists what each number stands for
 - adapt pin outlines for light, dark, and transparent exports; the legend uses identical pins, shows only types used on the map, and wraps automatically
 - protect state initials, small-state callouts, counts, connectors, nearby pin groups, and place labels from overlap
 - edit locations, confirm destructive changes, Undo recent actions, and recover the latest destructive snapshot
@@ -26,6 +95,24 @@ Versioned same-origin catalogs reduce initial page parsing and are cached with t
 The teardrop is generic application-rendered cartographic geometry, not Google Maps artwork or branding. The eleven built-in types use star, building, circle, briefcase, clock, document, network/gear, person, link, target, and factory interiors respectively. The metadata-driven pin renderer can support additional categories later.
 
 The app requires no mapping service, charting library, account, API key, backend, runtime government connection, or government approval. City and installation catalogs are public reference data, not legal boundaries, exact building locations, or a complete military inventory. Optional samples are identified in the editor; the Huntsville Regional Headquarters and contract entries reflect user-provided information, while the other locations are demonstration examples.
+
+## Topo Map Builder
+
+A browser application for building printable topographic maps of anywhere in the world, to scale, with an MGRS grid, and for exporting the same map to Garmin handhelds and ATAK. Version **1.0.0**:
+
+### [Open Topo Map Builder](https://azjester.github.io/work/topo/)
+
+- draw a topographic map with hillshade, contours, land cover, water, roads, trails, railways, buildings, parks, boundaries, peaks and place names
+- overlay the MGRS grid from grid zone boundaries down to 100 m lines, and read grid convergence, magnetic declination and the MGRS reference under the pointer
+- go to a town or ZIP code, an MGRS reference, or a latitude and longitude
+- pick print pages at 1:25,000, 1:50,000, 1:24,000, 1:48,000 or 1:15,000 on US Letter; pages sit on the UTM grid, move in 1 km steps and butt together exactly
+- export a PDF at true scale with a vector grid, grid numbers, scale bars, a north diagram, the grid-magnetic angle, the contour interval, data credits and an optional legend page
+- build a Garmin Custom Map (KMZ) within a 100 or 500 image device limit, or an ATAK tile set (MBTiles) across a range of zoom levels
+- choose colour or black-and-white ink, hillshade and contour density, metric or imperial units, and twenty layer switches; preview terrain in 3D; share a link to the same pages
+
+It is a static site with no server, account or API key. The page and its libraries (MapLibre GL JS, maplibre-contour, jsPDF, sql.js) are served from the repository. The visitor's browser reads map data straight from public hosts: OpenStreetMap vector tiles from OpenFreeMap, Mapzen terrain tiles on AWS Open Data, and Nominatim for place search. Magnetic declination comes from the World Magnetic Model 2025. GitHub Pages deployment is gated by Node and Playwright tests and followed by a production smoke test.
+
+It is an original application built on open data and open-source libraries. It carries no flood zones, power lines, pipelines, aeronautical obstacles or marine chart data, because no free worldwide tile source offers them, and it is not a substitute for an official map. Details, accuracy figures and limits are in [`topo/README.md`](topo/README.md).
 
 ## Weekly Status Tracker
 
@@ -285,8 +372,9 @@ by Row Level Security — the capability link is the single, revocable door.
 ## Roadmap Builder
 
 A standalone page for building **project roadmaps** — pick a starter template, fill out a form,
-or describe the project in plain language and let Claude draft it — then edit lanes, milestones,
-statuses and dates on a clean Monday-style timeline. Works offline out of the box; sign-in adds
+or describe the project in plain language and let Claude draft it. The application shell keeps
+Portfolio navigation distinct, while each selected roadmap gets its own document header and focused
+**Executive**, **Timeline**, and **Details** views. Works offline out of the box; sign-in adds
 cloud sync and shareable links.
 
 ### → https://azjester.github.io/work/roadmap.html
@@ -296,21 +384,38 @@ cloud sync and shareable links.
     Development**, **Business Dev / GTM Campaign**, **Data &amp; Analytics program**, **Hiring /
     team build**) pre-fill phases and milestones dated relative to today. Add/edit/reorder
     lanes, phases (bars), and milestones (diamonds) inline. No account, no server.
-  - **✨ Build from description** — type what you're planning (phases, rough dates) and Claude
+  - **Build with AI** — type what you're planning (phases, rough dates) and Claude
     returns a structured roadmap you can edit or discard. Runs server-side in a Supabase Edge
     Function (`build-roadmap`) so the API key never reaches the browser.
-- **Portfolio overview** — an **Overview** tab shows every roadmap at once as a card grid, each
-  with a mini-timeline preview, a % complete, a per-status breakdown, date range, and last-updated
-  time — so you can track several programs side by side. Click a card to open it; **Editor** tab
-  edits the active one. Toggle views from the header.
-- **Archive completed roadmaps** — the ⋯ menu (or the 🗄 button on an Overview card) moves a
-  finished roadmap into a collapsed **Archived** section below the active grid; it stays openable
-  and restorable (↩ Unarchive) and is grouped under "Archived" in the roadmap picker. The header
-  count reads e.g. "4 roadmaps · 2 archived".
+- **Portfolio application shell** — Portfolio navigation is separate from the selected-roadmap
+  header, so app-level navigation and document actions no longer compete with the roadmap title.
+  **Active**, **Archived**, and **Trash** filters use the same normalized card layout, with a
+  fixed preview area, completion, health, next milestone, sharing state, and last-updated time.
+- **Three focused roadmap views** — **Executive** combines completion, schedule, next gate,
+  health, upcoming decisions, and authored analysis in one decision-ready view; **Timeline** makes
+  the Gantt the visual centerpiece; **Details** contains the editable roadmap notes, lanes, and items.
+- **Simplified actions** — the roadmap header keeps the roadmap picker and five clear tasks in
+  reach: **New roadmap**, **Share**, **Present**, **Export**, and **More**. The **More** menu retains
+  AI building, templates, import, cloud sync, duplicate, archive, collaborator, public, and Trash
+  controls without crowding the main toolbar.
+- **Progressive Details editor** — lane headers show useful at-a-glance facts and expand on demand;
+  the first lane opens by default, while the rest stay compact until needed. Item labels, dates,
+  status, gate, notes, and ordering remain directly editable with keyboard-accessible controls.
+- **Archive completed roadmaps** — archive from the roadmap menu or its Portfolio card, then use
+  the **Archived** filter to open or restore it. Soft-deleted roadmaps remain separately recoverable
+  under **Trash**, and archived roadmaps stay grouped in the roadmap picker.
 - **Timeline** — inline-SVG Gantt: month gridlines, a dashed **Today** marker, color-coded status
   (Planned · In progress · Complete · At risk · Blocked · On hold) and outlined milestone diamonds,
-  with a legend. **Zoom** the time axis 50–300% and scroll horizontally. Sliding light/dark toggle.
-  New phases and milestones are added after the lane's last item so they don't overlap.
+  with a legend. **Fit** shows the complete project on a desktop; **− / 100% / +** switch to a
+  detailed 50–300% scale when closer inspection is useful. **Present** removes editing chrome for
+  a clean meeting display. Sliding light/dark toggle. New phases and milestones are added after
+  the lane's last item so they don't overlap.
+- **Responsive by design** — long titles wrap instead of disappearing, the mobile shell collapses
+  to one compact action menu, and controls stay inside the page from small phones through large
+  monitors. Timeline **Fit** uses the available width to show the whole project when possible;
+  the accessible timeline list remains available on narrow screens.
+- **Polished visual system** — stronger type hierarchy, restrained surfaces, consistent controls,
+  and softer status treatments keep attention on the schedule in both light and dark modes.
 - **Statuses &amp; kinds** — each item is a **phase** (start→end bar) or a **milestone** (single
   date), each with one of six status chips. Lanes get cycling group colors.
 - **Saved and recoverable in your browser** — the original `roadmap_builder_v1` value is retained
@@ -318,10 +423,15 @@ cloud sync and shareable links.
   `roadmap_builder_v2:<user-id>` copy, with persistent pending-sync operations, Trash, and Undo
   snapshots. The app stops destructive changes if the recovery snapshot cannot be verified.
 - **Exports** — **JSON** (one roadmap), **Full portfolio backup** (every active, archived, and
-  trashed roadmap plus sync metadata), **HTML** (a self-contained, magazine-style
-  page with the full Gantt, stat chips, summary and analysis cards), **PNG** (the timeline as
-  an image), and **Print / PDF**.
-- **Import from Jira (CSV)** — *Import ▾ → Jira CSV…* takes Jira's built-in issue export
+  trashed roadmap plus sync metadata), **HTML** (a self-contained, offline, magazine-style page
+  with the full Gantt, stat chips, summary and analysis cards; its own **Fit / − / 100% / +**
+  controls; responsive labels; and print fitting), **PNG** (the timeline as an image), and
+  **Print / PDF**.
+- **JSON import template** — **More → Download JSON template** downloads an immediately
+  importable `roadmap.v1` starter file. Replace its clearly marked `[REPLACE]` text and ISO
+  dates (`YYYY-MM-DD`), then choose **More → Import Roadmap JSON…**. Template generation and
+  import both work locally in the browser.
+- **Import from Jira (CSV)** — **More → Import Jira CSV…** takes Jira's built-in issue export
   (any Jira: **Export → CSV**, current or all fields) and builds a roadmap deterministically —
   no credentials, works offline, nothing leaves the browser:
   - **Epics → lanes.** Other issues land in their epic's lane (via *Epic Link* or *Parent*),
@@ -333,22 +443,30 @@ cloud sync and shareable links.
     In progress; Blocked; On Hold/Waiting; anything with "risk" → At risk; else Planned).
   - A **`gate` label** in Jira marks the item as a gate (dashed line + GATE flag); each item's
     note keeps its issue key (e.g. `SH-11`).
-  - Prefer AI shaping instead? Paste the raw issue list into **✨ Build from description**.
+  - Prefer AI shaping instead? Paste the raw issue list into **Build with AI**.
 - **Optional cloud (sign in)** — revision-aware Supabase RPCs synchronize the complete portfolio.
   Every mutation has a durable UUID and expected revision, so a network retry is idempotent and
   a stale device cannot overwrite a newer one. Divergent copies are retained as clearly labeled
   recovered roadmaps. Soft-deleted roadmaps appear in cross-device **Trash** and remain restorable.
-- **Managed read-only share links** — new links use URL fragments, expire after 30 days, can be
-  listed/revoked in the app, and continue accepting legacy `?s=<token>` URLs. The server validates
-  share ownership and returns a strict presentation-only document.
+- **Per-roadmap collaborators** — an owner can use **More → Manage collaborators…** to
+  grant one sign-in email either **Editor** or **Viewer** access. Editors can change roadmap content;
+  Viewers are read-only. Only the owner can publish, archive, move to Trash, create bearer-share
+  links, change roles, or revoke access. The database enforces the role on every save; hiding a
+  button in the browser is not the security boundary.
+- **Managed read-only share links** — **More → Create viewer link…** creates a URL-fragment
+  link that expires after 30 days. Links can be listed or revoked in the app, which also continues
+  accepting legacy `?s=<token>` URLs. The primary **Share** action manages named collaborators;
+  the server validates bearer-link ownership and returns a strict presentation-only document.
 - **Sign-in-gated editing + public portfolio** — visitors who aren't signed in get a **read-only**
-  view: they can browse the roadmaps you've marked **public** (🌐 *Make public* in the toolbar) but
-  can't edit anything. Only the signed-in owner can create or change roadmaps. Sessions **persist
-  across refreshes** until you sign out. Public and bearer-share RPCs remove private notes, AI
-  prompts/hints, identities, tokens, secrets, and unknown fields before returning any document.
-- **Multi-user portfolios** — each account has an isolated browser key and owner-only server RPCs.
-  Provisioned temporary-password accounts must choose a compliant password (≥12 chars · upper ·
-  lower · number · special) before the editor unlocks.
+  view: they can browse the roadmaps you've marked **public** (**More → Make public**) but
+  can't edit anything. Signed-in access is decided separately for every roadmap. Sessions
+  **persist across refreshes** until you sign out. Public and bearer-share RPCs remove private
+  notes, AI prompts/hints, identities, tokens, secrets, and unknown fields before returning any
+  document.
+- **Multi-user portfolios** — each account has an isolated browser cache and receives only the
+  owned or explicitly shared roadmaps returned by the access-aware server RPC. Provisioned
+  temporary-password accounts must choose a compliant password (≥12 chars · upper · lower ·
+  number · special) before the application unlocks.
 
 **One-time setup (only for the AI and cloud features — the template/form path needs none):**
 
@@ -377,26 +495,57 @@ cloud sync and shareable links.
     tool-use so the model returns exactly this shape (the client normalizes/repairs it too).
   - If the function isn't deployed the page degrades gracefully — the button shows a clear note
     and the offline paths keep working.
-- **AI narrative (`roadmap-summary`)** — powers the **✨ Write narrative** button in the
-  *Progress summary* card: it turns the computed progress facts into a short prose exec summary.
+- **AI narrative (`roadmap-summary`)** — powers the **Write narrative** button in the
+  **Executive** band: it turns the computed progress facts into a short prose exec summary.
   Deploy `supabase functions deploy roadmap-summary`; it reuses the **same** `ANTHROPIC_API_KEY`
   and `ALLOWED_EMAILS` secrets as `build-roadmap` (set once, covers both). See its
-  [README](supabase/functions/roadmap-summary/README.md). The free computed summary shows without it.
+  [README](supabase/functions/roadmap-summary/README.md). The computed Executive facts show
+  without it.
 - **Cloud sync + share** — do not paste ad-hoc table policies or grants into the SQL editor.
   The tracked migrations are the source of truth:
   - `20260711180000_roadmap_data_safety.sql` provisions or upgrades the tables without replacing
     existing IDs/documents/tokens, records every existing row as revision 0, adds append-only
     history, atomic save/delete/restore RPCs, soft-delete Trash, and sanitized public/share APIs.
   - The post-cutover RPC-only migration revokes browser table access after the v2 frontend is live.
+  - `20260821010000_roadmap_collaboration.sql` adds private email-based Editor/Viewer grants,
+    owner-only access-management RPCs, and server-enforced collaborative saves. Revoked grants
+    remain in the owner's audit history and no longer authorize fetching or saving through
+    Supabase.
   GitHub Pages runs `supabase db push --dry-run` and then `supabase db push` before publishing the
   matching frontend, so the browser never gets ahead of its database contract.
 
 ### Multiple users, each with their own portfolio
 
-Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Every
-owner query explicitly uses `auth.uid()` inside a narrowly granted `SECURITY DEFINER` RPC; public
-and bearer-share callers receive only the bounded presentation schema. AI access remains separately
-fail-closed through `AI_ALLOWED_EMAILS` and `AI_ALLOWED_ORIGINS` Edge Function secrets.
+Keep public sign-ups disabled and provision approved accounts in Supabase Authentication. Then:
+
+1. Sign in as the roadmap owner and open the roadmap.
+2. Choose **More → Manage collaborators…**, enter the teammate's exact Supabase sign-in
+   email, and choose **Editor** or **Viewer**.
+3. Send the teammate the normal Roadmap Builder URL. The access grant does not send an email; it
+   becomes active automatically when that email signs in.
+4. Change the role or choose **Remove** from the same dialog at any time. Supabase stops authorizing
+   server reads and writes immediately; because a browser may be offline, its shared cache is
+   removed after the next successful access sync. Revocation cannot erase a file the collaborator
+   already exported.
+
+Every account query derives identity from `auth.uid()` inside a narrowly granted
+`SECURITY DEFINER` RPC. Direct browser access to the collaboration and roadmap tables remains
+revoked. Public and bearer-share callers receive only the bounded presentation schema. AI access
+remains separately fail-closed through `AI_ALLOWED_EMAILS` and `AI_ALLOWED_ORIGINS` Edge Function
+secrets.
+
+### Keeping the shared Supabase project active
+
+All users share the same Supabase project; adding collaborators does not create another database.
+Normal use generates database activity. During quiet periods,
+`.github/workflows/supabase-ping.yml` also makes successful PostgREST database requests every day
+and fails visibly if Supabase returns a paused or unsuccessful response. GitHub Actions must remain
+enabled for the repository.
+
+Supabase may still pause a low-activity **Free Plan** project after a seven-day window; the scheduled
+database requests are a practical fallback, not an availability guarantee. Upgrade the Supabase
+organization to **Pro or higher** when uninterrupted production availability is required. See
+[Supabase project pausing](https://supabase.com/docs/guides/platform/free-project-pausing).
 
 ### Temporary passwords & forced reset on first login
 
@@ -493,16 +642,65 @@ and shows no dollar figures anywhere:
   or exported plan and can be switched under **Settings**, so an exported hours plan reopens as
   hours anywhere.
 
+## Astrion Company Site (team review build)
+
+`astrion-site/` is a second, independent company page built to match the reference
+company site design: a fixed transparent header that solidifies on scroll, a full-screen
+menu, a full-viewport photographic hero ("Missions are won at the seams."), then
+alternating near-black and carbon bands for the problem, the six mission segments, field
+intelligence, orchestration, Astrion EDGE, proof points and company facts, the AI Weekly
+Intelligence Brief, careers, and a request-a-brief footer. Type is Archivo (variable,
+width and weight axes) with JetBrains Mono labels; the palette is the reference's oklch
+tokens with hex fallbacks. One page plus local `astrion-site/assets/`, zero external
+dependencies, reduced-motion aware. It does not replace `astrion/`; both publish.
+
+### → https://azjester.github.io/work/astrion-site/
+
+## Astrion Company Landing Page (team review build)
+
+The company page, laid out after the Astrion site direction (the astrion3 reference) and built
+to the Astrion Brand Guide 2026 (Volume 01): a full-height typographic hero with no
+photograph, six mission cards with photography, the 21 solution areas of the Mission
+Solutions Portfolio (16 Sep 2026) with a segment filter and deep links, a split approach band,
+a light Bone lifecycle band, a call to action, and a ruled footer with the headquarters
+address. Carbon through Bone carry the page, Ion Cyan marks one moment per region, Archivo for
+display and text, JetBrains Mono for labels, square corners, 1px hairlines, no shadows or
+gradients. The Bone wordmark SVG is placed, not redrawn. The one-pagers' internal objectives
+are left off this public page.
+
+The segment names match the canonical list in `solutions-architect/engine.js`, and
+`tests/astrion-landing.test.mjs` fails if the two drift apart, if any color outside the ten
+palette values appears, if a shadow, gradient, or rounded corner creeps back in, or if a
+photograph returns to the hero. One page plus local `astrion/assets/`, zero external
+dependencies, reduced-motion aware.
+
+### → https://azjester.github.io/work/astrion/
+
+Marked `noindex` while under review.
+
 ## Astrion Division Landing Page (team review build)
 
-A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` — same
-HUD design, with the ambient C-UAS radar engagement playing behind the hero, official
-leadership headshots served as optimized files from `astrion-division/assets/`, and the
-prototype's accessibility/cross-browser/content issues fixed:
+A rebuilt, publish-ready version of `LDAWIF/astrion-division-landing.html` in the current
+Astrion web brand: the seven website color tokens, Archivo and JetBrains Mono, the outlined
+wordmark, and brand photography. The ambient C-UAS radar engagement plays behind the hero,
+official leadership headshots are served as optimized files from
+`astrion-division/ldawif/assets/`, and the prototype's accessibility/cross-browser/content
+issues are fixed:
 
 ### → https://azjester.github.io/work/astrion-division/ldawif/
 
 Marked `noindex` while under review.
+
+## Astrion Capabilities Film
+
+A fully coded film of Astrion mission areas, from orbit to seabed. Picture and score are
+computed live in the browser from one self-contained HTML file with no runtime requests.
+
+### [Open the Astrion Capabilities Film](https://azjester.github.io/work/astrion-film/)
+
+The Pages build serves `astrion-film/astrion-capabilities-film.html` as the index of
+`/astrion-film/`. After changing anything under `astrion-film/src/`, rebuild that file
+with `node astrion-film/build.mjs`.
 
 ## LDAWIF — All-Domain Kill Web
 
@@ -631,6 +829,11 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
+| `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
+| `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
+| `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
+| `black-hat-agent/` | Forwards the old Black Hat Agent address to the current build, which lives in the [`Black_Hat_Agent`](https://github.com/AzJester/Black_Hat_Agent) repository. Also holds the vendored SheetJS library that the Solution Architect Workbench loads. |
+| `topo/` | **Topo Map Builder**: printable topographic maps with an MGRS grid at true scale, PDF export, and Garmin (KMZ) and ATAK (MBTiles) export, drawn in the browser from open map data. |
 | `status.html` | The standalone **Weekly Status Tracker** (browser-only; editable task table + Markdown/text/PDF export). |
 | `weekly-task-tracker.html` | The **distributable standalone** — `status.html` rebranded as **Weekly Task Tracker** for handing to other users (single self-contained file, no account/server). |
 | `tracker.html` | The **cloud** Weekly Status Tracker — sign-in, saves each week to Supabase/Postgres, History view, and a KPI dashboard. |
