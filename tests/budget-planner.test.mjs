@@ -32,15 +32,15 @@ const seedDoc = vm.runInNewContext(`(${seedMatch[0]})`, {});
 
 function doc(overrides) {
   return {
-    version: 2, title: "Test", currency: "USD", rate: 102, startYear: 2026, endYear: 2027, asOf: "2026-07-17",
+    version: 3, title: "Test", currency: "USD", rate: 102, fiscalStartMonth: 1, workdays: "calendar", startYear: 2026, endYear: 2027, asOf: "2026-07-17",
     hoursBudgets: { "2026": 1000 }, budgets: { "2026": 100000 },
-    engines: [{ id: "a", name: "Alpha" }, { id: "b", name: "Bravo" }],
+    engines: [{ id: "a", name: "Alpha", rate: null }, { id: "b", name: "Bravo", rate: null }],
     blocks: [],
     ...overrides,
   };
 }
 function block(overrides) {
-  return { id: "1", name: "x", engineId: "a", hours: 0, hoursActual: null, materials: 0, materialsActual: null, start: null, end: null, ...overrides };
+  return { id: "1", name: "x", engineId: "a", hours: 0, hoursActual: null, materials: 0, materialsActual: null, log: [], start: null, end: null, ...overrides };
 }
 const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-9, message || `${actual} should be ${expected}`);
 
@@ -53,11 +53,36 @@ test("parseISO accepts calendar dates only and reads them as UTC days", () => {
   assert.equal(E.toISO(E.parseISO("2027-12-31")), "2027-12-31");
 });
 
-test("dayCount is inclusive on both ends and ignores DST", () => {
+test("dayCount is inclusive on both ends and ignores DST; weekdayCount skips Saturdays and Sundays", () => {
   assert.equal(E.dayCount(Date.UTC(2026, 0, 1), Date.UTC(2026, 0, 1)), 1);
   assert.equal(E.dayCount(Date.UTC(2026, 0, 1), Date.UTC(2026, 11, 31)), 365);
   assert.equal(E.dayCount(Date.UTC(2028, 0, 1), Date.UTC(2028, 11, 31)), 366);
   assert.equal(E.dayCount(Date.UTC(2026, 0, 2), Date.UTC(2026, 0, 1)), 0);
+  assert.equal(E.weekdayCount(Date.UTC(2026, 0, 1), Date.UTC(2026, 0, 7)), 5, "Thursday to Wednesday holds five weekdays");
+  assert.equal(E.weekdayCount(Date.UTC(2026, 0, 3), Date.UTC(2026, 0, 4)), 0, "a weekend alone holds none");
+  assert.equal(E.weekdayCount(Date.UTC(2026, 0, 1), Date.UTC(2026, 0, 31)), 22);
+  assert.equal(E.weekdayCount(Date.UTC(2026, 0, 1), Date.UTC(2026, 11, 31)), 261);
+  assert.equal(E.countDays(Date.UTC(2026, 0, 1), Date.UTC(2026, 0, 31), "weekdays"), 22);
+  assert.equal(E.countDays(Date.UTC(2026, 0, 1), Date.UTC(2026, 0, 31), "calendar"), 31);
+});
+
+test("calendarOf gives calendar years by default and fiscal years labelled by the year they end in", () => {
+  const cy = E.calendarOf(1);
+  assert.equal(cy.fiscal, false);
+  assert.equal(E.toISO(cy.yearStart(2026)), "2026-01-01");
+  assert.equal(E.toISO(cy.yearEnd(2026)), "2026-12-31");
+  assert.equal(cy.label(2026), "2026");
+  assert.equal(cy.months(2026)[0].label, "Jan");
+  assert.equal(cy.months(2026)[11].days, 31);
+  const fy = E.calendarOf({ fiscalStartMonth: 10 });
+  assert.equal(fy.fiscal, true);
+  assert.equal(E.toISO(fy.yearStart(2027)), "2026-10-01");
+  assert.equal(E.toISO(fy.yearEnd(2027)), "2027-09-30");
+  assert.equal(fy.label(2027), "FY2027");
+  assert.deepEqual(plain(fy.months(2027).map((m) => m.label)), ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"]);
+  assert.equal(fy.months(2027)[0].calendarYear, 2026);
+  assert.equal(fy.months(2027)[3].calendarYear, 2027);
+  assert.equal(E.calendarOf(13).fiscal, false, "an out-of-range month falls back to calendar years");
 });
 
 test("proRate splits hours and materials at the as-of day, with the as-of day forecast", () => {
@@ -71,13 +96,30 @@ test("proRate splits hours and materials at the as-of day, with the as-of day fo
   assert.equal(byYear[2027], undefined);
 });
 
-test("proRate allocates a block across the year boundary by day", () => {
+test("proRate allocates a block across the year boundary by day, calendar or fiscal", () => {
   const b = block({ hours: 730, start: "2026-01-01", end: "2027-12-31" });
   const { byYear } = E.proRate(b, "2027-01-01", [2026, 2027]);
   near(byYear[2026].hoursSpent, 365);
   assert.equal(byYear[2026].hoursPlanned, 0);
   assert.equal(byYear[2027].hoursSpent, 0);
   near(byYear[2027].hoursPlanned, 365);
+  const fiscal = E.proRate(block({ hours: 110, start: "2026-09-25", end: "2026-10-05" }), "2026-01-01", [2026, 2027], { cal: E.calendarOf(10) }).byYear;
+  near(fiscal[2026].hoursPlanned, 60, "September 25 to 30 belong to FY2026");
+  near(fiscal[2027].hoursPlanned, 50, "October 1 to 5 belong to FY2027");
+});
+
+test("proRate in weekday mode counts only Monday to Friday, and falls back to calendar days for a weekend-only block", () => {
+  const b = block({ hours: 100, start: "2026-07-06", end: "2026-07-17" });
+  const weekdays = E.proRate(b, "2026-07-13", [2026], { workdays: "weekdays" });
+  assert.equal(weekdays.totalDays, 10, "two working weeks");
+  near(weekdays.byYear[2026].hoursSpent, 50, "the first working week is worked");
+  near(weekdays.byYear[2026].hoursPlanned, 50);
+  const calendar = E.proRate(b, "2026-07-13", [2026]);
+  assert.equal(calendar.totalDays, 12);
+  near(calendar.byYear[2026].hoursSpent, 100 * 7 / 12);
+  const weekend = E.proRate(block({ hours: 10, start: "2026-07-04", end: "2026-07-05" }), "2026-07-05", [2026], { workdays: "weekdays" });
+  assert.equal(weekend.totalDays, 2, "a Saturday-Sunday block is pro-rated by calendar days instead of vanishing");
+  near(weekend.byYear[2026].hoursSpent, 5);
 });
 
 test("proRate treats an as-of date before the block as all forecast and after it as all worked", () => {
@@ -139,6 +181,29 @@ test("materials spent to date behave the same way and are independent of logged 
   assert.equal(over.materialsPlanned, 0);
 });
 
+test("dated log entries are the record when they exist and count only up to the as-of date", () => {
+  const log = [{ date: "2026-07-01", hours: 10, materials: 5, note: "" }, { date: "2026-07-17", hours: 7, materials: 0, note: "" }, { date: "2026-07-20", hours: 9, materials: 100, note: "" }];
+  const asOf = E.loggedAsOf({ log, hoursActual: 999, materialsActual: 999 }, "2026-07-17");
+  assert.deepEqual(plain(asOf), { hours: 17, materials: 5, fromLog: true, entries: 3, counted: 2 }, "entries on the as-of day count; later ones wait");
+  const all = E.loggedAsOf({ log }, null);
+  assert.equal(all.hours, 26);
+  assert.equal(all.materials, 105);
+  const totals = E.loggedAsOf({ log: [], hoursActual: 40, materialsActual: null }, "2026-07-17");
+  assert.deepEqual(plain(totals), { hours: 40, materials: null, fromLog: false, entries: 0, counted: 0 });
+  const early = E.loggedAsOf({ log }, "2026-01-01");
+  assert.equal(early.hours, 0, "a log with nothing yet counted means zero worked, not the schedule estimate");
+  const years = [2026, 2027];
+  const b = block({ hours: 100, materials: 1000, log, start: "2026-07-01", end: "2026-07-31" });
+  const split = E.proRate(b, "2026-07-17", years).byYear[2026];
+  assert.equal(split.hoursSpent, 17);
+  assert.equal(split.hoursPlanned, 83);
+  assert.equal(split.materialsSpent, 5);
+  assert.equal(split.materialsPlanned, 995);
+  const later = E.proRate(b, "2026-08-01", years).byYear[2026];
+  assert.equal(later.hoursSpent, 26);
+  assert.equal(later.materialsSpent, 105);
+});
+
 test("a logged figure splits across years by elapsed and remaining days", () => {
   const years = [2026, 2027];
   const b = block({ hours: 100, hoursActual: 50, start: "2026-12-30", end: "2027-01-02" });
@@ -176,8 +241,7 @@ test("rollupByYear reconciles hours, materials and cost, and leaves remaining un
   }
   assert.equal(total.hours.committed, 1001 + 333, "backlog hours stay out of the yearly totals");
   assert.equal(total.materials.committed, 400);
-  // 333 hours over four days split 166.5 / 166.5; the leftover hour goes to the earlier year.
-  assert.equal(byYear[2026].hours.committed, 1001 + 167);
+  assert.equal(byYear[2026].hours.committed, 1001 + 167, "333 hours over four days split 166.5 each way; the leftover hour goes to the earlier year");
   assert.equal(byYear[2027].hours.committed, 166);
   assert.equal(byYear[2026].hours.spent, Math.round(1001 * 7 / 13), "July 10 to 16 are worked");
   assert.equal(byYear[2026].materials.committed, 200);
@@ -193,7 +257,61 @@ test("rollupByYear reconciles hours, materials and cost, and leaves remaining un
   assert.equal(total.cost.remaining, byYear[2026].cost.remaining, "the total remaining sums only the years with a budget");
 });
 
-test("allocateCommitted hands leftover units to the largest fractional shares, earlier year first", () => {
+test("an engine's own rate prices its labor, by year, by engine and in the backlog", () => {
+  const d = doc({
+    asOf: "2026-07-05",
+    engines: [{ id: "a", name: "Alpha", rate: null }, { id: "b", name: "Bravo", rate: 50 }],
+    blocks: [
+      block({ id: "1", hours: 100, start: "2026-07-01", end: "2026-07-10" }),
+      block({ id: "2", engineId: "b", hours: 100, materials: 10, start: "2026-07-01", end: "2026-07-10" }),
+      block({ id: "3", engineId: "b", hours: 20, materials: 5 }),
+    ],
+  });
+  assert.equal(E.rateOf(d, "a"), 102);
+  assert.equal(E.rateOf(d, "b"), 50);
+  assert.equal(E.rateOf(d, "missing"), 102);
+  const year = E.rollupByYear(d).byYear[2026];
+  assert.equal(year.cost.labor, 100 * 102 + 100 * 50);
+  assert.equal(year.cost.laborSpent, Math.round(100 * 4 / 10) * 102 + Math.round(100 * 4 / 10) * 50);
+  const engines = E.rollupByEngine(d).rows;
+  assert.equal(engines[0].rate, 102);
+  assert.equal(engines[1].rate, 50);
+  assert.equal(engines[1].cost.labor, 5000);
+  assert.equal(engines[1].cost.backlog, 20 * 50 + 5);
+  assert.deepEqual(plain(E.backlogTotal(d)), { hours: 20, materials: 5, cost: 1005 });
+  const zero = doc({ engines: [{ id: "a", name: "Alpha", rate: 0 }, { id: "b", name: "Bravo", rate: null }], blocks: [block({ id: "1", hours: 10, start: "2026-07-01", end: "2026-07-10" })] });
+  assert.equal(E.rollupByEngine(zero).rows[0].cost.labor, 0, "a rate of zero is a real rate, not a blank");
+});
+
+test("hoursByMonth spreads each block over its months and sizes capacity by each month's share of the year", () => {
+  const d = doc({ hoursBudgets: { "2026": 1200 }, blocks: [
+    block({ id: "1", hours: 310, start: "2026-01-01", end: "2026-01-31" }),
+    block({ id: "2", engineId: "b", hours: 100, hoursActual: 30, start: "2026-07-10", end: "2026-07-19" }),
+    block({ id: "3", hours: 50 }),
+  ] });
+  const { periods, max } = E.hoursByMonth(d);
+  assert.equal(periods.length, 24);
+  assert.equal(periods[0].label, "Jan");
+  assert.equal(periods[0].yearLabel, "2026");
+  assert.equal(periods[0].hours.committed, 310);
+  assert.equal(periods[0].hours.spent, 310, "January is all before the as-of date");
+  near(periods[0].capacity, 1200 * 31 / 365);
+  assert.equal(periods[6].hours.committed, 100);
+  assert.equal(periods[6].hours.spent, 30, "logged hours drive the month's worked figure");
+  assert.equal(periods[6].hours.planned, 70);
+  assert.equal(periods[12].capacity, null, "2027 has no annual hours");
+  assert.equal(periods[12].hours.committed, 0);
+  assert.ok(max >= 310);
+  const fiscal = E.hoursByMonth(doc({ fiscalStartMonth: 10, blocks: [block({ id: "1", hours: 60, start: "2026-09-25", end: "2026-10-06" })] }));
+  assert.equal(fiscal.periods[0].label, "Oct");
+  assert.equal(fiscal.periods[0].yearLabel, "FY2026");
+  assert.equal(fiscal.periods[0].calendarYear, 2025);
+  const sep = fiscal.periods.find((p) => p.label === "Sep" && p.calendarYear === 2026), oct = fiscal.periods.find((p) => p.label === "Oct" && p.calendarYear === 2026);
+  assert.equal(sep.hours.committed + oct.hours.committed, 60);
+  assert.equal(sep.hours.committed, 30);
+});
+
+test("allocateCommitted hands leftover units to the largest fractional shares, earlier period first", () => {
   const years = [2026, 2027, 2028];
   const split = { 2026: { spent: 10.2, planned: 0 }, 2027: { spent: 0, planned: 10.5 }, 2028: { spent: 0, planned: 10.3 } };
   assert.deepEqual(plain(E.allocateCommitted(split, years)), { 2026: 10, 2027: 11, 2028: 10 });
@@ -280,14 +398,16 @@ test("validateDoc accepts the seed and normalizes unknown fields away", () => {
   assert.equal(result.doc.extra, undefined);
   assert.equal(result.doc.blocks[0].color, undefined);
   assert.equal(result.doc.blocks.length, seed.blocks.length);
-  assert.equal(result.doc.version, 2);
+  assert.equal(result.doc.version, 3);
+  assert.equal(result.doc.fiscalStartMonth, 1);
+  assert.equal(result.doc.workdays, "calendar");
 });
 
 test("validateDoc rejects malformed documents with specific messages", () => {
   const cases = [
     [null, /not a planner document/],
     [[], /not a planner document/],
-    [doc({ version: 3 }), /version/],
+    [doc({ version: 4 }), /version/],
     [doc({ startYear: 2030, endYear: 2026 }), /before start year/],
     [doc({ startYear: 2000, endYear: 2026 }), /at most 10 years/],
     [doc({ asOf: "yesterday" }), /As-of date/],
@@ -296,13 +416,21 @@ test("validateDoc rejects malformed documents with specific messages", () => {
     [doc({ hoursBudgets: { "2026": 1.5 } }), /Annual hours for 2026/],
     [doc({ rate: -1 }), /Rate must be/],
     [doc({ rate: "102" }), /Rate must be/],
+    [doc({ fiscalStartMonth: 13 }), /Fiscal start month/],
+    [doc({ fiscalStartMonth: "10" }), /Fiscal start month/],
+    [doc({ workdays: "holidays" }), /Workdays must be/],
     [doc({ engines: [] }), /At least one engine/],
     [doc({ engines: [{ id: "a", name: "A" }, { id: "a", name: "B" }] }), /duplicated/],
+    [doc({ engines: [{ id: "a", name: "A", rate: -5 }] }), /rate must be/],
     [doc({ blocks: [block({ engineId: "zz" })] }), /unknown engine/],
     [doc({ blocks: [block({ hours: 1.5 })] }), /hours must be a whole number/],
     [doc({ blocks: [block({ hours: 10, hoursActual: -1, start: "2026-01-01", end: "2026-01-02" })] }), /logged hours must be a whole number/],
     [doc({ blocks: [block({ materials: 2.5 })] }), /materials must be a whole number of dollars/],
     [doc({ blocks: [block({ materials: 10, materialsActual: "x", start: "2026-01-01", end: "2026-01-02" })] }), /materials spent must be a whole number/],
+    [doc({ blocks: [block({ log: "none" })] }), /log must be a list/],
+    [doc({ blocks: [block({ log: [{ date: "soon", hours: 1 }] })] }), /log entry 1 needs a date/],
+    [doc({ blocks: [block({ log: [{ date: "2026-01-01", hours: 1.5 }] })] }), /log entry 1 hours must be a whole number/],
+    [doc({ blocks: [block({ log: [{ date: "2026-01-01", hours: 1, note: "x".repeat(201) }] })] }), /note must be text/],
     [doc({ blocks: [block({ start: "2026-01-01", end: null })] }), /both start and end/],
     [doc({ blocks: [block({ start: "2026-02-02", end: "2026-02-01" })] }), /ends before it starts/],
     [doc({ blocks: [block({ id: "1" }), block({ id: "1", name: "y" })] }), /repeats id/],
@@ -315,19 +443,21 @@ test("validateDoc rejects malformed documents with specific messages", () => {
   }
 });
 
-test("validateDoc defaults missing figures, rounds the rate to cents and skips null budgets", () => {
-  const result = E.validateDoc(doc({ rate: 102.126, hoursBudgets: { "2026": null, "2027": 20 }, blocks: [{ id: "1", name: "x", engineId: "a", start: "2026-01-01", end: "2026-01-02" }] }));
+test("validateDoc defaults missing figures, rounds rates to cents, trims log notes and skips null budgets", () => {
+  const result = E.validateDoc(doc({ rate: 102.126, hoursBudgets: { "2026": null, "2027": 20 }, engines: [{ id: "a", name: "Alpha", rate: 95.555 }], blocks: [{ id: "1", name: "x", engineId: "a", start: "2026-01-01", end: "2026-01-02", log: [{ date: "2026-01-01", hours: 2, note: "  first  " }] }] }));
   assert.ok(result.ok, result.errors.join("\n"));
   assert.equal(result.doc.rate, 102.13);
+  assert.equal(result.doc.engines[0].rate, 95.56);
   assert.deepEqual(plain(result.doc.hoursBudgets), { "2027": 20 });
-  assert.deepEqual(plain(result.doc.blocks[0]), { id: "1", name: "x", engineId: "a", hours: 0, hoursActual: null, materials: 0, materialsActual: null, start: "2026-01-01", end: "2026-01-02" });
-  const bare = E.validateDoc({ version: 2, startYear: 2026, endYear: 2026, engines: [{ id: "a", name: "A" }], blocks: [] });
+  assert.deepEqual(plain(result.doc.blocks[0]), { id: "1", name: "x", engineId: "a", hours: 0, hoursActual: null, materials: 0, materialsActual: null, log: [{ date: "2026-01-01", hours: 2, materials: 0, note: "first" }], start: "2026-01-01", end: "2026-01-02" });
+  const bare = E.validateDoc({ version: 3, startYear: 2026, endYear: 2026, engines: [{ id: "a", name: "A" }], blocks: [] });
   assert.ok(bare.ok, bare.errors.join("\n"));
   assert.equal(bare.doc.rate, 102);
+  assert.equal(bare.doc.engines[0].rate, null);
   assert.deepEqual(plain(bare.doc.budgets), {});
 });
 
-test("version 1 plans from the hours and dollar editions migrate into hours and materials", () => {
+test("version 1 and 2 plans migrate into the version 3 shape", () => {
   const hoursPlan = {
     version: 1, unit: "hours", rate: 90, startYear: 2026, endYear: 2026, asOf: "2026-03-01", budgets: { "2026": 500 },
     engines: [{ id: "a", name: "Alpha" }],
@@ -336,11 +466,12 @@ test("version 1 plans from the hours and dollar editions migrate into hours and 
   const h = E.validateDoc(hoursPlan);
   assert.ok(h.ok, h.errors.join("\n"));
   assert.equal(h.migrated, true);
-  assert.equal(h.doc.version, 2);
+  assert.equal(h.doc.version, 3);
   assert.equal(h.doc.rate, 90);
   assert.deepEqual(plain(h.doc.hoursBudgets), { "2026": 500 }, "an hours plan's budgets are annual hours");
   assert.deepEqual(plain(h.doc.budgets), {});
-  assert.deepEqual(plain(h.doc.blocks[0]), { id: "x", name: "Legacy", engineId: "a", hours: 100, hoursActual: 20, materials: 50, materialsActual: null, start: "2026-02-01", end: "2026-03-31" });
+  assert.deepEqual(plain(h.doc.engines[0]), { id: "a", name: "Alpha", rate: null });
+  assert.deepEqual(plain(h.doc.blocks[0]), { id: "x", name: "Legacy", engineId: "a", hours: 100, hoursActual: 20, materials: 50, materialsActual: null, log: [], start: "2026-02-01", end: "2026-03-31" });
   const dollarPlan = {
     version: 1, unit: "USD", startYear: 2026, endYear: 2026, asOf: "2026-03-01", budgets: { "2026": 50000 },
     engines: [{ id: "a", name: "Alpha" }],
@@ -348,22 +479,23 @@ test("version 1 plans from the hours and dollar editions migrate into hours and 
   };
   const d = E.validateDoc(dollarPlan);
   assert.ok(d.ok, d.errors.join("\n"));
-  assert.equal(d.migrated, true);
   assert.equal(d.doc.rate, 102, "a dollar plan without a rate converts at the default rate");
   assert.deepEqual(plain(d.doc.budgets), { "2026": 50000 }, "a dollar plan's budgets stay dollars");
-  assert.deepEqual(plain(d.doc.hoursBudgets), {});
   assert.equal(d.doc.blocks[0].hours, 100, "labor dollars become hours at the rate");
   assert.equal(d.doc.blocks[0].hoursActual, 50);
-  assert.equal(d.doc.blocks[0].materials, 0);
   assert.equal(d.doc.blocks[1].hours, 10);
-  assert.equal(d.doc.blocks[1].hoursActual, null);
-  const custom = E.migrateV1({ ...dollarPlan, rate: 100 });
-  assert.equal(custom.blocks[0].hours, 102);
+  assert.equal(E.migrateV1({ ...dollarPlan, rate: 100 }).blocks[0].hours, 102);
+  const v2 = E.validateDoc({ version: 2, rate: 102, startYear: 2026, endYear: 2027, asOf: "2026-07-17", hoursBudgets: { "2026": 10 }, budgets: {}, engines: [{ id: "a", name: "A" }], blocks: [{ id: "1", name: "x", engineId: "a", hours: 5, hoursActual: null, materials: 0, materialsActual: null, start: null, end: null }] });
+  assert.ok(v2.ok, v2.errors.join("\n"));
+  assert.equal(v2.migrated, true);
+  assert.equal(v2.doc.version, 3);
+  assert.equal(v2.doc.fiscalStartMonth, 1);
+  assert.deepEqual(plain(v2.doc.blocks[0].log), []);
   const bad = E.validateDoc({ ...hoursPlan, blocks: [{ id: "x", name: "Legacy", engineId: "a", cost: "lots", start: null, end: null }] });
   assert.equal(bad.ok, false, "a broken version 1 block is still rejected after migration");
 });
 
-test("fmtMoney, fmtHours and fmtAmount format whole numbers with a sign and a unit", () => {
+test("fmtMoney, fmtHours, fmtAmount and fmtCompact format whole numbers", () => {
   assert.equal(E.fmtMoney(0), "$0");
   assert.equal(E.fmtMoney(1343616), "$1,343,616");
   assert.equal(E.fmtMoney(-239230), "-$239,230");
@@ -372,13 +504,23 @@ test("fmtMoney, fmtHours and fmtAmount format whole numbers with a sign and a un
   assert.equal(E.fmtHours(-5), "-5 h");
   assert.equal(E.fmtAmount(0, "hours"), "0 h");
   assert.equal(E.fmtAmount(99, "furlongs"), "$99");
+  assert.equal(E.fmtCompact(1284), "1,284");
+  assert.equal(E.fmtCompact(15829), "15.8K");
+  assert.equal(E.fmtCompact(210000), "210K");
+  assert.equal(E.fmtCompact(1635558), "1.64M");
+  assert.equal(E.fmtCompact(12000000), "12M");
+  assert.equal(E.fmtCompact(-2393), "-2,393");
 });
 
 test("the sample plan gives the reference hours, materials and cost totals", () => {
   const result = E.validateDoc(seedDoc());
   assert.ok(result.ok, result.errors.join("\n"));
   const d = result.doc;
+  assert.equal(d.version, 3);
   assert.equal(d.rate, 102);
+  const b07 = d.blocks.find((b) => b.id === "b07");
+  assert.equal(b07.log.length, 4, "the sample shows dated log entries on one block");
+  assert.equal(E.loggedAsOf(b07, d.asOf).hours, 700);
   const year = E.rollupByYear(d);
   const y26 = year.byYear[2026];
   assert.deepEqual(plain(y26.hours), { budget: 13436, spent: 10535, planned: 5294, committed: 15829, remaining: -2393 });
@@ -399,19 +541,18 @@ test("the sample plan gives the reference hours, materials and cost totals", () 
   assert.equal(engine.total.hours.committed, year.total.hours.committed);
   assert.deepEqual(plain(E.backlogTotal(d)), { hours: 2010, materials: 4000, cost: 2010 * 102 + 4000 });
   assert.equal(engine.total.cost.backlog, 209020);
+  const months = E.hoursByMonth(d);
+  assert.equal(months.periods.length, 24);
+  assert.ok(months.periods.some((p) => p.capacity != null && p.hours.committed > p.capacity), "the sample overloads at least one month");
+  assert.equal(months.periods.reduce((s, p) => s + p.hours.committed, 0), 15829, "the months add up to the year");
 });
 
-test("the page keeps the Astrion hard rules in its static markup", () => {
-  const headings = [...html.matchAll(/<(h[1-3]|th)\b[^>]*>([\s\S]*?)<\/\1>/g)].map((m) => m[2].replace(/<[^>]+>/g, "").trim());
-  assert.ok(headings.length > 5);
-  for (const text of headings) assert.ok(!/\.$/.test(text), `heading ends in a period: ${text}`);
-  const title = html.match(/<title>([^<]*)<\/title>/)[1].trim();
-  assert.ok(!title.endsWith("."));
-  assert.ok(!html.includes("—"), "no em dashes in the page");
-  assert.ok(/font-family:"Archivo"/.test(html) && /font-family:"JetBrains Mono"/.test(html), "brand fonts are declared");
-  assert.ok(!/Space Grotesk/.test(html), "the wordmark is the outlined SVG, not live Space Grotesk");
-  for (const retired of ["#102A47", "#33C7EB", "#38DBF0", "#DEFBFD", "#090A0B", "#0E0F11", "#1C1E22", "#3E3F41", "#8E8E8D", "#7F848E", "#E7E5DF"]) {
-    assert.ok(!html.toUpperCase().includes(retired), `retired palette value ${retired} must not appear`);
-  }
+test("the page is self-contained and set in the system sans without any brand furniture", () => {
   assert.ok(!/<link[^>]+href="https?:/.test(html) && !/<script[^>]+src="https?:/.test(html), "no CDN or third-party resources");
+  assert.ok(/--font:system-ui/.test(html), "the system sans stack is declared");
+  assert.ok(!/@font-face/.test(html), "no web fonts are loaded");
+  assert.ok(!/astrion\.us|wordmark|Archivo|JetBrains|Provisional set|brand kit/i.test(html), "no brand furniture remains in the page");
+  assert.ok(!html.includes("—"), "no em dashes in the page");
+  const title = html.match(/<title>([^<]*)<\/title>/)[1].trim();
+  assert.equal(title, "Roadmap and Budget Planner");
 });

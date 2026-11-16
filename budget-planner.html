@@ -1,240 +1,281 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light" data-accent="blue">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'" />
 <title>Roadmap and Budget Planner</title>
-<meta name="description" content="Schedule work blocks on a day-level timeline, keep undated work in a backlog, and see labor hours and materials, worked or spent and forecast, roll up by year and by engine and price out at an hourly rate, pro-rated by day against a movable as-of date." />
+<meta name="description" content="Schedule work blocks on a day-level timeline, keep undated work in a backlog, log hours and materials as you go, and see labor hours and materials, worked or spent and forecast, roll up by month, by year and by engine and price out at hourly rates, pro-rated against a movable as-of date." />
 <style>
-  /* Astrion Brand Kit v1.0 web fonts, self-hosted from this repository (SIL OFL licenses beside the files). */
-  @font-face { font-family:"Archivo"; font-style:normal; font-weight:300 700; font-stretch:100%; font-display:swap;
-    src:url(assets/fonts/astrion/Archivo/archivo-web-02.woff2) format("woff2");
-    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-  @font-face { font-family:"Archivo"; font-style:normal; font-weight:300 700; font-stretch:100%; font-display:swap;
-    src:url(assets/fonts/astrion/Archivo/archivo-web-03.woff2) format("woff2");
-    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-  @font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:400; font-display:swap;
-    src:url(assets/fonts/astrion/JetBrains-Mono/jetbrains-mono-web-05.woff2) format("woff2");
-    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-  @font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:400; font-display:swap;
-    src:url(assets/fonts/astrion/JetBrains-Mono/jetbrains-mono-web-06.woff2) format("woff2");
-    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-  @font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:500; font-display:swap;
-    src:url(assets/fonts/astrion/JetBrains-Mono/jetbrains-mono-web-05.woff2) format("woff2");
-    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-  @font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:500; font-display:swap;
-    src:url(assets/fonts/astrion/JetBrains-Mono/jetbrains-mono-web-06.woff2) format("woff2");
-    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-
-  /* Astrion Brand Kit v1.0 palette. Nothing is tinted from these values; opacity is used only for hairlines. */
+  /* Neutral design system: system sans, one accent, fixed status colors, soft corners. */
   :root {
-    --void:#050607; --carbon:#0B0D10; --gunmetal:#171B22; --bone:#EEEDE7; --steel:#8A8F99; --ion:#23CEF0; --flare:#E2FDFF; --paper:#FFFFFF;
-    --ground:var(--carbon); --panel:var(--gunmetal); --ink:var(--bone); --ink-muted:var(--steel);
-    --hairline:rgb(238 237 231 / .18); --hairline-strong:rgb(238 237 231 / .38);
-    --highlight:var(--gunmetal); --focus:var(--ion); --input-bg:var(--carbon); --backdrop:rgb(5 6 7 / .72); --hover:rgb(238 237 231 / .05);
-    --font-sans:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
-    --font-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-    --rail:184px; --block-h:36px; --block-gap:8px; --lane-pad:6px;
+    --font:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --bg:#f9f9f7; --surface:#fcfcfb; --surface-2:#f1f1ee; --surface-3:#e9e9e5;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --line:#e1e0d9; --line-2:#c3c2b7;
+    --accent:#2a78d6; --accent-ink:#ffffff; --mark:#2a78d6; --mark-track:rgba(42,120,214,.16); --accent-wash:rgba(42,120,214,.10);
+    --good:#006300; --warning:#fab219; --critical:#d03b3b; --critical-wash:rgba(208,59,59,.12); --warning-wash:rgba(250,178,25,.18);
+    --focus:#2a78d6; --backdrop:rgba(11,11,11,.45); --shadow:0 12px 32px rgba(11,11,11,.14), 0 2px 6px rgba(11,11,11,.08);
+    --radius:6px; --radius-lg:10px;
+    --rail:200px; --block-h:36px; --block-gap:8px; --lane-pad:6px;
+    color-scheme:light;
   }
-  :root[data-theme="light"] {
-    --ground:var(--paper); --panel:var(--bone); --ink:var(--carbon); --ink-muted:var(--gunmetal);
-    --hairline:rgb(138 143 153 / .45); --hairline-strong:rgb(138 143 153 / .85);
-    --highlight:var(--flare); --focus:var(--carbon); --input-bg:var(--paper); --backdrop:rgb(11 13 16 / .55); --hover:rgb(11 13 16 / .05);
+  :root[data-theme="dark"] {
+    --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#242423; --surface-3:#2e2e2c;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --line:#2c2c2a; --line-2:#383835;
+    --mark:#3987e5; --mark-track:rgba(57,135,229,.22); --accent-wash:rgba(57,135,229,.16);
+    --good:#0ca30c; --critical-wash:rgba(208,59,59,.2); --warning-wash:rgba(250,178,25,.22);
+    --focus:#3987e5; --backdrop:rgba(0,0,0,.6); --shadow:0 12px 32px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4);
+    color-scheme:dark;
   }
+  :root[data-accent="teal"] { --accent:#0f7a66; --mark:#1baf7a; --mark-track:rgba(27,175,122,.18); --accent-wash:rgba(27,175,122,.12); --focus:#0f7a66; }
+  :root[data-accent="teal"][data-theme="dark"] { --mark:#199e70; --focus:#1baf7a; }
+  :root[data-accent="violet"] { --accent:#6250d6; --mark:#6250d6; --mark-track:rgba(98,80,214,.18); --accent-wash:rgba(98,80,214,.12); --focus:#6250d6; }
+  :root[data-accent="violet"][data-theme="dark"] { --mark:#9085e9; --focus:#9085e9; }
+  :root[data-accent="orange"] { --accent:#c94f1f; --mark:#eb6834; --mark-track:rgba(235,104,52,.18); --accent-wash:rgba(235,104,52,.12); --focus:#c94f1f; }
+  :root[data-accent="orange"][data-theme="dark"] { --mark:#d95926; --focus:#eb6834; }
+  :root[data-accent="graphite"] { --accent:#3d3d3a; --mark:#6b6a66; --mark-track:rgba(107,106,102,.2); --accent-wash:rgba(107,106,102,.14); --focus:#3d3d3a; }
+  :root[data-accent="graphite"][data-theme="dark"] { --accent:#c3c2b7; --accent-ink:#0b0b0b; --mark:#a3a29b; --focus:#c3c2b7; }
+
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
   html, body { margin:0; min-height:100%; }
   html { scroll-behavior:smooth; }
-  body { font:400 15px/1.55 var(--font-sans); color:var(--ink); background:var(--ground); -webkit-font-smoothing:antialiased; }
+  body { font:400 14px/1.5 var(--font); color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; }
   .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
-  .skip-link { position:fixed; left:12px; top:10px; z-index:100; padding:9px 13px; color:var(--carbon); background:var(--ion); font:500 11px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; text-decoration:none; transform:translateY(-160%); transition:transform .12s; }
+  .skip-link { position:fixed; left:12px; top:10px; z-index:100; padding:9px 13px; color:var(--accent-ink); background:var(--accent); font:600 13px/1 var(--font); border-radius:var(--radius); text-decoration:none; transform:translateY(-160%); transition:transform .12s; }
   .skip-link:focus { transform:translateY(0); }
   :focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
-  svg.icon { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:square; stroke-linejoin:miter; flex:none; }
-  svg.icon.lg { width:20px; height:20px; }
+  svg.icon { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  svg.icon.lg { width:18px; height:18px; }
 
   /* Type */
-  .mono { font-family:var(--font-mono); font-weight:500; font-size:11px; line-height:1.3; letter-spacing:.18em; text-transform:uppercase; }
-  .muted { color:var(--ink-muted); }
-  h1, h2, h3 { margin:0; font-family:var(--font-sans); text-transform:uppercase; letter-spacing:.02em; }
-  h1 { font-size:22px; font-weight:700; line-height:1.1; }
-  h2 { font-size:18px; font-weight:700; line-height:1.15; }
-  h3 { font-size:15px; font-weight:700; line-height:1.2; }
+  h1, h2, h3 { margin:0; font-family:var(--font); letter-spacing:-.01em; }
+  h1 { font-size:20px; font-weight:600; line-height:1.2; }
+  h2 { font-size:16px; font-weight:600; line-height:1.25; }
+  h3 { font-size:13px; font-weight:600; line-height:1.3; color:var(--ink-2); }
+  .label { font:600 12px/1.3 var(--font); color:var(--ink-2); }
+  .muted { color:var(--muted); }
+  .hint { margin:0; font-size:12px; color:var(--muted); }
+  .num { font-variant-numeric:tabular-nums; }
 
   /* Buttons */
-  .btn { display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:0 14px; border:1px solid var(--hairline-strong); border-radius:0; background:transparent; color:var(--ink); font:500 11px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
-  .btn:hover { border-color:var(--ink); }
-  .btn.primary { background:var(--ion); border-color:var(--ion); color:var(--carbon); }
-  .btn.primary:hover { border-color:var(--carbon); }
+  .btn { display:inline-flex; align-items:center; gap:7px; min-height:34px; padding:0 12px; border:1px solid var(--line-2); border-radius:var(--radius); background:var(--surface); color:var(--ink); font:500 13px/1 var(--font); cursor:pointer; white-space:nowrap; }
+  .btn:hover { background:var(--surface-2); border-color:var(--muted); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .btn.primary:hover { filter:brightness(1.08); }
+  .btn.danger:hover { border-color:var(--critical); color:var(--critical); }
   .btn:disabled { opacity:.45; cursor:not-allowed; }
-  .btn.sm { min-height:30px; padding:0 10px; font-size:10px; }
-  .iconbtn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; padding:0; border:1px solid transparent; background:transparent; color:var(--ink); cursor:pointer; border-radius:0; }
-  .iconbtn:hover { border-color:var(--hairline-strong); }
+  .btn.sm { min-height:28px; padding:0 9px; font-size:12px; }
+  .iconbtn { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; border:1px solid transparent; border-radius:var(--radius); background:transparent; color:var(--ink-2); cursor:pointer; }
+  .iconbtn:hover { background:var(--surface-2); color:var(--ink); }
+  .iconbtn.sm { width:28px; height:28px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; min-height:26px; padding:0 4px 0 10px; border-radius:999px; background:var(--accent-wash); color:var(--ink); font:500 12px/1 var(--font); }
+  .chip .iconbtn { width:22px; height:22px; border-radius:999px; }
+  .tag { display:inline-flex; align-items:center; gap:4px; padding:1px 7px; border-radius:999px; font:600 11px/1.5 var(--font); color:var(--ink-2); background:var(--surface-3); white-space:nowrap; vertical-align:middle; }
+  .tag.over { color:var(--critical); background:var(--critical-wash); }
+  .tag.warn { color:var(--ink); background:var(--warning-wash); }
+  .tag svg.icon { width:12px; height:12px; }
 
   /* Top bar */
-  .topbar { border-bottom:1px solid var(--hairline); }
-  .topbar-inner { max-width:1600px; margin:0 auto; padding:16px 24px; display:flex; flex-wrap:wrap; align-items:center; gap:16px 24px; }
-  .brand { display:flex; align-items:center; gap:20px; min-width:0; flex:1 1 520px; }
-  .titles { min-width:0; }
-  .titles .mono { margin-top:4px; color:var(--ink-muted); }
-  .topbar .actions, .empty-panel .actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
-  .asof { display:inline-flex; align-items:center; gap:10px; padding:0 0 0 12px; border:1px solid var(--hairline-strong); min-height:36px; }
-  .asof label { white-space:nowrap; }
-  .asof input[type="date"], .asof input[type="text"] { font:500 12px/1 var(--font-mono); letter-spacing:.06em; color:var(--ink); background:var(--input-bg); border:0; border-left:1px solid var(--hairline-strong); border-right:1px solid var(--hairline-strong); padding:8px 10px; min-height:34px; border-radius:0; color-scheme:dark; }
-  .asof input[type="text"] { width:7.5em; text-align:right; }
-  .asof input:last-child { border-right:0; }
-  :root[data-theme="light"] .asof input[type="date"], :root[data-theme="light"] .asof input[type="text"] { color-scheme:light; }
-  .tables h3 { margin:0 0 10px; }
-  .asof .btn { border:0; min-height:34px; }
-  .topbar .actions .group { display:flex; gap:10px; flex-wrap:wrap; }
+  .topbar { background:var(--surface); border-bottom:1px solid var(--line); }
+  .topbar-inner { max-width:1600px; margin:0 auto; padding:14px 24px; display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; }
+  .titles { min-width:0; flex:1 1 360px; }
+  .titles .sub { margin-top:2px; font-size:12px; color:var(--muted); }
+  .topbar .actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .topbar .actions .group { display:flex; gap:8px; flex-wrap:wrap; }
+  .asof { display:inline-flex; align-items:center; gap:8px; padding:0 0 0 10px; border:1px solid var(--line-2); border-radius:var(--radius); min-height:34px; background:var(--surface); }
+  .asof label { white-space:nowrap; font:500 12px/1 var(--font); color:var(--ink-2); }
+  .asof input { font:500 13px/1 var(--font); color:var(--ink); background:transparent; border:0; border-left:1px solid var(--line); padding:7px 10px; min-height:32px; border-radius:0; }
+  .asof input[type="text"] { width:6.5em; text-align:right; font-variant-numeric:tabular-nums; }
+  .asof input:last-child { border-radius:0 var(--radius) var(--radius) 0; }
+  .asof .btn { border:0; border-left:1px solid var(--line); border-radius:0 var(--radius) var(--radius) 0; min-height:32px; background:transparent; }
 
-  /* Section nav: sticky jump links, the current section underlined in ink */
-  .subnav { position:sticky; top:0; z-index:20; background:var(--ground); border-bottom:1px solid var(--hairline); }
-  .subnav-inner { max-width:1600px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:4px; overflow-x:auto; scrollbar-width:none; }
+  /* Section nav */
+  .subnav { position:sticky; top:0; z-index:20; background:var(--surface); border-bottom:1px solid var(--line); }
+  .subnav-inner { max-width:1600px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:2px; overflow-x:auto; scrollbar-width:none; }
   .subnav-inner::-webkit-scrollbar { display:none; }
-  .subnav a { display:inline-flex; align-items:center; min-height:40px; padding:0 12px; color:var(--ink-muted); text-decoration:none; font:500 11px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .subnav a { display:inline-flex; align-items:center; min-height:40px; padding:0 10px; color:var(--ink-2); text-decoration:none; font:500 13px/1 var(--font); white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; }
   .subnav a:hover { color:var(--ink); }
-  .subnav a.active { color:var(--ink); border-bottom-color:var(--ink); }
+  .subnav a.active { color:var(--ink); border-bottom-color:var(--accent); }
   .subnav .spacer { flex:1; }
-  .subnav .status { color:var(--ink-muted); white-space:nowrap; padding-left:12px; }
+  .subnav .status { color:var(--muted); white-space:nowrap; padding-left:12px; font-size:12px; }
   main > section, .two-col > section { scroll-margin-top:56px; }
 
-  /* Blocks filter */
-  .filter { display:inline-flex; align-items:center; gap:8px; padding:0 0 0 10px; border:1px solid var(--hairline-strong); min-height:36px; color:var(--ink-muted); }
-  .filter input[type="search"] { font:400 13px/1 var(--font-sans); color:var(--ink); background:var(--input-bg); border:0; border-left:1px solid var(--hairline-strong); padding:8px 10px; min-height:34px; width:17em; max-width:60vw; border-radius:0; color-scheme:dark; -webkit-appearance:none; appearance:none; }
-  :root[data-theme="light"] .filter input[type="search"] { color-scheme:light; }
+  /* Summary tiles */
+  .summary { max-width:1600px; margin:0 auto; padding:20px 24px 0; }
+  .tiles { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; }
+  @media (max-width:1100px) { .tiles { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width:520px) { .tiles { grid-template-columns:1fr; } }
+  .tile { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); padding:14px 16px 12px; display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .tile .tile-label { font:500 12px/1.3 var(--font); color:var(--ink-2); }
+  .tile .tile-value { font:600 26px/1.15 var(--font); color:var(--ink); letter-spacing:-.01em; }
+  .tile .tile-sub { font-size:12px; color:var(--muted); display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+  .meter { height:6px; border-radius:3px; background:var(--mark-track); overflow:hidden; margin-top:4px; }
+  .meter > div { height:100%; border-radius:3px; background:var(--mark); }
+  .meter.warn { background:var(--warning-wash); } .meter.warn > div { background:var(--warning); }
+  .meter.over { background:var(--critical-wash); } .meter.over > div { background:var(--critical); }
 
   /* Layout */
-  main { max-width:1600px; margin:0 auto; padding:24px 24px 48px; display:grid; gap:40px; }
+  main { max-width:1600px; margin:0 auto; padding:24px 24px 48px; display:grid; gap:36px; }
   main > *, .two-col > * { min-width:0; }
-  section > .section-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--hairline); }
-  .section-head h2 { display:inline-flex; align-items:center; gap:10px; }
-  .section-head .meta { color:var(--ink-muted); }
+  section > .section-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding-bottom:10px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  .section-head h2 { display:inline-flex; align-items:center; gap:8px; }
+  .section-head .meta { color:var(--muted); font-size:12px; }
   .section-head .spacer { flex:1; }
-  .two-col { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:32px; align-items:start; }
+  .two-col { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:28px; align-items:start; }
   @media (max-width:1200px) { .two-col { grid-template-columns:1fr; } }
+  .tables h3 { margin:0 0 8px; }
+  .caption { margin:10px 0 0; font-size:12px; color:var(--muted); }
+
+  /* Blocks filter */
+  .filter { display:inline-flex; align-items:center; gap:6px; padding:0 0 0 9px; border:1px solid var(--line-2); border-radius:var(--radius); min-height:32px; color:var(--muted); background:var(--surface); }
+  .filter input[type="search"] { font:400 13px/1 var(--font); color:var(--ink); background:transparent; border:0; padding:7px 9px; min-height:30px; width:16em; max-width:60vw; border-radius:0 var(--radius) var(--radius) 0; -webkit-appearance:none; appearance:none; }
 
   /* Timeline board */
-  .board-scroll { overflow-x:auto; border:1px solid var(--hairline); }
+  .board-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-lg); background:var(--surface); }
   .board { display:grid; grid-template-columns:var(--rail) minmax(max(1000px, calc(var(--months, 24) * 42px)),1fr); min-width:100%; }
-  .caption { margin:10px 0 0; font-size:13px; color:var(--ink-muted); }
-  td.actions, th.actions { text-align:right; white-space:nowrap; padding-top:2px; padding-bottom:2px; }
-  td.actions .iconbtn { vertical-align:middle; }
-  td.actions .iconbtn + .iconbtn { margin-left:4px; }
-  .iconbtn.sm { width:28px; height:28px; }
-  .rail-cell { position:sticky; left:0; z-index:2; background:var(--ground); border-right:1px solid var(--hairline-strong); }
-  .axis-rail { border-bottom:1px solid var(--hairline-strong); display:flex; align-items:flex-end; padding:8px 12px; }
-  .axis { position:relative; border-bottom:1px solid var(--hairline-strong); }
+  .rail-cell { position:sticky; left:0; z-index:2; background:var(--surface); border-right:1px solid var(--line-2); }
+  .axis-rail { border-bottom:1px solid var(--line-2); display:flex; align-items:flex-end; padding:8px 12px; }
+  .axis { position:relative; border-bottom:1px solid var(--line-2); }
   .axis .years, .axis .months { display:grid; }
-  .axis .years > div { padding:8px 10px 4px; text-align:left; font:700 13px/1 var(--font-sans); letter-spacing:.06em; border-right:1px solid var(--hairline-strong); }
+  .axis .years > div { padding:8px 10px 2px; text-align:left; font:600 12px/1 var(--font); border-right:1px solid var(--line-2); }
   .axis .years > div:last-child { border-right:0; }
-  .axis .months > div { padding:4px 0 8px; text-align:center; font:500 10px/1 var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-muted); border-right:1px solid var(--hairline); overflow:hidden; }
+  .axis .months > div { padding:4px 0 8px; text-align:center; font:500 11px/1 var(--font); color:var(--muted); border-right:1px solid var(--line); overflow:hidden; }
   .axis .months > div:last-child { border-right:0; }
-  .lane-label { padding:10px 12px; display:flex; flex-direction:column; justify-content:center; gap:4px; border-bottom:1px solid var(--hairline); }
-  .lane-label .name { font:700 13px/1.15 var(--font-sans); text-transform:uppercase; letter-spacing:.04em; overflow:hidden; text-overflow:ellipsis; }
-  .lane-label .mono { font-size:10px; letter-spacing:.12em; color:var(--ink-muted); }
-  .lane { position:relative; overflow:hidden; border-bottom:1px solid var(--hairline); height:calc(var(--rows) * (var(--block-h) + var(--block-gap)) - var(--block-gap) + 2 * var(--lane-pad)); min-height:calc(var(--block-h) + 2 * var(--lane-pad)); }
-  .gridline { position:absolute; top:0; bottom:0; width:1px; background:var(--hairline); pointer-events:none; }
-  .gridline.year { background:var(--hairline-strong); }
-  .asof-line { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--ion); pointer-events:none; z-index:1; }
-  .asof-pill { position:absolute; top:6px; left:0; transform:translateX(-50%); background:var(--ion); color:var(--carbon); font:500 10px/1 var(--font-mono); letter-spacing:.12em; text-transform:uppercase; padding:5px 7px; white-space:nowrap; z-index:1; }
-  .block { position:absolute; height:var(--block-h); padding:4px 8px; margin:0; background:var(--panel); border:1px solid var(--hairline); color:var(--ink); text-align:left; cursor:grab; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:1px; border-radius:0; font-family:var(--font-sans); touch-action:pan-y; user-select:none; -webkit-user-select:none; }
-  .block:hover { border-color:var(--ink); }
-  .block.dragging { border-color:var(--ink); cursor:grabbing; z-index:3; }
+  .load-rail { border-bottom:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; gap:2px; padding:6px 12px; }
+  .load { display:grid; border-bottom:1px solid var(--line); height:56px; align-items:end; }
+  .load-cell { position:relative; height:100%; display:flex; align-items:flex-end; justify-content:center; border-right:1px solid var(--line); padding:14px 0 0; }
+  .load-cell:last-child { border-right:0; }
+  .load-cell.capped::before { content:""; position:absolute; left:0; right:0; top:14px; border-top:1px dashed var(--line-2); }
+  .load-bar { width:60%; max-width:24px; min-height:2px; border-radius:4px 4px 0 0; background:var(--mark); }
+  .load-cell.warn .load-bar { background:var(--warning); }
+  .load-cell.over .load-bar { background:var(--critical); }
+  .load-num { position:absolute; top:0; left:0; right:0; text-align:center; font:600 10px/1.3 var(--font); color:var(--ink-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .lane-label { padding:8px 10px; display:flex; flex-direction:column; justify-content:center; gap:3px; border-bottom:1px solid var(--line); }
+  .lane-btn { display:block; width:100%; text-align:left; background:transparent; border:1px solid transparent; border-radius:var(--radius); padding:2px 6px; margin:0 -6px; color:var(--ink); font:600 13px/1.2 var(--font); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lane-btn:hover { background:var(--surface-2); }
+  .lane-btn.active { background:var(--accent-wash); }
+  .lane-label .sub { font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .lane { position:relative; overflow:hidden; border-bottom:1px solid var(--line); height:calc(var(--rows) * (var(--block-h) + var(--block-gap)) - var(--block-gap) + 2 * var(--lane-pad)); min-height:calc(var(--block-h) + 2 * var(--lane-pad)); }
+  .gridline { position:absolute; top:0; bottom:0; width:1px; background:var(--line); pointer-events:none; }
+  .gridline.year { background:var(--line-2); }
+  .asof-line { position:absolute; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--accent); pointer-events:none; z-index:1; }
+  .asof-pill { position:absolute; top:5px; left:0; transform:translateX(-50%); background:var(--accent); color:var(--accent-ink); font:600 11px/1 var(--font); padding:5px 8px; border-radius:999px; white-space:nowrap; z-index:1; }
+  .block { position:absolute; height:var(--block-h); padding:4px 8px; margin:0; background:var(--surface-2); border:1px solid var(--line-2); border-radius:4px; color:var(--ink); text-align:left; cursor:grab; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:1px; font-family:var(--font); touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+  .block:hover, .block:focus-visible { border-color:var(--accent); background:var(--surface); }
+  .block.dragging { border-color:var(--accent); cursor:grabbing; z-index:3; box-shadow:var(--shadow); }
+  .block .name { font:500 12px/1.2 var(--font); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .block .cost { font:400 11px/1 var(--font); color:var(--muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
   .block .handle { position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; }
   .block .handle.start { left:0; }
   .block .handle.end { right:0; }
-  .block.clipped-start .handle.start, .block.clipped-end .handle.end { display:none; }
-  .block .progress { position:absolute; left:0; bottom:0; height:2px; background:var(--ink-muted); pointer-events:none; }
-  .block .progress.over { background:var(--ink); }
-  .block .name { font:500 12px/1.2 var(--font-sans); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .block .cost { font:500 10px/1 var(--font-mono); letter-spacing:.06em; color:var(--ink-muted); white-space:nowrap; }
   .block.clipped-start { border-left-style:dashed; }
   .block.clipped-end { border-right-style:dashed; }
-  .lane-empty { position:absolute; inset:0; display:flex; align-items:center; padding:0 12px; color:var(--ink-muted); font:500 10px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; pointer-events:none; }
-  .empty-panel { border:1px solid var(--hairline); padding:40px 24px; display:flex; flex-direction:column; align-items:flex-start; gap:16px; }
+  .block.clipped-start .handle.start, .block.clipped-end .handle.end { display:none; }
+  .block .progress { position:absolute; left:0; bottom:0; height:3px; background:var(--mark); pointer-events:none; }
+  .block .progress.over { background:var(--critical); }
+  .block .log-btn { position:absolute; right:10px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:999px; background:var(--surface); border:1px solid var(--line-2); color:var(--ink-2); display:none; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .block:hover .log-btn, .block:focus-within .log-btn { display:inline-flex; }
+  .block .log-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .block .log-btn svg.icon { width:13px; height:13px; }
+  .lane-empty { position:absolute; inset:0; display:flex; align-items:center; padding:0 12px; color:var(--muted); font:500 12px/1 var(--font); pointer-events:none; }
+  .empty-panel { border:1px dashed var(--line-2); border-radius:var(--radius-lg); padding:40px 24px; display:flex; flex-direction:column; align-items:flex-start; gap:14px; background:var(--surface); }
   .empty-panel p { margin:0; }
+  .empty-panel .actions { display:flex; flex-wrap:wrap; gap:8px; }
 
   /* Backlog */
-  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); border:1px solid var(--hairline); border-right:0; border-bottom:0; }
-  .card { display:flex; flex-direction:column; background:var(--panel); border-right:1px solid var(--hairline); border-bottom:1px solid var(--hairline); min-height:72px; }
-  .card-main { flex:1; display:flex; flex-direction:column; gap:6px; padding:14px 16px 10px; margin:0; background:transparent; border:0; color:var(--ink); text-align:left; cursor:pointer; border-radius:0; font-family:var(--font-sans); }
-  .card-foot { display:flex; justify-content:flex-end; padding:0 10px 10px; }
-  .card:hover { background:var(--ground); }
-  .card .name { font:500 14px/1.25 var(--font-sans); }
-  .card .meta { font:500 10px/1.3 var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-muted); }
-  .backlog-empty { padding:20px 0; color:var(--ink-muted); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
+  .card { display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); min-height:72px; }
+  .card-main { flex:1; display:flex; flex-direction:column; gap:5px; padding:12px 14px 8px; margin:0; background:transparent; border:0; border-radius:var(--radius-lg) var(--radius-lg) 0 0; color:var(--ink); text-align:left; cursor:pointer; font-family:var(--font); }
+  .card-foot { display:flex; justify-content:flex-end; padding:0 8px 8px; }
+  .card:hover { border-color:var(--muted); }
+  .card .name { font:500 13px/1.3 var(--font); }
+  .card .meta { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .backlog-empty { padding:16px 0; color:var(--muted); }
 
-  /* Tables: every size in pt so table text stays between 8 and 10 pt */
-  .table-wrap { overflow-x:auto; position:relative; }
-  table { width:100%; border-collapse:collapse; font:400 10pt/1.45 var(--font-sans); }
-  th { font:500 9pt/1.3 var(--font-mono); text-transform:uppercase; letter-spacing:.06em; background:var(--gunmetal); color:var(--bone); text-align:left; }
-  th, td { padding:6px 10px; border-bottom:1px solid var(--hairline); vertical-align:middle; }
-  tbody tr:not(.highlight):hover > td, tbody tr:not(.highlight):hover > th { background:var(--hover); }
-  #blocksTable tbody tr { cursor:pointer; }
+  /* Tables */
+  .table-wrap { overflow-x:auto; position:relative; border:1px solid var(--line); border-radius:var(--radius-lg); background:var(--surface); }
+  table { width:100%; border-collapse:collapse; font:400 13px/1.45 var(--font); }
+  th { font:600 12px/1.3 var(--font); color:var(--ink-2); background:var(--surface-2); text-align:left; }
+  th, td { padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:last-child > td, tbody tr:last-child > th { border-bottom:0; }
   th.num, td.num { text-align:right; }
-  td.num, td.fig { font-family:var(--font-mono); font-size:10pt; font-weight:400; font-variant-numeric:tabular-nums; white-space:nowrap; }
-  tbody th[scope="row"] { background:transparent; color:var(--ink-muted); font-size:9pt; white-space:nowrap; }
-  tr.highlight td, tr.highlight th { background:var(--highlight); }
-  tr.highlight td.num, tr.strong td.num, tr.strong th { font-weight:500; color:var(--ink); }
-  tfoot td, td.note, .table-note { font-size:8pt; }
-  td.num .tag { display:inline-block; margin-left:8px; font:500 8pt/1 var(--font-mono); letter-spacing:.1em; color:var(--ink-muted); }
-  td.num .tag.ion { color:var(--carbon); background:var(--ion); padding:2px 4px; }
-  table input.cell { width:9.5em; max-width:100%; min-height:0; text-align:right; font:500 10pt/1.2 var(--font-mono); letter-spacing:.02em; color:var(--ink); background:var(--input-bg); border:1px solid var(--hairline-strong); border-radius:0; padding:3px 6px; }
-  .engine-cell { display:flex; align-items:center; gap:8px; }
-  .engine-cell .swatch { width:8px; height:8px; border:1px solid var(--hairline-strong); flex:none; }
-  .table-note { color:var(--ink-muted); margin:10px 0 0; }
+  td.num, td.fig { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  th.sortable { padding:0; }
+  th.sortable button { width:100%; padding:7px 10px; background:transparent; border:0; color:inherit; font:inherit; text-align:inherit; cursor:pointer; display:flex; align-items:center; gap:4px; }
+  th.num.sortable button { justify-content:flex-end; }
+  th.sortable button:hover { color:var(--ink); }
+  th[aria-sort="ascending"] button::after { content:"\25B4"; font-size:10px; }
+  th[aria-sort="descending"] button::after { content:"\25BE"; font-size:10px; }
+  tbody th[scope="row"] { background:transparent; color:var(--ink-2); font-weight:500; white-space:nowrap; }
+  tbody tr:not(.highlight):hover > td, tbody tr:not(.highlight):hover > th { background:var(--surface-2); }
+  tr.highlight td, tr.highlight th { background:var(--accent-wash); }
+  tr.highlight td.num, tr.strong td.num, tr.strong th { font-weight:600; color:var(--ink); }
+  table input.cell { width:9em; max-width:100%; min-height:0; text-align:right; font:500 13px/1.2 var(--font); font-variant-numeric:tabular-nums; color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:4px; padding:3px 6px; }
+  td.actions, th.actions { text-align:right; white-space:nowrap; padding-top:2px; padding-bottom:2px; }
+  td.actions .iconbtn { vertical-align:middle; }
+  td.actions .iconbtn + .iconbtn { margin-left:2px; }
+  #blocksTable tbody tr { cursor:pointer; }
+  .table-note { font-size:12px; color:var(--muted); margin:8px 0 0; }
 
-  .explain { margin:0; padding-top:16px; border-top:1px solid var(--hairline); color:var(--ink-muted); font-size:14px; line-height:1.6; }
-  footer { border-top:1px solid var(--hairline); }
-  .footer-inner { max-width:1600px; margin:0 auto; padding:16px 24px; display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; color:var(--ink-muted); }
+  .explain { margin:0; padding-top:14px; border-top:1px solid var(--line); color:var(--ink-2); font-size:13px; line-height:1.6; }
+  footer { border-top:1px solid var(--line); }
+  .footer-inner { max-width:1600px; margin:0 auto; padding:14px 24px; display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; color:var(--muted); font-size:12px; }
 
   /* Dialogs */
-  dialog { background:var(--panel); color:var(--ink); border:1px solid var(--hairline-strong); border-radius:0; padding:0; width:min(560px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; }
+  dialog { background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:0; width:min(600px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; }
   dialog::backdrop { background:var(--backdrop); }
-  dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid var(--hairline); }
-  dialog .fields { display:grid; gap:14px; padding:20px; }
-  dialog footer { border-top:1px solid var(--hairline); padding:14px 20px; display:flex; gap:10px; align-items:center; }
+  dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  dialog .fields { display:grid; gap:14px; padding:18px; }
+  dialog .fields h3 { margin:6px 0 -6px; }
+  dialog footer { border-top:1px solid var(--line); padding:12px 18px; display:flex; gap:8px; align-items:center; }
   dialog footer .spacer { flex:1; }
-  label.field { display:grid; gap:6px; }
-  label.field > span { font:500 11px/1.3 var(--font-mono); letter-spacing:.18em; text-transform:uppercase; color:var(--ink-muted); }
-  input[type="text"], input[type="number"], input[type="date"], select, textarea { font:400 14px/1.3 var(--font-sans); color:var(--ink); background:var(--input-bg); border:1px solid var(--hairline-strong); border-radius:0; padding:9px 10px; width:100%; min-height:38px; color-scheme:dark; }
-  :root[data-theme="light"] input, :root[data-theme="light"] select { color-scheme:light; }
-  .check { display:flex; align-items:center; gap:10px; font:500 11px/1.3 var(--font-mono); letter-spacing:.18em; text-transform:uppercase; color:var(--ink); }
-  .check input { width:16px; height:16px; margin:0; accent-color:var(--ion); }
+  label.field { display:grid; gap:5px; }
+  label.field > span { font:500 12px/1.3 var(--font); color:var(--ink-2); }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea { font:400 14px/1.3 var(--font); color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--radius); padding:8px 10px; width:100%; min-height:36px; }
+  input:disabled { background:var(--surface-2); color:var(--ink-2); }
+  .check { display:flex; align-items:center; gap:8px; font:500 13px/1.3 var(--font); color:var(--ink); }
+  .check input { width:16px; height:16px; margin:0; accent-color:var(--accent); }
   .dates, .pair { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media (max-width:480px) { .pair { grid-template-columns:1fr; } }
-  .dates .date-summary { grid-column:1 / -1; margin:-6px 0 0; min-height:1.3em; }
-  .keys { display:grid; grid-template-columns:auto 1fr; gap:12px 18px; margin:0; align-items:baseline; }
-  .keys dt { font:500 11px/1.5 var(--font-mono); letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; color:var(--ink); }
-  .keys dd { margin:0; font-size:14px; line-height:1.45; color:var(--ink-muted); }
-  kbd { display:inline-block; font:500 11px/1 var(--font-mono); letter-spacing:.08em; border:1px solid var(--hairline-strong); padding:3px 5px; margin:0 1px; }
-  .form-error { margin:0; min-height:1.3em; font-size:13px; color:var(--ink); }
+  @media (max-width:480px) { .pair, .dates { grid-template-columns:1fr; } }
+  .dates .date-summary { grid-column:1 / -1; margin:-6px 0 0; min-height:1.3em; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .form-error { margin:0; min-height:1.3em; font-size:13px; color:var(--critical); }
   .form-error:empty { display:none; }
   .engine-rows { display:grid; gap:8px; }
-  .engine-row { display:grid; grid-template-columns:1fr auto auto auto; gap:6px; align-items:center; }
-  .engine-row .count { font:500 10px/1 var(--font-mono); letter-spacing:.1em; color:var(--ink-muted); white-space:nowrap; padding:0 6px; }
+  .engine-row { display:grid; grid-template-columns:1fr 7em auto auto auto; gap:6px; align-items:center; }
+  .engine-row .count { font-size:11px; color:var(--muted); white-space:nowrap; padding:0 6px; }
+  .engine-row input[type="text"].rate { text-align:right; font-variant-numeric:tabular-nums; }
   .years-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .error-list { margin:0; padding:0 0 0 18px; font-size:13px; }
+  .keys { display:grid; grid-template-columns:auto 1fr; gap:10px 16px; margin:0; align-items:baseline; }
+  .keys dt { font:600 12px/1.5 var(--font); white-space:nowrap; color:var(--ink); }
+  .keys dd { margin:0; font-size:13px; line-height:1.45; color:var(--ink-2); }
+  kbd { display:inline-block; font:500 11px/1 var(--font); border:1px solid var(--line-2); border-bottom-width:2px; border-radius:4px; padding:3px 5px; margin:0 1px; background:var(--surface-2); }
+  .backup-list { display:grid; gap:6px; }
+  .backup-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--radius); font-size:13px; }
+  .backup-row .spacer { flex:1; }
+  #logEntries table { font-size:12px; }
 
   /* Toast */
-  #toast { position:fixed; left:0; right:0; bottom:24px; margin:0 auto; width:max-content; max-width:calc(100vw - 32px); z-index:50; display:flex; align-items:center; gap:14px; padding:10px 10px 10px 16px; background:var(--panel); color:var(--ink); border:1px solid var(--hairline-strong); font-size:14px; }
+  #toast { position:fixed; left:0; right:0; bottom:20px; margin:0 auto; width:max-content; max-width:calc(100vw - 32px); z-index:50; display:flex; align-items:center; gap:12px; padding:9px 9px 9px 14px; background:var(--ink); color:var(--bg); border-radius:var(--radius-lg); box-shadow:var(--shadow); font-size:13px; }
+  #toast .btn { background:transparent; color:inherit; border-color:rgba(255,255,255,.35); }
+  :root[data-theme="dark"] #toast .btn { border-color:rgba(0,0,0,.3); }
+  #toast .iconbtn { color:inherit; }
   #toastText { min-width:0; }
-  #toast[hidden] { display:none; }
 
   @media (max-width:720px) {
-    .topbar-inner, main, .footer-inner, .subnav-inner { padding-left:16px; padding-right:16px; }
+    .topbar-inner, main, .footer-inner, .subnav-inner, .summary { padding-left:16px; padding-right:16px; }
+    main { gap:28px; }
+    :root { --rail:150px; }
     .subnav .status { display:none; }
-    .brand { flex-wrap:wrap; }
-    main { gap:32px; }
-    :root { --rail:140px; }
   }
   @media (prefers-reduced-motion:reduce) { .skip-link { transition:none; } html { scroll-behavior:auto; } }
   @media print {
-    :root { --ground:#FFFFFF; --panel:#EEEDE7; --ink:#0B0D10; --ink-muted:#171B22; --hairline:rgb(138 143 153 / .45); --hairline-strong:rgb(138 143 153 / .85); --highlight:#E2FDFF; }
-    .topbar .actions, dialog, #toast, .skip-link, .section-head .btn, footer .btn, .subnav, .filter, .card-foot, .block .handle, td.actions, th.actions { display:none !important; }
+    :root { --bg:#fff; --surface:#fff; --surface-2:#f3f3f1; --ink:#000; --ink-2:#333; --muted:#555; --line:#ccc; --line-2:#999; }
+    .topbar .actions, dialog, #toast, .skip-link, .section-head .btn, .section-head .filter, footer .btn, .subnav, .card-foot, .block .handle, .block .log-btn, td.actions, th.actions { display:none !important; }
     .board-scroll, .table-wrap { overflow:visible; }
     .board { grid-template-columns:var(--rail) 1fr; }
     main { max-width:none; padding:0; gap:24px; }
@@ -244,53 +285,52 @@
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<!-- Astrion provisional icon set (24 grid, 1.5 stroke). Subset of assets/icons-sprite.svg; symbols draw in currentColor. -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-  <symbol id="ast-add" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
-  <symbol id="ast-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><rect x="7.5" y="13.5" width="3" height="3"/></symbol>
-  <symbol id="ast-download" viewBox="0 0 24 24"><path d="M12 3.5v11M7 10l5 5 5-5M4 20h16"/></symbol>
-  <symbol id="ast-upload" viewBox="0 0 24 24"><path d="M12 15V4.5M7 9l5-5 5 5M4 20h16"/></symbol>
-  <symbol id="ast-delete" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3.5h6V6M6.5 6v14.5h11V6M10 10v6.5M14 10v6.5"/></symbol>
-  <symbol id="ast-edit" viewBox="0 0 24 24"><path d="M4 20v-4L15 5l4 4L8 20zM12 8l4 4M13 20h7"/></symbol>
-  <symbol id="ast-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
-  <symbol id="ast-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
-  <symbol id="ast-schedule" viewBox="0 0 24 24"><path d="M3 3.5V20h18"/><rect x="6" y="6" width="7" height="3"/><rect x="9" y="11" width="8" height="3"/><rect x="13" y="16" width="6" height="3"/></symbol>
-  <symbol id="ast-list-view" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><rect x="3.75" y="4.75" width="2.5" height="2.5" fill="currentColor" stroke="none"/><rect x="3.75" y="10.75" width="2.5" height="2.5" fill="currentColor" stroke="none"/><rect x="3.75" y="16.75" width="2.5" height="2.5" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="ast-budget" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12h8.5"/></symbol>
-  <symbol id="ast-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16"/><path d="M3 9h18M3 14.5h18M9 4v16"/></symbol>
-  <symbol id="ast-settings" viewBox="0 0 24 24"><path d="M4 7h3M11 7h9M4 17h9M17 17h3"/><rect x="7" y="5" width="4" height="4"/><rect x="13" y="15" width="4" height="4"/></symbol>
-  <symbol id="ast-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></symbol>
-  <symbol id="ast-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M20.5 4v3.5H17"/></symbol>
-  <symbol id="ast-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
-  <symbol id="ast-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
-  <symbol id="ast-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.5v.7"/><rect x="11" y="16" width="2" height="2" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="ast-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20.5 20.5"/></symbol>
-  <symbol id="ast-outline" viewBox="0 0 24 24"><path d="M5 4v14.5h3M5 9.5h3M5 14h3M10.5 4.5H20M11.5 9.5H20M11.5 14H18M11.5 18.5H20"/><rect x="3.75" y="2.75" width="2.5" height="2.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11M7 10l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4.5M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-delete" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3.5h6V6M6.5 6v14.5h11V6M10 10v6.5M14 10v6.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20v-4L15 5l4 4L8 20zM12 8l4 4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-schedule" viewBox="0 0 24 24"><path d="M3 3.5V20h18"/><rect x="6" y="6" width="7" height="3" rx="1"/><rect x="9" y="11" width="8" height="3" rx="1"/><rect x="13" y="16" width="6" height="3" rx="1"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.5M4 12h.5M4 18h.5"/></symbol>
+  <symbol id="i-budget" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12h8.5"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M9 4v16"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h3M11 7h9M4 17h9M17 17h3"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="17" r="2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M20.5 4v3.5H17"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.5v.7M12 17.5h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20.5 20.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
 </svg>
 
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">
-      <div class="titles">
-        <h1 id="pageTitle">Roadmap &amp; Budget Planner</h1>
-        <div class="mono" id="subtitle">2026 – 2027 · Day-level · Hours and materials</div>
-      </div>
+    <div class="titles">
+      <h1 id="pageTitle">Roadmap &amp; Budget Planner</h1>
+      <div class="sub num" id="subtitle">2026 – 2027 · Calendar days · $102.00/h</div>
     </div>
     <div class="actions">
-      <button type="button" class="btn primary" id="addBlockBtn"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Add block</button>
+      <button type="button" class="btn primary" id="addBlockBtn"><svg class="icon" aria-hidden="true"><use href="#i-add"/></svg>Add block</button>
       <div class="asof">
-        <svg class="icon" aria-hidden="true"><use href="#ast-calendar"/></svg>
-        <label class="mono" for="asOfInput">As of</label>
+        <svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>
+        <label for="asOfInput">As of</label>
         <input type="date" id="asOfInput" aria-label="As-of date" />
         <button type="button" class="btn" id="todayBtn">Today</button>
       </div>
       <div class="group">
-        <button type="button" class="btn" id="exportBtn"><svg class="icon" aria-hidden="true"><use href="#ast-download"/></svg>Export</button>
-        <button type="button" class="btn" id="importBtn"><svg class="icon" aria-hidden="true"><use href="#ast-upload"/></svg>Import</button>
-        <button type="button" class="btn" id="settingsBtn"><svg class="icon" aria-hidden="true"><use href="#ast-settings"/></svg>Settings</button>
-        <button type="button" class="btn" id="clearBtn"><svg class="icon" aria-hidden="true"><use href="#ast-delete"/></svg>Clear all</button>
-        <button type="button" class="btn" id="helpBtn"><svg class="icon" aria-hidden="true"><use href="#ast-help"/></svg>Help</button>
-        <button type="button" class="btn" id="themeBtn" aria-pressed="false">Light</button>
+        <button type="button" class="btn" id="exportBtn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Export</button>
+        <button type="button" class="btn" id="importBtn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Import</button>
+        <button type="button" class="btn" id="settingsBtn"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Settings</button>
+        <button type="button" class="btn danger" id="clearBtn"><svg class="icon" aria-hidden="true"><use href="#i-delete"/></svg>Clear all</button>
+        <button type="button" class="btn" id="helpBtn"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>Help</button>
+        <button type="button" class="btn" id="themeBtn" aria-pressed="false">Dark</button>
       </div>
     </div>
   </div>
@@ -304,50 +344,57 @@
     <a href="#hoursSection">Hours</a>
     <a href="#materialsSection">Materials</a>
     <a href="#costSection">Cost</a>
+    <span class="chip" id="scopeChip" hidden><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg><span id="scopeText"></span><button type="button" class="iconbtn" id="scopeClear" aria-label="Show every engine"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></span>
     <span class="spacer"></span>
-    <span class="mono status" id="saveStatus"></span>
+    <span class="status num" id="saveStatus"></span>
   </div>
 </nav>
+
+<section class="summary" aria-label="Summary">
+  <div class="tiles" id="summaryHost"></div>
+</section>
 
 <main id="main">
   <section id="timelineSection" aria-labelledby="timelineTitle">
     <div class="section-head">
-      <h2 id="timelineTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-schedule"/></svg>Timeline</h2>
-      <span class="mono meta" id="timelineMeta"></span>
+      <h2 id="timelineTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-schedule"/></svg>Timeline</h2>
+      <span class="meta num" id="timelineMeta"></span>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="addYearBtn" title="Extend the plan by one year"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Year</button>
+      <button type="button" class="btn" id="addYearBtn" title="Extend the plan by one year"><svg class="icon" aria-hidden="true"><use href="#i-add"/></svg>Year</button>
     </div>
     <div id="timelineHost"></div>
-    <p class="caption" id="timelineHint">Drag a block to move it, or drag either edge to change its dates. Click a block to edit it. With a block focused, the arrow keys move it by a day (Shift for a week), + and - change its end date, and Delete removes it. Press ? for every shortcut.</p>
+    <p class="caption" id="timelineHint">Drag a block to move it, or drag either edge to change its dates. Click a block to edit it, or use the clock button on it to log work. With a block focused, the arrow keys move it by a day (Shift for a week), + and - change its end date, L logs work and Delete removes it. Click an engine name to see that engine alone. Press ? for every shortcut.</p>
   </section>
 
   <section id="backlogSection" aria-labelledby="backlogTitle">
     <div class="section-head">
-      <h2 id="backlogTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-list-view"/></svg>Backlog</h2>
-      <span class="mono meta" id="backlogMeta"></span>
+      <h2 id="backlogTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-list"/></svg>Backlog</h2>
+      <span class="meta num" id="backlogMeta"></span>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="addBacklogBtn"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Backlog item</button>
+      <button type="button" class="btn" id="addBacklogBtn"><svg class="icon" aria-hidden="true"><use href="#i-add"/></svg>Backlog item</button>
     </div>
     <div id="backlogHost"></div>
   </section>
 
   <section id="blocksSection" aria-labelledby="blocksTitle">
     <div class="section-head">
-      <h2 id="blocksTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-outline"/></svg>Blocks</h2>
-      <span class="mono meta" id="blocksMeta"></span>
+      <h2 id="blocksTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-table"/></svg>Blocks</h2>
+      <span class="meta num" id="blocksMeta"></span>
       <span class="spacer"></span>
       <div class="filter">
-        <svg class="icon" aria-hidden="true"><use href="#ast-search"/></svg>
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
         <input type="search" id="blockFilter" placeholder="Filter by name or engine" aria-label="Filter blocks by name or engine" autocomplete="off" />
       </div>
+      <button type="button" class="btn" id="csvBtn" title="Download the list below as a CSV file"><svg class="icon" aria-hidden="true"><use href="#i-sheet"/></svg>CSV</button>
     </div>
     <div class="table-wrap" id="blocksHost"></div>
+    <p class="caption">Click a column heading to sort. Click a row to edit it. CSV downloads the rows as shown.</p>
   </section>
 
   <section id="hoursSection" aria-labelledby="hoursTitle">
     <div class="section-head">
-      <h2 id="hoursTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-clock"/></svg>Labor hours</h2>
-      <span class="mono meta">Worked and forecast · Annual hours editable</span>
+      <h2 id="hoursTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-clock"/></svg>Labor hours</h2>
+      <span class="meta" id="hoursMeta">Worked and forecast · Annual hours editable</span>
     </div>
     <div class="two-col tables">
       <div><h3>Hours by year</h3><div class="table-wrap" id="hoursYearHost"></div></div>
@@ -358,8 +405,8 @@
 
   <section id="materialsSection" aria-labelledby="materialsTitle">
     <div class="section-head">
-      <h2 id="materialsTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-table"/></svg>Materials</h2>
-      <span class="mono meta">Spent and forecast · USD</span>
+      <h2 id="materialsTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-table"/></svg>Materials</h2>
+      <span class="meta">Spent and forecast · USD</span>
     </div>
     <div class="two-col tables">
       <div><h3>Materials by year</h3><div class="table-wrap" id="materialsYearHost"></div></div>
@@ -370,29 +417,28 @@
 
   <section id="costSection" aria-labelledby="costTitle">
     <div class="section-head">
-      <h2 id="costTitle"><svg class="icon lg" aria-hidden="true"><use href="#ast-budget"/></svg>Cost</h2>
-      <span class="mono meta" id="costMeta"></span>
+      <h2 id="costTitle"><svg class="icon lg" aria-hidden="true"><use href="#i-budget"/></svg>Cost</h2>
+      <span class="meta" id="costMeta"></span>
       <span class="spacer"></span>
       <div class="asof">
-        <label class="mono" for="rateInput">Rate · $/h</label>
-        <input type="text" id="rateInput" inputmode="decimal" autocomplete="off" aria-label="Hourly rate in dollars" />
+        <label for="rateInput">Plan rate · $/h</label>
+        <input type="text" id="rateInput" inputmode="decimal" autocomplete="off" aria-label="Plan labor rate in dollars per hour" />
       </div>
     </div>
     <div class="two-col tables">
       <div><h3>Cost by year</h3><div class="table-wrap" id="costYearHost"></div></div>
       <div><h3>Cost by engine</h3><div class="table-wrap" id="costEngineHost"></div></div>
     </div>
-    <p class="caption">Labor is the hours above multiplied by the rate; materials are the dollars above. Committed is labor plus materials, and Remaining is the annual budget minus committed, marked Over when the plan exceeds it. Backlog cost is backlog hours at the rate plus backlog materials.</p>
+    <p class="caption">Labor is the hours above multiplied by each engine's rate (the plan rate unless an engine has its own under Settings); materials are the dollars above. Committed is labor plus materials, and Remaining is the annual budget minus committed, marked Over when the plan exceeds it. Backlog cost is backlog hours at the rate plus backlog materials.</p>
   </section>
 
-  <p class="explain" id="explain">Past portions of each scheduled block count as worked or spent and future portions as forecast, pro-rated by day across the dates the block spans; the as-of day itself is forecast. A block with hours logged or materials spent to date uses that figure and carries the rest of its estimate as forecast, so an overrun shows above the estimate instead of disappearing. A block that crosses a year boundary splits between years by day. Backlog items have no dates, so they sit outside the yearly totals. Annual hours and the annual budget are editable; leave one blank and its Remaining line reads Not set.</p>
+  <p class="explain" id="explain">Past portions of each scheduled block count as worked or spent and future portions as forecast, pro-rated by day (or by weekday) across the dates the block spans; the as-of day itself is forecast. A block with hours logged or materials spent to date uses that figure and carries the rest of its estimate as forecast, so an overrun shows above the estimate instead of disappearing. Dated log entries count only up to the as-of date, so moving the as-of date back shows the plan as it stood then. A block that crosses a year boundary splits between years by day. Backlog items have no dates, so they sit outside the yearly totals. Annual hours and the annual budget are editable; leave one blank and its Remaining line reads Not set.</p>
 </main>
 
 <footer>
   <div class="footer-inner">
-    <span class="mono">Astrion · Roadmap and Budget Planner · v2.0</span>
-    <span class="mono" id="storageNote">Saved in this browser</span>
-    <span class="mono">Icons · Provisional set</span>
+    <span>Roadmap and Budget Planner · v3.0</span>
+    <span id="storageNote">Saved in this browser</span>
   </div>
 </footer>
 
@@ -400,7 +446,7 @@
   <form id="blockForm" method="dialog" novalidate>
     <header>
       <h2 id="blockDialogTitle">Add block</h2>
-      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
+      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
     </header>
     <div class="fields">
       <label class="field"><span>Name</span><input type="text" name="name" maxlength="120" autocomplete="off" required /></label>
@@ -409,7 +455,7 @@
       <div class="dates" id="dateFields">
         <label class="field"><span>Start</span><input type="date" name="start" /></label>
         <label class="field"><span>End</span><input type="date" name="end" /></label>
-        <p class="mono muted date-summary" id="dateSummary" aria-live="polite"></p>
+        <p class="date-summary" id="dateSummary" aria-live="polite"></p>
       </div>
       <div class="pair">
         <label class="field"><span>Labor estimate · Hours</span><input type="text" name="hours" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
@@ -419,13 +465,43 @@
         <label class="field"><span>Materials planned · USD</span><input type="text" name="materials" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
         <label class="field" id="materialsActualField"><span>Materials spent to date · USD</span><input type="text" name="materialsActual" inputmode="numeric" autocomplete="off" placeholder="Not logged" /></label>
       </div>
+      <p class="hint" id="logHint" hidden></p>
       <p class="form-error" id="blockError" role="alert"></p>
     </div>
     <footer>
-      <button type="button" class="btn" id="blockDeleteBtn" data-delete><svg class="icon" aria-hidden="true"><use href="#ast-delete"/></svg>Delete</button>
+      <button type="button" class="btn danger" id="blockDeleteBtn" data-delete><svg class="icon" aria-hidden="true"><use href="#i-delete"/></svg>Delete</button>
+      <button type="button" class="btn" id="blockLogBtn"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>Log work</button>
       <span class="spacer"></span>
       <button type="button" class="btn" data-cancel>Cancel</button>
-      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#ast-check"/></svg>Save</button>
+      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Save</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog id="logDialog" aria-labelledby="logTitle">
+  <form id="logForm" method="dialog" novalidate>
+    <header>
+      <h2 id="logTitle">Log work</h2>
+      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </header>
+    <div class="fields">
+      <p class="hint" id="logBlockName"></p>
+      <div class="pair">
+        <label class="field"><span>Date</span><input type="date" name="date" /></label>
+        <label class="field"><span>Hours</span><input type="text" name="hours" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
+      </div>
+      <div class="pair">
+        <label class="field"><span>Materials · USD</span><input type="text" name="materials" inputmode="numeric" autocomplete="off" placeholder="0" /></label>
+        <label class="field"><span>Note</span><input type="text" name="note" maxlength="200" autocomplete="off" placeholder="Optional" /></label>
+      </div>
+      <p class="form-error" id="logError" role="alert"></p>
+      <div><button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#i-add"/></svg>Add entry</button></div>
+      <div class="table-wrap" id="logEntries"></div>
+      <p class="hint num" id="logTotals"></p>
+    </div>
+    <footer>
+      <span class="spacer"></span>
+      <button type="button" class="btn" data-cancel>Done</button>
     </footer>
   </form>
 </dialog>
@@ -434,24 +510,41 @@
   <form id="settingsForm" method="dialog" novalidate>
     <header>
       <h2 id="settingsDialogTitle">Plan settings</h2>
-      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
+      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
     </header>
     <div class="fields">
-      <label class="field" id="rateField"><span>Labor rate · $ per hour</span><input type="text" name="rate" inputmode="decimal" autocomplete="off" /></label>
-      <div class="years-row">
-        <label class="field"><span>Start year</span><input type="number" name="startYear" min="1970" max="2200" step="1" /></label>
-        <label class="field"><span>End year</span><input type="number" name="endYear" min="1970" max="2200" step="1" /></label>
+      <h3>Plan</h3>
+      <div class="pair">
+        <label class="field" id="rateField"><span>Plan labor rate · $ per hour</span><input type="text" name="rate" inputmode="decimal" autocomplete="off" /></label>
+        <label class="field"><span>Pro-rate by</span><select name="workdays"><option value="calendar">Calendar days</option><option value="weekdays">Weekdays (Monday to Friday)</option></select></label>
       </div>
-      <div class="field"><span class="mono muted">Engines · Lane order</span>
-        <div class="engine-rows" id="engineRows"></div>
+      <div class="pair">
+        <label class="field"><span>Fiscal year starts in</span><select name="fiscalStartMonth"></select></label>
+        <div class="years-row">
+          <label class="field"><span>First year</span><input type="number" name="startYear" min="1970" max="2200" step="1" /></label>
+          <label class="field"><span>Last year</span><input type="number" name="endYear" min="1970" max="2200" step="1" /></label>
+        </div>
       </div>
-      <button type="button" class="btn sm" id="addEngineBtn"><svg class="icon" aria-hidden="true"><use href="#ast-add"/></svg>Engine</button>
+      <p class="hint" id="fiscalHint"></p>
+      <h3>Engines · Lane order and rates</h3>
+      <div class="engine-rows" id="engineRows"></div>
+      <div><button type="button" class="btn sm" id="addEngineBtn"><svg class="icon" aria-hidden="true"><use href="#i-add"/></svg>Engine</button></div>
+      <p class="hint">An engine's rate overrides the plan rate for its labor cost. Leave it blank to use the plan rate.</p>
+      <h3>Appearance</h3>
+      <div class="pair">
+        <label class="field"><span>Theme</span><select name="theme"><option value="light">Light</option><option value="dark">Dark</option><option value="system">Match the system</option></select></label>
+        <label class="field"><span>Accent color</span><select name="accent"><option value="blue">Blue</option><option value="teal">Teal</option><option value="violet">Violet</option><option value="orange">Orange</option><option value="graphite">Graphite</option></select></label>
+      </div>
+      <p class="hint">Appearance applies right away and is remembered in this browser.</p>
+      <h3>Backups</h3>
+      <div class="backup-list" id="backupList"></div>
+      <p class="hint">The last eight saves are kept in this browser, at most one a minute. Restore puts one back; Undo reverses that.</p>
       <p class="form-error" id="settingsError" role="alert"></p>
     </div>
     <footer>
       <span class="spacer"></span>
       <button type="button" class="btn" data-cancel>Cancel</button>
-      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#ast-check"/></svg>Save</button>
+      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Save</button>
     </footer>
   </form>
 </dialog>
@@ -460,7 +553,7 @@
   <form method="dialog">
     <header>
       <h2 id="confirmTitle">Confirm</h2>
-      <button type="button" class="iconbtn" value="cancel" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
+      <button type="button" class="iconbtn" value="cancel" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
     </header>
     <div class="fields"><p id="confirmBody" style="margin:0"></p><ul class="error-list" id="confirmList" hidden></ul></div>
     <footer>
@@ -475,7 +568,7 @@
   <form method="dialog">
     <header>
       <h2 id="helpTitle">Working the plan</h2>
-      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
+      <button type="button" class="iconbtn" data-cancel aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
     </header>
     <div class="fields">
       <dl class="keys">
@@ -483,28 +576,30 @@
         <dt>Drag</dt><dd>Move a block along the timeline. Drag either edge to change its start or end date.</dd>
         <dt><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></dt><dd>Move the focused block by a day. Hold Shift to move it a week.</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Lengthen or shorten the focused block by a day at its end. Hold Shift for a week.</dd>
+        <dt><kbd>L</kbd></dt><dd>Log work on the focused block: a dated entry of hours and materials. The clock button on a block does the same.</dd>
         <dt><kbd>Delete</kbd></dt><dd>Remove the focused block. Undo is in the toast.</dd>
         <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo the last change (Cmd on a Mac). The last 25 changes are kept.</dd>
         <dt><kbd>N</kbd></dt><dd>Add a block.</dd>
         <dt><kbd>B</kbd></dt><dd>Add a backlog item.</dd>
         <dt><kbd>?</kbd></dt><dd>Show this help.</dd>
-        <dt>As of</dt><dd>Days before the as-of date count as worked or spent; the as-of day and everything after it count as forecast.</dd>
-        <dt>Logged</dt><dd>Enter hours logged to date and materials spent to date on a scheduled block and the plan uses those figures instead of the elapsed share of the estimate.</dd>
-        <dt>Rate</dt><dd>Labor cost is hours at the rate in the Cost header (also under Settings). Materials are dollars as entered.</dd>
-        <dt>Saving</dt><dd>The plan saves in this browser as you work. Export writes a JSON file you can import on another computer or share with a colleague.</dd>
+        <dt>Engine name</dt><dd>Click an engine's name on the timeline to see that engine alone in every section. Click it again, or the chip in the section bar, to show everything.</dd>
+        <dt>As of</dt><dd>Days before the as-of date count as worked or spent; the as-of day and everything after it count as forecast. Log entries dated after it are not counted yet.</dd>
+        <dt>Logged</dt><dd>Dated log entries are the record of a block's work. A block without entries can carry plain running totals instead.</dd>
+        <dt>Rate</dt><dd>Labor cost is hours at the plan rate in the Cost header, or at an engine's own rate from Settings. Materials are dollars as entered.</dd>
+        <dt>Saving</dt><dd>The plan saves in this browser as you work, with the last eight saves kept as backups under Settings. Export writes a JSON file you can import on another computer.</dd>
       </dl>
     </div>
     <footer>
       <span class="spacer"></span>
-      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#ast-check"/></svg>Done</button>
+      <button type="submit" class="btn primary"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Done</button>
     </footer>
   </form>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite" hidden>
   <span id="toastText"></span>
-  <button type="button" class="btn sm" id="toastUndo"><svg class="icon" aria-hidden="true"><use href="#ast-refresh"/></svg>Undo</button>
-  <button type="button" class="iconbtn" id="toastClose" aria-label="Dismiss"><svg class="icon" aria-hidden="true"><use href="#ast-close"/></svg></button>
+  <button type="button" class="btn sm" id="toastUndo"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Undo</button>
+  <button type="button" class="iconbtn" id="toastClose" aria-label="Dismiss"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
 </div>
 
 <input type="file" id="importFile" accept="application/json,.json" hidden />
@@ -519,6 +614,9 @@
   const DEFAULT_RATE = 102;
   const MAX_SPAN_YEARS = 10;
   const MAX_WHOLE = 1e12;
+  const MAX_LOG = 5000;
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const WORKDAY_MODES = ["calendar", "weekdays"];
 
   function parseISO(value) {
     if (typeof value !== "string") return NaN;
@@ -532,8 +630,16 @@
   }
   function toISO(ms) { return new Date(ms).toISOString().slice(0, 10); }
   function dayCount(a, b) { return b >= a ? Math.round((b - a) / DAY) + 1 : 0; }
-  function yearStart(y) { return Date.UTC(y, 0, 1); }
-  function yearEnd(y) { return Date.UTC(y, 11, 31); }
+  // Inclusive count of Mondays to Fridays between two UTC days, in constant time.
+  function weekdayCount(a, b) {
+    if (b < a) return 0;
+    const days = dayCount(a, b);
+    const startDow = new Date(a).getUTCDay();
+    let count = Math.floor(days / 7) * 5;
+    for (let i = 0; i < days % 7; i += 1) { const dow = (startDow + i) % 7; if (dow !== 0 && dow !== 6) count += 1; }
+    return count;
+  }
+  function countDays(a, b, workdays) { return workdays === "weekdays" ? weekdayCount(a, b) : dayCount(a, b); }
   function isScheduled(block) { return typeof block.start === "string" && typeof block.end === "string"; }
   function yearsOf(doc) {
     const out = [];
@@ -545,51 +651,109 @@
   function hasLogged(value) { return value != null && Number.isFinite(Number(value)); }
   function laborCost(hours, rate) { return roundCell(hours * rate); }
 
+  // A plan's years are calendar years or fiscal years. With a fiscal start month of 10, FY2027 runs
+  // from October 1, 2026 to September 30, 2027 and is labelled "FY2027".
+  function calendarOf(source) {
+    const fm = typeof source === "number" ? source : (source && source.fiscalStartMonth) || 1;
+    const fiscal = fm >= 2 && fm <= 12;
+    const yearStart = (y) => (fiscal ? Date.UTC(y - 1, fm - 1, 1) : Date.UTC(y, 0, 1));
+    const yearEnd = (y) => yearStart(y + 1) - DAY;
+    const label = (y) => (fiscal ? "FY" + y : String(y));
+    const months = (y) => {
+      const out = [];
+      const first = new Date(yearStart(y));
+      for (let i = 0; i < 12; i += 1) {
+        const start = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + i, 1);
+        const end = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + i + 1, 0);
+        const d = new Date(start);
+        out.push({ year: y, index: i, month: d.getUTCMonth(), calendarYear: d.getUTCFullYear(), label: MONTHS[d.getUTCMonth()], start, end, days: dayCount(start, end) });
+      }
+      return out;
+    };
+    return { fiscalStartMonth: fiscal ? fm : 1, fiscal, yearStart, yearEnd, label, months };
+  }
+  function rateOf(doc, engineId) {
+    const engine = doc.engines.find((e) => e.id === engineId);
+    if (engine && engine.rate != null && Number.isFinite(Number(engine.rate))) return Number(engine.rate);
+    return Number(doc.rate) || 0;
+  }
+
+  // What a block has logged as of a date. Dated log entries are the source of truth when they exist
+  // (entries dated after the as-of day are not yet counted); otherwise the running totals on the block.
+  function loggedAsOf(block, asOf) {
+    const log = Array.isArray(block.log) ? block.log : [];
+    if (log.length) {
+      const asOfMs = parseISO(asOf);
+      let hours = 0, materials = 0, counted = 0;
+      for (const entry of log) {
+        if (!Number.isNaN(asOfMs) && parseISO(entry.date) > asOfMs) continue;
+        hours += int0(entry.hours); materials += int0(entry.materials); counted += 1;
+      }
+      return { hours, materials, fromLog: true, entries: log.length, counted };
+    }
+    return {
+      hours: hasLogged(block.hoursActual) ? int0(block.hoursActual) : null,
+      materials: hasLogged(block.materialsActual) ? int0(block.materialsActual) : null,
+      fromLog: false, entries: 0, counted: 0
+    };
+  }
+
   // Spread one figure (hours or dollars) over a block's in-range days, split at the as-of day. Days
   // before the as-of date are spent, the as-of day and everything after it are planned. A logged
   // figure replaces the elapsed-schedule estimate: spent is the logged amount spread over the elapsed
-  // days (or put in the first in-range year when nothing has elapsed yet) and planned is whatever
-  // estimate remains, spread over the days still to come (or put in the last in-range year when the
+  // days (or put in the first in-range period when nothing has elapsed yet) and planned is whatever
+  // estimate remains, spread over the days still to come (or put in the last in-range period when the
   // block is already over). An overrun shows as spent above the estimate.
   function splitByDays(total, logged, days, totalDays) {
     const out = {};
-    if (!hasLogged(logged)) {
+    if (logged == null) {
       const perDay = total / totalDays;
-      for (const d of days) out[d.y] = { spent: d.spent * perDay, planned: d.planned * perDay };
+      for (const d of days) out[d.key] = { spent: d.spent * perDay, planned: d.planned * perDay };
       return out;
     }
     const actual = Math.trunc(Number(logged));
     const remaining = Math.max(0, total - actual);
     const elapsed = days.reduce((t, d) => t + d.spent, 0);
     const ahead = days.reduce((t, d) => t + d.planned, 0);
-    for (const d of days) out[d.y] = { spent: 0, planned: 0 };
-    if (elapsed > 0) for (const d of days) out[d.y].spent = actual * d.spent / elapsed;
-    else out[days[0].y].spent = actual;
-    if (ahead > 0) for (const d of days) out[d.y].planned = remaining * d.planned / ahead;
-    else out[days[days.length - 1].y].planned = remaining;
+    for (const d of days) out[d.key] = { spent: 0, planned: 0 };
+    if (elapsed > 0) for (const d of days) out[d.key].spent = actual * d.spent / elapsed;
+    else out[days[0].key].spent = actual;
+    if (ahead > 0) for (const d of days) out[d.key].planned = remaining * d.planned / ahead;
+    else out[days[days.length - 1].key].planned = remaining;
     return out;
   }
 
-  // Per-block raw (unrounded) hours and materials dollars by calendar year.
-  function proRate(block, asOf, years) {
-    const byYear = {};
-    if (!isScheduled(block)) return { byYear, totalDays: 0 };
+  // Raw (unrounded) hours and materials per period for one block. Periods are [{ key, start, end }].
+  function splitPeriods(block, asOf, periods, workdays) {
+    const byKey = {};
+    if (!isScheduled(block)) return { byKey, totalDays: 0 };
     const s = parseISO(block.start), e = parseISO(block.end), asOfMs = parseISO(asOf);
-    const totalDays = dayCount(s, e);
-    if (!(totalDays > 0) || Number.isNaN(asOfMs)) return { byYear, totalDays: 0 };
+    let mode = workdays === "weekdays" ? "weekdays" : "calendar";
+    let totalDays = countDays(s, e, mode);
+    if (totalDays === 0 && mode === "weekdays") { mode = "calendar"; totalDays = dayCount(s, e); }
+    if (!(totalDays > 0) || Number.isNaN(asOfMs)) return { byKey, totalDays: 0 };
     const days = [];
-    for (const y of years) {
-      const a = Math.max(s, yearStart(y)), b = Math.min(e, yearEnd(y));
+    for (const p of periods) {
+      const a = Math.max(s, p.start), b = Math.min(e, p.end);
       if (b < a) continue;
-      days.push({ y, spent: dayCount(a, Math.min(b, asOfMs - DAY)), planned: dayCount(Math.max(a, asOfMs), b) });
+      days.push({ key: p.key, spent: countDays(a, Math.min(b, asOfMs - DAY), mode), planned: countDays(Math.max(a, asOfMs), b, mode) });
     }
-    if (!days.length) return { byYear, totalDays };
-    const hours = splitByDays(int0(block.hours), block.hoursActual, days, totalDays);
-    const materials = splitByDays(int0(block.materials), block.materialsActual, days, totalDays);
+    if (!days.length) return { byKey, totalDays };
+    const logged = loggedAsOf(block, asOf);
+    const hours = splitByDays(int0(block.hours), logged.hours, days, totalDays);
+    const materials = splitByDays(int0(block.materials), logged.materials, days, totalDays);
     for (const d of days) {
-      byYear[d.y] = { hoursSpent: hours[d.y].spent, hoursPlanned: hours[d.y].planned, materialsSpent: materials[d.y].spent, materialsPlanned: materials[d.y].planned };
+      byKey[d.key] = { hoursSpent: hours[d.key].spent, hoursPlanned: hours[d.key].planned, materialsSpent: materials[d.key].spent, materialsPlanned: materials[d.key].planned };
     }
-    return { byYear, totalDays };
+    return { byKey, totalDays };
+  }
+  function yearPeriods(years, cal) { return years.map((y) => ({ key: y, start: cal.yearStart(y), end: cal.yearEnd(y) })); }
+  // Per-block raw hours and materials by plan year. opts: { cal, workdays }.
+  function proRate(block, asOf, years, opts) {
+    const o = opts || {};
+    const cal = o.cal || calendarOf(1);
+    const { byKey, totalDays } = splitPeriods(block, asOf, yearPeriods(years, cal), o.workdays);
+    return { byYear: byKey, totalDays };
   }
 
   // Round once per displayed cell. Planned is derived so spent + planned always equals committed.
@@ -599,39 +763,24 @@
     return { spent, planned: committed - spent, committed };
   }
 
-  // Whole-unit committed per year for one block: floor each year's share, then hand the leftover
-  // units to the years with the largest fractional parts (ties go to the earlier year). The parts
+  // Whole-unit committed per period for one block: floor each period's share, then hand the leftover
+  // units to the periods with the largest fractional parts (ties go to the earlier period). The parts
   // always add up to the block's in-range total, so the committed column never drifts from the blocks.
-  function allocateCommitted(byYear, years, spentKey, plannedKey) {
+  function allocateCommitted(byKey, keys, spentKey, plannedKey) {
     const sk = spentKey || "spent", pk = plannedKey || "planned";
-    const parts = years.filter((y) => byYear[y]).map((y) => ({ y, raw: byYear[y][sk] + byYear[y][pk] }));
+    const parts = keys.filter((k) => byKey[k]).map((k, i) => ({ k, i, raw: byKey[k][sk] + byKey[k][pk] }));
     const target = roundCell(parts.reduce((s, p) => s + p.raw, 0));
     const out = {};
     let used = 0;
-    for (const p of parts) { out[p.y] = Math.floor(p.raw + 1e-7); used += out[p.y]; }
-    const order = parts.slice().sort((a, b) => (b.raw - Math.floor(b.raw + 1e-7)) - (a.raw - Math.floor(a.raw + 1e-7)) || a.y - b.y);
-    for (let i = 0; i < target - used && i < order.length; i += 1) out[order[i].y] += 1;
+    for (const p of parts) { out[p.k] = Math.floor(p.raw + 1e-7); used += out[p.k]; }
+    const order = parts.slice().sort((a, b) => (b.raw - Math.floor(b.raw + 1e-7)) - (a.raw - Math.floor(a.raw + 1e-7)) || a.i - b.i);
+    for (let i = 0; i < target - used && i < order.length; i += 1) out[order[i].k] += 1;
     return out;
   }
 
   function budgetOf(map, y) {
     const v = map && map[String(y)];
     return v == null ? null : Math.trunc(Number(v) || 0);
-  }
-  function settleCommitted(rawSpent, committed, budget) {
-    const spent = Math.max(0, Math.min(committed, roundCell(rawSpent)));
-    return { budget, spent, planned: committed - spent, committed, remaining: budget == null ? null : budget - committed };
-  }
-  // Cost derives from the whole-number hours and materials figures, so every dollar on the page can
-  // be checked by hand: labor is hours at the rate, materials are already dollars.
-  function costOf(hours, materials, rate, budget) {
-    const laborSpent = laborCost(hours.spent, rate), labor = laborCost(hours.committed, rate);
-    const spent = laborSpent + materials.spent, committed = labor + materials.committed;
-    return {
-      budget, laborSpent, laborPlanned: labor - laborSpent, labor,
-      materialsSpent: materials.spent, materialsPlanned: materials.planned, materials: materials.committed,
-      spent, planned: committed - spent, committed, remaining: budget == null ? null : budget - committed
-    };
   }
   function emptyTotals() {
     return {
@@ -648,49 +797,80 @@
     }
   }
 
-  // Hours, materials and cost by calendar year. Budgets that are not set give a null remaining.
+  // Hours, materials and cost by plan year. Figures are accumulated per engine so labor can be priced
+  // at each engine's rate; every figure is a whole number rounded once. Budgets that are not set give
+  // a null remaining. Cost derives from the whole-number hours and materials, so every dollar can be
+  // checked by hand against the hours and materials tables.
   function rollupByYear(doc) {
     const years = yearsOf(doc);
-    const rate = Number(doc.rate) || 0;
-    const raw = {};
-    for (const y of years) raw[y] = { hs: 0, hc: 0, ms: 0, mc: 0 };
+    const cal = calendarOf(doc);
+    const opts = { cal, workdays: doc.workdays };
+    const perEngine = new Map(doc.engines.map((e) => [e.id, {}]));
+    const cell = (engineId, y) => {
+      const m = perEngine.get(engineId);
+      if (!m[y]) m[y] = { hs: 0, hc: 0, ms: 0, mc: 0 };
+      return m[y];
+    };
     for (const block of doc.blocks) {
-      const { byYear } = proRate(block, doc.asOf, years);
+      if (!perEngine.has(block.engineId)) continue;
+      const { byYear } = proRate(block, doc.asOf, years, opts);
       const hc = allocateCommitted(byYear, years, "hoursSpent", "hoursPlanned");
       const mc = allocateCommitted(byYear, years, "materialsSpent", "materialsPlanned");
-      for (const y of years) if (byYear[y]) { raw[y].hs += byYear[y].hoursSpent; raw[y].hc += hc[y]; raw[y].ms += byYear[y].materialsSpent; raw[y].mc += mc[y]; }
+      for (const y of years) if (byYear[y]) {
+        const c = cell(block.engineId, y);
+        c.hs += byYear[y].hoursSpent; c.hc += hc[y]; c.ms += byYear[y].materialsSpent; c.mc += mc[y];
+      }
     }
     const byYear = {};
     const total = emptyTotals();
     for (const y of years) {
-      const hours = settleCommitted(raw[y].hs, raw[y].hc, budgetOf(doc.hoursBudgets, y));
-      const materials = settleCommitted(raw[y].ms, raw[y].mc, null);
-      byYear[y] = { hours, materials, cost: costOf(hours, materials, rate, budgetOf(doc.budgets, y)) };
+      const hours = { budget: budgetOf(doc.hoursBudgets, y), spent: 0, planned: 0, committed: 0, remaining: null };
+      const materials = { budget: null, spent: 0, planned: 0, committed: 0, remaining: null };
+      const cost = { budget: budgetOf(doc.budgets, y), laborSpent: 0, laborPlanned: 0, labor: 0, materialsSpent: 0, materialsPlanned: 0, materials: 0, spent: 0, planned: 0, committed: 0, remaining: null };
+      for (const engine of doc.engines) {
+        const c = perEngine.get(engine.id)[y];
+        if (!c) continue;
+        const rate = rateOf(doc, engine.id);
+        const hs = Math.max(0, Math.min(c.hc, roundCell(c.hs)));
+        const ms = Math.max(0, Math.min(c.mc, roundCell(c.ms)));
+        hours.spent += hs; hours.committed += c.hc;
+        materials.spent += ms; materials.committed += c.mc;
+        cost.laborSpent += laborCost(hs, rate); cost.labor += laborCost(c.hc, rate);
+      }
+      hours.planned = hours.committed - hours.spent;
+      hours.remaining = hours.budget == null ? null : hours.budget - hours.committed;
+      materials.planned = materials.committed - materials.spent;
+      cost.laborPlanned = cost.labor - cost.laborSpent;
+      cost.materialsSpent = materials.spent; cost.materialsPlanned = materials.planned; cost.materials = materials.committed;
+      cost.spent = cost.laborSpent + materials.spent; cost.committed = cost.labor + materials.committed; cost.planned = cost.committed - cost.spent;
+      cost.remaining = cost.budget == null ? null : cost.budget - cost.committed;
+      byYear[y] = { hours, materials, cost };
       addInto(total, byYear[y]);
     }
-    return { years, byYear, total };
+    return { years, cal, byYear, total };
   }
 
-  // The same split per engine across every year in range, plus each engine's backlog.
+  // The same split per engine across every year in range, plus each engine's backlog, at its rate.
   function rollupByEngine(doc) {
     const years = yearsOf(doc);
-    const rate = Number(doc.rate) || 0;
+    const opts = { cal: calendarOf(doc), workdays: doc.workdays };
     const raw = new Map(doc.engines.map((e) => [e.id, { hs: 0, hp: 0, ms: 0, mp: 0, hb: 0, mb: 0, blocks: 0 }]));
     for (const block of doc.blocks) {
       const acc = raw.get(block.engineId);
       if (!acc) continue;
       acc.blocks += 1;
       if (!isScheduled(block)) { acc.hb += int0(block.hours); acc.mb += int0(block.materials); continue; }
-      const { byYear } = proRate(block, doc.asOf, years);
+      const { byYear } = proRate(block, doc.asOf, years, opts);
       for (const y of years) if (byYear[y]) { acc.hs += byYear[y].hoursSpent; acc.hp += byYear[y].hoursPlanned; acc.ms += byYear[y].materialsSpent; acc.mp += byYear[y].materialsPlanned; }
     }
     const rows = doc.engines.map((engine) => {
       const a = raw.get(engine.id);
+      const rate = rateOf(doc, engine.id);
       const hours = Object.assign(settle(a.hs, a.hp), { backlog: a.hb });
       const materials = Object.assign(settle(a.ms, a.mp), { backlog: a.mb });
       const labor = laborCost(hours.committed, rate);
       const cost = { labor, materials: materials.committed, committed: labor + materials.committed, backlog: laborCost(a.hb, rate) + a.mb };
-      return { engineId: engine.id, name: engine.name, blocks: a.blocks, hours, materials, cost };
+      return { engineId: engine.id, name: engine.name, rate, blocks: a.blocks, hours, materials, cost };
     });
     const total = { hours: { spent: 0, planned: 0, committed: 0, backlog: 0 }, materials: { spent: 0, planned: 0, committed: 0, backlog: 0 }, cost: { labor: 0, materials: 0, committed: 0, backlog: 0 } };
     for (const r of rows) for (const g of Object.keys(total)) for (const k of Object.keys(total[g])) total[g][k] += r[g][k];
@@ -698,10 +878,38 @@
   }
 
   function backlogTotal(doc) {
-    const rate = Number(doc.rate) || 0;
-    let hours = 0, materials = 0;
-    for (const b of doc.blocks) if (!isScheduled(b)) { hours += int0(b.hours); materials += int0(b.materials); }
-    return { hours, materials, cost: laborCost(hours, rate) + materials };
+    let hours = 0, materials = 0, cost = 0;
+    for (const b of doc.blocks) if (!isScheduled(b)) {
+      const h = int0(b.hours), m = int0(b.materials);
+      hours += h; materials += m; cost += laborCost(h, rateOf(doc, b.engineId)) + m;
+    }
+    return { hours, materials, cost };
+  }
+
+  // Hours per month across the plan, worked and forecast, with each month's share of the year's
+  // annual hours as capacity (null when no annual hours are set for that year).
+  function hoursByMonth(doc) {
+    const years = yearsOf(doc);
+    const cal = calendarOf(doc);
+    const mode = doc.workdays === "weekdays" ? "weekdays" : "calendar";
+    const periods = [];
+    for (const y of years) for (const m of cal.months(y)) periods.push({ key: y + "-" + m.index, year: y, yearLabel: cal.label(y), label: m.label, month: m.month, calendarYear: m.calendarYear, start: m.start, end: m.end, days: m.days });
+    const acc = {};
+    for (const p of periods) acc[p.key] = { spent: 0, planned: 0 };
+    for (const block of doc.blocks) {
+      const { byKey } = splitPeriods(block, doc.asOf, periods, doc.workdays);
+      for (const k of Object.keys(byKey)) { acc[k].spent += byKey[k].hoursSpent; acc[k].planned += byKey[k].hoursPlanned; }
+    }
+    let max = 0;
+    const out = periods.map((p) => {
+      const hours = settle(acc[p.key].spent, acc[p.key].planned);
+      const budget = budgetOf(doc.hoursBudgets, p.year);
+      const yearDays = countDays(cal.yearStart(p.year), cal.yearEnd(p.year), mode) || 1;
+      const capacity = budget == null ? null : budget * countDays(p.start, p.end, mode) / yearDays;
+      max = Math.max(max, hours.committed, capacity || 0);
+      return Object.assign({}, p, { hours, capacity });
+    });
+    return { periods: out, max };
   }
 
   // Greedy interval partitioning: each block takes the first row whose last block ended before it starts.
@@ -753,16 +961,17 @@
     const err = (m) => { if (errors.length < 50) errors.push(m); };
     const isInt = (v) => typeof v === "number" && Number.isInteger(v);
     const whole = (v) => isInt(v) && v >= 0 && v <= MAX_WHOLE;
+    const isRate = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1e6;
     if (!input || typeof input !== "object" || Array.isArray(input)) return { ok: false, errors: ["The file is not a planner document."], doc: null, migrated: false };
     let migrated = false;
     if (input.version === 1) { input = migrateV1(input); migrated = true; }
-    else if (input.version !== 2) err("Unsupported version; expected 1 or 2.");
-    const doc = { version: 2, title: "Roadmap & Budget Planner", currency: "USD", rate: DEFAULT_RATE, startYear: 0, endYear: 0, asOf: null, hoursBudgets: {}, budgets: {}, engines: [], blocks: [] };
+    else if (input.version === 2) migrated = true;
+    else if (input.version !== 3) err("Unsupported version; expected 1, 2 or 3.");
+    const doc = { version: 3, title: "Roadmap & Budget Planner", currency: "USD", rate: DEFAULT_RATE, fiscalStartMonth: 1, workdays: "calendar", startYear: 0, endYear: 0, asOf: null, hoursBudgets: {}, budgets: {}, engines: [], blocks: [] };
     if (input.title != null) { if (typeof input.title === "string" && input.title.length <= 120) doc.title = input.title; else err("Title must be text of at most 120 characters."); }
-    if (input.rate != null) {
-      if (typeof input.rate === "number" && Number.isFinite(input.rate) && input.rate >= 0 && input.rate <= 1e6) doc.rate = Math.round(input.rate * 100) / 100;
-      else err("Rate must be a number of dollars per hour from 0 to 1,000,000.");
-    }
+    if (input.rate != null) { if (isRate(input.rate)) doc.rate = Math.round(input.rate * 100) / 100; else err("Rate must be a number of dollars per hour from 0 to 1,000,000."); }
+    if (input.fiscalStartMonth != null) { if (isInt(input.fiscalStartMonth) && input.fiscalStartMonth >= 1 && input.fiscalStartMonth <= 12) doc.fiscalStartMonth = input.fiscalStartMonth; else err("Fiscal start month must be a whole number from 1 (January) to 12 (December)."); }
+    if (input.workdays != null) { if (WORKDAY_MODES.includes(input.workdays)) doc.workdays = input.workdays; else err("Workdays must be calendar or weekdays."); }
     if (!isInt(input.startYear) || input.startYear < 1970 || input.startYear > 2200) err("Start year must be a whole number between 1970 and 2200.");
     if (!isInt(input.endYear) || input.endYear < 1970 || input.endYear > 2200) err("End year must be a whole number between 1970 and 2200.");
     if (isInt(input.startYear) && isInt(input.endYear)) {
@@ -792,8 +1001,10 @@
         if (typeof e.id !== "string" || !e.id.trim() || e.id.length > 64) { err(where + " needs a text id."); return; }
         if (typeof e.name !== "string" || !e.name.trim() || e.name.length > 80) { err(where + " needs a name of at most 80 characters."); return; }
         if (ids.has(e.id)) { err("Engine id " + e.id + " is duplicated."); return; }
+        let rate = null;
+        if (e.rate != null) { if (isRate(e.rate)) rate = Math.round(e.rate * 100) / 100; else { err(where + " (" + e.name + ") rate must be a number of dollars per hour from 0 to 1,000,000."); return; } }
         ids.add(e.id);
-        doc.engines.push({ id: e.id, name: e.name.trim() });
+        doc.engines.push({ id: e.id, name: e.name.trim(), rate });
       });
     }
     const engineIds = new Set(doc.engines.map((e) => e.id));
@@ -816,6 +1027,22 @@
         if (!whole(materials)) { err(tag + " materials must be a whole number of dollars from 0 to 1,000,000,000,000."); return; }
         let materialsActual = null;
         if (b.materialsActual != null) { if (!whole(b.materialsActual)) { err(tag + " materials spent must be a whole number of dollars from 0 to 1,000,000,000,000."); return; } materialsActual = b.materialsActual; }
+        const log = [];
+        if (b.log != null) {
+          if (!Array.isArray(b.log) || b.log.length > MAX_LOG) { err(tag + " log must be a list of at most " + MAX_LOG + " entries."); return; }
+          for (let j = 0; j < b.log.length; j += 1) {
+            const entry = b.log[j];
+            const at = tag + " log entry " + (j + 1);
+            if (!entry || typeof entry !== "object") { err(at + " is not an object."); return; }
+            if (typeof entry.date !== "string" || Number.isNaN(parseISO(entry.date))) { err(at + " needs a date written as YYYY-MM-DD."); return; }
+            const eh = entry.hours == null ? 0 : entry.hours, em = entry.materials == null ? 0 : entry.materials;
+            if (!whole(eh)) { err(at + " hours must be a whole number."); return; }
+            if (!whole(em)) { err(at + " materials must be a whole number of dollars."); return; }
+            let note = "";
+            if (entry.note != null) { if (typeof entry.note !== "string" || entry.note.length > 200) { err(at + " note must be text of at most 200 characters."); return; } note = entry.note.trim(); }
+            log.push({ date: entry.date, hours: eh, materials: em, note });
+          }
+        }
         const hasStart = b.start != null, hasEnd = b.end != null;
         if (hasStart !== hasEnd) { err(tag + " needs both start and end, or neither."); return; }
         let start = null, end = null;
@@ -826,7 +1053,7 @@
           start = b.start; end = b.end;
         }
         blockIds.add(b.id);
-        doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, hours, hoursActual, materials, materialsActual, start, end });
+        doc.blocks.push({ id: b.id, name: b.name.trim(), engineId: b.engineId, hours, hoursActual, materials, materialsActual, log, start, end });
       });
     }
     return { ok: errors.length === 0, errors, doc: errors.length === 0 ? doc : null, migrated };
@@ -841,8 +1068,15 @@
   }
   function fmtMoney(n) { return fmtAmount(n, "USD"); }
   function fmtHours(n) { return fmtAmount(n, "hours"); }
+  // 1,284 / 12.9K / 4.2M for stat tiles.
+  function fmtCompact(n) {
+    const v = Math.trunc(Number(n) || 0), abs = Math.abs(v), sign = v < 0 ? "-" : "";
+    if (abs < 10000) return sign + abs.toLocaleString("en-US");
+    if (abs < 1e6) return sign + (abs / 1e3).toFixed(abs < 1e5 ? 1 : 0).replace(/\.0$/, "") + "K";
+    return sign + (abs / 1e6).toFixed(abs < 1e7 ? 2 : 1).replace(/\.?0+$/, "") + "M";
+  }
 
-  root.BudgetEngine = { DAY, UNITS, DEFAULT_RATE, MAX_SPAN_YEARS, parseISO, toISO, dayCount, isScheduled, hasLogged, yearsOf, proRate, settle, allocateCommitted, rollupByYear, rollupByEngine, backlogTotal, stackLane, migrateV1, validateDoc, fmtAmount, fmtMoney, fmtHours };
+  root.BudgetEngine = { DAY, UNITS, MONTHS, DEFAULT_RATE, MAX_SPAN_YEARS, MAX_LOG, WORKDAY_MODES, parseISO, toISO, dayCount, weekdayCount, countDays, isScheduled, hasLogged, yearsOf, calendarOf, rateOf, loggedAsOf, proRate, splitPeriods, settle, allocateCommitted, rollupByYear, rollupByEngine, backlogTotal, hoursByMonth, stackLane, migrateV1, validateDoc, fmtAmount, fmtMoney, fmtHours, fmtCompact };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 
@@ -853,23 +1087,27 @@
   const LS_KEY = "budget_planner_v2";
   // Plans saved by the earlier hours and dollar editions are carried over on first open, hours first.
   const LEGACY_KEYS = ["hours_planner_v1", "budget_planner_v1"];
-  const THEME_KEY = "budget_planner_theme";
+  const BACKUP_KEY = "budget_planner_backups";
+  const PREFS_KEY = "budget_planner_prefs";
+  const LEGACY_THEME_KEY = "budget_planner_theme";
   const APP_TITLE = "Roadmap & Budget Planner";
   const DOC_TITLE = "Roadmap and Budget Planner";
   const HISTORY_MAX = 25;
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const BACKUP_MAX = 8;
+  const BACKUP_GAP_MS = 60000;
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const money = (n) => E.fmtMoney(n);
   const hoursFmt = (n) => E.fmtHours(n);
 
   function seedDoc() {
-    const blk = (id, name, engineId, hours, start, end, extra) => Object.assign({ id, name, engineId, hours, hoursActual: null, materials: 0, materialsActual: null, start: start || null, end: end || null }, extra || {});
+    const blk = (id, name, engineId, hours, start, end, extra) => Object.assign({ id, name, engineId, hours, hoursActual: null, materials: 0, materialsActual: null, log: [], start: start || null, end: end || null }, extra || {});
     return {
-      version: 2, title: "Roadmap & Budget Planner", currency: "USD", rate: 102, startYear: 2026, endYear: 2027, asOf: "2026-07-17",
+      version: 3, title: "Roadmap & Budget Planner", currency: "USD", rate: 102, fiscalStartMonth: 1, workdays: "calendar", startYear: 2026, endYear: 2027, asOf: "2026-07-17",
       hoursBudgets: { "2026": 13436, "2027": 0 },
       budgets: { "2026": 1700000 },
       engines: [
-        { id: "core", name: "Core" }, { id: "horizon", name: "Horizon" }, { id: "colossus", name: "Colossus" },
-        { id: "meridian", name: "Meridian" }, { id: "ai", name: "AI Initiative" }, { id: "ops", name: "Operations" }
+        { id: "core", name: "Core", rate: null }, { id: "horizon", name: "Horizon", rate: null }, { id: "colossus", name: "Colossus", rate: null },
+        { id: "meridian", name: "Meridian", rate: null }, { id: "ai", name: "AI Initiative", rate: null }, { id: "ops", name: "Operations", rate: null }
       ],
       blocks: [
         blk("b01", "CORE Foundation MVP", "core", 1200, "2026-06-02", "2026-08-31", { hoursActual: 640 }),
@@ -878,7 +1116,10 @@
         blk("b04", "IAMD W/T - Falcon Pairing POC", "horizon", 80, "2026-04-01", "2026-05-29"),
         blk("b05", "Aurora ML POC", "horizon", 500, "2026-07-05", "2026-09-23", { materials: 2500 }),
         blk("b06", "Space Domain and Fire Control", "horizon", 700, "2026-01-01", "2026-03-31"),
-        blk("b07", "Deploy Horizon MVP", "horizon", 900, "2026-03-24", "2026-08-27", { hoursActual: 700 }),
+        blk("b07", "Deploy Horizon MVP", "horizon", 900, "2026-03-24", "2026-08-27", { log: [
+          { date: "2026-04-10", hours: 180, materials: 0, note: "Sprint 1" }, { date: "2026-05-08", hours: 200, materials: 0, note: "Sprint 2" },
+          { date: "2026-06-12", hours: 170, materials: 0, note: "Sprint 3" }, { date: "2026-07-10", hours: 150, materials: 0, note: "Sprint 4" }
+        ] }),
         blk("b08", "AI Threat Generation POC", "horizon", 21, "2026-03-01", "2026-04-29"),
         blk("b09", "CrewFlex Discovery", "meridian", 697, "2026-01-01", "2026-01-28"),
         blk("b10", "CrewFlex MVP", "meridian", 1101, "2026-02-01", "2026-04-29"),
@@ -905,6 +1146,11 @@
   let storageOk = true;
   let toastTimer = 0;
   let migratedFrom = null;
+  let engineFilter = null;
+  let blockFilter = "";
+  let sortKey = null, sortDir = 1;
+  let lastShown = [];
+  let prefs = { theme: "light", accent: "blue" };
 
   function todayISO() {
     const d = new Date();
@@ -916,6 +1162,8 @@
   }
   function effectiveAsOf() { return doc.asOf || todayISO(); }
   function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+  function readJSON(key) { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (_) { return null; } }
+  function writeJSON(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (_) { return false; } }
 
   function load() {
     let raw = null;
@@ -940,11 +1188,18 @@
     return raw === null && storageOk ? seedDoc() : emptyDoc();
   }
   function emptyDoc() {
-    return { version: 2, title: APP_TITLE, currency: "USD", rate: E.DEFAULT_RATE, startYear: 2026, endYear: 2027, asOf: null, hoursBudgets: {}, budgets: {}, engines: [{ id: "core", name: "Core" }], blocks: [] };
+    return { version: 3, title: APP_TITLE, currency: "USD", rate: E.DEFAULT_RATE, fiscalStartMonth: 1, workdays: "calendar", startYear: 2026, endYear: 2027, asOf: null, hoursBudgets: {}, budgets: {}, engines: [{ id: "core", name: "Core", rate: null }], blocks: [] };
+  }
+  // Before a change lands, keep the plan as it was: the newest snapshot is at most a minute old, so a
+  // burst of edits costs one slot and the ring reaches back across the last eight working minutes.
+  function snapshotBackup() {
+    const ring = Array.isArray(readJSON(BACKUP_KEY)) ? readJSON(BACKUP_KEY) : [];
+    if (ring.length && Date.now() - Date.parse(ring[0].time) < BACKUP_GAP_MS) return;
+    ring.unshift({ time: new Date().toISOString(), doc });
+    writeJSON(BACKUP_KEY, ring.slice(0, BACKUP_MAX));
   }
   function persist() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(doc)); storageOk = true; }
-    catch (_) { storageOk = false; }
+    storageOk = writeJSON(LS_KEY, doc);
     const note = document.getElementById("storageNote");
     note.textContent = storageOk ? "Saved in this browser" : "Not saved · Storage unavailable";
     const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
@@ -955,6 +1210,7 @@
     if (opts.undoable !== false) {
       history.push(JSON.stringify(doc));
       while (history.length > HISTORY_MAX) history.shift();
+      if (storageOk) snapshotBackup();
     }
     doc = next;
     persist();
@@ -968,6 +1224,30 @@
     render();
     hideToast();
   }
+
+  // ---------- Preferences (per browser, not part of the plan) ----------
+  function loadPrefs() {
+    const saved = readJSON(PREFS_KEY);
+    if (saved && typeof saved === "object") {
+      if (["light", "dark", "system"].includes(saved.theme)) prefs.theme = saved.theme;
+      if (["blue", "teal", "violet", "orange", "graphite"].includes(saved.accent)) prefs.accent = saved.accent;
+    } else {
+      try { if (localStorage.getItem(LEGACY_THEME_KEY) === "dark") prefs.theme = "dark"; } catch (_) { /* default */ }
+    }
+  }
+  const systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function resolvedTheme() { return prefs.theme === "system" ? (systemDark && systemDark.matches ? "dark" : "light") : prefs.theme; }
+  function applyPrefs() {
+    const theme = resolvedTheme();
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-accent", prefs.accent);
+    const btn = document.getElementById("themeBtn");
+    btn.textContent = theme === "dark" ? "Light" : "Dark";
+    btn.setAttribute("aria-label", theme === "dark" ? "Switch to the light theme" : "Switch to the dark theme");
+    btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+  }
+  function savePrefs(next) { prefs = Object.assign({}, prefs, next); writeJSON(PREFS_KEY, prefs); applyPrefs(); }
+  if (systemDark && systemDark.addEventListener) systemDark.addEventListener("change", () => { if (prefs.theme === "system") applyPrefs(); });
 
   // ---------- DOM helpers ----------
   function el(tag, attrs, children) {
@@ -988,7 +1268,7 @@
     svg.setAttribute("class", "icon" + (large ? " lg" : ""));
     svg.setAttribute("aria-hidden", "true");
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", "#ast-" + name);
+    use.setAttribute("href", "#i-" + name);
     svg.append(use);
     return svg;
   }
@@ -1020,20 +1300,40 @@
     return n > 1e6 ? NaN : n;
   }
   function currentRate() { return Number(doc.rate) || 0; }
-  function blockHoursText(b) { return E.hasLogged(b.hoursActual) ? hoursFmt(b.hoursActual) + " / " + hoursFmt(b.hours) : hoursFmt(b.hours); }
+  function loggedOf(b) { return E.loggedAsOf(b, effectiveAsOf()); }
+  function blockHoursText(b) { const l = loggedOf(b); return l.hours != null ? hoursFmt(l.hours) + " / " + hoursFmt(b.hours) : hoursFmt(b.hours); }
+  function materialsSpentOf(b) { const l = loggedOf(b); return l.materials != null && (l.materials > 0 || b.materials > 0) ? l.materials : null; }
   function blockMaterialsText(b) {
-    if (!b.materials && !E.hasLogged(b.materialsActual)) return "";
-    return E.hasLogged(b.materialsActual) ? money(b.materialsActual) + " / " + money(b.materials) : money(b.materials);
+    const spent = materialsSpentOf(b);
+    if (!b.materials && spent == null) return "";
+    return spent != null ? money(spent) + " / " + money(b.materials) : money(b.materials);
   }
   function blockSummary(b) { const m = blockMaterialsText(b); return blockHoursText(b) + (m ? " · " + m : ""); }
+  function statusTag(kind, text) {
+    const tag = el("span", { class: "tag " + kind });
+    if (kind === "over" || kind === "warn") tag.append(icon("alert"));
+    tag.append(text);
+    return tag;
+  }
 
   // ---------- Rendering ----------
-  let yearRollup = null, engineRollup = null;
+  // The page can show the whole plan or one engine; edits always go to the whole plan.
+  let view = null, scoped = false, cal = null, yearRollup = null, engineRollup = null, monthLoad = null;
+  function viewDoc() {
+    if (!engineFilter || !doc.engines.some((e) => e.id === engineFilter)) { engineFilter = null; return doc; }
+    return Object.assign({}, doc, { engines: doc.engines.filter((e) => e.id === engineFilter), blocks: doc.blocks.filter((b) => b.engineId === engineFilter) });
+  }
   function render() {
     const focusKey = focusKeyOf(document.activeElement);
-    yearRollup = E.rollupByYear(doc);
-    engineRollup = E.rollupByEngine(doc);
+    view = viewDoc();
+    scoped = view !== doc;
+    cal = E.calendarOf(doc);
+    yearRollup = E.rollupByYear(view);
+    engineRollup = E.rollupByEngine(view);
+    monthLoad = E.hoursByMonth(view);
     renderHeader();
+    renderScope();
+    renderSummary();
     renderTimeline();
     renderBacklog();
     renderBlocksTable();
@@ -1047,16 +1347,20 @@
   // Every render rebuilds the DOM, so remember which block had focus and give it back afterwards.
   function focusKeyOf(node) {
     if (!node || node === document.body || !node.closest) return null;
+    if (node.closest("dialog")) return null;
     const block = node.closest("[data-block]");
     if (block) return { type: "block", id: block.getAttribute("data-block") };
     const row = node.closest("tr[data-block-row]");
     if (row) return { type: "row", id: row.getAttribute("data-block-row"), verb: (node.getAttribute("aria-label") || "").split(" ")[0] };
+    const lane = node.closest(".lane-btn");
+    if (lane) return { type: "lane", id: lane.getAttribute("data-engine") };
     return null;
   }
   function restoreFocus(key) {
     if (!key) return;
     let target = null;
     if (key.type === "block") target = document.querySelector("[data-block=\"" + key.id + "\"]");
+    else if (key.type === "lane") target = document.querySelector(".lane-btn[data-engine=\"" + key.id + "\"]");
     else {
       const row = document.querySelector("tr[data-block-row=\"" + key.id + "\"]");
       if (row) target = row.querySelector("button[aria-label^=\"" + key.verb + " \"]") || row.querySelector("button");
@@ -1064,7 +1368,6 @@
     if (target) target.focus({ preventScroll: true });
   }
 
-  // Section nav: the current section is the last one whose top has passed the bar.
   const navLinks = Array.from(document.querySelectorAll(".subnav a"));
   function updateNav() {
     const barHeight = document.querySelector(".subnav").offsetHeight;
@@ -1087,18 +1390,69 @@
   }, { passive: true });
 
   function renderHeader() {
-    const span = doc.startYear === doc.endYear ? String(doc.startYear) : doc.startYear + " – " + doc.endYear;
+    const span = doc.startYear === doc.endYear ? cal.label(doc.startYear) : cal.label(doc.startYear) + " – " + cal.label(doc.endYear);
     document.title = DOC_TITLE;
     document.getElementById("pageTitle").textContent = APP_TITLE;
-    document.getElementById("subtitle").textContent = span + " · Day-level · Hours and materials · $" + currentRate().toFixed(2) + "/h";
+    document.getElementById("subtitle").textContent = span + " · " + (doc.workdays === "weekdays" ? "Weekdays" : "Calendar days") + " · $" + currentRate().toFixed(2) + "/h";
     document.getElementById("asOfInput").value = effectiveAsOf();
+  }
+  function renderScope() {
+    const chip = document.getElementById("scopeChip");
+    chip.hidden = !scoped;
+    if (scoped) document.getElementById("scopeText").textContent = engineName(engineFilter) + " only";
+  }
+  function setEngineFilter(id) {
+    engineFilter = engineFilter === id ? null : id;
+    render();
+  }
+
+  // ---------- Summary tiles ----------
+  function tile(label, value, subParts, meter) {
+    const t = el("div", { class: "tile" }, [el("div", { class: "tile-label", text: label }), el("div", { class: "tile-value", text: value })]);
+    const sub = el("div", { class: "tile-sub" });
+    for (const part of [].concat(subParts)) if (part != null) sub.append(typeof part === "string" ? el("span", { text: part }) : part);
+    t.append(sub);
+    if (meter) {
+      const ratio = meter.max > 0 ? meter.value / meter.max : 0;
+      const kind = ratio > 1 ? " over" : (ratio >= 0.9 ? " warn" : "");
+      t.append(el("div", { class: "meter" + kind, role: "img", "aria-label": meter.label }, el("div", { style: "width:" + Math.min(100, ratio * 100).toFixed(1) + "%" })));
+    }
+    return t;
+  }
+  function renderSummary() {
+    const host = document.getElementById("summaryHost");
+    host.replaceChildren();
+    const t = yearRollup.total;
+    const backlog = E.backlogTotal(view);
+    const hoursParts = [], costParts = [];
+    let hoursMeter = null, costMeter = null;
+    if (!scoped && t.hours.budget != null) {
+      hoursParts.push("of " + hoursFmt(t.hours.budget) + " annual");
+      hoursParts.push(t.hours.remaining < 0 ? statusTag("over", hoursFmt(-t.hours.remaining) + " over") : statusTag("", hoursFmt(t.hours.remaining) + " left"));
+      hoursMeter = { value: t.hours.committed, max: t.hours.budget, label: "Hours against annual hours" };
+    } else {
+      hoursParts.push(hoursFmt(t.hours.spent) + " worked · " + hoursFmt(t.hours.planned) + " forecast");
+    }
+    if (!scoped && t.cost.budget != null) {
+      costParts.push("of " + money(t.cost.budget) + " budget");
+      costParts.push(t.cost.remaining < 0 ? statusTag("over", money(-t.cost.remaining) + " over") : statusTag("", money(t.cost.remaining) + " left"));
+      costMeter = { value: t.cost.committed, max: t.cost.budget, label: "Cost against annual budget" };
+    } else {
+      costParts.push(money(t.cost.labor) + " labor · " + money(t.cost.materials) + " materials");
+    }
+    host.append(
+      tile(scoped ? engineName(engineFilter) + " hours" : "Labor hours", E.fmtCompact(t.hours.committed) + " h", hoursParts, hoursMeter),
+      tile("Materials", "$" + E.fmtCompact(t.materials.committed), [money(t.materials.spent) + " spent · " + money(t.materials.planned) + " forecast"], t.materials.committed > 0 ? { value: t.materials.spent, max: t.materials.committed, label: "Materials spent against planned" } : null),
+      tile("Cost", "$" + E.fmtCompact(t.cost.committed), costParts, costMeter),
+      tile("Backlog", E.fmtCompact(backlog.hours) + " h", [money(backlog.materials) + " materials · " + money(backlog.cost) + " at rate"], null)
+    );
   }
 
   // ---------- Tables ----------
   function th(text, cls, scope) { return el("th", { scope: scope || "col", class: cls || null, text }); }
   function numCell(text, cls) { return el("td", { class: "num" + (cls ? " " + cls : ""), text }); }
   function yearHead(label, years) {
-    return el("thead", null, el("tr", null, [th(label)].concat(years.map((y) => th(String(y), "num")), [th("Total", "num")])));
+    return el("thead", null, el("tr", null, [th(label)].concat(years.map((y) => th(cal.label(y), "num")), [th("Total", "num")])));
   }
   function figureRow(label, key, years, byYear, total, group, fmt, cls) {
     const tr = el("tr", { class: cls || null, "data-row": key }, th(label, null, "row"));
@@ -1108,9 +1462,9 @@
   }
   function remainingCell(value, fmt) {
     const td = el("td", { class: "num" });
-    if (value == null) { td.append(el("span", { class: "tag", text: "Not set" })); return td; }
+    if (value == null) { td.append(statusTag("", "Not set")); return td; }
     td.textContent = fmt(value);
-    if (value < 0) td.append(" ", el("span", { class: "tag", text: "Over" }));
+    if (value < 0) td.append(" ", statusTag("over", "Over"));
     return td;
   }
   function remainingRow(label, years, byYear, total, group, fmt) {
@@ -1123,7 +1477,7 @@
     const tr = el("tr", { "data-row": "budget" }, th(label, null, "row"));
     for (const y of years) {
       const value = map[String(y)];
-      const input = el("input", { type: "text", class: "cell", inputmode: "numeric", placeholder: "Not set", "aria-label": label + " " + y, [attr]: String(y), value: value == null ? "" : value.toLocaleString("en-US") });
+      const input = el("input", { type: "text", class: "cell", inputmode: "numeric", placeholder: "Not set", "aria-label": label + " " + cal.label(y), [attr]: String(y), value: value == null ? "" : value.toLocaleString("en-US") });
       input.addEventListener("change", () => onBudgetChange(input, attr === "data-hours-year" ? "hoursBudgets" : "budgets", String(y)));
       input.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); input.blur(); } });
       tr.append(el("td", { class: "num" }, input));
@@ -1149,91 +1503,97 @@
   function engineRows(group, keys, fmt) {
     const tbody = el("tbody");
     for (const r of engineRollup.rows) tbody.append(el("tr", { "data-engine": r.engineId }, [el("td", { text: r.name })].concat(keys.map((k) => numCell(fmt(r[group][k]))))));
-    tbody.append(el("tr", { class: "strong" }, [th("Total", null, "row")].concat(keys.map((k) => numCell(fmt(engineRollup.total[group][k]))))));
+    if (engineRollup.rows.length !== 1) tbody.append(el("tr", { class: "strong" }, [th("Total", null, "row")].concat(keys.map((k) => numCell(fmt(engineRollup.total[group][k]))))));
     return tbody;
   }
-  function mount(hostId, table) {
-    const host = document.getElementById(hostId);
-    host.replaceChildren(table);
-  }
+  function mount(hostId, table) { document.getElementById(hostId).replaceChildren(table); }
 
   function renderHoursTables() {
     const { years, byYear, total } = yearRollup;
-    const yearTable = el("table", { id: "hoursYearTable" }, yearHead("Hours", years));
-    const body = el("tbody", null, [
-      budgetRow("Annual hours", years, doc.hoursBudgets, "data-hours-year", total.hours.budget, hoursFmt),
-      figureRow("Worked", "spent", years, byYear, total, "hours", hoursFmt),
-      figureRow("Forecast", "planned", years, byYear, total, "hours", hoursFmt),
-      figureRow("Total", "committed", years, byYear, total, "hours", hoursFmt, "strong"),
-      remainingRow("Remaining", years, byYear, total, "hours", hoursFmt)
-    ]);
-    yearTable.append(body);
+    const rows = [];
+    if (!scoped) rows.push(budgetRow("Annual hours", years, doc.hoursBudgets, "data-hours-year", total.hours.budget, hoursFmt));
+    rows.push(figureRow("Worked", "spent", years, byYear, total, "hours", hoursFmt), figureRow("Forecast", "planned", years, byYear, total, "hours", hoursFmt), figureRow("Total", "committed", years, byYear, total, "hours", hoursFmt, "strong"));
+    if (!scoped) rows.push(remainingRow("Remaining", years, byYear, total, "hours", hoursFmt));
+    const yearTable = el("table", { id: "hoursYearTable" }, [yearHead("Hours", years), el("tbody", null, rows)]);
     mount("hoursYearHost", yearTable);
-    const engineTable = el("table", { id: "hoursEngineTable" }, [engineHead("Engine", ["Worked", "Forecast", "Total", "Backlog"]), engineRows("hours", ["spent", "planned", "committed", "backlog"], hoursFmt)]);
-    mount("hoursEngineHost", engineTable);
+    document.getElementById("hoursMeta").textContent = scoped ? engineName(engineFilter) + " only" : "Worked and forecast · Annual hours editable";
+    mount("hoursEngineHost", el("table", { id: "hoursEngineTable" }, [engineHead("Engine", ["Worked", "Forecast", "Total", "Backlog"]), engineRows("hours", ["spent", "planned", "committed", "backlog"], hoursFmt)]));
   }
-
   function renderMaterialsTables() {
     const { years, byYear, total } = yearRollup;
-    const yearTable = el("table", { id: "materialsYearTable" }, yearHead("Materials", years));
-    yearTable.append(el("tbody", null, [
+    const yearTable = el("table", { id: "materialsYearTable" }, [yearHead("Materials", years), el("tbody", null, [
       figureRow("Spent", "spent", years, byYear, total, "materials", money),
       figureRow("Forecast", "planned", years, byYear, total, "materials", money),
       figureRow("Total", "committed", years, byYear, total, "materials", money, "strong")
-    ]));
+    ])]);
     mount("materialsYearHost", yearTable);
-    const engineTable = el("table", { id: "materialsEngineTable" }, [engineHead("Engine", ["Spent", "Forecast", "Total", "Backlog"]), engineRows("materials", ["spent", "planned", "committed", "backlog"], money)]);
-    mount("materialsEngineHost", engineTable);
+    mount("materialsEngineHost", el("table", { id: "materialsEngineTable" }, [engineHead("Engine", ["Spent", "Forecast", "Total", "Backlog"]), engineRows("materials", ["spent", "planned", "committed", "backlog"], money)]));
   }
-
   function renderCostTables() {
     const { years, byYear, total } = yearRollup;
     const rateInput = document.getElementById("rateInput");
     if (document.activeElement !== rateInput) rateInput.value = currentRate().toFixed(2);
-    document.getElementById("costMeta").textContent = "Labor at $" + currentRate().toFixed(2) + " per hour plus materials";
-    const yearTable = el("table", { id: "costYearTable" }, yearHead("Cost", years));
-    yearTable.append(el("tbody", null, [
-      budgetRow("Annual budget", years, doc.budgets, "data-budget-year", total.cost.budget, money),
+    const custom = doc.engines.filter((e) => e.rate != null).length;
+    document.getElementById("costMeta").textContent = "Labor at $" + currentRate().toFixed(2) + " per hour" + (custom ? " (" + custom + (custom === 1 ? " engine has its own rate)" : " engines have their own rates)") : "") + " plus materials";
+    const rows = [];
+    if (!scoped) rows.push(budgetRow("Annual budget", years, doc.budgets, "data-budget-year", total.cost.budget, money));
+    rows.push(
       figureRow("Labor · Worked", "laborSpent", years, byYear, total, "cost", money),
       figureRow("Labor · Forecast", "laborPlanned", years, byYear, total, "cost", money),
       figureRow("Materials · Spent", "materialsSpent", years, byYear, total, "cost", money),
       figureRow("Materials · Forecast", "materialsPlanned", years, byYear, total, "cost", money),
-      figureRow("Committed", "committed", years, byYear, total, "cost", money, "strong"),
-      remainingRow("Remaining", years, byYear, total, "cost", money)
-    ]));
-    mount("costYearHost", yearTable);
-    const engineTable = el("table", { id: "costEngineTable" }, [engineHead("Engine", ["Labor", "Materials", "Committed", "Backlog"]), engineRows("cost", ["labor", "materials", "committed", "backlog"], money)]);
-    mount("costEngineHost", engineTable);
+      figureRow("Committed", "committed", years, byYear, total, "cost", money, "strong")
+    );
+    if (!scoped) rows.push(remainingRow("Remaining", years, byYear, total, "cost", money));
+    mount("costYearHost", el("table", { id: "costYearTable" }, [yearHead("Cost", years), el("tbody", null, rows)]));
+    mount("costEngineHost", el("table", { id: "costEngineTable" }, [engineHead("Engine", ["Labor", "Materials", "Committed", "Backlog"]), engineRows("cost", ["labor", "materials", "committed", "backlog"], money)]));
   }
 
   // ---------- Blocks list ----------
-  let blockFilter = "";
+  const COLUMNS = [
+    { key: "name", label: "Block", num: false, value: (b) => b.name.toLowerCase() },
+    { key: "engine", label: "Engine", num: false, value: (b) => engineName(b.engineId).toLowerCase() },
+    { key: "start", label: "Start", num: false, value: (b) => (E.isScheduled(b) ? b.start : "~") },
+    { key: "end", label: "End", num: false, value: (b) => (E.isScheduled(b) ? b.end : "~") },
+    { key: "hours", label: "Hours", num: true, value: (b) => b.hours },
+    { key: "logged", label: "Logged", num: true, value: (b) => { const l = loggedOf(b); return l.hours == null ? -1 : l.hours; } },
+    { key: "materials", label: "Materials", num: true, value: (b) => b.materials },
+    { key: "spent", label: "Spent", num: true, value: (b) => { const s = materialsSpentOf(b); return s == null ? -1 : s; } }
+  ];
   function deleteBlock(id) {
     const block = doc.blocks.find((b) => b.id === id);
     if (!block) return;
     const next = clone(doc);
     next.blocks = next.blocks.filter((b) => b.id !== id);
     if (blockDialog.open) blockDialog.close();
+    if (logDialog.open) logDialog.close();
     commit(next, { toast: "Deleted " + block.name });
+  }
+  function defaultOrder(a, b) {
+    const order = new Map(doc.engines.map((e, i) => [e.id, i]));
+    const sa = E.isScheduled(a) ? 0 : 1, sb = E.isScheduled(b) ? 0 : 1;
+    if (sa !== sb) return sa - sb;
+    const ea = order.has(a.engineId) ? order.get(a.engineId) : 99, eb = order.has(b.engineId) ? order.get(b.engineId) : 99;
+    if (ea !== eb) return ea - eb;
+    if (sa === 0) { const d = E.parseISO(a.start) - E.parseISO(b.start); if (d) return d; }
+    return a.name.localeCompare(b.name);
   }
   function renderBlocksTable() {
     const host = document.getElementById("blocksHost");
     host.replaceChildren();
-    const order = new Map(doc.engines.map((e, i) => [e.id, i]));
-    const rows = doc.blocks.slice().sort((a, b) => {
-      const sa = E.isScheduled(a) ? 0 : 1, sb = E.isScheduled(b) ? 0 : 1;
-      if (sa !== sb) return sa - sb;
-      const ea = order.has(a.engineId) ? order.get(a.engineId) : 99, eb = order.has(b.engineId) ? order.get(b.engineId) : 99;
-      if (ea !== eb) return ea - eb;
-      if (sa === 0) { const d = E.parseISO(a.start) - E.parseISO(b.start); if (d) return d; }
-      return a.name.localeCompare(b.name);
-    });
-    const scheduled = rows.filter(E.isScheduled).length;
+    const all = view.blocks.slice().sort(defaultOrder);
+    if (sortKey) {
+      const col = COLUMNS.find((c) => c.key === sortKey);
+      all.sort((a, b) => { const va = col.value(a), vb = col.value(b); const d = va < vb ? -1 : (va > vb ? 1 : 0); return d * sortDir || defaultOrder(a, b); });
+    }
+    const scheduled = all.filter(E.isScheduled).length;
     const query = blockFilter.trim().toLowerCase();
-    const shown = query ? rows.filter((b) => b.name.toLowerCase().includes(query) || engineName(b.engineId).toLowerCase().includes(query)) : rows;
-    document.getElementById("blocksMeta").textContent = scheduled + " scheduled · " + (rows.length - scheduled) + " backlog" + (query ? " · " + shown.length + " of " + rows.length + " shown" : "");
-    if (!rows.length) {
-      host.append(el("p", { class: "backlog-empty", text: "No blocks yet. Add a block or a backlog item and it appears here with edit and delete controls." }));
+    const shown = query ? all.filter((b) => b.name.toLowerCase().includes(query) || engineName(b.engineId).toLowerCase().includes(query)) : all;
+    lastShown = shown;
+    document.getElementById("blocksMeta").textContent = scheduled + " scheduled · " + (all.length - scheduled) + " backlog" + (query ? " · " + shown.length + " of " + all.length + " shown" : "");
+    document.getElementById("csvBtn").disabled = !shown.length;
+    if (!all.length) {
+      host.append(el("p", { class: "backlog-empty", text: scoped ? "No blocks for this engine yet." : "No blocks yet. Add a block or a backlog item and it appears here with edit and delete controls." }));
       return;
     }
     if (!shown.length) {
@@ -1241,20 +1601,33 @@
       return;
     }
     const table = el("table", { id: "blocksTable" });
-    table.append(el("thead", null, el("tr", null, [
-      th("Block"), th("Engine"), th("Start"), th("End"),
-      th("Hours", "num"), th("Logged", "num"), th("Materials", "num"), th("Spent", "num"),
-      el("th", { scope: "col", class: "actions", "aria-label": "Actions" })
-    ])));
+    const headRow = el("tr");
+    for (const col of COLUMNS) {
+      const sorted = sortKey === col.key;
+      const cell = el("th", { scope: "col", class: "sortable" + (col.num ? " num" : ""), "aria-sort": sorted ? (sortDir === 1 ? "ascending" : "descending") : null });
+      // Text columns cycle ascending, descending, default; number columns start descending so the biggest figure comes first.
+      cell.append(el("button", { type: "button", text: col.label, "aria-label": "Sort by " + col.label, onclick: () => {
+        const initial = col.num ? -1 : 1;
+        if (sortKey !== col.key) { sortKey = col.key; sortDir = initial; }
+        else if (sortDir === initial) sortDir = -initial;
+        else { sortKey = null; sortDir = 1; }
+        renderBlocksTable();
+      } }));
+      headRow.append(cell);
+    }
+    headRow.append(el("th", { scope: "col", class: "actions", "aria-label": "Actions" }));
+    table.append(el("thead", null, headRow));
     const tbody = el("tbody");
     for (const b of shown) {
       const onTimeline = E.isScheduled(b);
+      const l = loggedOf(b);
       tbody.append(el("tr", { "data-block-row": b.id, onclick: (ev) => { if (!ev.target.closest("button")) openBlockDialog(b.id); } }, [
         el("td", { text: b.name }), el("td", { text: engineName(b.engineId) }),
         el("td", { class: "fig", text: onTimeline ? b.start : "Backlog" }), el("td", { class: "fig", text: onTimeline ? b.end : "" }),
-        numCell(hoursFmt(b.hours)), numCell(E.hasLogged(b.hoursActual) ? hoursFmt(b.hoursActual) : ""),
-        numCell(b.materials ? money(b.materials) : ""), numCell(E.hasLogged(b.materialsActual) ? money(b.materialsActual) : ""),
+        numCell(hoursFmt(b.hours)), numCell(l.hours != null ? hoursFmt(l.hours) : ""),
+        numCell(b.materials ? money(b.materials) : ""), numCell(materialsSpentOf(b) != null ? money(materialsSpentOf(b)) : ""),
         el("td", { class: "actions" }, [
+          onTimeline ? el("button", { type: "button", class: "iconbtn sm", "aria-label": "Log " + b.name, title: "Log work", onclick: () => openLogDialog(b.id) }, icon("clock")) : null,
           el("button", { type: "button", class: "iconbtn sm", "aria-label": "Edit " + b.name, title: "Edit", onclick: () => openBlockDialog(b.id) }, icon("edit")),
           el("button", { type: "button", class: "iconbtn sm", "aria-label": "Delete " + b.name, title: "Delete", onclick: () => deleteBlock(b.id) }, icon("delete"))
         ])
@@ -1262,6 +1635,25 @@
     }
     table.append(tbody);
     host.append(table);
+  }
+  function csvCell(v) { const s = String(v == null ? "" : v); return /[",\n]/.test(s) ? "\"" + s.replace(/"/g, "\"\"") + "\"" : s; }
+  function exportCsv() {
+    const rows = [["Block", "Engine", "Start", "End", "Hours", "Hours logged", "Materials planned", "Materials spent", "Status", "Log entries"]];
+    for (const b of lastShown) {
+      const l = loggedOf(b);
+      rows.push([b.name, engineName(b.engineId), b.start || "", b.end || "", b.hours, l.hours == null ? "" : l.hours, b.materials, l.materials == null ? "" : l.materials, E.isScheduled(b) ? "Scheduled" : "Backlog", b.log.length]);
+    }
+    const text = rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+    const fileName = "blocks-" + todayISO() + ".csv";
+    downloadText(text, fileName, "text/csv");
+    showToast("Exported " + lastShown.length + (lastShown.length === 1 ? " block to " : " blocks to ") + fileName, false);
+  }
+  function downloadText(text, fileName, type) {
+    const blob = new Blob([text], { type });
+    const url = URL.createObjectURL(blob);
+    const a = el("a", { href: url, download: fileName });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   // ---------- Timeline ----------
@@ -1274,22 +1666,21 @@
     const visible = scroller.clientWidth - rail;
     scroller.scrollLeft = Math.max(0, Math.round(x - rail - visible * 0.4));
   }
-
   function renderTimeline() {
     const host = document.getElementById("timelineHost");
     const previous = host.querySelector(".board-scroll");
     const keepLeft = previous ? previous.scrollLeft : null;
     host.replaceChildren();
     const years = E.yearsOf(doc);
-    const rangeStart = Date.UTC(doc.startYear, 0, 1);
-    const rangeEnd = Date.UTC(doc.endYear, 11, 31);
+    const rangeStart = cal.yearStart(doc.startYear);
+    const rangeEnd = cal.yearEnd(doc.endYear);
     const totalDays = E.dayCount(rangeStart, rangeEnd);
     const pct = (ms) => ((ms - rangeStart) / E.DAY) / totalDays * 100;
-    const scheduled = doc.blocks.filter(E.isScheduled);
-    document.getElementById("timelineMeta").textContent = scheduled.length + " blocks · " + doc.engines.length + " engines · As of " + effectiveAsOf();
+    const scheduled = view.blocks.filter(E.isScheduled);
+    document.getElementById("timelineMeta").textContent = scheduled.length + " blocks · " + view.engines.length + (view.engines.length === 1 ? " engine · " : " engines · ") + "As of " + effectiveAsOf();
     document.getElementById("timelineHint").hidden = !doc.blocks.length;
 
-    if (!scheduled.length && !doc.blocks.length) {
+    if (!doc.blocks.length) {
       host.append(el("div", { class: "empty-panel" }, [
         el("h3", { text: "Nothing scheduled yet" }),
         el("p", { text: "Add a block to put hours and materials on the timeline, add a backlog item to hold undated work, or load the sample plan to see how the roll-ups behave." }),
@@ -1305,21 +1696,22 @@
     const asOfMs = E.parseISO(effectiveAsOf());
     const asOfVisible = asOfMs >= rangeStart && asOfMs <= rangeEnd + E.DAY;
 
-    board.append(el("div", { class: "rail-cell axis-rail" }, el("span", { class: "mono muted", text: "Engine" })));
+    board.append(el("div", { class: "rail-cell axis-rail" }, el("span", { class: "label", text: "Engine" })));
     const axis = el("div", { class: "axis" });
-    const yearsRow = el("div", { class: "years", style: "grid-template-columns:" + years.map((y) => E.dayCount(Date.UTC(y, 0, 1), Date.UTC(y, 11, 31)) + "fr").join(" ") });
-    for (const y of years) yearsRow.append(el("div", { text: String(y) }));
+    const yearsRow = el("div", { class: "years", style: "grid-template-columns:" + years.map((y) => E.dayCount(cal.yearStart(y), cal.yearEnd(y)) + "fr").join(" ") });
+    for (const y of years) yearsRow.append(el("div", { text: cal.label(y) }));
     const monthsRow = el("div", { class: "months" });
     const monthCols = [];
     const monthEdges = [];
-    for (const y of years) for (let m = 0; m < 12; m += 1) {
-      const ms = Date.UTC(y, m, 1);
-      const days = E.dayCount(ms, Date.UTC(y, m + 1, 0));
-      monthCols.push(days + "fr");
-      if (!(y === years[0] && m === 0)) monthEdges.push({ ms, year: m === 0 });
-      monthsRow.append(el("div", { text: MONTHS[m] }));
+    let first = true;
+    for (const y of years) for (const m of cal.months(y)) {
+      monthCols.push(m.days + "fr");
+      if (!first) monthEdges.push({ ms: m.start, year: m.index === 0 });
+      first = false;
+      monthsRow.append(el("div", { text: m.label, title: m.label + " " + m.calendarYear }));
     }
-    monthsRow.setAttribute("style", "grid-template-columns:" + monthCols.join(" "));
+    const monthTemplate = "grid-template-columns:" + monthCols.join(" ");
+    monthsRow.setAttribute("style", monthTemplate);
     axis.append(yearsRow, monthsRow);
     if (asOfVisible) {
       const line = el("div", { class: "asof-line", style: "left:" + pct(asOfMs) + "%; top:0; bottom:0" });
@@ -1328,14 +1720,34 @@
     }
     board.append(axis);
 
-    for (const engine of doc.engines) {
+    // Monthly load: hours scheduled in each month against that month's share of the annual hours.
+    board.append(el("div", { class: "rail-cell load-rail" }, [el("span", { class: "label", text: "Load" }), el("span", { class: "sub hint", text: "Hours per month" })]));
+    const load = el("div", { class: "load", style: monthTemplate, role: "img", "aria-label": "Hours scheduled per month" });
+    // One engine against the whole plan's capacity would mislead, so a scoped view scales to its busiest month instead.
+    const periods = monthLoad.periods.map((p) => Object.assign({}, p, { capacity: scoped ? null : p.capacity }));
+    const maxHours = periods.reduce((m, p) => Math.max(m, p.hours.committed), 0);
+    const anyCapacity = periods.some((p) => p.capacity != null);
+    for (const p of periods) {
+      const h = p.hours.committed;
+      const ratio = p.capacity ? h / p.capacity : (maxHours ? h / maxHours : 0);
+      const kind = p.capacity ? (ratio > 1 ? " over" : (ratio >= 0.9 ? " warn" : "")) : "";
+      const title = p.label + " " + p.calendarYear + " · " + hoursFmt(h) + (p.capacity != null ? " of " + hoursFmt(Math.round(p.capacity)) + " capacity" : "") + (h ? " · " + hoursFmt(p.hours.spent) + " worked, " + hoursFmt(p.hours.planned) + " forecast" : "");
+      const cell = el("div", { class: "load-cell" + kind + (p.capacity != null ? " capped" : ""), title });
+      cell.append(el("div", { class: "load-bar", style: "height:" + Math.min(100, ratio * 100).toFixed(1) + "%" }));
+      if (kind === " over" || (!anyCapacity && h && h === maxHours)) cell.append(el("span", { class: "load-num", text: E.fmtCompact(h) }));
+      load.append(cell);
+    }
+    board.append(load);
+
+    for (const engine of view.engines) {
       const laneBlocks = scheduled.filter((b) => b.engineId === engine.id);
       const { placed, rows } = E.stackLane(laneBlocks);
       const stats = engineRollup.rows.find((r) => r.engineId === engine.id);
+      const active = engineFilter === engine.id;
       const label = el("div", { class: "rail-cell lane-label" }, [
-        el("div", { class: "name", text: engine.name, title: engine.name }),
-        el("div", { class: "mono", text: laneBlocks.length + (laneBlocks.length === 1 ? " block · " : " blocks · ") + hoursFmt(stats ? stats.hours.committed : 0) }),
-        el("div", { class: "mono", text: money(stats ? stats.cost.committed : 0) })
+        el("button", { type: "button", class: "lane-btn" + (active ? " active" : ""), "data-engine": engine.id, text: engine.name, title: active ? "Show every engine" : "Show " + engine.name + " only", "aria-pressed": active ? "true" : "false", onclick: () => setEngineFilter(engine.id) }),
+        el("div", { class: "sub", text: laneBlocks.length + (laneBlocks.length === 1 ? " block · " : " blocks · ") + hoursFmt(stats ? stats.hours.committed : 0) }),
+        el("div", { class: "sub", text: money(stats ? stats.cost.committed : 0) + (engine.rate != null ? " · $" + engine.rate.toFixed(2) + "/h" : "") })
       ]);
       const lane = el("div", { class: "lane", style: "--rows:" + rows, "data-engine": engine.id });
       for (const edge of monthEdges) lane.append(el("div", { class: "gridline" + (edge.year ? " year" : ""), style: "left:" + pct(edge.ms) + "%" }));
@@ -1347,11 +1759,13 @@
         if (right <= left) continue;
         const top = 6 + row * 44;
         const amount = blockSummary(block);
+        const logged = loggedOf(block);
         const children = [el("span", { class: "name", text: block.name }), el("span", { class: "cost", text: amount })];
-        const ratio = E.hasLogged(block.hoursActual) && block.hours > 0 ? block.hoursActual / block.hours
-          : (E.hasLogged(block.materialsActual) && block.materials > 0 ? block.materialsActual / block.materials : null);
+        const ratio = logged.hours != null && block.hours > 0 ? logged.hours / block.hours
+          : (logged.materials != null && block.materials > 0 ? logged.materials / block.materials : null);
         if (ratio != null) children.push(el("span", { class: "progress" + (ratio > 1 ? " over" : ""), style: "width:" + Math.min(100, ratio * 100).toFixed(1) + "%" }));
         children.push(el("span", { class: "handle start", "aria-hidden": "true" }), el("span", { class: "handle end", "aria-hidden": "true" }));
+        children.push(el("span", { class: "log-btn", role: "button", tabindex: "-1", title: "Log work", "aria-label": "Log work on " + block.name, onclick: (ev) => { ev.stopPropagation(); openLogDialog(block.id); } }, icon("clock")));
         const btn = el("button", {
           type: "button",
           class: "block" + (s < rangeStart ? " clipped-start" : "") + (e > rangeEnd ? " clipped-end" : ""),
@@ -1386,6 +1800,7 @@
   }
   function onBlockKey(ev, block) {
     if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); deleteBlock(block.id); return; }
+    if (ev.key === "l" || ev.key === "L") { ev.preventDefault(); openLogDialog(block.id); return; }
     const s = E.parseISO(block.start), e = E.parseISO(block.end);
     if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
       ev.preventDefault();
@@ -1413,6 +1828,7 @@
     };
     btn.addEventListener("pointerdown", (ev) => {
       if (ev.button !== 0 || drag) return;
+      if (ev.target.closest && ev.target.closest(".log-btn")) return;
       const handle = ev.target.closest ? ev.target.closest(".handle") : null;
       drag = {
         id: ev.pointerId, mode: handle ? (handle.classList.contains("start") ? "start" : "end") : "move",
@@ -1454,8 +1870,8 @@
   function renderBacklog() {
     const host = document.getElementById("backlogHost");
     host.replaceChildren();
-    const items = doc.blocks.filter((b) => !E.isScheduled(b));
-    const totals = E.backlogTotal(doc);
+    const items = view.blocks.filter((b) => !E.isScheduled(b));
+    const totals = E.backlogTotal(view);
     document.getElementById("backlogMeta").textContent = "Unscheduled · " + items.length + (items.length === 1 ? " item · " : " items · ") + hoursFmt(totals.hours) + " · " + money(totals.materials) + " materials";
     if (!items.length) {
       host.append(el("p", { class: "backlog-empty", text: "No unscheduled work. Backlog items carry an engine, an hours estimate and planned materials but no dates, so they stay out of the yearly totals until you schedule them." }));
@@ -1487,14 +1903,28 @@
     const scheduling = !!block && !E.isScheduled(block) && preferScheduled === true;
     document.getElementById("blockDialogTitle").textContent = block ? (scheduling ? "Schedule block" : "Edit block") : (preferScheduled === false ? "Add backlog item" : "Add block");
     document.getElementById("blockDeleteBtn").hidden = !block;
+    document.getElementById("blockLogBtn").hidden = !block || !E.isScheduled(block);
     const select = blockForm.elements.engineId;
     select.replaceChildren(...doc.engines.map((e) => el("option", { value: e.id, text: e.name })));
     blockForm.elements.name.value = block ? block.name : "";
-    select.value = block ? block.engineId : doc.engines[0].id;
+    select.value = block ? block.engineId : (engineFilter || doc.engines[0].id);
     fillNumber(blockForm.elements.hours, block ? block.hours : null);
-    fillNumber(blockForm.elements.hoursActual, block && E.hasLogged(block.hoursActual) ? block.hoursActual : null);
     fillNumber(blockForm.elements.materials, block && block.materials ? block.materials : null);
-    fillNumber(blockForm.elements.materialsActual, block && E.hasLogged(block.materialsActual) ? block.materialsActual : null);
+    const hasLog = !!block && block.log.length > 0;
+    const hint = document.getElementById("logHint");
+    if (hasLog) {
+      const all = E.loggedAsOf(block, null);
+      fillNumber(blockForm.elements.hoursActual, all.hours);
+      fillNumber(blockForm.elements.materialsActual, all.materials);
+      hint.textContent = "From " + block.log.length + (block.log.length === 1 ? " log entry" : " log entries") + ". Use Log work to add or remove entries; the plan counts entries up to the as-of date.";
+    } else {
+      fillNumber(blockForm.elements.hoursActual, block && E.hasLogged(block.hoursActual) ? block.hoursActual : null);
+      fillNumber(blockForm.elements.materialsActual, block && E.hasLogged(block.materialsActual) ? block.materialsActual : null);
+      hint.textContent = "";
+    }
+    blockForm.elements.hoursActual.disabled = hasLog;
+    blockForm.elements.materialsActual.disabled = hasLog;
+    hint.hidden = !hasLog;
     const scheduled = block ? (E.isScheduled(block) || scheduling) : preferScheduled !== false;
     blockForm.elements.scheduled.checked = scheduled;
     const asOf = effectiveAsOf();
@@ -1518,7 +1948,8 @@
     if (Number.isNaN(s) || Number.isNaN(e)) { out.textContent = ""; return; }
     if (e < s) { out.textContent = "End before start"; return; }
     const days = E.dayCount(s, e);
-    out.textContent = days + (days === 1 ? " day · " : " days · ") + fmtRange(E.toISO(s), E.toISO(e));
+    const weekdays = E.weekdayCount(s, e);
+    out.textContent = days + (days === 1 ? " day" : " days") + " (" + weekdays + " weekdays) · " + fmtRange(E.toISO(s), E.toISO(e));
   }
   blockForm.elements.scheduled.addEventListener("change", syncDateFields);
   blockForm.elements.start.addEventListener("input", syncDateSummary);
@@ -1532,11 +1963,13 @@
     const scheduled = f.scheduled.checked;
     const start = scheduled ? f.start.value : null;
     const end = scheduled ? f.end.value : null;
+    const existing = editingId ? doc.blocks.find((b) => b.id === editingId) : null;
+    const hasLog = !!existing && existing.log.length > 0;
     const optional = (field) => (scheduled && field.value.trim() !== "" ? parseMoneyInput(field.value) : null);
     const hours = parseMoneyInput(f.hours.value);
-    const hoursActual = optional(f.hoursActual);
+    const hoursActual = hasLog ? existing.hoursActual : optional(f.hoursActual);
     const materials = parseMoneyInput(f.materials.value);
-    const materialsActual = optional(f.materialsActual);
+    const materialsActual = hasLog ? existing.materialsActual : optional(f.materialsActual);
     if (!name) { error.textContent = "Give the block a name."; f.name.focus(); return; }
     if (name.length > 120) { error.textContent = "Keep the name to 120 characters."; return; }
     if (!doc.engines.some((e) => e.id === engineId)) { error.textContent = "Pick an engine."; return; }
@@ -1552,26 +1985,127 @@
     const next = clone(doc);
     const fields = { name, engineId, hours, hoursActual, materials, materialsActual, start, end };
     if (editingId) Object.assign(next.blocks.find((b) => b.id === editingId), fields);
-    else next.blocks.push(Object.assign({ id: makeId(scheduled ? "b" : "k") }, fields));
+    else next.blocks.push(Object.assign({ id: makeId(scheduled ? "b" : "k"), log: [] }, fields));
     blockDialog.close();
     commit(next, { toast: editingId ? "Block updated" : (scheduled ? "Block added" : "Backlog item added") });
   });
   document.getElementById("blockDeleteBtn").addEventListener("click", () => { if (editingId) deleteBlock(editingId); });
+  document.getElementById("blockLogBtn").addEventListener("click", () => { if (editingId) { const id = editingId; blockDialog.close(); openLogDialog(id); } });
+
+  // ---------- Log work dialog ----------
+  const logDialog = document.getElementById("logDialog");
+  const logForm = document.getElementById("logForm");
+  let logBlockId = null;
+  function openLogDialog(blockId) {
+    const block = doc.blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    logBlockId = blockId;
+    logForm.elements.date.value = effectiveAsOf();
+    logForm.elements.hours.value = "";
+    logForm.elements.materials.value = "";
+    logForm.elements.note.value = "";
+    document.getElementById("logError").textContent = "";
+    renderLogEntries();
+    if (!logDialog.open) logDialog.showModal();
+    logForm.elements.hours.focus();
+  }
+  function renderLogEntries() {
+    const block = doc.blocks.find((b) => b.id === logBlockId);
+    if (!block) { logDialog.close(); return; }
+    document.getElementById("logTitle").textContent = "Log work · " + block.name;
+    document.getElementById("logBlockName").textContent = engineName(block.engineId) + " · " + (E.isScheduled(block) ? fmtRange(block.start, block.end) : "Backlog") + " · estimate " + hoursFmt(block.hours) + (block.materials ? " · " + money(block.materials) + " materials planned" : "");
+    const host = document.getElementById("logEntries");
+    host.replaceChildren();
+    const totals = document.getElementById("logTotals");
+    if (!block.log.length) {
+      host.hidden = true;
+      totals.textContent = block.hoursActual != null || block.materialsActual != null
+        ? "No entries yet. The block carries running totals of " + hoursFmt(block.hoursActual || 0) + " and " + money(block.materialsActual || 0) + "; the first entry replaces them."
+        : "No entries yet.";
+      return;
+    }
+    host.hidden = false;
+    const entries = block.log.map((entry, index) => ({ entry, index })).sort((a, b) => E.parseISO(b.entry.date) - E.parseISO(a.entry.date) || b.index - a.index);
+    const table = el("table", null, el("thead", null, el("tr", null, [th("Date"), th("Hours", "num"), th("Materials", "num"), th("Note"), el("th", { scope: "col", class: "actions", "aria-label": "Actions" })])));
+    const tbody = el("tbody");
+    for (const { entry, index } of entries) {
+      tbody.append(el("tr", null, [
+        el("td", { class: "fig", text: entry.date }), numCell(hoursFmt(entry.hours)), numCell(entry.materials ? money(entry.materials) : ""), el("td", { text: entry.note || "" }),
+        el("td", { class: "actions" }, el("button", { type: "button", class: "iconbtn sm", "aria-label": "Delete entry " + entry.date, title: "Delete entry", onclick: () => removeLogEntry(index) }, icon("delete")))
+      ]));
+    }
+    table.append(tbody);
+    host.append(table);
+    const asOf = E.loggedAsOf(block, effectiveAsOf()), all = E.loggedAsOf(block, null);
+    totals.textContent = "Counted as of " + effectiveAsOf() + ": " + hoursFmt(asOf.hours) + " and " + money(asOf.materials) + " (" + asOf.counted + " of " + all.entries + " entries). All entries: " + hoursFmt(all.hours) + " and " + money(all.materials) + ".";
+  }
+  logForm.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const error = document.getElementById("logError");
+    const f = logForm.elements;
+    const date = f.date.value;
+    const hours = parseMoneyInput(f.hours.value);
+    const materials = parseMoneyInput(f.materials.value);
+    const note = f.note.value.trim();
+    if (Number.isNaN(E.parseISO(date))) { error.textContent = "Pick a date."; f.date.focus(); return; }
+    if (Number.isNaN(hours)) { error.textContent = "Hours must be a whole number."; f.hours.focus(); return; }
+    if (Number.isNaN(materials)) { error.textContent = "Materials must be a whole number of dollars."; f.materials.focus(); return; }
+    if (!hours && !materials) { error.textContent = "Enter hours, materials or both."; f.hours.focus(); return; }
+    if (note.length > 200) { error.textContent = "Keep the note to 200 characters."; return; }
+    const next = clone(doc);
+    const target = next.blocks.find((b) => b.id === logBlockId);
+    if (!target) return;
+    if (target.log.length >= E.MAX_LOG) { error.textContent = "This block already has the maximum of " + E.MAX_LOG + " entries."; return; }
+    target.log.push({ date, hours, materials, note });
+    error.textContent = "";
+    commit(next, { toast: "Logged " + [hours ? hoursFmt(hours) : null, materials ? money(materials) : null].filter(Boolean).join(" and ") + " on " + fmtDate(date) });
+    f.hours.value = ""; f.materials.value = ""; f.note.value = "";
+    renderLogEntries();
+    f.hours.focus();
+  });
+  function removeLogEntry(index) {
+    const next = clone(doc);
+    const target = next.blocks.find((b) => b.id === logBlockId);
+    if (!target || !target.log[index]) return;
+    const entry = target.log.splice(index, 1)[0];
+    commit(next, { toast: "Removed the " + fmtDate(entry.date) + " entry" });
+    renderLogEntries();
+  }
 
   // ---------- Settings dialog ----------
   const settingsDialog = document.getElementById("settingsDialog");
   const settingsForm = document.getElementById("settingsForm");
   let draftEngines = [];
 
+  const fiscalSelect = settingsForm.elements.fiscalStartMonth;
+  MONTH_NAMES.forEach((name, i) => fiscalSelect.append(el("option", { value: String(i + 1), text: name + (i === 0 ? " (calendar year)" : "") })));
   function openSettings() {
     draftEngines = clone(doc.engines);
     settingsForm.elements.rate.value = currentRate().toFixed(2);
+    settingsForm.elements.workdays.value = doc.workdays;
+    fiscalSelect.value = String(doc.fiscalStartMonth);
     settingsForm.elements.startYear.value = doc.startYear;
     settingsForm.elements.endYear.value = doc.endYear;
+    settingsForm.elements.theme.value = prefs.theme;
+    settingsForm.elements.accent.value = prefs.accent;
     document.getElementById("settingsError").textContent = "";
+    syncFiscalHint();
     renderEngineRows();
+    renderBackups();
     settingsDialog.showModal();
   }
+  function syncFiscalHint() {
+    const fm = Number(fiscalSelect.value);
+    const y = Number(settingsForm.elements.startYear.value) || doc.startYear;
+    const c = E.calendarOf(fm);
+    document.getElementById("fiscalHint").textContent = fm === 1
+      ? "Years run January to December and are labelled by the calendar year."
+      : c.label(y) + " runs " + fmtDate(E.toISO(c.yearStart(y))) + " to " + fmtDate(E.toISO(c.yearEnd(y))) + "; annual hours and budgets are keyed by fiscal year.";
+  }
+  fiscalSelect.addEventListener("change", syncFiscalHint);
+  settingsForm.elements.startYear.addEventListener("input", syncFiscalHint);
+  settingsForm.elements.theme.addEventListener("change", () => savePrefs({ theme: settingsForm.elements.theme.value }));
+  settingsForm.elements.accent.addEventListener("change", () => savePrefs({ accent: settingsForm.elements.accent.value }));
   function blockCount(engineId) { return doc.blocks.filter((b) => b.engineId === engineId).length; }
   function renderEngineRows() {
     const host = document.getElementById("engineRows");
@@ -1580,31 +2114,63 @@
       const used = blockCount(engine.id);
       const nameInput = el("input", { type: "text", value: engine.name, maxlength: "80", "aria-label": "Engine name " + (i + 1) });
       nameInput.addEventListener("input", () => { engine.name = nameInput.value; });
+      const rateInput = el("input", { type: "text", class: "rate", inputmode: "decimal", placeholder: currentRate().toFixed(2), value: engine.rate == null ? "" : Number(engine.rate).toFixed(2), "aria-label": "Rate for " + (engine.name || "engine " + (i + 1)) + " in dollars per hour", title: "Dollars per hour for this engine; blank uses the plan rate" });
+      rateInput.addEventListener("input", () => { engine.rateText = rateInput.value; });
       const up = el("button", { type: "button", class: "iconbtn", "aria-label": "Move up", disabled: i === 0, onclick: () => { [draftEngines[i - 1], draftEngines[i]] = [draftEngines[i], draftEngines[i - 1]]; renderEngineRows(); } }, icon("chevron-up"));
       const down = el("button", { type: "button", class: "iconbtn", "aria-label": "Move down", disabled: i === draftEngines.length - 1, onclick: () => { [draftEngines[i + 1], draftEngines[i]] = [draftEngines[i], draftEngines[i + 1]]; renderEngineRows(); } }, icon("chevron-down"));
       const remove = used
         ? el("span", { class: "count", text: used + (used === 1 ? " block" : " blocks"), title: "Reassign or delete its blocks before removing this engine" })
         : el("button", { type: "button", class: "iconbtn", "aria-label": "Remove engine", disabled: draftEngines.length === 1, onclick: () => { draftEngines.splice(i, 1); renderEngineRows(); } }, icon("delete"));
-      host.append(el("div", { class: "engine-row" }, [nameInput, up, down, remove]));
+      host.append(el("div", { class: "engine-row" }, [nameInput, rateInput, up, down, remove]));
     });
   }
   document.getElementById("addEngineBtn").addEventListener("click", () => {
-    draftEngines.push({ id: makeId("e"), name: "New engine" });
+    draftEngines.push({ id: makeId("e"), name: "New engine", rate: null });
     renderEngineRows();
-    const inputs = document.querySelectorAll("#engineRows input");
+    const inputs = document.querySelectorAll("#engineRows input[type='text']:not(.rate)");
     const last = inputs[inputs.length - 1];
     if (last) { last.focus(); last.select(); }
   });
+  function renderBackups() {
+    const host = document.getElementById("backupList");
+    host.replaceChildren();
+    const ring = Array.isArray(readJSON(BACKUP_KEY)) ? readJSON(BACKUP_KEY) : [];
+    if (!ring.length) { host.append(el("p", { class: "hint", text: "No backups yet. One is kept after each change." })); return; }
+    ring.forEach((entry, i) => {
+      const when = new Date(entry.time);
+      const label = when.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + when.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      const blocks = entry.doc && Array.isArray(entry.doc.blocks) ? entry.doc.blocks.length : 0;
+      host.append(el("div", { class: "backup-row" }, [
+        el("span", { class: "num", text: label }), el("span", { class: "hint", text: blocks + (blocks === 1 ? " block" : " blocks") + (i === 0 ? " · latest" : "") }), el("span", { class: "spacer" }),
+        el("button", { type: "button", class: "btn sm", text: "Restore", onclick: () => restoreBackup(entry) })
+      ]));
+    });
+  }
+  function restoreBackup(entry) {
+    const result = E.validateDoc(entry.doc);
+    if (!result.ok) { document.getElementById("settingsError").textContent = "That backup did not pass validation: " + result.errors[0]; return; }
+    settingsDialog.close();
+    commit(result.doc, { toast: "Restored the backup from " + new Date(entry.time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) });
+  }
   settingsForm.addEventListener("submit", (ev) => {
     ev.preventDefault();
     const error = document.getElementById("settingsError");
     const next = clone(doc);
     const rate = parseRateInput(settingsForm.elements.rate.value);
-    if (Number.isNaN(rate)) { error.textContent = "Rate must be dollars per hour, up to two decimals."; settingsForm.elements.rate.focus(); return; }
+    if (Number.isNaN(rate)) { error.textContent = "The plan rate must be dollars per hour, up to two decimals."; settingsForm.elements.rate.focus(); return; }
     next.rate = rate;
+    next.workdays = settingsForm.elements.workdays.value;
+    next.fiscalStartMonth = Number(fiscalSelect.value);
     next.startYear = Number(settingsForm.elements.startYear.value);
     next.endYear = Number(settingsForm.elements.endYear.value);
-    next.engines = draftEngines.map((e) => ({ id: e.id, name: e.name.trim() }));
+    const engines = [];
+    for (const e of draftEngines) {
+      const text = (e.rateText != null ? e.rateText : (e.rate == null ? "" : String(e.rate))).trim();
+      let engineRate = null;
+      if (text !== "") { engineRate = parseRateInput(text); if (Number.isNaN(engineRate)) { error.textContent = "The rate for " + (e.name.trim() || "an engine") + " must be dollars per hour, up to two decimals, or blank."; return; } }
+      engines.push({ id: e.id, name: e.name.trim(), rate: engineRate });
+    }
+    next.engines = engines;
     if (next.engines.some((e) => !e.name)) { error.textContent = "Every engine needs a name."; return; }
     const result = E.validateDoc(next);
     if (!result.ok) { error.textContent = result.errors[0]; return; }
@@ -1632,7 +2198,7 @@
   }
   const helpDialog = document.getElementById("helpDialog");
   document.getElementById("helpBtn").addEventListener("click", () => helpDialog.showModal());
-  for (const dlg of [blockDialog, settingsDialog, confirmDialog, helpDialog]) {
+  for (const dlg of [blockDialog, logDialog, settingsDialog, confirmDialog, helpDialog]) {
     dlg.querySelectorAll("[data-cancel]").forEach((b) => b.addEventListener("click", () => { dlg.returnValue = ""; dlg.close(); }));
     dlg.addEventListener("click", (ev) => { if (ev.target === dlg) { dlg.returnValue = ""; dlg.close(); } });
   }
@@ -1654,6 +2220,8 @@
   document.getElementById("addBlockBtn").addEventListener("click", () => openBlockDialog(null, true));
   document.getElementById("addBacklogBtn").addEventListener("click", () => openBlockDialog(null, false));
   document.getElementById("blockFilter").addEventListener("input", (ev) => { blockFilter = ev.target.value; renderBlocksTable(); });
+  document.getElementById("csvBtn").addEventListener("click", exportCsv);
+  document.getElementById("scopeClear").addEventListener("click", () => { engineFilter = null; render(); });
   const rateInput = document.getElementById("rateInput");
   rateInput.addEventListener("change", () => {
     const value = parseRateInput(rateInput.value);
@@ -1661,14 +2229,14 @@
     if (value === currentRate()) { rateInput.value = value.toFixed(2); return; }
     const next = clone(doc);
     next.rate = value;
-    commit(next, { toast: "Rate set to $" + value.toFixed(2) + " per hour" });
+    commit(next, { toast: "Plan rate set to $" + value.toFixed(2) + " per hour" });
   });
   rateInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); rateInput.blur(); } });
   document.getElementById("addYearBtn").addEventListener("click", () => {
     if (doc.endYear - doc.startYear + 1 >= E.MAX_SPAN_YEARS) { showToast("The plan already spans the maximum of " + E.MAX_SPAN_YEARS + " years", false); return; }
     const next = clone(doc);
     next.endYear += 1;
-    commit(next, { toast: "Added " + next.endYear });
+    commit(next, { toast: "Added " + cal.label(next.endYear) });
   });
   document.getElementById("settingsBtn").addEventListener("click", openSettings);
   document.getElementById("asOfInput").addEventListener("change", (ev) => {
@@ -1678,12 +2246,8 @@
   });
   document.getElementById("todayBtn").addEventListener("click", () => { const next = clone(doc); next.asOf = todayISO(); scrollToAsOf = true; commit(next, { undoable: false }); });
   document.getElementById("exportBtn").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
     const fileName = "budget-planner-" + todayISO() + ".json";
-    const a = el("a", { href: url, download: fileName });
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadText(JSON.stringify(doc, null, 2), fileName, "application/json");
     showToast("Exported " + fileName, false);
   });
   const importFile = document.getElementById("importFile");
@@ -1697,30 +2261,20 @@
     const result = E.validateDoc(parsed);
     if (!result.ok) { await confirmAction("Import failed", "The file did not pass validation, so nothing was changed.", null, result.errors.slice(0, 8)); return; }
     const scheduled = result.doc.blocks.filter(E.isScheduled).length;
-    const note = result.migrated ? " The file comes from an earlier edition and is converted to hours and materials." : "";
+    const note = result.migrated ? " The file comes from an earlier version and is converted on the way in." : "";
     const ok = await confirmAction("Replace the current plan", "Import " + file.name + " with " + result.doc.engines.length + " engines, " + scheduled + " scheduled blocks and " + (result.doc.blocks.length - scheduled) + " backlog items? The current plan is replaced; Undo restores it." + note, "Replace");
     if (ok) commit(result.doc, { toast: "Imported " + file.name });
   });
   document.getElementById("clearBtn").addEventListener("click", async () => {
-    const ok = await confirmAction("Clear the plan", "Remove every block, backlog item, annual hours figure and annual budget? Engines, the rate and the year range stay. Undo restores everything.", "Clear all");
+    const ok = await confirmAction("Clear the plan", "Remove every block, backlog item, log entry, annual hours figure and annual budget? Engines, rates and the year range stay. Undo restores everything, and a backup of the current plan is kept under Settings.", "Clear all");
     if (!ok) return;
     const next = clone(doc); next.blocks = []; next.budgets = {}; next.hoursBudgets = {};
+    engineFilter = null;
     commit(next, { toast: "Plan cleared" });
   });
 
   // ---------- Theme and keyboard ----------
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    const btn = document.getElementById("themeBtn");
-    btn.textContent = theme === "dark" ? "Light" : "Dark";
-    btn.setAttribute("aria-label", theme === "dark" ? "Switch to the light theme" : "Switch to the dark theme");
-    btn.setAttribute("aria-pressed", theme === "light" ? "true" : "false");
-  }
-  document.getElementById("themeBtn").addEventListener("click", () => {
-    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    applyTheme(next);
-    try { localStorage.setItem(THEME_KEY, next); } catch (_) { /* storage unavailable */ }
-  });
+  document.getElementById("themeBtn").addEventListener("click", () => savePrefs({ theme: resolvedTheme() === "dark" ? "light" : "dark" }));
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && activeDrag) { activeDrag.cancel(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || document.querySelector("dialog[open]");
@@ -1733,9 +2287,8 @@
   });
 
   // ---------- Boot ----------
-  let theme = "dark";
-  try { theme = localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark"; } catch (_) { /* default */ }
-  applyTheme(theme);
+  loadPrefs();
+  applyPrefs();
   doc = load();
   persist();
   render();
