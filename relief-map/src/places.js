@@ -35,14 +35,15 @@ export const FEATURES = [
 ].map(([name, lon, lat]) => ({ kind: 'feature', name, lon, lat }));
 
 // Camera tours: where to look, from how far, from which compass bearing (degrees, 0 looks north) and how steeply (degrees above the horizon).
+// Each carries one or two sentences for the guided tour.
 export const TOURS = [
-  { id: 'overview', name: 'Whole map', lon: -96.6, lat: 37.9, dist: 1300, bearing: 2, pitch: 37 },
-  { id: 'rockies', name: 'Rocky Mountains', lon: -106.3, lat: 39.0, dist: 250, bearing: 38, pitch: 23 },
-  { id: 'canyon', name: 'Grand Canyon', lon: -112.1, lat: 36.2, dist: 170, bearing: 35, pitch: 30 },
-  { id: 'sierra', name: 'Sierra Nevada', lon: -119.1, lat: 37.3, dist: 230, bearing: 62, pitch: 22 },
-  { id: 'lakes', name: 'Great Lakes', lon: -85.2, lat: 44.6, dist: 420, bearing: 340, pitch: 34 },
-  { id: 'newyork', name: 'New York', lon: -74.1, lat: 40.75, dist: 150, bearing: 320, pitch: 24 },
-  { id: 'appalachia', name: 'Appalachians', lon: -81.2, lat: 36.8, dist: 260, bearing: 40, pitch: 26 },
-  { id: 'delta', name: 'Mississippi Delta', lon: -90.2, lat: 30.2, dist: 230, bearing: 350, pitch: 30 },
-  { id: 'cascades', name: 'Pacific Northwest', lon: -121.9, lat: 46.3, dist: 240, bearing: 60, pitch: 24 },
+  { id: 'overview', name: 'Whole map', lon: -96.6, lat: 37.9, dist: 1300, bearing: 2, pitch: 37, blurb: "The contiguous United States: 48 states and the District of Columbia, about 4,500 km (2,800 mi) from coast to coast." },
+  { id: 'rockies', name: 'Rocky Mountains', lon: -106.3, lat: 39.0, dist: 250, bearing: 38, pitch: 23, blurb: "The spine of the continent. Mount Elbert in Colorado is its highest point at 4,401 m (14,440 ft)." },
+  { id: 'canyon', name: 'Grand Canyon', lon: -112.1, lat: 36.2, dist: 170, bearing: 35, pitch: 30, blurb: "Cut by the Colorado River: 446 km (277 mi) long and more than 1,800 m (6,000 ft) deep." },
+  { id: 'sierra', name: 'Sierra Nevada', lon: -119.1, lat: 37.3, dist: 230, bearing: 62, pitch: 22, blurb: "A granite wall 640 km (400 mi) long. Mount Whitney, 4,421 m (14,505 ft), is the highest point in the contiguous states." },
+  { id: 'lakes', name: 'Great Lakes', lon: -85.2, lat: 44.6, dist: 420, bearing: 340, pitch: 34, blurb: "Five lakes holding about a fifth of the world's surface fresh water. Superior is the largest by area." },
+  { id: 'newyork', name: 'New York', lon: -74.1, lat: 40.75, dist: 150, bearing: 320, pitch: 24, blurb: "The largest metropolitan area in the country, about 19.5 million people, at the mouth of the Hudson River." },
+  { id: 'appalachia', name: 'Appalachians', lon: -81.2, lat: 36.8, dist: 260, bearing: 40, pitch: 26, blurb: "Old, worn mountains running from Alabama to Maine. Mount Mitchell, 2,037 m (6,684 ft), is the highest point east of the Mississippi." },
+  { id: 'delta', name: 'Mississippi Delta', lon: -90.2, lat: 30.2, dist: 230, bearing: 350, pitch: 30, blurb: "Where the Mississippi reaches the Gulf after draining about 40 percent of the contiguous states." },
+  { id: 'cascades', name: 'Pacific Northwest', lon: -121.9, lat: 46.3, dist: 240, bearing: 60, pitch: 24, blurb: "A chain of volcanoes. Mount Rainier, 4,392 m (14,411 ft), carries more glacier ice than any other peak in the contiguous states." },
 ];
