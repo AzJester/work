@@ -282,9 +282,70 @@ test("validateDoc carries unit and actual through and defaults them", () => {
   assert.equal(hours.doc.blocks[0].actual, 4);
 });
 
+test("materials pro-rate by day alongside hours and roll up into cost at the hourly rate", () => {
+  const years = [2026, 2027];
+  const block = { cost: 100, materials: 1000, start: "2026-07-01", end: "2026-07-10" };
+  const split = E.proRate(block, "2026-07-05", years).byYear[2026];
+  assert.ok(Math.abs(split.materialsSpent - 400) < 1e-9);
+  assert.ok(Math.abs(split.materialsPlanned - 600) < 1e-9);
+  const logged = E.proRate({ ...block, actual: 70 }, "2026-07-05", years).byYear[2026];
+  assert.equal(logged.spent, 70);
+  assert.ok(Math.abs(logged.materialsSpent - 400) < 1e-9, "logged hours do not change the materials split");
+  const d = doc({ unit: "hours", rate: 102, asOf: "2026-07-05", blocks: [
+    { id: "1", name: "x", engineId: "a", ...block, actual: 70 },
+    { id: "2", name: "y", engineId: "b", cost: 10, materials: 250, start: null, end: null },
+  ] });
+  const c = E.rollupCost(d);
+  assert.equal(c.factor, 102);
+  assert.equal(c.byYear[2026].laborSpent, 70 * 102);
+  assert.equal(c.byYear[2026].laborPlanned, 30 * 102);
+  assert.equal(c.byYear[2026].materialsSpent, 400);
+  assert.equal(c.byYear[2026].materialsPlanned, 600);
+  assert.equal(c.byYear[2026].committed, 100 * 102 + 1000);
+  assert.equal(c.byYear[2027].committed, 0);
+  assert.equal(c.total.committed, 11200);
+  assert.equal(c.total.spent + c.total.planned, c.total.committed);
+  const rowA = c.rows.find((r) => r.engineId === "a"), rowB = c.rows.find((r) => r.engineId === "b");
+  assert.deepEqual(plain([rowA.labor, rowA.materials, rowA.committed, rowA.backlog]), [10200, 1000, 11200, 0]);
+  assert.equal(rowB.backlog, 10 * 102 + 250, "backlog cost is backlog hours at the rate plus materials");
+  assert.equal(c.engineTotal.backlog, 1270);
+  const usd = E.rollupCost(doc({ unit: "USD", blocks: [{ id: "1", name: "x", engineId: "a", cost: 500, materials: 50, start: "2026-07-01", end: "2026-07-10" }] }));
+  assert.equal(usd.factor, 1, "a dollar plan's cost already is money");
+  assert.equal(usd.total.labor, 500);
+  assert.equal(usd.total.materials, 50);
+});
+
+test("validateDoc defaults the rate to 102 and materials to 0, rounds the rate to cents, and rejects bad values", () => {
+  const base = E.validateDoc(doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 10, start: null, end: null }] }));
+  assert.ok(base.ok, base.errors.join("\n"));
+  assert.equal(base.doc.rate, 102);
+  assert.equal(base.doc.blocks[0].materials, 0);
+  const custom = E.validateDoc(doc({ unit: "hours", rate: 95.5, blocks: [{ id: "1", name: "x", engineId: "a", cost: 10, materials: 300, start: null, end: null }] }));
+  assert.ok(custom.ok, custom.errors.join("\n"));
+  assert.equal(custom.doc.rate, 95.5);
+  assert.equal(custom.doc.blocks[0].materials, 300);
+  assert.equal(E.validateDoc(doc({ rate: 102.126 })).doc.rate, 102.13);
+  const cases = [
+    [doc({ rate: -1 }), /Rate must be/],
+    [doc({ rate: "102" }), /Rate must be/],
+    [doc({ blocks: [{ id: "1", name: "x", engineId: "a", cost: 1, materials: 2.5, start: null, end: null }] }), /materials must be a whole number/],
+  ];
+  for (const [input, pattern] of cases) {
+    const r = E.validateDoc(input);
+    assert.equal(r.ok, false);
+    assert.ok(r.errors.some((e) => pattern.test(e)), JSON.stringify(r.errors));
+  }
+});
+
 test("the hours sample is the plan in hours with two blocks logged and no dollars", () => {
   const hours = seedDoc("hours");
   assert.equal(hours.unit, "hours");
+  assert.equal(hours.rate, 102);
+  const cost = E.rollupCost(E.validateDoc(hours).doc);
+  assert.equal(cost.total.labor, 15829 * 102, "labor is every scheduled hour at the rate");
+  assert.equal(cost.total.materials, 18500 + 2500);
+  assert.equal(cost.engineTotal.committed, cost.total.committed);
+  assert.equal(cost.engineTotal.backlog, 2010 * 102 + 4000);
   const result = E.validateDoc(hours);
   assert.ok(result.ok, result.errors.join("\n"));
   const b01 = hours.blocks.find((b) => b.id === "b01");

@@ -641,6 +641,13 @@ and shows no dollar figures anywhere:
   **Remaining** is annual hours minus total, tagged **Over** when the plan exceeds capacity.
 - Move the **As of** date to see the forecast shift; the backlog holds estimated hours that have
   no dates yet.
+- **Cost** · a section under the hours tables prices the plan: **labor** is hours at an hourly
+  **rate** (default **$102.00**, editable in the Cost header or under Settings, saved with the
+  plan) and **materials** are dollars entered per block (a block with 0 h and a materials figure
+  is a pure purchase). Cost by year shows labor worked and forecast, materials spent and
+  planned, and the committed total; Cost by engine shows labor, materials, committed and the
+  backlog's cost (backlog hours at the rate plus backlog materials). Materials pro-rate by day
+  like everything else and are unaffected by logged hours.
 - `hours-planner.html` opens `budget-planner.html?unit=hours`; the unit also lives in each saved
   or exported plan and can be switched under **Settings**, so an exported hours plan reopens as
   hours anywhere.
