@@ -143,6 +143,35 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator("#engineTable tr[data-engine='core']")).toContainText("$59,341");
   });
 
+  test("adds a year with one click, and edits or deletes blocks from the list and the keyboard", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await expect(page.locator(".axis .years > div")).toHaveCount(2);
+    await page.click("#addYearBtn");
+    await expect(page.locator(".axis .years > div")).toHaveCount(3);
+    await expect(page.locator(".axis .years > div").nth(2)).toHaveText("2028");
+    await expect(page.locator("#yearTable thead")).toContainText("2028");
+    await expect(page.locator("#subtitle")).toContainText("2026 – 2028");
+    const rows = page.locator("#blocksTable tbody tr");
+    await expect(rows).toHaveCount(22);
+    await expect(page.locator("#blocksMeta")).toHaveText("15 scheduled · 7 backlog");
+    await page.locator("#blocksTable button[aria-label='Edit Aurora ML POC']").click();
+    const dialog = page.locator("#blockDialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("input[name='name']")).toHaveValue("Aurora ML POC");
+    await dialog.locator("input[name='name']").fill("Aurora ML pilot");
+    await dialog.locator("button[type='submit']").click();
+    await expect(page.locator(".block", { hasText: "Aurora ML pilot" })).toHaveCount(1);
+    await page.locator("#blocksTable button[aria-label='Delete Aurora ML pilot']").click();
+    await expect(rows).toHaveCount(21);
+    await expect(page.locator(".block")).toHaveCount(14);
+    await page.click("#toastUndo");
+    await expect(rows).toHaveCount(22);
+    await page.locator(".block[data-block='b02']").focus();
+    await page.keyboard.press("Delete");
+    await expect(page.locator(".block")).toHaveCount(14);
+    await expect(page.locator("#toastText")).toContainText("Deleted Outpost: Hardware");
+  });
+
   test("keeps the Astrion hard rules: no heading ends in a period and table text is 8 to 10 pt", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     const audit = await page.evaluate(() => {

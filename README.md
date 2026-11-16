@@ -602,9 +602,12 @@ against a movable as-of date. Built to the Astrion 2026 brand standard.
   scheduled costs.
 - **Committed by engine** · the same split per engine across all years, plus each engine's backlog.
 - **Editing** · **+ Add block**, **+ Backlog item**, click any block or card to edit, delete or
-  move it between the timeline and the backlog; **Settings** renames, reorders, adds and removes
-  engines and sets the year range; **Clear all** empties the plan with a one-click **Undo**
-  (Ctrl/Cmd+Z also undoes the last change).
+  move it between the timeline and the backlog, or press **Delete** while a block has focus. The
+  **Blocks** list under the backlog shows every block with its dates and figures and an edit and
+  a delete button per row. **+ Year** extends the plan by one year per click (up to ten years);
+  **Settings** renames, reorders, adds and removes engines and sets the year range directly;
+  **Clear all** empties the plan with a one-click **Undo** (Ctrl/Cmd+Z also undoes the last
+  change).
 - **Export / Import** · JSON (`budget-planner-YYYY-MM-DD.json`). Imports are fully validated
   before anything changes, and Undo restores the previous plan.
 - **Saved in this browser** · `localStorage` key `budget_planner_v1`. The first open loads a sample

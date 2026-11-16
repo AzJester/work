@@ -43,6 +43,12 @@ elapsed days by year, and the rest of the estimate is carried as planned over th
 days, so an overrun shows as spent above the estimate. The unit can also be switched under
 Settings and travels with exported plans.
 
+**Block management (follow-up).** A **+ Year** button in the timeline header extends the end
+year one click at a time up to the ten-year cap, and the board's minimum width grows with the
+number of months so month labels stay legible. A **Blocks** list under the backlog shows every
+block with edit and delete buttons, the Delete key removes a focused block on the board or in
+the backlog, and a caption under the timeline says so.
+
 ---
 
 ## 1. What the reference shows (feature spec)
