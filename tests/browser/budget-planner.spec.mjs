@@ -189,6 +189,98 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator("#toastText")).toContainText("Deleted Outpost: Hardware");
   });
 
+  test("moves and resizes a block by dragging and with the keyboard, and a plain click still opens the editor", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const block = page.locator(".block[data-block='b01']");
+    const row = page.locator("tr[data-block-row='b01']");
+    const pxPerDay = await page.locator(".lane[data-engine='core']").evaluate((lane) => lane.getBoundingClientRect().width / 730);
+    let box = await block.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + pxPerDay * 5, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.move(box.x + box.width / 2 + pxPerDay * 10, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.up();
+    await expect(row).toContainText("2026-06-12");
+    await expect(row).toContainText("2026-09-10");
+    await expect(page.locator("#blockDialog")).toBeHidden();
+    await expect(page.locator("#toastText")).toContainText("Moved CORE Foundation MVP");
+    box = await block.boundingBox();
+    await page.mouse.move(box.x + box.width - 3, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width - 3 + pxPerDay * 7, box.y + box.height / 2, { steps: 4 });
+    await page.mouse.up();
+    await expect(row).toContainText("2026-06-12");
+    await expect(row).toContainText("2026-09-17");
+    await expect(page.locator("#toastText")).toContainText("Resized CORE Foundation MVP");
+    await block.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(row).toContainText("2026-06-11");
+    await expect(block).toBeFocused();
+    await page.keyboard.press("Shift+ArrowRight");
+    await expect(row).toContainText("2026-06-18");
+    await expect(row).toContainText("2026-09-23");
+    await page.keyboard.press("-");
+    await expect(row).toContainText("2026-09-22");
+    await page.click("#toastUndo");
+    await expect(row).toContainText("2026-09-23");
+    await block.click();
+    await expect(page.locator("#blockDialog")).toBeVisible();
+    await expect(page.locator("#dateSummary")).toContainText("98 days");
+  });
+
+  test("keeps the board scroll position and keyboard focus through an edit", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL, { width: 900, height: 800 });
+    const scroller = page.locator(".board-scroll");
+    const asOfVisible = await page.evaluate(() => {
+      const s = document.querySelector(".board-scroll").getBoundingClientRect();
+      const l = document.querySelector(".axis .asof-line").getBoundingClientRect();
+      return l.left >= s.left && l.left <= s.right;
+    });
+    expect(asOfVisible).toBe(true);
+    await scroller.evaluate((s) => { s.scrollLeft = 150; });
+    await page.locator("#blocksTable button[aria-label='Edit CORE Foundation MVP']").click();
+    await page.locator("#blockDialog input[name='name']").fill("CORE Foundation MVP 2");
+    await page.locator("#blockDialog button[type='submit']").click();
+    await expect(page.locator(".block", { hasText: "CORE Foundation MVP 2" })).toHaveCount(1);
+    expect(await scroller.evaluate((s) => s.scrollLeft)).toBe(150);
+    await expect(page.locator("#blocksTable button[aria-label='Edit CORE Foundation MVP 2']")).toBeFocused();
+    await expect(page.locator("#saveStatus")).toContainText("Saved");
+  });
+
+  test("section nav, Blocks filter, row click, one-click scheduling and the help shortcuts", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await expect(page.locator(".subnav a.active")).toHaveText("Timeline");
+    await expect(page.locator("#navCost")).toBeHidden();
+    await page.click(".subnav a[href='#blocksSection']");
+    await expect(page.locator(".subnav a.active")).toHaveText("Blocks");
+    await page.fill("#blockFilter", "meridian");
+    await expect(page.locator("#blocksTable tbody tr")).toHaveCount(4);
+    await expect(page.locator("#blocksMeta")).toContainText("4 of 22 shown");
+    await page.locator("#blocksTable tbody tr", { hasText: "Meridian v1" }).click();
+    await expect(page.locator("#blockDialog input[name='name']")).toHaveValue("Meridian v1");
+    await page.keyboard.press("Escape");
+    await page.fill("#blockFilter", "nothing matches this");
+    await expect(page.locator("#blocksHost")).toContainText("No block or engine matches");
+    await page.fill("#blockFilter", "");
+    await expect(page.locator("#blocksTable tbody tr")).toHaveCount(22);
+    await page.locator("button[aria-label='Schedule Site Survey POC']").click();
+    await expect(page.locator("#blockDialogTitle")).toHaveText("Schedule block");
+    await expect(page.locator("#blockDialog input[name='scheduled']")).toBeChecked();
+    await expect(page.locator("#dateSummary")).toContainText("30 days");
+    await page.locator("#blockDialog button[type='submit']").click();
+    await expect(page.locator(".block")).toHaveCount(16);
+    await expect(page.locator(".card")).toHaveCount(6);
+    await page.keyboard.press("?");
+    await expect(page.locator("#helpDialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#helpDialog")).toBeHidden();
+    await page.keyboard.press("b");
+    await expect(page.locator("#blockDialogTitle")).toHaveText("Add backlog item");
+    await page.keyboard.press("Escape");
+    await page.click("#helpBtn");
+    await expect(page.locator("#helpDialog")).toBeVisible();
+  });
+
   test("keeps the Astrion hard rules: no heading ends in a period and table text is 8 to 10 pt", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     const audit = await page.evaluate(() => {

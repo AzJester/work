@@ -49,6 +49,16 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**End-user interaction pass (follow-up).** Blocks move and resize by pointer drag (Pointer
+Events with capture, a 4 px dead zone so a click still opens the editor, day snapping from the
+lane's pixels-per-day, live date preview on the block, Escape cancels) and by keyboard (arrow
+keys move by a day, Shift by a week, `+` and `-` change the end). Each render now remembers the
+focused block and the board's horizontal scroll and restores both; the as-of marker is centered
+on first render and whenever the as-of date changes. A sticky section bar marks the section in
+view and shows the last save time. The Blocks list has a name or engine filter and clickable
+rows, backlog cards a Schedule button, the block dialog a live duration readout, and a Help
+dialog (Help button or `?`) lists every interaction; `N` and `B` open the add dialogs.
+
 **Rate and materials (follow-up).** The document carries `rate` (dollars per hour, default
 102.00, two decimals) and each block carries `materials` (whole dollars, default 0). The
 hours edition prices the plan in a Cost section: labor is hours at the rate (logged hours
