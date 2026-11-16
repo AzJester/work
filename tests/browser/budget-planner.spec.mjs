@@ -1,0 +1,138 @@
+import { test, expect } from "@playwright/test";
+
+function plannerUrl(baseURL) {
+  return new URL("../budget-planner.html", new URL(baseURL)).href;
+}
+
+async function openPlanner(page, baseURL, viewport) {
+  if (viewport) await page.setViewportSize(viewport);
+  await page.goto(plannerUrl(baseURL), { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".lane")).toHaveCount(6);
+}
+
+test.describe("Roadmap and Budget Planner", () => {
+  test("renders the seed plan with the reference totals", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await expect(page.locator(".block")).toHaveCount(15);
+    await expect(page.locator(".card")).toHaveCount(7);
+    await expect(page.locator("#backlogMeta")).toContainText("$201,000");
+    const committed = page.locator("#yearTable tbody tr", { hasText: "Committed" });
+    await expect(committed).toContainText("$1,582,846");
+    const remaining = page.locator("#yearTable tbody tr", { hasText: "Remaining" });
+    await expect(remaining).toContainText("-$239,230");
+    await expect(remaining).toContainText("Over");
+    await expect(page.locator("#engineTable tr[data-engine='horizon']")).toContainText("$160,270");
+    await expect(page.locator(".asof-pill")).toHaveText(/As of 2026-07-17/i);
+  });
+
+  test("adds a block through the dialog and persists it", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.click("#addBlockBtn");
+    const dialog = page.locator("#blockDialog");
+    await expect(dialog).toBeVisible();
+    await dialog.locator("input[name='name']").fill("Playwright block");
+    await dialog.locator("select[name='engineId']").selectOption("colossus");
+    await dialog.locator("input[name='cost']").fill("36,500");
+    await dialog.locator("input[name='start']").fill("2026-01-01");
+    await dialog.locator("input[name='end']").fill("2026-12-31");
+    await dialog.locator("button[type='submit']").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(".block")).toHaveCount(16);
+    await expect(page.locator("#engineTable tr[data-engine='colossus']")).toContainText("$36,500");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator(".block", { hasText: "Playwright block" })).toHaveCount(1);
+  });
+
+  test("rejects an end date before the start date", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.click("#addBlockBtn");
+    const dialog = page.locator("#blockDialog");
+    await dialog.locator("input[name='name']").fill("Backwards");
+    await dialog.locator("input[name='start']").fill("2026-05-10");
+    await dialog.locator("input[name='end']").fill("2026-05-01");
+    await dialog.locator("button[type='submit']").click();
+    await expect(page.locator("#blockError")).toContainText("before the start date");
+    await expect(dialog).toBeVisible();
+  });
+
+  test("moving the as-of date changes the spent and planned split but not committed", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const spent = page.locator("#yearTable tbody tr", { hasText: "Spent" });
+    await expect(spent).toContainText("$1,044,695");
+    await page.fill("#asOfInput", "2027-01-01");
+    await page.locator("#asOfInput").dispatchEvent("change");
+    await expect(spent).toContainText("$1,582,846");
+    await expect(page.locator("#yearTable tbody tr", { hasText: "Planned" })).toContainText("$0");
+    await expect(page.locator("#yearTable tbody tr", { hasText: "Committed" })).toContainText("$1,582,846");
+  });
+
+  test("editing the annual budget updates remaining", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const input = page.locator("input[data-year='2026']");
+    await input.fill("2,000,000");
+    await input.press("Enter");
+    await expect(page.locator("#yearTable tbody tr", { hasText: "Remaining" })).toContainText("$417,154");
+  });
+
+  test("clear all can be undone", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await page.click("#clearBtn");
+    await page.locator("#confirmDialog #confirmOk").click();
+    await expect(page.locator(".block")).toHaveCount(0);
+    await expect(page.locator("#loadSampleBtn")).toBeVisible();
+    await expect(page.locator("#toast")).toBeVisible();
+    await page.click("#toastUndo");
+    await expect(page.locator(".block")).toHaveCount(15);
+  });
+
+  test("export downloads a document that validates and matches the page", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const [download] = await Promise.all([page.waitForEvent("download"), page.click("#exportBtn")]);
+    expect(download.suggestedFilename()).toMatch(/^budget-planner-\d{4}-\d{2}-\d{2}\.json$/);
+    const path = await download.path();
+    const { readFileSync } = await import("node:fs");
+    const exported = JSON.parse(readFileSync(path, "utf8"));
+    const result = await page.evaluate((json) => window.BudgetEngine.validateDoc(json), exported);
+    expect(result.ok).toBe(true);
+    expect(exported.blocks).toHaveLength(22);
+  });
+
+  test("theme toggle flips the document theme and remembers it", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.click("#themeBtn");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  });
+
+  test("a phone-width viewport scrolls the board, not the page", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL, { width: 390, height: 844 });
+    const overflow = await page.evaluate(() => document.scrollingElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    const board = await page.evaluate(() => { const b = document.querySelector(".board-scroll"); return b.scrollWidth > b.clientWidth; });
+    expect(board).toBe(true);
+  });
+
+  test("keeps the Astrion hard rules: no heading ends in a period and table text is 8 to 10 pt", async ({ page, baseURL }) => {
+    await openPlanner(page, baseURL);
+    const audit = await page.evaluate(() => {
+      const heads = [];
+      document.querySelectorAll("h1,h2,h3,h4,h5,h6,th,caption,[role=heading],title").forEach((e) => heads.push((e.innerText || e.textContent || "").trim()));
+      const cells = [];
+      document.querySelectorAll("table *").forEach((e) => {
+        const own = [...e.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).map((n) => n.textContent.trim()).join(" ");
+        if (own) cells.push([parseFloat(getComputedStyle(e).fontSize) * 0.75, own]);
+      });
+      document.querySelectorAll("table input").forEach((i) => cells.push([parseFloat(getComputedStyle(i).fontSize) * 0.75, i.value]));
+      return { heads, cells };
+    });
+    expect(audit.heads.length).toBeGreaterThan(5);
+    for (const text of audit.heads) expect(text, `heading "${text}"`).not.toMatch(/[^.]\.$/);
+    expect(audit.cells.length).toBeGreaterThan(20);
+    for (const [pt, text] of audit.cells) {
+      expect(pt, `table text "${text}" is ${pt} pt`).toBeGreaterThanOrEqual(8);
+      expect(pt, `table text "${text}" is ${pt} pt`).toBeLessThanOrEqual(10);
+    }
+  });
+});

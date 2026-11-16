@@ -11,6 +11,29 @@ build it in this repository, following the house style already proven by `status
 external dependencies, `localStorage` persistence, Node unit tests plus Playwright
 browser tests, deployed by the existing GitHub Pages workflow.
 
+## Status
+
+`budget-planner.html` is built. Milestones M0 through M4 are delivered in this branch; M5
+completes when the branch merges and Pages publishes. Four decisions changed from the plan
+below during the build:
+
+- **Astrion 2026 brand replaces the reference's six lane colors.** The brand has no status
+  or category palette, so lanes are told apart by their labeled rail and hairlines, blocks
+  are Gunmetal panels (Bone on the light theme), and the as-of marker is the timeline's one
+  Ion signal. The `engines[].color` field was dropped from the data model.
+- **Committed by year is exact.** Each block's whole-dollar cost is allocated across years by
+  largest remainder, so the committed column always equals the sum of scheduled costs; only
+  the spent/planned split rounds (once per cell, with planned derived as committed minus spent).
+- **Fonts are self-hosted, not system.** Archivo and JetBrains Mono ship in
+  `assets/fonts/astrion/` under the SIL OFL, loaded by same-origin `@font-face` rules. The
+  wordmark is the supplied outlined SVG, so Space Grotesk is not needed.
+- **Seed dates were fitted to the reference totals.** Core, Horizon and Meridian reproduce
+  the screenshot's spent and planned figures to the dollar; AI Initiative and Operations
+  land within $40 because an exact match would need blocks that run into 2027, which the
+  reference's empty 2027 column rules out.
+
+Icons come from the provisional Astrion icon set and the page says so in its footer.
+
 ---
 
 ## 1. What the reference shows (feature spec)
