@@ -603,11 +603,22 @@ against a movable as-of date. Built to the Astrion 2026 brand standard.
 - **Committed by engine** · the same split per engine across all years, plus each engine's backlog.
 - **Editing** · **+ Add block**, **+ Backlog item**, click any block or card to edit, delete or
   move it between the timeline and the backlog, or press **Delete** while a block has focus. The
-  **Blocks** list under the backlog shows every block with its dates and figures and an edit and
-  a delete button per row. **+ Year** extends the plan by one year per click (up to ten years);
-  **Settings** renames, reorders, adds and removes engines and sets the year range directly;
-  **Clear all** empties the plan with a one-click **Undo** (Ctrl/Cmd+Z also undoes the last
-  change).
+  **Blocks** list under the backlog shows every block with its dates and figures, a filter box
+  (name or engine), and an edit and a delete button per row; clicking a row opens the editor.
+  Backlog cards carry a **Schedule** button that opens the editor with dates already filled in.
+  **+ Year** extends the plan by one year per click (up to ten years); **Settings** renames,
+  reorders, adds and removes engines and sets the year range directly; **Clear all** empties the
+  plan with a one-click **Undo** (Ctrl/Cmd+Z also undoes the last change).
+- **Moving blocks** · drag a block along the timeline to move it, or drag either edge to change
+  its start or end date; the dates preview on the block while you drag and the change lands as
+  one undoable step. With a block focused, the arrow keys move it by a day (Shift for a week)
+  and **+** / **-** lengthen or shorten its end. The board keeps its horizontal scroll position
+  through every edit, centers the as-of marker when the as-of date changes, and returns keyboard
+  focus to the block you were working on. Blocks with a logged figure show a thin progress bar.
+- **Finding your way** · a sticky section bar under the header jumps to Timeline, Backlog,
+  Blocks, By year, By engine (and Cost in the hours edition) and marks the section in view; it
+  also shows the time of the last save. **Help** (or **?**) lists every mouse and keyboard
+  interaction; **N** adds a block and **B** a backlog item from anywhere on the page.
 - **Export / Import** · JSON (`budget-planner-YYYY-MM-DD.json`). Imports are fully validated
   before anything changes, and Undo restores the previous plan.
 - **Saved in this browser** · `localStorage` key `budget_planner_v1`. The first open loads a sample
