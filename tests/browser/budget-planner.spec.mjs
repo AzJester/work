@@ -11,34 +11,51 @@ async function openPlanner(page, baseURL, viewport) {
 }
 
 test.describe("Roadmap and Budget Planner", () => {
-  test("renders the seed plan with the reference totals", async ({ page, baseURL }) => {
+  test("renders the seed plan with the reference hours, materials and cost totals", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     await expect(page.locator(".block")).toHaveCount(15);
     await expect(page.locator(".card")).toHaveCount(7);
-    await expect(page.locator("#backlogMeta")).toContainText("$201,000");
-    const committed = page.locator("#yearTable tbody tr", { hasText: "Committed" });
-    await expect(committed).toContainText("$1,582,846");
-    const remaining = page.locator("#yearTable tbody tr", { hasText: "Remaining" });
-    await expect(remaining).toContainText("-$239,230");
-    await expect(remaining).toContainText("Over");
-    await expect(page.locator("#engineTable tr[data-engine='horizon']")).toContainText("$160,270");
+    await expect(page.locator("#backlogMeta")).toContainText("2,010 h");
+    await expect(page.locator("#backlogMeta")).toContainText("$4,000 materials");
+    await expect(page.locator("#hoursYearTable tr[data-row='committed']")).toContainText("15,829 h");
+    const hoursRemaining = page.locator("#hoursYearTable tr[data-row='remaining']");
+    await expect(hoursRemaining).toContainText("-2,393 h");
+    await expect(hoursRemaining).toContainText("Over");
+    await expect(page.locator("#hoursEngineTable tr[data-engine='horizon']")).toContainText("2,270 h");
+    await expect(page.locator("#materialsYearTable tr[data-row='spent']")).toContainText("$12,370");
+    await expect(page.locator("#materialsYearTable tr[data-row='committed']")).toContainText("$21,000");
+    await expect(page.locator("#costYearTable tr[data-row='committed']")).toContainText("$1,635,558");
+    const costRemaining = page.locator("#costYearTable tr[data-row='remaining']");
+    await expect(costRemaining).toContainText("$64,442");
+    await expect(costRemaining).toContainText("Not set");
+    const costCore = page.locator("#costEngineTable tr[data-engine='core']");
+    await expect(costCore).toContainText("$122,400");
+    await expect(costCore).toContainText("$18,500");
+    await expect(costCore).toContainText("$140,900");
+    await expect(page.locator(".lane-label").first()).toContainText("$140,900");
+    await expect(page.locator(".block[data-block='b02']")).toContainText("$12,000 / $18,500");
     await expect(page.locator(".asof-pill")).toHaveText(/As of 2026-07-17/i);
   });
 
-  test("adds a block through the dialog and persists it", async ({ page, baseURL }) => {
+  test("adds a block with hours and materials through the dialog and persists it", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     await page.click("#addBlockBtn");
     const dialog = page.locator("#blockDialog");
     await expect(dialog).toBeVisible();
     await dialog.locator("input[name='name']").fill("Playwright block");
     await dialog.locator("select[name='engineId']").selectOption("colossus");
-    await dialog.locator("input[name='cost']").fill("36,500");
+    await dialog.locator("input[name='hours']").fill("365");
+    await dialog.locator("input[name='materials']").fill("1,000");
     await dialog.locator("input[name='start']").fill("2026-01-01");
     await dialog.locator("input[name='end']").fill("2026-12-31");
     await dialog.locator("button[type='submit']").click();
     await expect(dialog).toBeHidden();
     await expect(page.locator(".block")).toHaveCount(16);
-    await expect(page.locator("#engineTable tr[data-engine='colossus']")).toContainText("$36,500");
+    await expect(page.locator("#hoursEngineTable tr[data-engine='colossus']")).toContainText("365 h");
+    await expect(page.locator("#materialsEngineTable tr[data-engine='colossus']")).toContainText("$1,000");
+    const costRow = page.locator("#costEngineTable tr[data-engine='colossus']");
+    await expect(costRow).toContainText("$37,230");
+    await expect(costRow).toContainText("$38,230");
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator(".block", { hasText: "Playwright block" })).toHaveCount(1);
   });
@@ -50,28 +67,38 @@ test.describe("Roadmap and Budget Planner", () => {
     await dialog.locator("input[name='name']").fill("Backwards");
     await dialog.locator("input[name='start']").fill("2026-05-10");
     await dialog.locator("input[name='end']").fill("2026-05-01");
+    await expect(page.locator("#dateSummary")).toHaveText("End before start");
     await dialog.locator("button[type='submit']").click();
     await expect(page.locator("#blockError")).toContainText("before the start date");
     await expect(dialog).toBeVisible();
   });
 
-  test("moving the as-of date changes the spent and planned split but not committed", async ({ page, baseURL }) => {
+  test("moving the as-of date changes worked and forecast but not the total", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
-    const spent = page.locator("#yearTable tbody tr", { hasText: "Spent" });
-    await expect(spent).toContainText("$1,044,695");
+    const worked = page.locator("#hoursYearTable tr[data-row='spent']");
+    await expect(worked).toContainText("10,535 h");
     await page.fill("#asOfInput", "2027-01-01");
     await page.locator("#asOfInput").dispatchEvent("change");
-    await expect(spent).toContainText("$1,582,846");
-    await expect(page.locator("#yearTable tbody tr", { hasText: "Planned" })).toContainText("$0");
-    await expect(page.locator("#yearTable tbody tr", { hasText: "Committed" })).toContainText("$1,582,846");
+    await expect(worked).toContainText("15,069 h");
+    await expect(page.locator("#hoursYearTable tr[data-row='planned']")).toContainText("760 h");
+    await expect(page.locator("#hoursYearTable tr[data-row='committed']")).toContainText("15,829 h");
+    await expect(page.locator("#costYearTable tr[data-row='committed']")).toContainText("$1,635,558");
   });
 
-  test("editing the annual budget updates remaining", async ({ page, baseURL }) => {
+  test("editing annual hours and the annual budget updates remaining, and a blank budget reads Not set", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
-    const input = page.locator("input[data-year='2026']");
-    await input.fill("2,000,000");
-    await input.press("Enter");
-    await expect(page.locator("#yearTable tbody tr", { hasText: "Remaining" })).toContainText("$417,154");
+    const hoursInput = page.locator("input[data-hours-year='2026']");
+    await hoursInput.fill("20,000");
+    await hoursInput.press("Enter");
+    await expect(page.locator("#hoursYearTable tr[data-row='remaining']")).toContainText("4,171 h");
+    const budgetInput = page.locator("input[data-budget-year='2026']");
+    await budgetInput.fill("");
+    await budgetInput.press("Enter");
+    const remaining = page.locator("#costYearTable tr[data-row='remaining'] td").first();
+    await expect(remaining).toContainText("Not set");
+    await page.locator("input[data-budget-year='2026']").fill("2,000,000");
+    await page.locator("input[data-budget-year='2026']").press("Enter");
+    await expect(page.locator("#costYearTable tr[data-row='remaining']")).toContainText("$364,442");
   });
 
   test("clear all can be undone", async ({ page, baseURL }) => {
@@ -85,13 +112,15 @@ test.describe("Roadmap and Budget Planner", () => {
     await expect(page.locator(".block")).toHaveCount(15);
   });
 
-  test("export downloads a document that validates and matches the page", async ({ page, baseURL }) => {
+  test("export downloads a version 2 document that validates and matches the page", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     const [download] = await Promise.all([page.waitForEvent("download"), page.click("#exportBtn")]);
     expect(download.suggestedFilename()).toMatch(/^budget-planner-\d{4}-\d{2}-\d{2}\.json$/);
     const path = await download.path();
     const { readFileSync } = await import("node:fs");
     const exported = JSON.parse(readFileSync(path, "utf8"));
+    expect(exported.version).toBe(2);
+    expect(exported.rate).toBe(102);
     const result = await page.evaluate((json) => window.BudgetEngine.validateDoc(json), exported);
     expect(result.ok).toBe(true);
     expect(exported.blocks).toHaveLength(22);
@@ -114,50 +143,80 @@ test.describe("Roadmap and Budget Planner", () => {
     expect(board).toBe(true);
   });
 
-  test("the hours edition shows hours only, keeps its own plan, and logs worked hours", async ({ page, baseURL }) => {
+  test("the old hours planner address opens the merged app, and logging hours and materials drives every table", async ({ page, baseURL }) => {
     await page.goto(new URL("../hours-planner.html", new URL(baseURL)).href, { waitUntil: "domcontentloaded" });
-    await page.waitForURL(/budget-planner\.html\?unit=hours$/);
+    await page.waitForURL(/budget-planner\.html$/);
     await expect(page.locator(".lane")).toHaveCount(6);
-    await expect(page).toHaveTitle("Roadmap and Hours Planner");
-    await expect(page.locator("#pageTitle")).toHaveText("Roadmap & Hours Planner");
-    await expect(page.locator("#subtitle")).toContainText("Hours");
-    await expect(page.locator("#yearTable thead")).toContainText("Hours by year");
-    await expect(page.locator("#engineTable thead")).toContainText("Worked");
-    await expect(page.locator("#engineTable thead")).toContainText("Forecast");
-    await expect(page.locator("#yearTable")).not.toContainText("$");
-    await expect(page.locator("#engineTable")).not.toContainText("$");
-    const core = page.locator("#engineTable tr[data-engine='core']");
+    await expect(page).toHaveTitle("Roadmap and Budget Planner");
+    await expect(page.locator("#subtitle")).toContainText("Hours and materials");
+    await expect(page.locator("#subtitle")).toContainText("$102.00/h");
+    const core = page.locator("#hoursEngineTable tr[data-engine='core']");
     await expect(core).toContainText("640 h");
     await expect(core).toContainText("560 h");
     await expect(page.locator(".block[data-block='b01']")).toContainText("640 h / 1,200 h");
-    // Cost: labor at the hourly rate plus materials, with the rate editable in place.
-    await expect(page.locator("#costSection")).toBeVisible();
-    await expect(page.locator("#rateInput")).toHaveValue("102.00");
     const costCore = page.locator("#costEngineTable tr[data-engine='core']");
     await expect(costCore).toContainText("$122,400");
-    await expect(costCore).toContainText("$18,500");
-    await expect(page.locator("#costYearTable tr[data-row='committed']")).toContainText("$1,635,558");
-    await expect(page.locator("#blocksTable thead")).toContainText("Materials");
+    await expect(page.locator("#rateInput")).toHaveValue("102.00");
     await page.fill("#rateInput", "100");
     await page.press("#rateInput", "Enter");
     await expect(costCore).toContainText("$120,000");
     await expect(page.locator("#costMeta")).toContainText("$100.00");
+    await expect(page.locator("#subtitle")).toContainText("$100.00/h");
     await page.click(".block[data-block='b01']");
     const dialog = page.locator("#blockDialog");
-    await expect(dialog.locator("#materialsField")).toBeVisible();
-    await expect(dialog.locator("#actualLabel")).toHaveText("Hours logged to date");
-    await expect(dialog.locator("input[name='actual']")).toHaveValue("640");
-    await dialog.locator("input[name='actual']").fill("1,300");
+    await expect(dialog.locator("input[name='hoursActual']")).toHaveValue("640");
+    await expect(dialog.locator("#materialsActualField")).toBeVisible();
+    await dialog.locator("input[name='hoursActual']").fill("1,300");
+    await dialog.locator("input[name='materials']").fill("500");
+    await dialog.locator("input[name='materialsActual']").fill("200");
     await dialog.locator("button[type='submit']").click();
     await expect(core).toContainText("1,300 h");
-    await expect(page.locator("#yearTable tr[data-row='remaining']")).toContainText("Over");
-    // The dollars edition is a separate saved plan.
+    await expect(page.locator("#hoursYearTable tr[data-row='remaining']")).toContainText("Over");
+    const materialsCore = page.locator("#materialsEngineTable tr[data-engine='core']");
+    await expect(materialsCore).toContainText("$12,200");
+    await expect(materialsCore).toContainText("$6,800");
+    await expect(materialsCore).toContainText("$19,000");
+    const row = page.locator("tr[data-block-row='b01']");
+    await expect(row).toContainText("1,300 h");
+    await expect(row).toContainText("$500");
+    await expect(row).toContainText("$200");
+    await expect(page.locator(".block[data-block='b01']")).toContainText("1,300 h / 1,200 h · $200 / $500");
+  });
+
+  test("carries over plans saved by the earlier hours and dollar editions", async ({ page, baseURL }) => {
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem("seeded")) return;
+      sessionStorage.setItem("seeded", "1");
+      localStorage.setItem("hours_planner_v1", JSON.stringify({
+        version: 1, unit: "hours", rate: 90, startYear: 2026, endYear: 2026, asOf: "2026-03-01", budgets: { "2026": 500 },
+        engines: [{ id: "a", name: "Alpha" }],
+        blocks: [{ id: "x", name: "Legacy hours block", engineId: "a", cost: 100, actual: 20, materials: 50, start: "2026-02-01", end: "2026-03-31" }],
+      }));
+    });
     await page.goto(plannerUrl(baseURL), { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#pageTitle")).toHaveText("Roadmap & Budget Planner");
-    await expect(page.locator("#engineTable tr[data-engine='core']")).toContainText("$59,341");
-    await expect(page.locator("#costSection")).toBeHidden();
-    await page.click("#addBlockBtn");
-    await expect(page.locator("#blockDialog #materialsField")).toBeHidden();
+    await expect(page.locator(".lane")).toHaveCount(1);
+    await expect(page.locator("#toastText")).toContainText("Carried over your saved hours plan");
+    const hoursRow = page.locator("tr[data-block-row='x']");
+    await expect(hoursRow).toContainText("100 h");
+    await expect(hoursRow).toContainText("20 h");
+    await expect(hoursRow).toContainText("$50");
+    await expect(page.locator("input[data-hours-year='2026']")).toHaveValue("500");
+    await expect(page.locator("#rateInput")).toHaveValue("90.00");
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("budget_planner_v1", JSON.stringify({
+        version: 1, unit: "USD", startYear: 2026, endYear: 2026, asOf: "2026-03-01", budgets: { "2026": 50000 },
+        engines: [{ id: "a", name: "Alpha" }],
+        blocks: [{ id: "y", name: "Legacy dollar block", engineId: "a", cost: 10200, actual: 5100, start: "2026-02-01", end: "2026-03-31" }],
+      }));
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#toastText")).toContainText("Carried over your saved budget plan");
+    const dollarRow = page.locator("tr[data-block-row='y']");
+    await expect(dollarRow).toContainText("100 h");
+    await expect(dollarRow).toContainText("50 h");
+    await expect(page.locator("input[data-budget-year='2026']")).toHaveValue("50,000");
+    await expect(page.locator("input[data-hours-year='2026']")).toHaveValue("");
   });
 
   test("adds a year with one click, and edits or deletes blocks from the list and the keyboard", async ({ page, baseURL }) => {
@@ -166,7 +225,8 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.click("#addYearBtn");
     await expect(page.locator(".axis .years > div")).toHaveCount(3);
     await expect(page.locator(".axis .years > div").nth(2)).toHaveText("2028");
-    await expect(page.locator("#yearTable thead")).toContainText("2028");
+    await expect(page.locator("#hoursYearTable thead")).toContainText("2028");
+    await expect(page.locator("#costYearTable thead")).toContainText("2028");
     await expect(page.locator("#subtitle")).toContainText("2026 – 2028");
     const rows = page.locator("#blocksTable tbody tr");
     await expect(rows).toHaveCount(22);
@@ -175,6 +235,7 @@ test.describe("Roadmap and Budget Planner", () => {
     const dialog = page.locator("#blockDialog");
     await expect(dialog).toBeVisible();
     await expect(dialog.locator("input[name='name']")).toHaveValue("Aurora ML POC");
+    await expect(dialog.locator("input[name='materials']")).toHaveValue("2,500");
     await dialog.locator("input[name='name']").fill("Aurora ML pilot");
     await dialog.locator("button[type='submit']").click();
     await expect(page.locator(".block", { hasText: "Aurora ML pilot" })).toHaveCount(1);
@@ -250,7 +311,7 @@ test.describe("Roadmap and Budget Planner", () => {
   test("section nav, Blocks filter, row click, one-click scheduling and the help shortcuts", async ({ page, baseURL }) => {
     await openPlanner(page, baseURL);
     await expect(page.locator(".subnav a.active")).toHaveText("Timeline");
-    await expect(page.locator("#navCost")).toBeHidden();
+    await expect(page.locator(".subnav a[href='#materialsSection']")).toBeVisible();
     await page.click(".subnav a[href='#blocksSection']");
     await expect(page.locator(".subnav a.active")).toHaveText("Blocks");
     await page.fill("#blockFilter", "meridian");
@@ -266,6 +327,7 @@ test.describe("Roadmap and Budget Planner", () => {
     await page.locator("button[aria-label='Schedule Site Survey POC']").click();
     await expect(page.locator("#blockDialogTitle")).toHaveText("Schedule block");
     await expect(page.locator("#blockDialog input[name='scheduled']")).toBeChecked();
+    await expect(page.locator("#blockDialog input[name='materials']")).toHaveValue("4,000");
     await expect(page.locator("#dateSummary")).toContainText("30 days");
     await page.locator("#blockDialog button[type='submit']").click();
     await expect(page.locator(".block")).toHaveCount(16);

@@ -49,6 +49,20 @@ number of months so month labels stay legible. A **Blocks** list under the backl
 block with edit and delete buttons, the Delete key removes a focused block on the board or in
 the backlog, and a caption under the timeline says so.
 
+**One application, hours and materials (v2).** The dollar and hours editions are merged. Every
+block carries `hours`, `hoursActual`, `materials` and `materialsActual`; the document carries
+`rate`, `hoursBudgets` (annual hours) and `budgets` (annual dollars), version 2. The engine
+splits hours and materials separately at the as-of day (logged figures replace the elapsed
+share, as before) and derives cost from the whole-number results: labor is hours at the rate,
+materials are dollars as entered, so the Cost tables can be checked against the Hours and
+Materials tables by hand. Three sections replace the old pair: Labor hours (by year with
+editable annual hours, by engine), Materials (by year, by engine) and Cost (by year with the
+editable annual budget, by engine, rate in the header). A budget that is not set shows
+"Not set" rather than Over. `validateDoc` migrates version 1 documents (an hours plan carries
+across; a dollar plan's labor cost becomes hours at the rate) and the app carries over
+`hours_planner_v1` or `budget_planner_v1` from localStorage on first open; `hours-planner.html`
+now redirects to the merged app.
+
 **End-user interaction pass (follow-up).** Blocks move and resize by pointer drag (Pointer
 Events with capture, a 4 px dead zone so a click still opens the editor, day snapping from the
 lane's pixels-per-day, live date preview on the block, Escape cancels) and by keyboard (arrow
