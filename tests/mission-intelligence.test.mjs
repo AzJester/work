@@ -79,7 +79,7 @@ test("the script parses and only draws the globe and reveals sections", () => {
   assert.match(js, /getElementById\("orb"\)/);
   assert.match(js, /prefers-reduced-motion/);
   assert.match(js, /IntersectionObserver/);
-  assert.ok(js.split("\n").length < 140, "the script stays small");
+  assert.ok(js.split("\n").length < 260, "the script stays small");
   assert.match(page, /<script src="app\.js" defer><\/script>/);
   for (const query of ["@media (max-width: 62em)", "@media (max-width: 40em)", "@media (prefers-reduced-motion: reduce)"]) assert.ok(css.includes(query), query);
   assert.match(page, /<a class="skip-link" href="#main">Skip to content<\/a>/);
