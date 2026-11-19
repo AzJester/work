@@ -25,7 +25,7 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --grotesk: "Space Grotesk", Archivo, Arial, sans-serif;
   --edge: clamp(1.25rem, 5vw, 6rem);
-  --orb: min(82vw, 52rem);
+  --orb: min(88vw, 58rem);
   --header-h: 4.25rem;
 }
 
@@ -80,7 +80,7 @@ html.no-js .reveal, html.still .reveal { opacity: 1; transform: none; transition
 .hero .fine { margin: 1rem auto 0; max-width: 34rem; font-size: 1rem; color: #4b4e57; text-wrap: balance; }
 .hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .7rem; margin-top: 2rem; }
 .orb-wrap { position: relative; width: var(--orb); aspect-ratio: 1; margin: clamp(2.5rem, 5vw, 4rem) auto calc(var(--orb) * -0.5); z-index: 2; }
-.orb-wrap::before { content: ""; position: absolute; inset: -16%; border-radius: 50%; background: radial-gradient(circle, rgba(35,206,240,.22) 0%, rgba(35,206,240,.06) 44%, transparent 66%); z-index: -1; }
+.orb-wrap::before { content: ""; position: absolute; inset: -4%; border-radius: 50%; background: radial-gradient(circle, rgba(35,206,240,.14) 0%, rgba(35,206,240,.04) 42%, transparent 62%); z-index: -1; }
 .orb-wrap canvas { width: 100%; height: 100%; }
 .after-orb { padding-top: calc(var(--orb) * 0.5 + clamp(4rem, 8vw, 7rem)); }
 
@@ -145,7 +145,7 @@ html.no-js .reveal, html.still .reveal { opacity: 1; transform: none; transition
   .stat:nth-child(2n) { padding-left: clamp(1rem, 2vw, 1.8rem); }
 }
 @media (max-width: 40em) {
-  :root { --orb: 92vw; --header-h: 3.75rem; }
+  :root { --orb: 100vw; --header-h: 3.75rem; }
   .site-nav a:not(.button) { display: none; }
   .stats { grid-template-columns: 1fr; }
   .stat, .stat + .stat, .stat:nth-child(2n) { padding-left: 0; }
