@@ -86,6 +86,7 @@ const workApplications = [
   "Astrion · Mission Segments",
   "Astrion Agile Pricing Studio",
   "Astrion Division · LDAWIF",
+  "Astrion · Mission Intelligence",
   "Black Hat Agent",
   "DefenseIntel",
   "DoD RFP Compliance Workspace",
@@ -114,7 +115,7 @@ const workApplications = [
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 31 work applications", () => {
+test("curated catalog lists exactly the 32 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),

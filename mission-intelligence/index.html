@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Astrion Mission Intelligence · AI from intent to effect</title>
+<meta name="description" content="Astrion builds the reasoning layer for multi-vendor autonomous forces and the engineering evidence that proves it works: intent to tasking across domains, cited findings from approved records, and a human approving every consequential step.">
+<meta name="theme-color" content="#050607">
+<!-- Team review build: keep it out of search indexes until the content is cleared. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="canonical" href="https://azjester.github.io/work/mission-intelligence/">
+<link rel="preload" href="assets/fonts/archivo-web-03.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/media/hero-1280.webp" as="image" fetchpriority="high">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Astrion">
+<meta property="og:title" content="Astrion Mission Intelligence · AI from intent to effect">
+<meta property="og:description" content="Mission orchestration for multi-vendor autonomous forces, cited engineering findings and model assurance, with a human approving every consequential step.">
+<meta property="og:url" content="https://azjester.github.io/work/mission-intelligence/">
+<meta property="og:image" content="https://azjester.github.io/work/mission-intelligence/assets/media/hero-1280.webp">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="717">
+<meta name="twitter:card" content="summary_large_image">
+<script>(function(){var h=document.documentElement;h.classList.remove('no-js');h.classList.add('js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('still');}catch(e){}})();</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body id="top">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="site-header">
+  <div class="wrap site-bar">
+    <a class="brand" href="#top" aria-label="Astrion Mission Intelligence home">
+      <img src="assets/media/wordmark-light.svg" alt="Astrion" width="300" height="44"><span class="wordmark-text brand-sub" aria-hidden="true">Mission Intelligence</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#orchestration">Orchestration</a>
+      <a href="#fleet">Fleet demo</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#programs">Programs</a>
+      <a href="#pilot" class="nav-cta">Scope an AI pilot</a>
+    </nav>
+    <button class="menu-button" id="menu-button" type="button" aria-expanded="false" aria-controls="site-menu">Menu</button>
+  </div>
+</header>
+<div class="site-menu" id="site-menu" aria-hidden="true">
+    <nav aria-label="Mobile">
+      <a href="#orchestration">Orchestration</a>
+      <a href="#fleet">Fleet demo</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#programs">Programs</a>
+      <a href="#evaluation">Evaluation</a>
+      <a href="#pilot" class="nav-cta">Scope an AI pilot</a>
+    </nav>
+</div>
+
+<main id="main">
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-media" aria-hidden="true">
+      <picture>
+        <source media="(max-width: 37.5em) and (orientation: portrait)" srcset="assets/media/hero-mobile.webp" width="520" height="1040">
+        <img src="assets/media/hero-1280.webp" srcset="assets/media/hero-640.webp 640w, assets/media/hero-1280.webp 1280w, assets/media/hero.jpg 1920w" sizes="100vw" alt="" fetchpriority="high" width="1280" height="717">
+      </picture>
+      <video id="hero-film" class="hero-motion" muted loop playsinline preload="none" poster="assets/media/hero-1280.webp">
+        <source data-src="assets/media/hero-loop.webm" type="video/webm">
+        <source data-src="assets/media/hero-loop.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="hero-shade"></div>
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="kicker"><span class="signal" aria-hidden="true"></span>Mission intelligence<span class="kicker-ext"> <b>/</b> Orchestration to edge</span></p>
+        <h1 id="hero-title" class="display-xl">AI that carries <span>intent to effect</span></h1>
+        <p class="lead">Astrion builds the reasoning layer for multi-vendor autonomous forces and the engineering evidence that proves it works. Commander's intent becomes tasks every platform understands, re-planned as conditions change, with a human approving each consequential step.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#fleet">Run the fleet demo</a>
+          <a class="button button-secondary" href="#pilot">Scope an AI pilot</a>
+        </div>
+      </div>
+      <section class="trace" id="hero-trace" aria-labelledby="trace-title">
+        <header class="trace-header">
+          <div><span class="trace-meta">Illustrative run</span><h2 id="trace-title">Orchestration trace</h2></div>
+          <button class="trace-control" id="trace-control" type="button" aria-label="Pause workflow" hidden>
+            <span class="trace-control-icon" aria-hidden="true"></span><span class="trace-control-label">Pause</span>
+          </button>
+        </header>
+        <p class="trace-query">Hold the strait under surveillance for 72 hours.<small>Commander's intent, as typed</small></p>
+        <ol class="trace-steps">
+          <li><span class="trace-index" aria-hidden="true">01</span><div><strong>Decompose the intent</strong><small>Four tasks, success criteria and a 72-hour window</small></div></li>
+          <li><span class="trace-index" aria-hidden="true">02</span><div><strong>Task every platform</strong><small>Two USVs, one UAS, one UUV and a satellite pass, four vendors</small></div></li>
+          <li><span class="trace-index" aria-hidden="true">03</span><div><strong>Re-plan on change</strong><small>USV Bravo drops out; the UAS widens its orbit</small></div></li>
+        </ol>
+        <div class="trace-result"><span class="trace-meta">Human review</span><p>The watch officer approves the revised plan. The intent never changed.</p></div>
+      </section>
+    </div>
+    <div class="hero-foot">
+      <div class="wrap">
+        <nav class="hero-proof" aria-label="Program evidence">
+          <span>Program evidence</span>
+          <a href="#sea-hunter">Sea Hunter and Seahawk</a>
+          <a href="#pami-1">PAMI-1</a>
+          <a href="#evaluation">AI evaluation results</a>
+        </nav>
+        <button class="film-control" id="film-control" type="button" aria-controls="hero-film" hidden><span class="film-icon" aria-hidden="true"></span><span id="film-label">Play motion</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats" aria-label="Astrion at a glance">
+    <div class="wrap">
+      <div class="stats-grid">
+        <div class="stat reveal"><b data-count="42000" data-suffix="+">42,000+</b><span>nautical miles of uncrewed surface vessel operations supported</span></div>
+        <div class="stat reveal" data-delay="1"><b data-count="38000" data-suffix="+">38,000+</b><span>of those miles under autonomous control</span></div>
+        <div class="stat reveal" data-delay="2"><b>~150</b><span>programs across defense, space, intelligence, cyber and civil missions</span></div>
+        <div class="stat reveal"><b>36<small>+ NL</small></b><span>states plus the Netherlands</span></div>
+        <div class="stat reveal" data-delay="1"><b data-count="71" data-suffix="%">71%</b><span>cleared workforce, a quarter at Top Secret or higher</span></div>
+        <div class="stat reveal" data-delay="2"><b>CMMI-3</b><span>DEV appraisal, with AS9100 and ISO 9001 certification</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products -->
+  <section class="section" id="products" aria-labelledby="products-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">AI in Astrion products</p>
+      <div class="section-head">
+        <h2 id="products-title" class="display reveal">Four places AI already does the work</h2>
+        <p class="lead reveal" data-delay="1">Each one runs on records and interfaces a program already owns. None of them signs a decision. An operator or an engineer does.</p>
+      </div>
+      <div class="products">
+        <article class="product reveal">
+          <span class="num">01</span>
+          <span class="glyph" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="10" r="4"/><circle cx="10" cy="34" r="4"/><circle cx="38" cy="34" r="4"/><circle cx="24" cy="26" r="3"/><path d="M24 14v9M21.5 28 13 31M26.5 28 35 31"/></svg></span>
+          <h3>Mission orchestration</h3>
+          <p>Takes a structured task or a sentence of plain intent, composes it into plays each subsystem understands, and holds the intent while the plan changes. One operator, every platform, any vendor.</p>
+          <span class="where">Runs <b>above the autonomy stack</b></span>
+        </article>
+        <article class="product reveal" data-delay="1">
+          <span class="num">02</span>
+          <span class="glyph" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M12 6h17l9 9v27H12z"/><path d="M29 6v9h9"/><path d="M18 26h12M18 32h12M18 20h6"/></svg></span>
+          <h3>Evidence assistant</h3>
+          <p>Reads approved test, calibration and maintenance records, drafts a finding with citations and abstains when the evidence is missing. An engineer checks the sources and signs.</p>
+          <span class="where">Runs <b>on program records</b></span>
+        </article>
+        <article class="product reveal" data-delay="2">
+          <span class="num">03</span>
+          <span class="glyph" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="14" y="14" width="20" height="20" rx="2"/><rect x="20" y="20" width="8" height="8"/><path d="M19 6v8M24 6v8M29 6v8M19 34v8M24 34v8M29 34v8M6 19h8M6 24h8M6 29h8M34 19h8M34 24h8M34 29h8"/></svg></span>
+          <h3>Edge inference</h3>
+          <p>Small language and perception models on field laptops, vessels and payloads, chosen by measured response time, memory and accuracy under the program's connectivity limits.</p>
+          <span class="where">Runs <b>disconnected</b></span>
+        </article>
+        <article class="product reveal" data-delay="3">
+          <span class="num">04</span>
+          <span class="glyph" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M24 5 8 11v12c0 9 7 16 16 20 9-4 16-11 16-20V11z"/><path d="m16 24 6 6 11-12"/></svg></span>
+          <h3>Assurance harness</h3>
+          <p>Versioned question sets scored against each model release for citation accuracy, unsupported conclusions and the discipline to stop. Release evidence a program office can sign.</p>
+          <span class="where">Runs <b>before every fielding</b></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Intent to effect -->
+  <section class="section band-light" id="orchestration" aria-labelledby="orchestration-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Mission orchestration</p>
+      <div class="section-head">
+        <h2 id="orchestration-title" class="display reveal">Intent in. Effects out. Evidence throughout.</h2>
+        <p class="lead reveal" data-delay="1">Autonomy vendors build systems that execute a task. Integrators connect them. Astrion's orchestration layer sits above both. It understands the force's capabilities and the commander's end state, and turns one into the other without changes to the hardware or software already fielded.</p>
+      </div>
+      <div class="flow">
+        <div class="flow-step reveal">
+          <span class="n">01</span>
+          <h3>Intent<small>What the commander wants</small></h3>
+          <p>A structured task or a sentence of plain intent. The layer resolves it to an end state, constraints and success criteria the commander can read back and correct.</p>
+        </div>
+        <div class="flow-step reveal" data-delay="1">
+          <span class="n">02</span>
+          <h3>Plan<small>Who does what, when</small></h3>
+          <p>Capabilities, limits and positions across every platform are weighed against the end state. The result is a synchronized set of plays, each in the native language of the subsystem that runs it, presented for approval.</p>
+        </div>
+        <div class="flow-step reveal" data-delay="2">
+          <span class="n">03</span>
+          <h3>Effect<small>What happens in the field</small></h3>
+          <p>Platforms execute. The layer watches the picture, re-tasks when a system drops out and adapts when the intent itself changes. The synchronization matrix is built live rather than by hand.</p>
+        </div>
+        <div class="flow-step reveal" data-delay="3">
+          <span class="n">04</span>
+          <h3>Evidence<small>Why it can be trusted</small></h3>
+          <p>Every recommendation cites the readings and records behind it, and every reviewed case becomes a test for the next release. Proof, not promises.</p>
+        </div>
+      </div>
+
+      <div class="stack-layout">
+        <div class="stack-copy reveal">
+          <h3>Four functions above everything a force already has</h3>
+          <p>Platform makers build the autonomy. Astrion integrates it, tests it ashore and at sea, and runs the layer above it that turns a commander's intent into a coordinated effect across air, ground, surface, subsea and space.</p>
+          <p class="note">Human-in-the-loop by design. The layer recommends, sequences and re-plans. A person approves the plan, every revision and every release of effects.</p>
+          <p style="margin-top:1.2rem"><a class="text-link" href="#fleet">Watch the layer re-task a fleet</a></p>
+        </div>
+        <ol class="stack reveal" data-delay="1" aria-label="The orchestration stack">
+          <li class="divider"><b>The orchestration layer</b><em>Runs above the platforms. Astrion builds and operates it.</em></li>
+          <li class="above"><span class="idx">08</span><div><strong>Adaptive re-planning</strong><span>When the situation changes, the force is re-tasked toward the same end state. When the intent changes, the plan follows.</span></div></li>
+          <li class="above"><span class="idx">07</span><div><strong>Synchronized effects</strong><span>Sensing, electronic warfare, fires cueing and logistics timed as one formation toward one objective, without sequential operator handoffs.</span></div></li>
+          <li class="above"><span class="idx">06</span><div><strong>One cross-domain picture</strong><span>Air, ground, surface, subsea and space under one command system, built from what is already in the field.</span></div></li>
+          <li class="above"><span class="idx">05</span><div><strong>Vendor-neutral command</strong><span>A canonical interface layer over government standards and vendor SDKs, so one operator commands every platform from one place, in plain language.</span></div></li>
+          <li class="divider"><b>What the platforms bring</b><em>Executes the task. Astrion integrates, tests and sustains it.</em></li>
+          <li class="below"><span class="idx">04</span><div><strong>Teaming</strong></div></li>
+          <li class="below"><span class="idx">03</span><div><strong>Mission autonomy</strong></div></li>
+          <li class="below"><span class="idx">02</span><div><strong>Adaptive navigation</strong></div></li>
+          <li class="below"><span class="idx">01</span><div><strong>Waypoint navigation</strong></div></li>
+        </ol>
+      </div>
+
+      <!-- Interface list is illustrative of an integrator's scope; confirm the published set with engineering before external use. -->
+      <div class="integrations reveal">
+        <div>
+          <h3>Integration without modification</h3>
+          <p>No change is asked of the platform. The orchestration layer speaks the government standards and vendor interfaces a force already carries.</p>
+        </div>
+        <div class="chips" aria-label="Interfaces and standards">
+          <span class="chip gov">STANAG 4586</span><span class="chip gov">Link 16</span><span class="chip gov">Cursor on Target</span><span class="chip gov">TAK</span><span class="chip gov">UCI</span><span class="chip gov">SOSA</span><span class="chip gov">MOSA</span><span class="chip">MAVLink</span><span class="chip">JAUS</span><span class="chip">ROS 2</span><span class="chip">DDS</span><span class="chip">Vendor SDKs</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fleet orchestration demo -->
+  <section class="section" id="fleet" aria-labelledby="fleet-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Interactive</p>
+      <div class="section-head">
+        <h2 id="fleet-title" class="display reveal">Watch one intent task a mixed fleet</h2>
+        <p class="lead reveal" data-delay="1">Choose an intent, approve the plan, then knock a platform out and watch the layer re-task the force toward the same end state. Platforms, vendors and timings are illustrative.</p>
+      </div>
+      <div class="pill-group reveal" role="group" aria-label="Choose an intent" id="fleet-intents">
+        <button type="button" class="pill" data-mission="strait" aria-pressed="true">Maritime chokepoint</button>
+        <button type="button" class="pill" data-mission="route" aria-pressed="false">Route clearance</button>
+        <button type="button" class="pill" data-mission="comms" aria-pressed="false">Degraded communications</button>
+      </div>
+      <div class="ops reveal" id="ops" style="margin-top:1.2rem">
+        <aside class="ops-side">
+          <div class="ops-command">
+          <div class="ops-intent">
+            <span class="label">Commander's intent</span>
+            <p id="ops-intent-text"></p>
+            <div class="effect"><b>Desired effect</b><span id="ops-effect-text"></span></div>
+          </div>
+          <div class="ops-status" id="ops-status" data-state="idle" role="status"><i aria-hidden="true"></i><span id="ops-status-text">Composing plan</span></div>
+          <div class="ops-controls">
+            <button type="button" class="button button-primary" id="ops-approve" disabled>Approve plan</button>
+            <button type="button" class="button button-secondary" id="ops-disrupt" disabled>Inject disruption</button>
+            <button type="button" class="button button-secondary wide" id="ops-reset">Reset run</button>
+          </div>
+          </div>
+          <div class="ops-logwrap">
+            <span class="label">Run log</span>
+            <div class="ops-log" id="ops-log" aria-live="polite" aria-atomic="false"></div>
+          </div>
+        </aside>
+        <div class="ops-board">
+          <div class="ops-axis" aria-hidden="true"><span></span><div class="ticks" id="ops-ticks"></div></div>
+          <div class="ops-rows" id="ops-rows"></div>
+          <div class="ops-legend" aria-label="Legend">
+            <span><i class="planned"></i>Planned</span><span><i class="active"></i>Executing</span><span><i class="lost"></i>Lost</span><span><i class="replan"></i>Re-tasked</span><span><i class="done"></i>Effect delivered</span>
+          </div>
+        </div>
+      </div>
+      <div class="ops-foot reveal">
+        <p>Every plan and revision in this run waited for an approval click. That gate is a design rule, not a demo convenience.</p>
+        <a class="text-link" href="#pilot" data-scenario="orchestration">Scope an orchestration pilot</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agentic architecture -->
+  <section class="section carbon" id="architecture" aria-labelledby="architecture-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Agentic AI architecture</p>
+      <div class="section-head">
+        <h2 id="architecture-title" class="display reveal">Inside the AI workflow</h2>
+        <p class="lead reveal" data-delay="1">Follow a sensor record through a retrieval agent, a language model and a verification agent to the engineer who decides what to approve.</p>
+      </div>
+      <mission-architecture>
+        <div class="ma-board reveal">
+          <div class="ma-board-head">
+            <div><span class="ma-meta">Illustrative workflow</span><h3 data-ma-title>Vessel equipment health</h3></div>
+            <div class="pill-group" role="group" aria-label="Choose an illustrative workflow">
+              <button type="button" class="pill" data-ma-scenario="maritime" aria-pressed="true">Maritime</button><button type="button" class="pill" data-ma-scenario="flight" aria-pressed="false">Flight test</button><button type="button" class="pill" data-ma-scenario="space" aria-pressed="false">Space</button>
+            </div>
+          </div>
+          <div class="ma-circuit">
+            <div class="ma-ground"><span>Approved references</span></div>
+            <div class="ma-stages" role="group" aria-label="Inspect a workflow stage">
+              <button type="button" class="ma-stage" data-ma-stage="0" aria-pressed="false" aria-controls="ma-detail"><span class="ma-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 12h3l2-6 3 12 3-9 2 3h7"/></svg></span><span class="ma-stage-name">Sensor inputs</span><span class="ma-stage-role">Read-only telemetry</span></button>
+              <button type="button" class="ma-stage" data-ma-stage="1" aria-pressed="false" aria-controls="ma-detail"><span class="ma-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 6 6"/></svg></span><span class="ma-stage-name">Evidence agent</span><span class="ma-stage-role">Validate and retrieve</span></button>
+              <button type="button" class="ma-stage" data-ma-stage="2" aria-pressed="true" aria-controls="ma-detail"><span class="ma-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><span class="ma-stage-name">Grounded LLM</span><span class="ma-stage-role">Draft with citations</span></button>
+              <button type="button" class="ma-stage" data-ma-stage="3" aria-pressed="false" aria-controls="ma-detail"><span class="ma-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.5 7.5 8 9 4.5-1.5 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 5-5"/></svg></span><span class="ma-stage-name">Verification agent</span><span class="ma-stage-role">Check the draft</span></button>
+              <button type="button" class="ma-stage" data-ma-stage="4" aria-pressed="false" aria-controls="ma-detail"><span class="ma-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></span><span class="ma-stage-name">Human approval</span><span class="ma-stage-role">Authorize the record</span></button>
+            </div>
+            <div class="ma-feedback"><span>Reviewed cases feed the next evaluation</span></div>
+          </div>
+          <div class="ma-detail" id="ma-detail" aria-live="polite" aria-atomic="true">
+            <div class="ma-detail-main"><span class="ma-meta" data-ma-stage-label>Grounded LLM</span><h4 data-ma-detail-title>Explain a change in vibration</h4><p data-ma-description>The language model uses the evidence packet to draft a maintenance note. It links a vibration change to the reading and guide passage, and flags that a missing temperature sample limits the explanation.</p></div>
+            <dl class="ma-handoffs"><div><dt>Input</dt><dd data-ma-input>Checked readings and retrieved passages</dd></div><div><dt>Output</dt><dd data-ma-output>Cited draft with an uncertainty note</dd></div><div><dt>Example sources</dt><dd data-ma-reference>Pump maintenance guide and calibration record</dd></div></dl>
+          </div>
+          <details class="ma-draft"><summary>Inspect a cited model draft</summary>
+            <div class="ma-draft-interior">
+              <div><div class="ma-meta">Illustrative draft excerpt</div><p class="ma-draft-copy"><span data-ma-claim-first>Vibration rose while the pump stayed at the same load</span> <button type="button" data-ma-source="telemetry" aria-label="Inspect source T1" aria-controls="ma-excerpt" aria-pressed="true">[T1]</button>. <span data-ma-claim-second>The temperature sample needed to interpret the change is missing</span> <button type="button" data-ma-source="reference" aria-label="Inspect source R1" aria-controls="ma-excerpt" aria-pressed="false">[R1]</button>.</p></div>
+              <div class="ma-excerpt" id="ma-excerpt" aria-live="polite"><div class="ma-meta" data-ma-source-title>T1 / Sample telemetry</div><p data-ma-source-text>Pump history T1 shows rising vibration at constant load. The temperature channel has a gap in the same interval.</p></div>
+            </div>
+          </details>
+          <div class="ma-pilot"><a class="text-link" data-ma-pilot href="#pilot" data-scenario="maritime">Scope a vessel maintenance pilot</a></div>
+        </div>
+      </mission-architecture>
+    </div>
+  </section>
+
+  <!-- Evidence demo -->
+  <section class="section" id="evidence" aria-labelledby="evidence-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Evidence assistant</p>
+      <div class="section-head">
+        <h2 id="evidence-title" class="display reveal">Try an evidence review</h2>
+        <p class="lead reveal" data-delay="1">Ask about a bench test, open the cited records, then withhold evidence to see when the assistant must abstain.</p>
+      </div>
+      <evidence-demo>
+        <div class="ed-dossier reveal">
+          <div class="ed-bar"><span class="ed-file" aria-hidden="true"></span><span>Sensor TS-04 <b>/</b> Bench retest</span><small>Illustrative case with preset answers</small></div>
+          <div class="ed-columns">
+            <div class="ed-review">
+              <label class="ed-label" for="demo-question">Review question</label>
+              <select id="demo-question" class="ed-question"><option value="0">Is TS-04 ready for retest?</option><option value="1">How much did the error change?</option><option value="2">Who authorizes the repeat run?</option></select>
+              <div class="ed-answer" aria-live="polite" aria-atomic="true">
+                <div class="ed-status"><span aria-hidden="true">✓</span>Entry criteria met</div>
+                <h3>Yes, pending test lead authorization</h3>
+                <p>The signed calibration record shows +0.2 °C error at the required 40 °C check point, within the ±0.5 °C limit. The original deviation log is present. The test lead can now review the packet.</p>
+                <div class="ed-citations"><span class="ed-label">Citations</span><a href="#demo-record-CAL-08" data-citation="CAL-08" aria-label="Read CAL-08, Calibration record">CAL-08</a><a href="#demo-record-PROC-03" data-citation="PROC-03" aria-label="Read PROC-03, Retest procedure">PROC-03</a><a href="#demo-record-LOG-17" data-citation="LOG-17" aria-label="Read LOG-17, Bench test log">LOG-17</a></div>
+              </div>
+              <div class="ed-next"><a class="button button-primary" data-pilot-link href="#pilot" data-scenario="retest">Scope a pilot with your test records</a><a class="text-link" href="#evaluation">See how this demo was evaluated</a></div>
+            </div>
+            <div class="ed-records">
+              <div class="ed-record-heading"><h3>Source records</h3><span class="ed-count">3 of 3 available</span></div>
+              <div class="ed-list" id="demo-sources">
+                <details class="ed-record-detail" name="demo-source" data-record="LOG-17"><summary class="ed-record"><span class="ed-code">LOG-17</span><span>Bench test log</span><span class="ed-open" aria-hidden="true"></span></summary><section class="ed-excerpt" id="demo-record-LOG-17" tabindex="-1" aria-label="Bench test log excerpt"><div class="ed-tiny">Excerpt <b>/</b> LOG-17</div><h4>Temperature check before adjustment</h4><p>At a reference temperature of 40.0 °C, sensor TS-04 read 41.8 °C. The +1.8 °C error exceeded the ±0.5 °C tolerance. The technician removed TS-04 from the run for adjustment.</p></section></details>
+                <details class="ed-record-detail" name="demo-source" data-record="CAL-08" open><summary class="ed-record"><span class="ed-code">CAL-08</span><span>Calibration record</span><span class="ed-open" aria-hidden="true"></span></summary><section class="ed-excerpt" id="demo-record-CAL-08" tabindex="-1" aria-label="Calibration record excerpt"><div class="ed-tiny">Excerpt <b>/</b> CAL-08</div><h4>TS-04 after adjustment</h4><p>After adjustment, TS-04 read 40.2 °C against the 40.0 °C reference. Residual error was +0.2 °C. The calibration technician signed this record for the 40 °C check point.</p></section></details>
+                <details class="ed-record-detail" name="demo-source" data-record="PROC-03"><summary class="ed-record"><span class="ed-code">PROC-03</span><span>Retest procedure</span><span class="ed-open" aria-hidden="true"></span></summary><section class="ed-excerpt" id="demo-record-PROC-03" tabindex="-1" aria-label="Retest procedure excerpt"><div class="ed-tiny">Excerpt <b>/</b> PROC-03</div><h4>Bench retest entry criteria</h4><p>Attach the initial deviation log and a signed calibration record showing error within ±0.5 °C at 40 °C. The test lead authorizes the repeat run. Equipment release requires a separate decision.</p></section></details>
+              </div>
+              <label class="ed-switch"><input type="checkbox" aria-controls="demo-sources"><span>Withhold the calibration record</span></label>
+            </div>
+          </div>
+        </div>
+      </evidence-demo>
+    </div>
+  </section>
+
+  <!-- Capabilities -->
+  <section class="section carbon" id="capabilities" aria-labelledby="capabilities-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">AI engineering capabilities</p>
+      <div class="section-head">
+        <h2 id="capabilities-title" class="display reveal">What we build with your team</h2>
+        <p class="lead reveal" data-delay="1">Start with a decision your team needs to make. Choose the data, agent permissions and model size to fit it, then measure performance before fielding.</p>
+      </div>
+      <div class="cap-grid">
+        <figure class="cap-visual reveal">
+          <img src="assets/media/coastal-trial.webp" alt="An uncrewed surface vessel under way near a shore station" id="cap-photo" loading="lazy" width="1672" height="941">
+          <figcaption id="cap-caption">Maritime trials</figcaption>
+        </figure>
+        <div class="cap-panels reveal" id="cap-panels" data-delay="1">
+          <details open data-image="coastal-trial" data-caption="Maritime trials" data-alt="An uncrewed surface vessel under way near a shore station">
+            <summary><span><span class="num">01</span>Autonomy integration and fleet orchestration</span><span class="plus" aria-hidden="true"></span></summary>
+            <div class="cap-body"><p>Bring a new vessel, aircraft or payload into an existing force through its native interface. Test the integration ashore and at sea, then hand operators one command picture for every platform and the procedures that go with it.</p><dl><dt>Example deliverable</dt><dd>Integrated platform, trial reports, operator procedures and a vendor-neutral tasking interface</dd></dl></div>
+          </details>
+          <details data-image="integration-lab" data-caption="Systems integration lab" data-alt="Integration equipment and test instrumentation in a laboratory">
+            <summary><span><span class="num">02</span>Agent design and orchestration</span><span class="plus" aria-hidden="true"></span></summary>
+            <div class="cap-body"><p>Give a retrieval agent read access to approved records, a comparison agent the task of identifying changes, and an engineer authority over release decisions. Define each agent's tools, handoff conditions and stopping rules so a reviewer can replay the work.</p><dl><dt>Example deliverable</dt><dd>Agent workflow, tool permissions and decision log</dd></dl></div>
+          </details>
+          <details data-image="coastal-unit" data-caption="Field decision support" data-alt="Rugged computing equipment at a coastal field station">
+            <summary><span><span class="num">03</span>Language models and retrieval</span><span class="plus" aria-hidden="true"></span></summary>
+            <div class="cap-body"><p>Use retrieval-augmented generation (RAG) to give a large language model (LLM) the relevant passages from manuals, requirements and test reports. Preserve document versions and permissions, cite supporting passages and flag questions the records cannot answer.</p><dl><dt>Example deliverable</dt><dd>Source-linked engineering assistant and a reference set of verified answers</dd></dl></div>
+          </details>
+          <details data-image="field-test" data-caption="Instrumented field evaluation" data-alt="An engineer reviews instrument readings from a field test">
+            <summary><span><span class="num">04</span>Multimodal and edge AI</span><span class="plus" aria-hidden="true"></span></summary>
+            <div class="cap-body"><p>Pair a sensor trend or inspection image with the configuration and maintenance notes that explain it. Compare a small language model running locally with a larger hosted model using the same examples. Measure response time, memory use and answer quality under the program's connectivity limits.</p><dl><dt>Example deliverable</dt><dd>Model selection and edge deployment trade study</dd></dl></div>
+          </details>
+          <details data-image="engineering-hangar" data-caption="Engineering and field transition" data-alt="An open systems engineering hangar facing the test range">
+            <summary><span><span class="num">05</span>Model evaluation and assurance</span><span class="plus" aria-hidden="true"></span></summary>
+            <div class="cap-body"><p>Test the same engineering questions against each model release. Score citation accuracy, unsupported conclusions and the ability to stop when evidence is missing. Use Astrion's simulation and Adaptive Test experience to tie the results to a real fielding decision.</p><dl><dt>Example deliverable</dt><dd>Versioned evaluation set, acceptance criteria and release evidence</dd></dl></div>
+          </details>
+        </div>
+      </div>
+      <aside class="tech-source reveal" aria-label="Astrion capability references">
+        <div>
+          <h3>What Astrion brings to the work</h3>
+          <p>Astrion EDGE&trade; (Engineering Delivered, Guaranteed Excellence) is the contract behind every pilot: field-proven integration and test, validated against the decision it supports. The FAA SETIS capability brief identifies machine learning, intelligent automation and large-scale data integration. Project Horizon adds scenario modeling and distributed simulation to the engineering and test portfolio.</p>
+        </div>
+        <div class="links">
+          <a class="text-link" href="assets/astrion-ai-pilot-brief.pdf" download="astrion-ai-pilot-brief.pdf">Download the AI pilot brief (PDF)</a>
+          <a class="text-link" href="https://astrion.us/work-with-us/contract-vehicles/faa-setis-system-engineering-and-technical-innovative-solutions">FAA SETIS vehicle and contact</a>
+          <a class="text-link" href="https://astrion.us/tech">Astrion technology portfolio</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Domains -->
+  <section class="section" id="domains" aria-labelledby="domains-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Mission domains</p>
+      <div class="section-head">
+        <h2 id="domains-title" class="display reveal">AI across every domain the force operates in</h2>
+        <p class="lead reveal" data-delay="1">Select an environment to open a one-paragraph brief: the model, the records it would consult and the person who decides.</p>
+      </div>
+      <div class="domain-grid reveal" id="domain-grid">
+        <a class="domain-card" data-domain="terrain" href="#pilot" data-scenario="range" aria-label="Explore terrain AI applications"><img src="assets/media/terrain-240.webp" srcset="assets/media/terrain-240.webp 240w, assets/media/terrain-480.webp 480w, assets/media/terrain.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Terrain<small>Offline maintenance</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+        <a class="domain-card" data-domain="atmosphere" href="#pilot" data-scenario="flight" aria-label="Explore atmosphere AI applications"><img src="assets/media/atmosphere-240.webp" srcset="assets/media/atmosphere-240.webp 240w, assets/media/atmosphere-480.webp 480w, assets/media/atmosphere.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Atmosphere<small>Flight-test coverage</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+        <a class="domain-card" data-domain="maritime" href="#pilot" data-scenario="maritime" aria-label="Explore maritime AI applications"><img src="assets/media/maritime-240.webp" srcset="assets/media/maritime-240.webp 240w, assets/media/maritime-480.webp 480w, assets/media/maritime.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Maritime<small>Machinery health</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+        <a class="domain-card" data-domain="subsea" href="#pilot" data-scenario="subsea" aria-label="Explore subsea AI applications"><img src="assets/media/subsea-240.webp" srcset="assets/media/subsea-240.webp 240w, assets/media/subsea-480.webp 480w, assets/media/subsea.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Subsea<small>Survey quality</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+        <a class="domain-card" data-domain="orbit" href="#pilot" data-scenario="space" aria-label="Explore orbit AI applications"><img src="assets/media/orbit-240.webp" srcset="assets/media/orbit-240.webp 240w, assets/media/orbit-480.webp 480w, assets/media/orbit.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Orbit<small>Interface review</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+        <a class="domain-card" data-domain="cyber" href="#pilot" data-scenario="cyber" aria-label="Explore cyber AI applications"><img src="assets/media/cyber-240.webp" srcset="assets/media/cyber-240.webp 240w, assets/media/cyber-480.webp 480w, assets/media/cyber.webp 1122w" sizes="(max-width: 47.5em) 45vw, (max-width: 75em) 30vw, 16vw" loading="lazy" decoding="async" alt="" width="1122" height="1402"><span class="domain-name">Cyber<small>Assurance evidence</small></span><span class="card-plus" aria-hidden="true">+</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Program evidence -->
+  <section class="section carbon" id="programs" aria-labelledby="programs-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Program evidence</p>
+      <div class="section-head">
+        <h2 id="programs-title" class="display reveal">Field-proven, on the record</h2>
+        <p class="lead reveal" data-delay="1">The published maritime and space records behind Astrion's integration work, NASA's flight test of an AI processor, and the engineering question a pilot could test on each.</p>
+      </div>
+
+      <article class="program" id="sea-hunter" aria-labelledby="sea-hunter-title">
+        <figure class="program-media reveal">
+          <img src="assets/media/coastal-trial.webp" alt="Illustration of an uncrewed surface vessel in coastal waters" loading="lazy" width="1672" height="941">
+          <figcaption>Illustration of an uncrewed vessel and shore station</figcaption>
+        </figure>
+        <div class="program-copy reveal" data-delay="1">
+          <span class="meta">U.S. Navy <b>/</b> Maritime autonomy</span>
+          <h3 id="sea-hunter-title">Sea Hunter and Seahawk</h3>
+          <p class="lead">How Astrion helped the U.S. Navy move Seahawk from trials to the operational fleet.</p>
+          <dl class="facts">
+            <div><dt>Customer</dt><dd>U.S. Navy</dd></div>
+            <div><dt>Program scope</dt><dd>Systems integration, testing, operations and sustainment</dd></div>
+            <div><dt>Vessel travel supported</dt><dd><b>42,000+ nm</b></dd></div>
+            <div><dt>Under autonomous operation</dt><dd><b>38,000+ nm</b></dd></div>
+          </dl>
+          <div class="prose">
+            <h4>From trials to fleet handover</h4>
+            <p>On April 14, 2026, Seahawk moved from its research role into the operational fleet under Unmanned Surface Vessel Squadron One. Astrion helped sequence the tests for that transition and staffed the vessel for trials at sea.</p>
+            <p>Across the Sea Hunter and Seahawk program, the team coordinated changes to vendor hardware and software, tested changes ashore and at sea, and documented the vessels' capabilities and limits for crews. That is the integration work the orchestration layer is built on: many vendors, one force, one command picture.</p>
+            <p>Astrion's program managers report that the team supported more than 42,000 nautical miles of vessel travel, more than 38,000 of them under autonomous operation. The figures describe the vessels' operating history.</p>
+          </div>
+          <div class="sources">
+            <span class="ed-label">Public sources</span>
+            <ul>
+              <li><a class="text-link" href="https://astrion.us/enabling-the-u-s-navy-to-scale-unmanned-surface-vessels-across-the-fleet-to-support-integrated-kill-webs-and-cjadc2">Astrion program managers' account of the trials and operating record</a></li>
+              <li><a class="text-link" href="https://astrion.us/news/astrion-selected-by-u-s-navy-to-build-integrate-and-sustain-maritime-autonomous-systems">Astrion's announcement of the maritime systems contract</a></li>
+            </ul>
+          </div>
+          <div class="pilot-card">
+            <span class="meta">Proposed AI application</span>
+            <h4>Trace a finding to its retest</h4>
+            <p>A test lead preparing for handover could ask whether the retest used the configuration scheduled for release.</p>
+            <dl>
+              <div><dt>Engineering records</dt><dd>Approved trial reports, configuration baselines and closure notes.</dd></div>
+              <div><dt>Agent workflow</dt><dd>Match the finding to its retest. Cite the report and configuration record. Flag a missing source or a conflicting version.</dd></div>
+              <div><dt>Engineer decision</dt><dd>The test lead checks the cited records and accepts the closure or requests more evidence.</dd></div>
+            </dl>
+            <a class="button button-primary" href="#pilot" data-scenario="maritime-integration">Scope a trial evidence pilot</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="program flip" id="pami-1" aria-labelledby="pami-title">
+        <figure class="program-media reveal">
+          <img src="assets/media/earth-observation.webp" alt="Illustrative aerial view of a coastal river delta" loading="lazy" width="1586" height="992">
+          <figcaption>Coastal terrain illustrating Earth observation</figcaption>
+        </figure>
+        <div class="program-copy reveal" data-delay="1">
+          <span class="meta">Netherlands <b>/</b> Space systems</span>
+          <h3 id="pami-title">PAMI-1</h3>
+          <p class="lead">How Axient Systems brings international partners together on a sovereign Dutch Earth observation mission.</p>
+          <dl class="facts">
+            <div><dt>Customer</dt><dd>Netherlands Defense Space Security Centre</dd></div>
+            <div><dt>Program scope</dt><dd>Mission integration and international partner coordination</dd></div>
+          </dl>
+          <div class="prose">
+            <h4>A satellite mission across partner teams</h4>
+            <p>The Netherlands wants its own satellite capability for observing Earth and communicating from space. PAMI-1 brings Earth imaging and laser communications together on one spacecraft.</p>
+            <p>Axient Systems B.V., an Astrion company, serves as mission integrator. The Dutch embassy identifies Axient's role, and the Dutch Ministry of Defence describes how industry partners contribute their technology to the satellite.</p>
+          </div>
+          <div class="sources">
+            <span class="ed-label">Public sources</span>
+            <ul>
+              <li><a class="text-link" href="https://astrion.us/edge/pami-1">Astrion PAMI-1 program spotlight</a></li>
+              <li><a class="text-link" href="https://www.globenewswire.com/news-release/2026/06/11/3310603/0/en/axient-systems-bv-awarded-the-holland-on-the-hill-freddy-heineken-award.html">Dutch embassy account of Axient's integration role</a></li>
+              <li><a class="text-link" href="https://www.defensie.nl/nieuws/20250612-nederlandse-bedrijven-ontwikkelen-satelliet-voor-defensie">Dutch Ministry of Defence program account (in Dutch)</a></li>
+            </ul>
+          </div>
+          <div class="pilot-card">
+            <span class="meta">Proposed AI application</span>
+            <h4>Review an interface change</h4>
+            <p>If a supplier changes a data field, an interface owner needs to know which specification and verification steps are affected.</p>
+            <dl>
+              <div><dt>Engineering records</dt><dd>Authorized interface specifications, a change request and the verification plan.</dd></div>
+              <div><dt>Agent workflow</dt><dd>Compare the two versions of the field, cite the relevant clauses and identify test cases that reference it.</dd></div>
+              <div><dt>Engineer decision</dt><dd>The interface owner confirms the impact with the partner and approves any change to the verification plan.</dd></div>
+            </dl>
+            <a class="button button-primary" href="#pilot" data-scenario="space-integration">Scope an interface review pilot</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="program" id="brainstack" aria-labelledby="brainstack-title">
+        <figure class="program-media reveal">
+          <img src="assets/media/orbit.webp" alt="A satellite solar array above the Earth's limb" loading="lazy" width="1122" height="1402" style="aspect-ratio: 1.6; object-position: 50% 40%">
+          <figcaption>Illustration of a small spacecraft in low Earth orbit</figcaption>
+        </figure>
+        <div class="program-copy reveal" data-delay="1">
+          <span class="meta">NASA Ames <b>/</b> Published flight test</span>
+          <h3 id="brainstack-title">NASA BrainStack</h3>
+          <p class="lead">Could an experimental AI processor run software reliably in orbit? A NASA Ames team flew a neuromorphic processor on TechEdSat-13 and recorded which test applications completed.</p>
+          <div class="prose">
+            <p>Three coauthors of the 2023 paper were affiliated with MEIS LLC/Axient Corporation. Among the 15 test sessions in Table 2, application execution success ranged from 0% to 90%. The authors documented cold-start problems and automatic shutdowns during runs longer than 220 minutes.</p>
+            <p>These measurements describe application execution on the flight hardware. Language model accuracy was outside the study. They are the kind of edge-compute evidence an on-orbit inference decision has to rest on.</p>
+          </div>
+          <table class="sessions">
+            <caption>Selected TechEdSat-13 test sessions</caption>
+            <thead><tr><th scope="col">Session</th><th scope="col">Run time</th><th scope="col">Execution success</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Test 5</th><td>15 min</td><td>0%</td></tr>
+              <tr><th scope="row">Test 13</th><td>180 min</td><td>90%</td></tr>
+              <tr><th scope="row">Test 15</th><td>226 min</td><td>66%</td></tr>
+            </tbody>
+          </table>
+          <div class="sources">
+            <span class="ed-label">Public sources</span>
+            <ul>
+              <li><a class="text-link" href="https://ntrs.nasa.gov/citations/20230011460">NASA research record</a></li>
+              <li><a class="text-link" href="https://ntrs.nasa.gov/api/citations/20230011460/downloads/Brainstack_SSC23_Final.pdf?attachment=true#page=7">Read all 15 sessions in Table 2 (PDF)</a></li>
+            </ul>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Evaluation -->
+  <section class="section" id="evaluation" aria-labelledby="evaluation-title">
+    <div class="wrap">
+      <p class="eyebrow reveal">Engineering AI evaluation</p>
+      <div class="section-head">
+        <h2 id="evaluation-title" class="display reveal">When the evidence is incomplete</h2>
+        <p class="lead reveal" data-delay="1">Three engineering questions, two versions of a test packet and a decision that still belongs to the test lead.</p>
+      </div>
+      <figure class="reveal">
+        <figcaption class="ed-label">Sample finding <b>/</b> Synthetic sensor TS-04</figcaption>
+        <div class="ev-compare">
+          <div><h4>With the calibration record</h4><p>The signed reading is 40.2 °C against a 40.0 °C reference. The +0.2 °C error is inside the ±0.5 °C tolerance. The test lead can review the packet and authorize a retest.</p></div>
+          <div><h4>Without the calibration record</h4><p>The original log shows the sensor missed tolerance. Without a signed post-adjustment reading, the packet cannot establish retest readiness. The procedure still identifies the test lead as the approver.</p></div>
+        </div>
+      </figure>
+      <div class="ev-blocks">
+        <section class="ev-block reveal" aria-labelledby="model-check">
+          <span class="ed-label">Blind model check <b>/</b> 19 November 2026</span>
+          <h3 id="model-check">How the language model responded</h3>
+          <p>Two fresh OpenAI Codex sessions received different versions of the same synthetic record packet. Each answered the three questions once using only its records, with no access to the reference answers, the other session or external tools.</p>
+          <dl class="ev-metrics">
+            <div><dt>Conclusions matched the reference</dt><dd>6/6</dd></div>
+            <div><dt>Exact citation sets matched</dt><dd>6/6</dd></div>
+            <div><dt>Answer or abstain decisions matched</dt><dd>6/6</dd></div>
+          </dl>
+          <p class="ev-note">When the signed calibration was withheld, the model correctly declined to establish readiness or calculate a change in error. It still identified the test lead from the procedure. Automated reviewers scored meaning, exact source IDs and the abstention decision against the fixed references.</p>
+          <p class="ev-note">This small check covers three questions and one synthetic case. The exact model checkpoint and sampling settings were unrecorded. No independent human reviewer scored this run, and it provides no estimate of field performance.</p>
+          <div class="ev-links"><a class="text-link" href="assets/data/evaluation-model-run.json" download="evaluation-model-run.json">Download model responses and scoring protocol (JSON)</a></div>
+        </section>
+        <section class="ev-block reveal" data-delay="1" aria-labelledby="demo-checks">
+          <span class="ed-label">Interface check <b>/</b> Automated browser run</span>
+          <h3 id="demo-checks">What the demo check verified</h3>
+          <p>An automated browser check selected each of the three questions twice, with the signed calibration record present and then withheld. It compared each preset finding and its complete set of citations with a written reference, then opened every cited record.</p>
+          <dl class="ev-metrics">
+            <div><dt>Findings and citation sets matched</dt><dd>6/6</dd></div>
+            <div><dt>Required abstentions handled</dt><dd>2/2</dd></div>
+            <div><dt>Citation links opened the correct excerpt</dt><dd>10/10</dd></div>
+          </dl>
+          <p class="ev-note">These counts describe a repeatable interface check on one synthetic packet. The preset demo returned four supported answers and withheld two conclusions. Model accuracy, operator time savings and customer field performance require separate evaluation.</p>
+          <div class="ev-links"><a class="text-link" href="assets/data/evaluation-fixtures.json" download="evaluation-fixtures.json">Download the reference cases (JSON)</a><a class="text-link" href="#evidence">Repeat the check in the demo</a></div>
+        </section>
+      </div>
+
+      <div class="reveal" style="margin-top: clamp(2.5rem, 5vw, 4rem)">
+        <h3 class="display" style="font-size: clamp(1.6rem, 2.6vw, 2.4rem)">Reference findings</h3>
+        <p class="lead" style="margin-top:.6rem">Compare the expected result for each question. The citations identify the documents an engineer needs to check the answer.</p>
+        <div class="ev-cases">
+          <article class="ev-case"><h4>Readiness for retest</h4><dl>
+            <div><dt>Full packet</dt><dd>Entry criteria are met, pending test lead authorization<span class="refs">CAL-08 · PROC-03 · LOG-17</span></dd></div>
+            <div><dt>Calibration withheld</dt><dd>Retest readiness is undetermined<span class="refs">LOG-17 · PROC-03</span></dd></div>
+          </dl></article>
+          <article class="ev-case"><h4>Change in measurement error</h4><dl>
+            <div><dt>Full packet</dt><dd>The error decreased by 1.6 °C<span class="refs">LOG-17 · CAL-08</span></dd></div>
+            <div><dt>Calibration withheld</dt><dd>The change cannot be calculated<span class="refs">LOG-17</span></dd></div>
+          </dl></article>
+          <article class="ev-case"><h4>Authority to approve the repeat run</h4><dl>
+            <div><dt>Full packet</dt><dd>The test lead authorizes the retest<span class="refs">PROC-03</span></dd></div>
+            <div><dt>Calibration withheld</dt><dd>The test lead authorizes the retest<span class="refs">PROC-03</span></dd></div>
+          </dl></article>
+        </div>
+      </div>
+
+      <div class="reveal" style="margin-top: clamp(2.5rem, 5vw, 4rem)">
+        <h3 class="display" style="font-size: clamp(1.6rem, 2.6vw, 2.4rem)">Evaluate a model on your records</h3>
+        <p class="lead" style="margin-top:.6rem">A program team can use the same questions to design a pilot with a real language model. Agree on the acceptance criteria before running the held-out cases.</p>
+        <ol class="protocol">
+          <li><strong>Define the review decision.</strong> Select one engineering task, the authoritative record types and who may sign the finding. Include conflicting, missing and superseded evidence in the test set.</li>
+          <li><strong>Establish reference answers.</strong> Have engineers independently identify the conclusion, supporting passages and cases that require abstention. Resolve disagreements and reserve unseen cases for scoring.</li>
+          <li><strong>Compare with the current workflow.</strong> Give reviewers the same cases with and without AI assistance. Track source support, missed evidence, unsupported conclusions, review time and corrections.</li>
+          <li><strong>Decide together.</strong> Return the evaluation set, scored findings, limitations and reviewer sign-off. Identify which tasks are ready for further testing and which require new evidence or model changes.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pilot -->
+  <section class="section carbon" id="pilot" aria-labelledby="pilot-title">
+    <div class="wrap pilot-layout">
+      <div class="pilot-overview reveal">
+        <p class="eyebrow">Contact Astrion</p>
+        <h2 id="pilot-title" class="display" style="margin-top:1.2rem">Scope an <span>AI pilot</span></h2>
+        <p class="lead" style="margin-top:1.2rem">Give a language model one engineering question, approved records to consult, and an engineer who can judge the answer. Or bring a fleet, an intent and the vendors already on it.</p>
+        <div class="pilot-scope">
+          <div><h3>What to bring</h3><p>Identify the decision your team makes today, the records a reviewer is allowed to use, and the person who can approve the finding. A description of the records is enough for the first conversation.</p></div>
+          <div><h3>What to ask for</h3><p>A proposed pilot should return a finding with source references, a list of missing evidence, and an evaluation against your engineers' reference answers. Agree on acceptance criteria before sharing data.</p></div>
+        </div>
+        <a class="pilot-download" href="assets/astrion-ai-pilot-brief.pdf" download="astrion-ai-pilot-brief.pdf"><span>Download the AI pilot brief</span><span class="pilot-file-type">PDF · 1 page</span></a>
+      </div>
+      <div class="pilot-panel reveal" data-delay="1">
+        <h3 id="inquiry-title">Prepare your inquiry</h3>
+        <p>Use non-sensitive information only. You can review and send the request in your email app.</p>
+        <div id="pilot-editor">
+          <div class="pilot-field">
+            <label for="pilot-purpose">Inquiry type</label>
+            <select id="pilot-purpose"><option value="mission">Mission and capabilities</option><option value="partnership">Strategic partnership</option></select>
+          </div>
+          <div class="pilot-field">
+            <label for="pilot-scenario">Engineering use case</label>
+            <select id="pilot-scenario">
+              <option value="orchestration">Mission orchestration across a multi-vendor fleet</option>
+              <option value="retest">Test evidence and retest readiness</option>
+              <option value="measurement">Calibration error and measurement change</option>
+              <option value="authority">Review and approval authority</option>
+              <option value="maritime">Vessel equipment health</option>
+              <option value="flight">Flight-test data quality</option>
+              <option value="space">Satellite power review</option>
+              <option value="maritime-integration">Maritime trial evidence review</option>
+              <option value="space-integration">Space interface evidence review</option>
+              <option value="range">Range instrumentation review</option>
+              <option value="cyber">Defensive system assurance</option>
+              <option value="subsea">Subsea equipment records</option>
+              <option value="integration">Systems integration evidence</option>
+              <option value="other">Another engineering use case</option>
+            </select>
+          </div>
+          <div class="pilot-field">
+            <label for="pilot-question">What do you want to evaluate? <span>(optional)</span></label>
+            <textarea id="pilot-question" rows="3" maxlength="500" placeholder="Describe the decision, the type of records or the role your team would play"></textarea>
+          </div>
+          <div class="pilot-actions">
+            <a id="pilot-mail" class="button button-primary" href="mailto:communications@astrion.us?subject=Astrion%20AI%20pilot%20inquiry">Open email draft</a>
+            <button class="pilot-copy" type="button" id="pilot-copy">Copy inquiry</button>
+          </div>
+          <p class="pilot-status" id="pilot-status" role="status"></p>
+          <details class="pilot-preview" id="pilot-preview">
+            <summary>Review inquiry text</summary>
+            <label for="pilot-body">Recipient, subject and message</label>
+            <textarea id="pilot-body" rows="9" readonly></textarea>
+          </details>
+        </div>
+        <noscript><p class="pilot-noscript">Email <a href="mailto:communications@astrion.us?subject=Astrion%20AI%20pilot%20inquiry">communications@astrion.us</a> with "AI pilot inquiry" in the subject. Include your engineering question, the type of approved input records and the team that will assess the result.</p></noscript>
+        <div class="pilot-routing">
+          <h3>Contact Astrion</h3>
+          <p><a href="mailto:communications@astrion.us">communications@astrion.us</a></p>
+          <p>Prefer a web form? Copy your inquiry into the <a href="https://astrion.us/contact-us?context=tech">Astrion contact form</a> and choose <strong id="pilot-category">Mission &amp; capabilities</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" id="contact">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a class="brand" href="#top" aria-label="Astrion Mission Intelligence home"><img src="assets/media/wordmark-light.svg" alt="Astrion" width="300" height="44"></a>
+        <p>Innovation fuels it. Engineering proves it. Astrion makes it mission-ready. Mission orchestration, cited engineering findings and model assurance for the forces and programs that cannot afford a guess.</p>
+      </div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="assets/astrion-ai-pilot-brief.pdf" download="astrion-ai-pilot-brief.pdf">AI pilot brief (PDF)</a>
+        <a href="https://astrion.us/work-with-us/contract-vehicles">Contract vehicles</a>
+        <a href="#pilot" data-inquiry="partnership">Team with Astrion</a>
+        <a href="https://astrion.us/careers">Careers</a>
+        <a href="https://astrion.us/">Astrion.us</a>
+        <a href="https://astrion.us/privacy-policy">Privacy</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Astrion · Team review build</span>
+      <span>Illustrative workflows, synthetic records and illustrative platforms unless a source is cited</span>
+    </div>
+  </div>
+</footer>
+
+<dialog class="domain-dialog" id="domain-dialog" aria-labelledby="dialog-title">
+  <div class="dialog-shell">
+    <button type="button" class="dialog-close" id="close-dialog" aria-label="Close domain brief" autofocus><span aria-hidden="true">×</span></button>
+    <div class="dialog-art"><img id="dialog-image" alt="" width="1122" height="1402"></div>
+    <div class="dialog-content"><p class="eyebrow" id="dialog-domain"></p><h2 id="dialog-title"></h2><p id="dialog-description"></p><dl class="domain-output"><dt>Illustrative engineering question</dt><dd id="dialog-question"></dd></dl><a class="text-link" id="dialog-link" href="#pilot"></a></div>
+  </div>
+</dialog>
+
+<script src="app.js" defer></script>
+</body>
+</html>
