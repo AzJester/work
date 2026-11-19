@@ -39,7 +39,7 @@ test("the single scrolling page carries every section of the earlier six-page si
   const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
   const ids = [...main.matchAll(/<section class="section[^"]*" id="([a-z-]+)"/g)].map(match => match[1]);
   assert.deepEqual(ids, ["products", "orchestration", "fleet", "architecture", "evidence", "capabilities", "domains", "programs", "evaluation", "pilot"]);
-  for (const id of ["sea-hunter", "pami-1", "brainstack", "hero-trace", "ops", "domain-dialog", "pilot-editor"]) assert.match(page, new RegExp(`id="${id}"`), `missing #${id}`);
+  for (const id of ["sea-hunter", "pami-1", "brainstack", "hero-orb", "ops", "domain-dialog", "pilot-editor"]) assert.match(page, new RegExp(`id="${id}"`), `missing #${id}`);
   for (const heading of [
     "AI that carries <span>intent to effect</span>", "Four places AI already does the work", "Intent in. Effects out. Evidence throughout.",
     "Watch one intent task a mixed fleet", "Inside the AI workflow", "Try an evidence review", "What we build with your team",

@@ -681,7 +681,7 @@ the budget. Unbranded, with a neutral look you can tune under Settings.
 
 `mission-intelligence/` is a single scrolling company page about AI in Astrion products. It
 folds the earlier six-page Mission Intelligence site into one scroll and adds the orchestration
-layer: a hero with the supplied calm-pulse motion and an animated intent-to-effect trace, a stats
+layer: a hero with the supplied calm-pulse motion and a rotating network globe drawn in Ion, a stats
 strip, four product tiles (mission orchestration, evidence assistant, edge inference, assurance
 harness), a light Bone band that explains intent, plan, effect and evidence with the eight-layer
 stack above and below the platforms, an interactive fleet demo (choose an intent, approve the
