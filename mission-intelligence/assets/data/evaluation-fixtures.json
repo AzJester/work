@@ -1,0 +1,56 @@
+{
+  "case": "TS-04 bench retest",
+  "version": "1.0",
+  "dataOrigin": "Synthetic engineering records created for the Astrion Mission Intelligence website demonstration",
+  "systemUnderTest": "Preset browser-based evidence review on index.html#demo",
+  "method": "Select each question twice, once with the full packet and once with CAL-08 withheld. Compare the displayed finding and the set of citation IDs with the expected values. Open each citation and verify that it resolves to its source. Record an abstention if the finding says readiness is undetermined or the change cannot be calculated.",
+  "sources": {
+    "LOG-17": "At a reference temperature of 40.0 °C, sensor TS-04 read 41.8 °C. The +1.8 °C error exceeded the ±0.5 °C tolerance. The technician removed TS-04 from the run for adjustment.",
+    "CAL-08": "After adjustment, TS-04 read 40.2 °C against the 40.0 °C reference. Residual error was +0.2 °C. The calibration technician signed this record for the 40 °C check point.",
+    "PROC-03": "Attach the initial deviation log and a signed calibration record showing error within ±0.5 °C at 40 °C. The test lead authorizes the repeat run. Equipment release requires a separate decision."
+  },
+  "cases": [
+    {
+      "question": "Is TS-04 ready for retest?",
+      "withholdCalibration": false,
+      "expectedFinding": "Yes, pending test lead authorization",
+      "expectedCitations": ["CAL-08", "PROC-03", "LOG-17"],
+      "expectedAbstention": false
+    },
+    {
+      "question": "Is TS-04 ready for retest?",
+      "withholdCalibration": true,
+      "expectedFinding": "Retest readiness is undetermined",
+      "expectedCitations": ["LOG-17", "PROC-03"],
+      "expectedAbstention": true
+    },
+    {
+      "question": "How much did the error change?",
+      "withholdCalibration": false,
+      "expectedFinding": "The error decreased by 1.6 °C",
+      "expectedCitations": ["LOG-17", "CAL-08"],
+      "expectedAbstention": false
+    },
+    {
+      "question": "How much did the error change?",
+      "withholdCalibration": true,
+      "expectedFinding": "The change cannot be calculated",
+      "expectedCitations": ["LOG-17"],
+      "expectedAbstention": true
+    },
+    {
+      "question": "Who authorizes the repeat run?",
+      "withholdCalibration": false,
+      "expectedFinding": "The test lead authorizes the retest",
+      "expectedCitations": ["PROC-03"],
+      "expectedAbstention": false
+    },
+    {
+      "question": "Who authorizes the repeat run?",
+      "withholdCalibration": true,
+      "expectedFinding": "The test lead authorizes the retest",
+      "expectedCitations": ["PROC-03"],
+      "expectedAbstention": false
+    }
+  ]
+}

@@ -677,6 +677,26 @@ the budget. Unbranded, with a neutral look you can tune under Settings.
   keyboard moves, the carry-over of saved plans and the two brand hard rules. The development
   plan is in [ROADMAP_BUDGET_PLANNER_PLAN.md](ROADMAP_BUDGET_PLANNER_PLAN.md).
 
+## Astrion Mission Intelligence (team review build)
+
+`mission-intelligence/` is a single scrolling company page about AI in Astrion products. It
+folds the earlier six-page Mission Intelligence site into one scroll and adds the orchestration
+layer: a hero with the supplied calm-pulse motion and an animated intent-to-effect trace, a stats
+strip, four product tiles (mission orchestration, evidence assistant, edge inference, assurance
+harness), a light Bone band that explains intent, plan, effect and evidence with the eight-layer
+stack above and below the platforms, an interactive fleet demo (choose an intent, approve the
+plan, knock a platform out, approve the re-plan, watch the effect land), the five-stage agentic
+architecture board, the TS-04 evidence demo with the withhold switch, five capability panels,
+six domain cards with dialog briefs, the Sea Hunter and Seahawk, PAMI-1 and NASA BrainStack
+program records, the evaluation results with downloadable fixtures, and the pilot inquiry builder.
+Design follows the Astrion Brand Kit 1.0: the website palette (Void, Carbon, Gunmetal, Bone,
+Steel, Ion, Flare), the supplied Archivo, Space Grotesk and JetBrains Mono web subsets, and the
+outlined wordmarks. Three files plus local `mission-intelligence/assets/`, no external requests,
+reduced-motion aware, noindexed. Tests: `tests/mission-intelligence.test.mjs` and
+`tests/browser/mission-intelligence.spec.mjs`.
+
+### → https://azjester.github.io/work/mission-intelligence/
+
 ## Astrion Company Site (team review build)
 
 `astrion-site/` is a second, independent company page built to match the reference
@@ -865,6 +885,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | File | Purpose |
 |------|---------|
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
+| `mission-intelligence/` | The **Astrion Mission Intelligence** page (team review build): one scrolling site on AI in Astrion products, with the intent-to-effect orchestration layer, an interactive fleet re-tasking demo, the evidence assistant demo, program evidence and the pilot inquiry builder on the Brand Kit 1.0 palette and fonts. |
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
 | `black-hat-agent/` | Forwards the old Black Hat Agent address to the current build, which lives in the [`Black_Hat_Agent`](https://github.com/AzJester/Black_Hat_Agent) repository. Also holds the vendored SheetJS library that the Solution Architect Workbench loads. |

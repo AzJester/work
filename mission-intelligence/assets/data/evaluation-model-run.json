@@ -1,0 +1,36 @@
+{
+  "title": "TS-04 blind language model check",
+  "date": "2026-11-19",
+  "modelLabel": "OpenAI Codex",
+  "modelCheckpoint": null,
+  "samplingSettings": null,
+  "sourceAndReferenceFile": "evaluation-fixtures.json",
+  "protocol": {
+    "data": "One synthetic sensor bench-test packet. Full includes LOG-17, CAL-08 and PROC-03. Withheld includes LOG-17 and PROC-03. No unavailable source text was given to the withheld session.",
+    "sessions": "Two fresh, isolated model sessions. One received the full packet, the other received the withheld packet. No tools, prior conversation or reference answers were available. All three questions for each packet were presented in its one session. Each packet was run once.",
+    "questionsInOrder": ["Is TS-04 ready for retest?", "How much did the error change?", "Who authorizes the repeat run?"],
+    "instructionSummary": "Use only the supplied records. Return a finding, its necessary source IDs and an abstention decision for each question. Explain missing evidence. Distinguish entry criteria from authorization to run the retest.",
+    "scoring": "Automated review compared conclusions semantically with the predefined reference and checked citation sets ignoring order and Boolean abstention decisions. No independent human adjudication.",
+    "limits": "Three distinct questions, two packet conditions, one small synthetic record set and a single run per condition. No field data, model comparison, timing baseline or customer validation. Model checkpoint and sampling settings were unrecorded."
+  },
+  "rawResponsesInQuestionOrder": {
+    "full": [
+      {"finding":"TS-04 is ready to request a retest. The signed 40 °C check shows a +0.2 °C error, within the ±0.5 °C tolerance. Attach LOG-17 and CAL-08 to the request. The records do not show that the test lead authorized the repeat run.","citations":["LOG-17","CAL-08","PROC-03"],"abstain":false},
+      {"finding":"The error decreased by 1.6 °C, from +1.8 °C to +0.2 °C.","citations":["LOG-17","CAL-08"],"abstain":false},
+      {"finding":"The test lead authorizes the repeat run.","citations":["PROC-03"],"abstain":false}
+    ],
+    "withheld": [
+      {"finding":"Readiness to request a retest is unconfirmed. The initial deviation log is available, but the packet lacks a signed calibration record showing TS-04 within ±0.5 °C at 40 °C. The test lead must authorize the repeat run.","citations":["LOG-17","PROC-03"],"abstain":true},
+      {"finding":"The initial error was +1.8 °C. No post-adjustment measurement is available to calculate the change.","citations":["LOG-17"],"abstain":true},
+      {"finding":"The test lead authorizes the repeat run.","citations":["PROC-03"],"abstain":false}
+    ]
+  },
+  "scores": {
+    "cases": 6,
+    "semanticallyMatchingConclusions": 6,
+    "exactCitationSetMatches": 6,
+    "correctAbstentionDecisions": 6,
+    "casesRequiringAbstention": 2,
+    "correctRequiredAbstentions": 2
+  }
+}
