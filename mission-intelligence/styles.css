@@ -233,31 +233,11 @@ html.no-js .reveal, html.still .reveal { opacity: 1; transform: none; transition
 .film-icon { display: inline-block; width: 9px; height: 11px; border-left: 8px solid var(--bone); border-top: 5.5px solid transparent; border-bottom: 5.5px solid transparent; }
 .film-control.playing .film-icon { width: 8px; height: 10px; border: 0; border-inline: 2px solid var(--bone); }
 
-/* Hero trace card */
-.trace { position: relative; background: color-mix(in srgb, #0b1a24 82%, transparent); border: 1px solid #27455a; border-radius: 4px; padding: clamp(1rem, 1.6vw, 1.5rem); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 30px 80px -40px #000; }
-.trace-header { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.trace-header h2 { font-size: 1.05rem; letter-spacing: .02em; margin-top: .3rem; }
-.trace-meta { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: #9fc0d0; }
-.trace-control { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.2rem; padding: .35rem .7rem; border: 1px solid #40606f; border-radius: var(--radius); background: transparent; font: 500 .72rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.trace-control:hover { border-color: var(--ion); color: var(--ion); }
-.trace-control-icon { width: .5rem; height: .65rem; border-inline: 2px solid currentColor; }
-.trace-control.is-paused .trace-control-icon { width: 0; height: 0; border: 0; border-left: .55rem solid currentColor; border-top: .35rem solid transparent; border-bottom: .35rem solid transparent; }
-.trace-query { margin-block: 1rem .7rem; font-size: clamp(1.15rem, 1.7vw, 1.5rem); font-weight: 650; letter-spacing: -.03em; line-height: 1.2; }
-.trace-query small { display: block; margin-top: .3rem; font: 500 .68rem/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #9fc0d0; }
-.trace-steps { list-style: none; display: grid; gap: .2rem; position: relative; }
-.trace-steps::before { content: ""; position: absolute; inset: 1.6rem auto 1.6rem 1.42rem; width: 1px; background: #3f5c6d; }
-.trace-steps li { position: relative; display: grid; grid-template-columns: 1.9rem 1fr; gap: .9rem; align-items: start; padding: .6rem .7rem; border: 1px solid transparent; border-radius: var(--radius); overflow: hidden; }
-.trace-index { display: grid; place-items: center; height: 1.9rem; border: 1px solid #557080; background: #14232e; color: #c6deea; font: 500 .78rem/1 var(--mono); position: relative; z-index: 1; }
-.trace-steps strong { display: block; font-size: .98rem; }
-.trace-steps small { display: block; margin-top: .15rem; color: #c4d1d9; font-size: .9rem; line-height: 1.35; }
-.trace-steps li.is-current, .trace-result.is-current { background: #183140; border-color: #537d8e; }
-.trace-steps li.is-current .trace-index { background: var(--ion); border-color: var(--ion); color: var(--void); }
-.trace-steps li.is-current::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--ion); transform-origin: left; animation: trace-progress var(--step-duration, 2400ms) linear forwards; }
-.trace.is-paused .trace-steps li::after { animation-play-state: paused; }
-.trace-result { margin-top: .75rem; padding: .7rem .85rem; border: 1px solid transparent; border-left: 2px solid #587888; background: #11212b; border-radius: var(--radius); }
-.trace-result.is-current { border-left-color: var(--ion); }
-.trace-result p { margin-top: .2rem; font-size: .98rem; line-height: 1.4; }
-@keyframes trace-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+/* Hero orb: a network globe drawn on a canvas, Ion on Void */
+.hero-orb { position: relative; width: min(100%, 40rem); aspect-ratio: 1; justify-self: end; isolation: isolate; }
+.hero-orb::before { content: ""; position: absolute; inset: -18%; border-radius: 50%; background: radial-gradient(circle, rgba(35,206,240,.22) 0%, rgba(35,206,240,.07) 42%, transparent 66%); z-index: -1; }
+.hero-orb::after { content: ""; position: absolute; inset: -4%; border-radius: 50%; background: radial-gradient(circle, rgba(5,6,7,.9) 0%, rgba(5,6,7,.78) 48%, rgba(5,6,7,.35) 68%, transparent 78%); z-index: -1; }
+.hero-orb canvas { width: 100%; height: 100%; display: block; }
 
 /* Stats strip */
 .stats { background: var(--carbon); border-block: 1px solid var(--line); }
@@ -644,6 +624,7 @@ table.sessions td { font-variant-numeric: tabular-nums; }
 @media (max-width: 62em) {
   .hero-inner { grid-template-columns: 1fr; padding-bottom: clamp(7rem, 12vw, 9rem); }
   .hero { min-height: 0; }
+  .hero-orb { position: absolute; top: 3rem; right: -24%; width: min(88vw, 30rem); opacity: .7; pointer-events: none; z-index: -1; justify-self: auto; }
   .section-head { grid-template-columns: 1fr; }
   .section-head .lead { justify-self: start; }
   .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -684,8 +665,6 @@ table.sessions td { font-variant-numeric: tabular-nums; }
   .ops-bar .role { display: none; }
   .hero-foot { position: static; padding-bottom: 1.5rem; }
   .hero-inner { padding-bottom: 2rem; }
-  .trace { padding: 1rem; }
-  .trace-steps::before { display: none; }
   .ma-stages { grid-template-columns: 1fr; }
   .ed-record { grid-template-columns: 3.8rem 1fr auto; }
   .wrap { width: min(100% - 2rem, 100rem); }
@@ -699,7 +678,6 @@ table.sessions td { font-variant-numeric: tabular-nums; }
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .ops-bar { animation: none; }
-  .trace-steps li.is-current::after { animation: none; transform: none; }
   .domain-card img, .domain-card:hover img { transition: none; transform: none; }
   .ops-status i { animation: none; }
 }
