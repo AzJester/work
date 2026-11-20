@@ -212,7 +212,13 @@ test("the page keeps its accessibility basics", () => {
   assert.match(css, /:focus-visible \{ outline: 2px solid var\(--ion\); outline-offset: 4px; \}/);
   for (const [, label] of page.matchAll(/<nav class="[^"]*"[^>]*aria-label="([^"]+)"/g)) assert.ok(label.length > 3);
   assert.equal(count(/<nav\b/g), count(/<nav\b[^>]*aria-label="/g), "every nav is named");
-  assert.match(page, /<div class="marquee" id="marquee" aria-hidden="true">[\s\S]*?<\/div>\s*<\/div>\s*<p class="sr-only">Innovation fuels it\. Engineering proves it\. Astrion makes it mission-ready\.<\/p>/, "the marquee line is read once");
+  // The marquee is decoration and carries only the slogan. Assistive technology reads the slogan once, in the footer.
+  const marquee = page.match(/<div class="marquee" id="marquee" aria-hidden="true">\s*<div class="marquee-track" id="marquee-track">([\s\S]*?)<\/div>\s*<\/div>/)[1];
+  const phrases = marquee.split("<i></i>").map(part => part.replace(/<[^>]+>/g, "").replace(/&trade;/g, "").trim()).filter(Boolean);
+  assert.deepEqual(phrases, Array(4).fill(["Defend this world", "Build the next"]).flat(), "the marquee carries the slogan, four times over");
+  assert.equal((marquee.match(/<span|<i>/g) || []).length % 2, 0, "the marquee has two equal halves to loop on");
+  assert.doesNotMatch(all, /Innovation fuels it|Engineering proves it|makes it mission-ready/i);
+  assert.equal(count(/Defend this world/g), 5, "four times in the marquee and once in the footer");
 });
 
 test("the page stays light", () => {
