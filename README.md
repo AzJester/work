@@ -679,12 +679,28 @@ the budget. Unbranded, with a neutral look you can tune under Settings.
 
 ## Astrion Agentic AI page (team review build)
 
-`mission-intelligence/` is a short, simple company page about agentic AI at Astrion: six
-alternating Bone and Void bands with large Archivo type, one visual (a rotating network globe
-drawn on a canvas in Ion, straddling the first two bands), and short copy. Hero, what we build
-(retrieve, reason, review), four kinds of agents, human in the loop, proof, contact. Three
-small files plus the Brand Kit 1.0 web fonts and outlined wordmarks, no external requests,
-reduced-motion aware, noindexed. Tests: `tests/mission-intelligence.test.mjs` and
+`mission-intelligence/` is a one-page company site about agentic AI at Astrion. Its structure
+follows the Webby "Corporate Communications" winners: monumental type fitted to the column,
+one immersive visual, numbered chapters and scroll-driven storytelling. Its look is Astrion
+Brand Kit 1.0 only: the seven website colours, Archivo, JetBrains Mono, the Space Grotesk
+wordmark line and the outlined wordmarks.
+
+One hero and seven chapters:
+
+- **Hero and 01 What we build** share a pinned stage. The headline parts, a canvas data globe
+  zooms from the whole sphere to its horizon, and the statement lights up word by word.
+- **02 How every agent works**: three giant words (retrieve, reason, review) fill as they pass.
+- **03 The agents**: four rows that invert on hover, with a photo that follows the pointer.
+- **04 Domains**: a pinned sideways gallery of the six domain artworks, never cropped or
+  drawn larger than supplied.
+- **05 The rule**: a Bone band. Agents recommend. People decide.
+- **06 Proof**: the brand film full bleed, with four numbers that count up.
+- **07 Contact**: one line over the globe's horizon, then a full-width wordmark footer.
+
+Copy stays short and there are no demos. Three files plus the brand fonts, wordmarks and media;
+no external requests; noindexed. Every effect is an enhancement: with reduced motion, with the
+pause switch, on touch screens or without JavaScript the page reads straight down and the
+fitted headlines still fit. Tests: `tests/mission-intelligence.test.mjs` and
 `tests/browser/mission-intelligence.spec.mjs`.
 
 ### → https://azjester.github.io/work/mission-intelligence/
@@ -877,7 +893,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | File | Purpose |
 |------|---------|
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
-| `mission-intelligence/` | The **Astrion Agentic AI** page (team review build): six bands, one globe, short copy about agentic AI at Astrion, on the Brand Kit 1.0 palette and fonts. |
+| `mission-intelligence/` | The **Astrion Agentic AI** site (team review build): one hero and seven numbered chapters with a scroll-driven data globe, a pinned domain gallery and short copy about agentic AI at Astrion, on the Brand Kit 1.0 palette and fonts. |
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |
 | `black-hat-agent/` | Forwards the old Black Hat Agent address to the current build, which lives in the [`Black_Hat_Agent`](https://github.com/AzJester/Black_Hat_Agent) repository. Also holds the vendored SheetJS library that the Solution Architect Workbench loads. |
