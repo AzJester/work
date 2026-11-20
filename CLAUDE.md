@@ -23,3 +23,13 @@ Interpretation, not stated by the owner:
 - A title made of two sentences is rewritten as one phrase or set as two lines, so no period is left in the middle.
 - Body copy, such as an item description of one or more sentences, keeps its periods.
 - On `mission-intelligence/` the rule is enforced by the "titles and subtitles carry no closing period" test in `tests/mission-intelligence.test.mjs`.
+
+## The Astrion slogan
+
+Standing instruction from the repository owner, given 2026-11-20: the slogan is "Defend this world. Build the next." The older line "Astrion EDGE: Engineering Delivered, Guaranteed Excellence" is not used.
+
+Interpretation, not stated by the owner:
+
+- Set as a title or subtitle, the slogan follows the no-closing-period rule above: two lines, "Defend this world" and "Build the next", with no periods.
+- `astrion-film/` sets a trademark sign after "next". `mission-intelligence/` does the same.
+- Only `mission-intelligence/` was changed on that day. A search found the older line still in `LDAWIF/astrion-division-landing.html`, which was left as it was.

@@ -89,6 +89,10 @@ test("titles and subtitles carry no closing period", () => {
   // Section subtitles are one phrase each. Item descriptions are sentences and keep their periods.
   assert.match(page, /<p class="hero-sub">AI agents that read the records, do the work and leave the decision to a person<\/p>/);
   assert.match(page, /<p class="lede">Six domains, one agent in each<\/p>/);
+  // The slogan is two lines with no periods, and the retired tagline is gone.
+  assert.match(page, /<p class="tagline"><span>Defend this world<\/span> <span>Build the next<sup>&trade;<\/sup><\/span><\/p>/);
+  assert.match(css, /\.tagline span \{ display: block; \}/);
+  assert.doesNotMatch(all, /Guaranteed Excellence|Astrion EDGE|Engineering Delivered/i);
   assert.match(page, /<p class="row-d">[^<]+\.<\/p>/);
 });
 
