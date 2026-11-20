@@ -107,7 +107,7 @@ test("scrolling the pinned stage zooms the globe to its horizon and lights the s
   expect(await page.evaluate(() => [window.astrion.mode(), window.astrion.pinned()])).toEqual(["split", true]);
   const read = () => page.locator("#stage-pin").evaluate(pin => ({
     hx: Number(pin.style.getPropertyValue("--hx")), so: Number(pin.style.getPropertyValue("--so")), top: Math.round(pin.getBoundingClientRect().top),
-    lit: document.querySelectorAll("#statement-text .sw.lit").length, words: document.querySelectorAll("#statement-text .sw").length,
+    lit: document.querySelectorAll("#build .sw.lit").length, words: document.querySelectorAll("#build .sw").length,
   }));
   const start = await read();
   expect(start).toEqual({ hx: 0, so: 0, top: 0, lit: 0, words: 11 });
