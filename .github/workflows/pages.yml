@@ -20,9 +20,16 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # The browser spec selection reads this repository's workflow runs.
+      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history: the browser spec selection compares this push with the last deploy that passed.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -39,8 +46,20 @@ jobs:
       - name: Run source and geometry tests
         run: npm test
 
+      - name: Choose the browser specs for this change
+        # A push that stays inside mapped pages runs those pages' specs and the specs that always run. A shared
+        # file, an unmapped path, a failing nightly run or any doubt gives no file names, which runs every spec.
+        # The map is at the top of scripts/select-browser-tests.mjs. If the script itself breaks, the step still
+        # passes and gives no file names: choosing fewer specs must never be what stops, or shortens, the gate.
+        id: specs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/select-browser-tests.mjs --github || echo "::warning::The browser spec selection failed, so this run executes every spec."
+
       - name: Run browser tests
-        run: npm run test:browser
+        env:
+          BROWSER_SPECS: ${{ steps.specs.outputs.files }}
+        run: npm run test:browser -- $BROWSER_SPECS
 
       - name: Upload browser test report
         if: failure()

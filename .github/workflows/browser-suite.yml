@@ -1,0 +1,61 @@
+name: Full browser suite
+
+# The deploy gate in pages.yml runs only the browser specs a push can affect, chosen by
+# scripts/select-browser-tests.mjs. This workflow runs every spec against main once a day, so that a dependency the
+# path map does not know about is found within a day. It publishes nothing and changes nothing.
+#
+# The deploy gate reads the result. While the last run here is green, a one-page push takes the short path. After a
+# failed run, or three days without a run, the gate goes back to running every spec.
+# Run it by hand (Actions > Full browser suite > Run workflow) to test a branch, or to clear a failed run on main.
+on:
+  schedule:
+    - cron: "17 9 * * *"   # daily at 09:17 UTC
+  workflow_dispatch: {}     # allow manual runs from the Actions tab
+  push:
+    branches: [main]
+    paths:
+      # Proves this workflow when it changes, and gives the gate a first result on the day it lands.
+      - .github/workflows/browser-suite.yml
+
+permissions:
+  contents: read
+
+# A run on another branch never waits behind the nightly run on main.
+concurrency:
+  group: browser-suite-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  browser-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run every browser spec
+        # A run that hangs must end as a failure, which the deploy gate acts on, not as a cancelled job.
+        run: timeout 25m npm run test:browser
+
+      - name: Upload browser test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
