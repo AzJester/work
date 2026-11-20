@@ -94,3 +94,12 @@ Interpretation, not stated by the owner:
 - The reference scenes in "The real world" are cut from footage that two United States government agencies release for reuse, and both ask to be credited. They are named only on `mission-engineering/credits.html`, which the page links to as "Footage credits".
 - The page's words now come from three places: the white paper, astrion.us, and the owner's direction on mission data given the same day. The leadership-only details above stay out, data rights among them.
 - The test "the page names Astrion alone and never calls the work a concept" in `tests/mission-engineering.test.mjs` holds these lines.
+
+## When the deploy job fails after its tests pass
+
+Seen on 2026-11-20, in deploy run 44766481574. A session worked this out, and the owner did not dictate it:
+
+- The `deploy` job uploads the site and publishes it in back-to-back steps. Now and then the publish step asks GitHub for the upload a moment too soon, is told there is none, and fails with "No artifacts named github-pages were found". The tests have passed by then and nothing is wrong with the change.
+- Re-running the failed job does not help. The first upload stays attached to the run, the re-run adds a second, and the publish step then fails with "Multiple artifacts named github-pages". Every later re-run of that run fails the same way.
+- What works is a new run, which the next push to `main` starts. Starting the workflow by hand also gives a new run, but a manual run always redeploys the Supabase backend, so ask the owner before doing that.
+- An edit to `.github/workflows/pages.yml` redeploys the backend as well. Weigh that before changing the workflow to make this failure go away.
