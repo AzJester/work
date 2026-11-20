@@ -73,7 +73,7 @@
       a = hots[(Math.random() * hots.length) | 0]; b = hots[(Math.random() * hots.length) | 0];
       dot = unit[a * 3] * unit[b * 3] + unit[a * 3 + 1] * unit[b * 3 + 1] + unit[a * 3 + 2] * unit[b * 3 + 2];
     } while (a === b || dot > 0.86 || dot < -0.7);
-    const omega = Math.acos(dot), so = Math.sin(omega), lift = 0.12 + 0.18 * (omega / Math.PI), path = new Float32Array(ARC_SAMPLES * 3);
+    const omega = Math.acos(dot), so = Math.sin(omega), lift = 0.08 + 0.11 * (omega / Math.PI), path = new Float32Array(ARC_SAMPLES * 3);
     for (let k = 0; k < ARC_SAMPLES; k++) {
       const s = k / (ARC_SAMPLES - 1), w1 = Math.sin((1 - s) * omega) / so, w2 = Math.sin(s * omega) / so, h = 1 + lift * Math.sin(Math.PI * s);
       path[k * 3] = (unit[a * 3] * w1 + unit[b * 3] * w2) * h; path[k * 3 + 1] = (unit[a * 3 + 1] * w1 + unit[b * 3 + 1] * w2) * h; path[k * 3 + 2] = (unit[a * 3 + 2] * w1 + unit[b * 3 + 2] * w2) * h;
@@ -85,10 +85,10 @@
 
   // ---- two orbit rings with satellites ----
   const rings = [
-    { r: 1.16, incl: 1.22, node: 0.35, drift: 0.00004, speed: 0.00040, sats: [0, 2.1, 4.2] },
-    { r: 1.31, incl: 0.58, node: -1.1, drift: -0.00003, speed: -0.00026, sats: [0.8, 3.9] },
+    { r: 1.09, incl: 1.22, node: 0.35, drift: 0.00004, speed: 0.00040, sats: [0, 2.1, 4.2] },
+    { r: 1.18, incl: 0.58, node: -1.1, drift: -0.00003, speed: -0.00026, sats: [0.8, 3.9] },
   ];
-  const dust = Array.from({ length: DUST }, () => ({ r: 1.06 + Math.random() * 0.5, incl: Math.random() * Math.PI, node: Math.random() * TAU, ang: Math.random() * TAU, speed: (0.00005 + Math.random() * 0.00012) * (Math.random() < 0.5 ? 1 : -1), size: 0.7 + Math.random() * 1.1 }));
+  const dust = Array.from({ length: DUST }, () => ({ r: 1.05 + Math.random() * 0.16, incl: Math.random() * Math.PI, node: Math.random() * TAU, ang: Math.random() * TAU, speed: (0.00005 + Math.random() * 0.00012) * (Math.random() < 0.5 ? 1 : -1), size: 0.7 + Math.random() * 1.1 }));
   const out = [0, 0, 0];
   function ringPoint(ring, ang, ct, st) {
     const x0 = Math.cos(ang) * ring.r, z0 = Math.sin(ang) * ring.r, ci = Math.cos(ring.incl), si = Math.sin(ring.incl), cn = Math.cos(ring.node), sn = Math.sin(ring.node);
@@ -108,7 +108,7 @@
   }
 
   function draw(now, still) {
-    const W = width, H = height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.36;
+    const W = width, H = height, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.405;
     const ca = Math.cos(angle), sa = Math.sin(angle), ct = Math.cos(TILT), st = Math.sin(TILT);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalCompositeOperation = "source-over";
@@ -116,8 +116,8 @@
     ctx.clearRect(0, 0, W, H);
 
     // atmosphere, body and rim light
-    let g = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.55);
-    g.addColorStop(0, `rgba(${ION},0)`); g.addColorStop(0.1, `rgba(${ION},0.2)`); g.addColorStop(0.4, `rgba(${ION},0.04)`); g.addColorStop(1, `rgba(${ION},0)`);
+    let g = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.23);
+    g.addColorStop(0, `rgba(${ION},0)`); g.addColorStop(0.25, `rgba(${ION},0.22)`); g.addColorStop(0.6, `rgba(${ION},0.05)`); g.addColorStop(1, `rgba(${ION},0)`);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     g = ctx.createRadialGradient(cx - R * 0.45, cy - R * 0.45, R * 0.05, cx, cy, R);
     g.addColorStop(0, "#19212b"); g.addColorStop(0.5, "#0a0d12"); g.addColorStop(1, "#04060a");
@@ -164,27 +164,34 @@
     ctx.globalAlpha = 1;
     ctx.fillStyle = `rgba(${FLARE},0.95)`; ctx.fill(cores);
 
-    // arcs
+    // arcs: a wide glow, a bright line and a hot core; hidden where the body is in front of them
     ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const lw = Math.max(0.7, Math.min(1.2, R / 330));
     for (const arc of arcs) {
       const prog = still ? 1 : Math.min(1, arc.t / arc.grow);
       const fadeIn = still ? 1 : arc.t < arc.grow + arc.hold ? 1 : Math.max(0, 1 - (arc.t - arc.grow - arc.hold) / arc.fade);
       if (fadeIn <= 0) continue;
       const count = Math.max(2, Math.ceil(prog * (ARC_SAMPLES - 1)) + 1);
-      let run = null, runAlpha = -1, headX = 0, headY = 0, headZ = -1;
-      const flush = () => { if (!run) return; ctx.strokeStyle = `rgba(${ION},${(runAlpha * fadeIn * 0.2).toFixed(3)})`; ctx.lineWidth = 5; ctx.stroke(run); ctx.strokeStyle = `rgba(${ION},${(runAlpha * fadeIn * 0.9).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.stroke(run); run = null; };
+      let run = null, runAlpha = -1, headX = 0, headY = 0, headZ = -1, headVisible = false;
+      const flush = () => {
+        if (!run) return;
+        ctx.strokeStyle = `rgba(${ION},${(runAlpha * fadeIn * 0.34).toFixed(3)})`; ctx.lineWidth = 8 * lw; ctx.stroke(run);
+        ctx.strokeStyle = `rgba(${ION},${(runAlpha * fadeIn).toFixed(3)})`; ctx.lineWidth = 2.3 * lw; ctx.stroke(run);
+        ctx.strokeStyle = `rgba(${FLARE},${(runAlpha * fadeIn * 0.9).toFixed(3)})`; ctx.lineWidth = 0.95 * lw; ctx.stroke(run);
+        run = null;
+      };
       for (let k = 0; k < count && k < ARC_SAMPLES; k++) {
         const ux = arc.path[k * 3], uy = arc.path[k * 3 + 1], uz = arc.path[k * 3 + 2];
         const xs = ux * ca + uz * sa, zs = -ux * sa + uz * ca, vx = xs, vy = uy * ct - zs * st, vz = uy * st + zs * ct;
         const sx = cx + vx * R, sy = cy - vy * R;
-        const depth = Math.min(1, Math.max(0, (vz + 0.3) / 0.5)), bucket = Math.round(depth * 4) / 4;
-        if (bucket <= 0) { flush(); continue; }
+        if (vz < 0 && vx * vx + vy * vy < 1) { flush(); headVisible = false; continue; }
+        const bucket = vz >= 0.12 ? 1 : vz >= -0.05 ? 0.8 : 0.55;
         if (!run || bucket !== runAlpha) { const prevX = run ? headX : sx, prevY = run ? headY : sy; flush(); run = new Path2D(); run.moveTo(prevX, prevY); runAlpha = bucket; }
-        run.lineTo(sx, sy); headX = sx; headY = sy; headZ = vz;
+        run.lineTo(sx, sy); headX = sx; headY = sy; headZ = vz; headVisible = true;
       }
       flush();
-      if (prog < 1 && headZ > -0.1) {
-        const hs = 7 + 5 * Math.max(0, headZ);
+      if (prog < 1 && headVisible) {
+        const hs = (10 + 7 * Math.max(0, headZ)) * Math.max(0.65, Math.min(1.15, R / 330));
         ctx.globalAlpha = fadeIn; ctx.drawImage(glowFlare, headX - hs, headY - hs, hs * 2, hs * 2); ctx.globalAlpha = 1;
       }
     }
