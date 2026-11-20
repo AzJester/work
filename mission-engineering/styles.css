@@ -425,6 +425,7 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
 
 /* page:fit start
    Fallback sizes for this page's fitted lines: the size the script would set, as a share of the line's own width, less 1.5%.
+   The stacked words on phones take 2.5% off, because small sizes lose more to whole-pixel glyph widths.
    They make the lines fit before the script runs and without it. Measure them again when the words change. */
 .lockup .lk-a { --fs0: min(9.3cqw, 30vh); }
 .lockup .lk-b { --fs0: min(8.82cqw, 19vh); }
@@ -432,15 +433,15 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
 .rule-title .solid { --fs0: 10.56cqw; }
 .closer .lk { --fs0: 7.16cqw; }
 @media (max-width: 37.5em) {
-  .lockup .lk-a .seg:first-child { --fs0: 17.36cqw; }
-  .lockup .lk-a .seg:last-child { --fs0: 20.71cqw; }
-  .lockup .lk-b .seg:first-child { --fs0: 18.04cqw; }
-  .lockup .lk-b .seg:last-child { --fs0: 17.73cqw; }
-  .rule-title .outline .seg:first-child { --fs0: 32cqw; }
-  .rule-title .outline .seg:last-child { --fs0: 18.15cqw; }
-  .rule-title .solid .seg:first-child { --fs0: 23.3cqw; }
-  .rule-title .solid .seg:last-child { --fs0: 19.93cqw; }
-  .closer .seg:first-child { --fs0: 12.61cqw; }
-  .closer .seg:last-child { --fs0: 17.03cqw; }
+  .lockup .lk-a .seg:first-child { --fs0: 17.19cqw; }
+  .lockup .lk-a .seg:last-child { --fs0: 20.5cqw; }
+  .lockup .lk-b .seg:first-child { --fs0: 17.86cqw; }
+  .lockup .lk-b .seg:last-child { --fs0: 17.55cqw; }
+  .rule-title .outline .seg:first-child { --fs0: 31.67cqw; }
+  .rule-title .outline .seg:last-child { --fs0: 17.97cqw; }
+  .rule-title .solid .seg:first-child { --fs0: 23.07cqw; }
+  .rule-title .solid .seg:last-child { --fs0: 19.72cqw; }
+  .closer .seg:first-child { --fs0: 12.48cqw; }
+  .closer .seg:last-child { --fs0: 16.85cqw; }
 }
 /* page:fit end */

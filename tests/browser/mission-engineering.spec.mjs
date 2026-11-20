@@ -104,6 +104,20 @@ for (const [width, height] of [[320, 700], [390, 844], [600, 900], [601, 900], [
   });
 }
 
+test("a fitted line that lands wide measures itself and shrinks to fit", async ({ page, baseURL }) => {
+  // Some browsers round glyph advances to whole pixels, so a line's width does not scale evenly with its size and the
+  // first estimate can land a pixel or two wide. A fixed padding reproduces that here, in any browser.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await open(page, baseURL);
+  await page.addStyleTag({ content: ".seg, .lk-in { padding-right: 7px !important; }" });
+  await page.evaluate(() => window.astrion.layout());
+  for (const line of await page.evaluate(fittedLines)) {
+    expect(line.width, `${line.text} stays inside its column`).toBeLessThanOrEqual(line.column + 0.5);
+    expect(line.width, `${line.text} spans its column`).toBeGreaterThan(line.column * 0.97);
+  }
+});
+
 test("scrolling the pinned stage zooms the globe to its horizon and lights the statement", async ({ page, baseURL }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page, baseURL);
