@@ -98,6 +98,9 @@ for (const [width, height] of [[320, 700], [390, 844], [600, 900], [601, 900], [
     }
     expect(await page.evaluate(containment)).toEqual([]);
     await expect(page.locator('.tools a[href="#contact"]')).toBeVisible();
+    // One half of the marquee is wider than the viewport, so the loop never shows a gap.
+    const loop = await page.locator("#marquee-track").evaluate(track => track.children[track.children.length / 2].offsetLeft - track.children[0].offsetLeft);
+    expect(loop).toBeGreaterThan(width);
   });
 }
 
