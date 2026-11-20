@@ -558,20 +558,21 @@
     counters.forEach(el => io.observe(el));
   }
 
-  const film = $("#film");
-  let filmNear = false, filmAttached = false;
-  function syncFilm() {
-    if (!film) return;
-    const want = filmNear && !RM && !state.paused && !(navigator.connection && navigator.connection.saveData);
-    if (want) {
-      if (!filmAttached) { filmAttached = true; $$("source[data-src]", film).forEach(source => { source.src = source.dataset.src; }); film.load(); }
-      const playing = film.play(); if (playing && playing.catch) playing.catch(() => {});
-    } else if (!film.paused) film.pause();
-  }
-  if (film) {
+  // A film is any video whose sources wait in data-src. Each one loads when its own band is near, and plays only while it is.
+  const films = $$("video").filter(film => $("source[data-src]", film)).map(film => {
+    let filmNear = false, filmAttached = false;
+    const sync = () => {
+      const want = filmNear && !RM && !state.paused && !(navigator.connection && navigator.connection.saveData);
+      if (want) {
+        if (!filmAttached) { filmAttached = true; $$("source[data-src]", film).forEach(source => { source.src = source.dataset.src; }); film.load(); }
+        const playing = film.play(); if (playing && playing.catch) playing.catch(() => {});
+      } else if (!film.paused) film.pause();
+    };
     film.addEventListener("playing", () => film.classList.add("on"));
-    if ("IntersectionObserver" in window) new IntersectionObserver(([entry]) => { filmNear = entry.isIntersecting; syncFilm(); }, { rootMargin: "30% 0px" }).observe(film);
-  }
+    if ("IntersectionObserver" in window) new IntersectionObserver(([entry]) => { filmNear = entry.isIntersecting; sync(); }, { rootMargin: "30% 0px" }).observe(film);
+    return sync;
+  });
+  function syncFilm() { films.forEach(sync => sync()); }
 
   /* ---------- Marquee ---------- */
   (() => {

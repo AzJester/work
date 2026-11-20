@@ -82,3 +82,15 @@ How that is kept true. A session built this, and the owner did not dictate the d
 `mission-engineering/` presents the Twin white paper of October 2026. The paper was prepared for Astrion leadership, and the site is on a public address.
 
 Interpretation, not stated by the owner: the site says what the paper says about the idea, the design and the current state, and leaves out what was written for leadership only. That is cost and the day rate, staffing and hardware asks, the schedule, named internal programs, named competitors, the author's name, and the internal wiki pointer. The test "the white paper's leadership-only details are not published" in `tests/mission-engineering.test.mjs` holds that line. Add any of them only when the owner asks for it by name.
+
+## The Mission Engineering page names Astrion alone
+
+Standing instruction from the repository owner, given 2026-11-20 while building out `mission-engineering/`: do not use any other company names, the page is only for Astrion, and do not say "concept".
+
+Interpretation, not stated by the owner:
+
+- No company other than Astrion is named on the page, on its credits page or in its README section. Notes on other companies stay out of the repository, tests and commit messages included.
+- The word "concept" is not used on the page or the credits page. The chapter "Where Twin stands" still tells apart what is built today and what comes next, in plain words.
+- The reference scenes in "The real world" are cut from footage that two United States government agencies release for reuse, and both ask to be credited. They are named only on `mission-engineering/credits.html`, which the page links to as "Footage credits".
+- The page's words now come from three places: the white paper, astrion.us, and the owner's direction on mission data given the same day. The leadership-only details above stay out, data rights among them.
+- The test "the page names Astrion alone and never calls the work a concept" in `tests/mission-engineering.test.mjs` holds these lines.

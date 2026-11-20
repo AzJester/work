@@ -8,6 +8,7 @@ import { Script } from "node:vm";
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const dir = resolve(root, "mission-engineering");
 const page = readFileSync(resolve(dir, "index.html"), "utf8");
+const credits = readFileSync(resolve(dir, "credits.html"), "utf8");
 const css = readFileSync(resolve(dir, "styles.css"), "utf8");
 const js = readFileSync(resolve(dir, "app.js"), "utf8");
 const hub = readFileSync(resolve(root, "apps.html"), "utf8");
@@ -43,16 +44,16 @@ test("the page publishes at its own route, noindexed, and is wired into the depl
   assert.match(readme, /\| `mission-engineering\/` \|/);
 });
 
-test("the page is one hero and seven numbered chapters, in order", () => {
+test("the page is one hero and nine numbered chapters, in order", () => {
   const main = page.slice(page.indexOf('<main id="main">'), page.indexOf("</main>"));
   const sections = [...main.matchAll(/<section class="[^"]+" id="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(sections, ["stage", "method", "provenance", "gate", "rule", "status", "contact"]);
+  assert.deepEqual(sections, ["stage", "method", "provenance", "gate", "rule", "data", "world", "status", "contact"]);
   const index = [...page.matchAll(/<li><a href="#([a-z]+)"><span class="i-n">(\d\d)<\/span><span class="i-t">[^<]+<\/span><\/a><\/li>/g)].map(match => `${match[2]} ${match[1]}`);
-  assert.deepEqual(index, ["01 idea", "02 method", "03 provenance", "04 gate", "05 rule", "06 status", "07 contact"], "the side index lists every chapter");
-  for (const label of ["01 / The idea", "02 / How a study runs", "03 / Provenance", "04 / The gate", "05 / The rule", "06 / Where Twin stands", "07 / Contact"]) assert.ok(page.includes(`>${label}</p>`), `chapter label: ${label}`);
+  assert.deepEqual(index, ["01 idea", "02 method", "03 provenance", "04 gate", "05 rule", "06 data", "07 world", "08 status", "09 contact"], "the side index lists every chapter");
+  for (const label of ["01 / The idea", "02 / How a study runs", "03 / Provenance", "04 / The gate", "05 / The rule", "06 / Mission data", "07 / The real world", "08 / Where Twin stands", "09 / Contact"]) assert.ok(page.includes(`>${label}</p>`), `chapter label: ${label}`);
   assert.equal(count(/<h1\b/g), 1, "one h1");
   assert.match(page, /<h1 id="hero-title" class="lockup">\s*<span class="sr-only">From tool mastery to domain judgment<\/span>/);
-  for (const heading of ["Every study takes the same path</h2>", "What a run ledger makes possible</h2>", "Five checks before a run</h2>", "The AI proposes, physics disposes</span>", "The foundation already exists</h2>", "One thin slice, end to end</span>"]) assert.ok(page.includes(heading), `heading: ${heading}`);
+  for (const heading of ["Every study takes the same path</h2>", "What a run ledger makes possible</h2>", "Five checks before a run</h2>", "The AI proposes, physics disposes</span>", "Certified runs become training data</h2>", "A data set is only as good as its scenarios</h2>", "The foundation already exists</h2>", "One thin slice, end to end</span>"]) assert.ok(page.includes(heading), `heading: ${heading}`);
   // The giant fitted lines are decoration for sighted readers; each one has a plain-text twin for everyone else.
   const fitted = count(/<span class="lk(?: [^"]*)?" aria-hidden="true">/g);
   assert.equal(fitted, 5, "five fitted display lines");
@@ -61,13 +62,15 @@ test("the page is one hero and seven numbered chapters, in order", () => {
 });
 
 test("the copy stays short and is about mission engineering", () => {
-  assert.ok(text.split(" ").length < 660, `page copy stays short (${text.split(" ").length} words)`);
+  assert.ok(text.split(" ").length < 1000, `page copy stays short (${text.split(" ").length} words)`);
   assert.equal(count(/<li class="move">/g), 3, "three moves: describe, certify, replay");
   for (const move of ["Describe", "Certify", "Replay"]) assert.ok(page.includes(`<span class="word-f">${move}</span>`), `move: ${move}`);
   assert.equal(count(/<li class="row reveal">/g), 4, "four things a run ledger makes possible");
   assert.equal(count(/<figure class="domain">/g), 5, "five checks in the gate");
   assert.equal(count(/<li class="reveal"><span>0\d<\/span><p>/g), 3, "three rules");
   assert.equal(count(/<div class="reveal"><dt>/g), 4, "four status numbers");
+  assert.equal(count(/<li class="reveal"><span>0\d<\/span><h3>/g), 6, "six points on mission data");
+  assert.equal(count(/<figure class="scene(?: scene-wide)? reveal">/g), 4, "four reference scenes");
   assert.match(text, /mission engineering/i);
   assert.doesNotMatch(page, /<dialog|<details|<form|<select|<textarea|<iframe|<input/, "no demos, forms or embeds");
   assert.match(page, /<p class="domains-end"><span>The only path into execution<\/span><\/p>/, "the gate is the only path into execution");
@@ -78,7 +81,7 @@ test("titles and subtitles carry no closing period", () => {
   const grab = pattern => [...page.matchAll(pattern)].map(match => strip(match[1]));
   const titles = [
     ...grab(/<h[123]\b[^>]*>([\s\S]*?)<\/h[123]>/g),
-    ...grab(/<p class="(?:hero-sub|statement-text|statement-note|lede|lede reveal|label|label reveal|d-a|tagline|domains-end)"[^>]*>([\s\S]*?)<\/p>/g),
+    ...grab(/<p class="(?:hero-sub|statement-text|statement-note|lede|lede reveal|label|label reveal|d-a|tagline|domains-end|scene-d|scenes-note reveal)"[^>]*>([\s\S]*?)<\/p>/g),
     ...grab(/<li class="reveal"><span>\d\d<\/span><p>([\s\S]*?)<\/p><\/li>/g),
     ...grab(/<span class="(?:seg|word-f|sr-only|i-t|row-m|brand-sub wordmark-text)"[^>]*>([^<]*)<\/span>/g),
     ...grab(/<dt>([^<]*)<\/dt>/g),
@@ -100,6 +103,16 @@ test("the page says what the white paper says, with the Astrion calls to action"
   // Source: the Twin white paper of October 2026. See CLAUDE.md, "Astrion pages follow astrion.us", for the calls to action.
   assert.match(page, /<h2 class="statement-text" id="statement-text" data-words>Make new analysts productive <em>without making them wrong<\/em><\/h2>/);
   assert.match(page, /<p class="statement-text" data-words>Speed alone is a liability<\/p>/);
+  assert.match(page, /<p class="statement-note">A wrong number in a decision brief costs more than a slow one<\/p>/);
+  // The paper's own answers to "how do you know the AI did not make it up".
+  for (const line of ["every number in a run explanation is computed, not recalled", "Retrieval tells an AI what is plausible. The catalog tells the gate what is allowed.", "Fast models report their own uncertainty.", "false rejects, which measure friction, and escapes, which measure lost credibility"]) assert.ok(page.includes(line), `the page carries: ${line}`);
+  // Mission data: the owner's direction of 2026-11-20, said with the mechanisms the paper describes.
+  assert.deepEqual([...page.matchAll(/<li class="reveal"><span>0\d<\/span><h3>([^<]+)<\/h3>/g)].map(match => match[1]), ["Relevant by construction", "Labels written by physics", "Runs where they add the most", "Every classification level", "Real records beside simulated ones", "Current as models change"]);
+  assert.deepEqual([...page.matchAll(/<span class="scene-n">0\d<\/span><h3>([^<]+)<\/h3>/g)].map(match => match[1]), ["Land", "Sea", "Seafloor", "Space"]);
+  // astrion.us wording, read again on 2026-11-20: "intelligence-based, government-validated threat models and simulations".
+  assert.match(page, /<p class="lede reveal">Astrion threat models are intelligence-based and government-validated<\/p>/);
+  // What is built and what comes next stay apart, in plain words.
+  assert.match(page, /<p class="proof-note reveal">Built today: [^<]+ Next come the gate, the run ledger and fast surrogate models, then the mission data sets they make possible\./);
   assert.match(page, /<span class="sr-only">The AI proposes, physics disposes<\/span>/, "the rule");
   assert.deepEqual([...page.matchAll(/<a class="btn[^"]*"[^>]*><span>([^<]+)<\/span>/g)].map(match => match[1]), ["Contact Us", "Build The Mission", "Contact Us"], "calls to action");
   assert.deepEqual([...page.matchAll(/<span class="d-n">0\d<\/span><h3>([^<]+)<\/h3>/g)].map(match => match[1]), ["Structural", "Semantic", "Physical", "Doctrinal", "Expert review"], "the five checks, cheapest first");
@@ -113,7 +126,7 @@ test("the page says what the white paper says, with the Astrion calls to action"
 test("the white paper's leadership-only details are not published", () => {
   // The paper was prepared for Astrion leadership and this site is public. Cost, rate, staffing and hardware asks, named programs,
   // named competitors, the author, the schedule and the internal wiki pointer stay out unless the owner says otherwise.
-  const published = page + "\n" + readFileSync(resolve(root, "README.md"), "utf8").split("## Astrion Twin mission engineering page")[1].split("\n## ")[0];
+  const published = page + "\n" + credits + "\n" + readFileSync(resolve(root, "README.md"), "utf8").split("## Astrion Twin mission engineering page")[1].split("\n## ")[0];
   for (const held of ["$", "engineer-day", "747", "180K", "360K", "135K", "270K", "AURORA", "GENESIS", "MDA", "Code Metal", "Johns Hopkins", "APL", "Pierru", "Product Owner", "Confluence", "GPU", "workstation", "sprint", "six months", "data rights", "self-hosted"]) {
     assert.ok(!published.includes(held), `leadership-only detail is published: ${held}`);
   }
@@ -193,16 +206,26 @@ test("the domain artwork is shown whole and never larger than it was supplied", 
   assert.match(css, /\.domains\.pinned \.domain \{ width: calc\(min\(60vh, 1402px\) \* \.8003\);/, "the pinned gallery never draws the artwork above its supplied height");
 });
 
-test("the proof film is muted, loads late and only plays when the script starts it", () => {
-  const video = page.match(/<video\b[^>]*>/)[0];
-  for (const attribute of ["muted", "loop", "playsinline", 'preload="none"', 'poster="assets/media/field-poster.webp"']) assert.ok(video.includes(attribute), `video attribute: ${attribute}`);
-  assert.doesNotMatch(video, /autoplay|controls/);
-  assert.equal(count(/<video\b/g), 1);
-  assert.deepEqual([...page.matchAll(/<source data-src="(assets\/media\/[^"]+)" type="(video\/[a-z0-9]+)">/g)].map(match => match[2]), ["video/webm", "video/mp4"]);
-  assert.doesNotMatch(page, /<source src=/, "no film bytes are requested until the band is near");
+test("the films are muted, load late and only play when the script starts them", () => {
+  const videos = page.match(/<video\b[^>]*>/g);
+  assert.equal(videos.length, 5, "four reference scenes and the proof film");
+  for (const video of videos) {
+    for (const attribute of ["muted", "loop", "playsinline", 'preload="none"', 'poster="assets/media/']) assert.ok(video.includes(attribute), `video attribute: ${attribute}`);
+    assert.doesNotMatch(video, /autoplay|controls/);
+  }
+  assert.match(page, /<video id="film" muted loop playsinline preload="none" poster="assets\/media\/field-poster\.webp">/);
+  assert.deepEqual([...page.matchAll(/<source data-src="(assets\/media\/[^"]+)" type="(video\/[a-z0-9]+)">/g)].map(match => match[2]), Array(5).fill(["video/webm", "video/mp4"]).flat());
+  assert.doesNotMatch(page, /<source src=/, "no film bytes are requested until a band is near");
   for (const file of ["field-loop.webm", "field-loop.mp4"]) assert.ok(statSync(resolve(dir, "assets/media", file)).size < 2_000_000, `${file} stays under 2 MB`);
-  assert.match(js, /navigator\.connection && navigator\.connection\.saveData/, "data saver keeps the poster");
-  assert.match(js, /const want = filmNear && !RM && !state\.paused/, "reduced motion and the pause switch keep the poster");
+  for (const scene of ["land", "sea", "seafloor", "space"]) {
+    for (const kind of ["webm", "mp4"]) assert.ok(statSync(resolve(dir, "assets/media", `scene-${scene}.${kind}`)).size < 1_600_000, `scene-${scene}.${kind} stays under 1.6 MB`);
+    // Each scene shows its poster until its film plays, at the size the film was cut to.
+    const [width, height] = webpSize(resolve(dir, `assets/media/scene-${scene}.webp`));
+    assert.ok(page.includes(`<img src="assets/media/scene-${scene}.webp" alt=`) && page.includes(`width="${width}" height="${height}"`), `scene-${scene} poster is declared at ${width} by ${height}`);
+  }
+  assert.match(js, /navigator\.connection && navigator\.connection\.saveData/, "data saver keeps the posters");
+  assert.match(js, /const want = filmNear && !RM && !state\.paused/, "reduced motion and the pause switch keep the posters");
+  assert.match(js, /const films = \$\$\("video"\)\.filter\(film => \$\("source\[data-src\]", film\)\)/, "every video with waiting sources is a film");
 });
 
 test("the script parses, steps aside for reduced motion and works as an enhancement", () => {
@@ -248,8 +271,43 @@ test("the page stays light", () => {
   assert.ok(Buffer.byteLength(page) < 32_000, `index.html ${Buffer.byteLength(page)}`);
   assert.ok(Buffer.byteLength(css) < 60_000, `styles.css ${Buffer.byteLength(css)}`);
   assert.ok(Buffer.byteLength(js) < 64_000, `app.js ${Buffer.byteLength(js)}`);
-  assert.ok(folderBytes(dir) < 6_600_000, `the folder is ${folderBytes(dir)} bytes`);
+  assert.ok(folderBytes(dir) < 13_500_000, `the folder is ${folderBytes(dir)} bytes`);
   assert.deepEqual([...page.matchAll(/<link rel="preload" href="assets\/fonts\/([^"]+)" as="font" type="font\/woff2" crossorigin>/g)].map(match => match[1]), ["archivo-web-03.woff2", "jetbrains-mono-latin.woff2"], "only the two Latin faces are preloaded");
   const eager = page.match(/<img\b[^>]*>/g).filter(image => !/loading="lazy"/.test(image));
   assert.ok(eager.every(image => /wordmark-(?:light|dark)\.svg/.test(image) || /id="preview-img"/.test(image)), "only the wordmarks load eagerly");
+});
+
+
+test("the page names Astrion alone and never calls the work a concept", () => {
+  // Standing instructions from the owner, 2026-11-20. See CLAUDE.md, "The Mission Engineering page names Astrion alone".
+  assert.doesNotMatch(page + credits, /concept/i);
+  // The two agencies that supplied the reference scenes ask for credit. They are named on credits.html and nowhere on the page.
+  for (const name of ["NASA", "USGS", "Geological Survey", "Goddard", "ASTER"]) assert.ok(!page.includes(name), `the page names ${name}`);
+  // Every proper name the page prints in a heading, a label or a caption is Astrion's own.
+  assert.match(page, /<meta property="og:site_name" content="Astrion">/);
+  assert.match(text, /Astrion threat models/);
+  assert.doesNotMatch(text, /\b(?:Inc|LLC|Corp|Ltd)\b\.?/, "no company suffix appears in the copy");
+});
+
+test("the credits page names the source of every scene and loads nothing but the stylesheet", () => {
+  assert.match(credits, /<title>Astrion · Twin · Footage credits<\/title>/);
+  assert.match(credits, /<meta name="robots" content="noindex">/);
+  assert.doesNotMatch(credits, /<script|<video|<iframe|\sstyle="/);
+  assert.match(credits, /<link rel="stylesheet" href="styles\.css">/);
+  assert.equal(count(/href="credits\.html"/g), 2, "linked from the scenes and from the footer");
+  assert.match(page, /<p class="scenes-note reveal">Reference scenes built from measured data <a class="link" href="credits\.html">Footage credits<\/a><\/p>/);
+  assert.deepEqual([...credits.matchAll(/<h2>([^<]+)<\/h2>/g)].map(match => match[1]), ["Land", "Sea", "Seafloor", "Space"], "one entry per scene, in the page's order");
+  assert.deepEqual([...credits.matchAll(/<a class="link" href="(https:[^"]+)"/g)].map(match => match[1]), [
+    "https://svs.gsfc.nasa.gov/30010/", "https://svs.gsfc.nasa.gov/3827/", "https://www.usgs.gov/media/videos/fly-over-seafloor-san-francisco-bay", "https://svs.gsfc.nasa.gov/30878/",
+  ]);
+  for (const [url] of credits.matchAll(/https?:\/\/[^"'\s)<]+/g)) assert.ok(/^https:\/\/(?:svs\.gsfc\.nasa\.gov|www\.usgs\.gov)\//.test(url), `remote reference ${url}`);
+  // The credit lines are the ones each source page asks for.
+  for (const credit of ["NASA/GSFC/METI/ERSDAC/JAROS, and U.S./Japan ASTER Science Team", "NASA/Goddard Space Flight Center Scientific Visualization Studio", "U.S. Geological Survey", "NASA's Goddard Space Flight Center"]) assert.ok(credits.includes(`Credit: ${credit}.`), `credit line: ${credit}`);
+  assert.match(credits, /does not imply endorsement by NASA or the U\.S\. Geological Survey\./);
+  for (const [, ref] of credits.matchAll(/(?:src|href)="(assets\/[^"]+|styles\.css)"/g)) assert.ok(existsSync(resolve(dir, ref)), `missing asset ${ref}`);
+  assert.match(credits, /<a class="brand" href="\.\/" aria-label="Back to Twin mission engineering">/);
+  assert.match(credits, /<a class="btn btn-line" href="\.\/#world"><span>Back to the page<\/span><\/a>/);
+  // Titles and subtitles take no closing period here either.
+  const strip = html => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  for (const [, title] of credits.matchAll(/<(?:h1|h2|p class="label"|p class="lede")[^>]*>([\s\S]*?)<\/(?:h1|h2|p)>/g)) assert.doesNotMatch(strip(title), /[.]$/, `a title ends with a period: ${strip(title)}`);
 });
