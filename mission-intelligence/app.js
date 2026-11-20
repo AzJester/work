@@ -540,8 +540,8 @@
     const io = new IntersectionObserver(entries => entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       io.unobserve(entry.target);
-      const el = entry.target, target = Number(el.dataset.count), suffix = el.dataset.suffix || "", begun = performance.now();
-      const step = now => { const t = clamp((now - begun) / 1600); el.textContent = Math.round(target * easeOut(t)).toLocaleString("en-US") + suffix; if (t < 1) requestAnimationFrame(step); };
+      const el = entry.target, target = Number(el.dataset.count), suffix = el.dataset.suffix || "", decimals = Number(el.dataset.decimals || 0), begun = performance.now();
+      const step = now => { const t = clamp((now - begun) / 1600), value = target * easeOut(t); el.textContent = (decimals ? value.toFixed(decimals) : Math.round(value).toLocaleString("en-US")) + suffix; if (t < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
     }), { threshold: 0.6 });
     counters.forEach(el => io.observe(el));

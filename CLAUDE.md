@@ -33,3 +33,23 @@ Interpretation, not stated by the owner:
 - Set as a title or subtitle, the slogan follows the no-closing-period rule above: two lines, "Defend this world" and "Build the next", with no periods.
 - `astrion-film/` sets a trademark sign after "next". `mission-intelligence/` and `LDAWIF/astrion-division-landing.html` do the same.
 - `mission-intelligence/` was changed first. `LDAWIF/astrion-division-landing.html` still carried the older line and was changed later the same day, at the owner's request. `tests/astrion-division-landing.test.mjs` keeps it from returning there. No page carries the older line now.
+
+## Astrion pages follow astrion.us
+
+Standing instruction from the repository owner, given 2026-11-20: astrion.us is the company website, and the agentic AI page has to match its slogans. The page stays about agentic AI.
+
+What a review of astrion.us found that day, and what `mission-intelligence/` uses as a result:
+
+- Two trademarked lines: "Defend this world. Build the next." and "Missions are won at the seams".
+- Calls to action: "Build The Mission" and "Contact Us".
+- The six domains: Orbital, Atmosphere, Terrain, Maritime, Subsea, Cyber.
+- Company figures: 6,000+ employees, about 5,500 engineers, operators and professionals embedded with mission teams, about $1.2B in FY26 revenue, and more than 38,000 nautical miles of autonomous operations at sea.
+- The company's wording for human control: "operators retain execution authority".
+
+Lines that astrion.us does not carry, and that were removed: "We are the bridge between innovation and operational reality", "Innovation fuels it. Engineering proves it. Astrion makes it mission-ready.", "field-ready", "mission-informed", "Field-proven", "about 150 programs", "36 states plus the Netherlands" and "71% cleared workforce".
+
+Interpretation, not stated by the owner:
+
+- astrion.us ends its headlines with periods. Pages here still follow the no-closing-period rule above, because the owner repeated it the same day.
+- Figures and lines on astrion.us change. Read the site again before reusing any of them.
+- `tests/mission-intelligence.test.mjs` holds these choices in the test "the brand lines, calls to action and figures are the ones astrion.us carries".

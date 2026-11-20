@@ -186,10 +186,11 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
 @keyframes cue { 0% { transform: translateY(-101%); } 55%, 100% { transform: translateY(101%); } }
 
 .statement { position: relative; z-index: 5; padding: clamp(5rem, 12vw, 9rem) 0; }
-.statement-text { margin-top: 1.5rem; font-size: clamp(2rem, 4.9vw, 5.2rem); font-weight: 500; line-height: 1.04; letter-spacing: -.036em; max-width: 23ch; }
-.statement-text + .statement-text { margin-top: 0; max-width: 30ch; }
+.statement-text { margin-top: 1.5rem; font-size: clamp(2rem, 4.9vw, 5.2rem); font-weight: 500; line-height: 1.04; letter-spacing: -.036em; max-width: 32ch; text-wrap: balance; }
+.statement-text + .statement-text { margin-top: 0; }
+.statement-text sup { font-size: .3em; font-weight: 600; letter-spacing: 0; line-height: 0; vertical-align: 1.55em; margin-left: .12em; }
 .statement-text em { font-style: normal; color: var(--ion); }
-.statement-note { margin-top: clamp(1.4rem, 2.4vw, 2.2rem); font-size: clamp(1rem, 1.25vw, 1.2rem); color: var(--muted); max-width: 30ch; }
+.statement-note { margin-top: clamp(1.4rem, 2.4vw, 2.2rem); font-size: clamp(1rem, 1.25vw, 1.2rem); color: var(--muted); max-width: 34ch; }
 .sw { white-space: nowrap; transition: opacity .5s linear; }
 
 .fx .stage { height: 385vh; height: 385svh; }
@@ -310,7 +311,7 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
 .proof-media video.on { opacity: 1; }
 .proof-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 6, 7, .86) 0%, rgba(5, 6, 7, .34) 30%, rgba(5, 6, 7, .4) 52%, rgba(5, 6, 7, .96) 96%); }
 .proof-in { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 4rem; padding-block: clamp(6.5rem, 12vw, 9.5rem) clamp(2.2rem, 4.5vw, 3.6rem); }
-.proof-head .h2 { margin-top: 1.4rem; font-size: clamp(3rem, 8.6vw, 9rem); font-weight: 700; letter-spacing: -.05em; line-height: .9; }
+.proof-head .h2 { margin-top: 1.4rem; font-size: clamp(2.5rem, 7.2vw, 7.6rem); font-weight: 700; letter-spacing: -.05em; line-height: .92; max-width: 18ch; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line-strong); }
 .stats > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: .9rem; padding: 1.4rem 1.2rem 0 0; }
 .stats > div + div { padding-left: 1.4rem; border-left: 1px solid var(--line); }
