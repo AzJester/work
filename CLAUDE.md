@@ -53,3 +53,15 @@ Interpretation, not stated by the owner:
 - astrion.us ends its headlines with periods. Pages here still follow the no-closing-period rule above, because the owner repeated it the same day.
 - Figures and lines on astrion.us change. Read the site again before reusing any of them.
 - `tests/mission-intelligence.test.mjs` holds these choices in the test "the brand lines, calls to action and figures are the ones astrion.us carries".
+
+## Deploys run the browser specs a change can affect
+
+Goal set by the repository owner on 2026-11-20: small, single-page changes reach the live site faster, without weakening the safety gate for shared code. For that work the owner also said not to skip, disable or quarantine tests, and to keep the `production-smoke` job as it is.
+
+How the deploy works since that day. A session built this to meet the goal, and the owner did not dictate the details:
+
+- `npm run test:browser:select` lists the browser specs that cover the work on a branch and prints the command that runs them. Those are the specs to run before merging.
+- The deploy makes the same choice for each push, and its summary page says which specs ran and why. A change to a shared file (`assets/`, `scripts/`, `package.json`, the workflows, `apps.html` and others) runs every spec.
+- A new page, folder or spec needs a rule in the map at the top of `scripts/select-browser-tests.mjs`. `tests/browser-test-selection.test.mjs` fails until it has one.
+- The "Full browser suite" workflow runs every spec each night. After it fails, the next deploy runs every spec and names that failure as the reason. Fix or report the failing spec as part of the work in hand.
+- README.md, "How it's deployed", has the full rules.
