@@ -97,9 +97,4 @@ Interpretation, not stated by the owner:
 
 ## When the deploy job fails after its tests pass
 
-Seen on 2026-11-20, in deploy run 44766481574. A session worked this out, and the owner did not dictate it:
-
-- The `deploy` job uploads the site and publishes it in back-to-back steps. Now and then the publish step asks GitHub for the upload a moment too soon, is told there is none, and fails with "No artifacts named github-pages were found". The tests have passed by then and nothing is wrong with the change.
-- Re-running the failed job does not help. The first upload stays attached to the run, the re-run adds a second, and the publish step then fails with "Multiple artifacts named github-pages". Every later re-run of that run fails the same way.
-- What works is a new run, which the next push to `main` starts. Starting the workflow by hand also gives a new run, but a manual run always redeploys the Supabase backend, so ask the owner before doing that.
-- An edit to `.github/workflows/pages.yml` redeploys the backend as well. Weigh that before changing the workflow to make this failure go away.
+Seen on 2026-11-20 in deploy run 44766481574: the publish step asked for the site upload 0.3 seconds after its own job made it, was told there was none, and the re-run then failed on two uploads with one name. The task that fixed it the same day set the outline, and a session chose the layout: `build` uploads the site as `github-pages-<attempt>`, and `deploy` only publishes the upload `build` names. When `deploy` fails now, use "Re-run failed jobs" on the newest run. It publishes the earlier attempt's upload, which GitHub keeps for one day, and after that "Re-run all jobs" builds again. A manual run and any edit to `.github/workflows/pages.yml` redeploy the Supabase backend, and so does "Re-run all jobs" on a run that redeployed it: ask the owner before a manual run, and weigh the redeploy before editing the workflow. `tests/pages-deploy.test.mjs` holds the layout, and README.md, "Running a failed deploy again", has the rules.

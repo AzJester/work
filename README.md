@@ -928,6 +928,26 @@ every spec, and once a deploy has passed that way the shorter runs return.
   Three days after the last nightly run, deploys go back to running every spec and the
   run summary says why. Turn the workflow back on under Actions → Full browser suite.
 
+### Running a failed deploy again
+
+A run has five jobs. `quality` tests the change. `backend` and `build` follow it side by
+side: `build` puts the site together and uploads it, and publishes nothing. `deploy`
+waits for both and publishes that upload. `production-smoke` then checks the published
+site.
+
+`build` uploads the site under a name that carries the attempt number, such as
+`github-pages-1`, and tells `deploy` which name to publish. A failed run can therefore be
+started again from its own page under **Actions → Deploy to GitHub Pages**:
+
+- **Re-run failed jobs** runs the jobs that failed and the jobs that wait for them. When
+  `deploy` failed, it publishes the site the earlier attempt built, with no new build.
+  GitHub keeps that upload for one day. After a day, use **Re-run all jobs**.
+- **Re-run all jobs** tests, builds and publishes again, under the next name. It repeats
+  `backend` with the answer of the first attempt, so a run that redeployed the Supabase
+  backend redeploys it.
+- Start only the newest run again. An older run publishes its older site over the newer
+  one.
+
 ## Build notes
 
 One file, **zero external dependencies** (no CDNs, no web fonts, no network calls).

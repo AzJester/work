@@ -404,7 +404,7 @@ test("Pages publication is gated on backend deployment", () => {
     /supabase migration list --linked[\s\S]*supabase db push --dry-run[\s\S]*supabase db push[\s\S]*supabase functions deploy/,
     "Migration history and database changes must succeed before Edge Functions deploy",
   );
-  assert.match(pagesWorkflow, /deploy:\s*\r?\n\s+needs:\s*backend/, "Pages deploy job must wait for backend");
+  assert.match(pagesWorkflow, /\n {2}deploy:\s*\r?\n\s+needs:\s*\[[^\]\r\n]*\bbackend\b[^\]\r\n]*\]/, "Pages deploy job must wait for backend");
 });
 
 test("static IDs are unique and ARIA references resolve", () => {
