@@ -189,14 +189,15 @@ jobs:
         run: |
           supabase functions deploy adsb-relay --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
 
-  deploy:
-    needs: backend
+  # Builds the site and uploads it. It starts beside backend once the tests have passed, and it publishes nothing.
+  # Publishing is a job of its own for two reasons. A publish step that follows the upload within one job can ask
+  # GitHub for the upload before GitHub lists it, and then fails. And a failed deploy can run again without a new
+  # build, because the upload of the earlier attempt is still there.
+  build:
+    needs: quality
     runs-on: ubuntu-latest
     outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      artifact_name: ${{ steps.artifact.outputs.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -232,14 +233,34 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/app-updated.mjs --file _site/apps.html --remote
 
+      - name: Name the site artifact after this attempt
+        # A run keeps the uploads of every attempt, and the publish step fails when two of them share a name.
+        # The attempt number gives each upload a name of its own when the build runs again.
+        id: artifact
+        run: echo "name=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          name: ${{ steps.artifact.outputs.name }}
           path: '_site'
 
+  deploy:
+    needs: [backend, build]
+    runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # The name comes from the build job, not from this attempt's number. When this job runs again alone,
+          # build is not repeated, and the site it uploaded in the earlier attempt is the one to publish.
+          artifact_name: ${{ needs.build.outputs.artifact_name }}
 
   production-smoke:
     needs: deploy
