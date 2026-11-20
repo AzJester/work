@@ -823,10 +823,72 @@ discrimination in action.
 ## How it's deployed
 
 - `.github/workflows/pages.yml` publishes the repo to GitHub Pages on every push to
-  `main`. The repo is public and Pages is enabled, so the live URL above stays current.
-- **To update it:** edit `index.html`, commit, and push to `main` — the workflow
-  redeploys automatically (about a minute). Check **Actions → Deploy to GitHub Pages**
-  for the green run.
+  `main`. The repo is public and Pages is enabled, so the live URLs above stay current.
+- **To update a page:** edit it, commit, and push to `main`. The workflow tests the
+  change, publishes the site, then checks the published site. Check
+  **Actions → Deploy to GitHub Pages** for the green run.
+- One deploy runs at a time. When two pushes are waiting, GitHub cancels the older run
+  and the newer one publishes both changes.
+
+### Which browser tests a push runs
+
+Every run starts with the source tests (`npm test`, a few seconds, always all of them)
+and then runs Playwright specs from `tests/browser/`. All of the specs together take 7
+to 11 minutes, so the run picks the specs the push can affect. The map is at the top of
+[`scripts/select-browser-tests.mjs`](scripts/select-browser-tests.mjs).
+
+| The push changes | The run includes |
+|------------------|------------------|
+| One page or application that has specs, with or without its own tests. For example `mission-intelligence/`, `tests/browser/mission-intelligence.spec.mjs` and `tests/mission-intelligence.test.mjs`. | That page's specs and the two that always run |
+| Several such pages | The specs of each page and the two that always run |
+| `black-hat-agent/` | Its own spec, the Solution Architect Workbench specs (the Workbench loads the SheetJS library from that folder) and the two that always run |
+| A page no spec opens (`index.html`, `status.html`, `tracker.html`, `LDAWIF/` and others), a Markdown file at the root, or a source test (`tests/*.test.mjs`) | The two that always run |
+| A shared file: `assets/`, `scripts/`, `package.json` and the lockfiles, `playwright.config.mjs`, `.github/`, `apps.html`, `sw.js`, `manifest.webmanifest`, `supabase/`, or a helper in `tests/browser/` | Every spec |
+| A path the map has no rule for | Every spec |
+
+The two specs that always run are `app-hub-responsive.spec.mjs`, because the Application
+Library lists every application, and `offline-routing.spec.mjs`, because the root service
+worker precaches the tracker, the roadmap, the dashboard and the Map Builder together.
+
+The run also includes every spec whenever there is doubt:
+
+- It was started by hand (**Run workflow**), not by a push.
+- GitHub or git did not answer, or the script failed.
+- The nightly run described below failed, or has not run for three days.
+
+A push is compared with the last deploy that passed, not with the previous push. A change
+from a failed or cancelled run is therefore tested again with the next push.
+
+The summary page of each run says which specs ran and why. To get the same answer for
+the work on a branch before pushing:
+
+```bash
+npm run test:browser:select
+```
+
+It compares the branch with `origin/main`, lists the specs and prints the command that
+runs them. `node scripts/select-browser-tests.mjs --files <path>...` answers for any
+list of paths.
+
+**When you add a page or a spec,** add it to the map. A folder or file goes in `AREAS`
+with its specs, in `NO_SPECS` or in `SHARED`. A spec goes in the `AREAS` entry of the page
+it opens. `tests/browser-test-selection.test.mjs` fails until every tracked file has a
+rule and every spec has an owner, and it fails when a spec opens a page that does not
+run it.
+
+### The nightly full run
+
+`.github/workflows/browser-suite.yml` runs every spec against `main` each night at 09:17
+UTC, so that a dependency the map does not know about is found within a day. It publishes
+nothing. The deploy reads its result. After a failed nightly run the next deploy runs
+every spec, and once a deploy has passed that way the shorter runs return.
+
+- **To run every spec now:** Actions → Full browser suite → Run workflow. Pick a branch
+  to test it before merging.
+- **To deploy with every spec:** Actions → Deploy to GitHub Pages → Run workflow.
+- GitHub turns scheduled workflows off after 60 days without activity in a repository.
+  Three days after the last nightly run, deploys go back to running every spec and the
+  run summary says why. Turn the workflow back on under Actions → Full browser suite.
 
 ## Build notes
 
@@ -910,7 +972,9 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | `radar-signal-chain.html` | **How a Radar Measures Distance** — a guided, 9-stage interactive explainer that follows one pulse through a real (toy-scale) radar DSP chain (chirp → up/down conversion → matched filter → range), with an animated correlation scrubber and a full Explore dashboard mode. |
 | `poster.png` / `poster.html` | A static 1200×630 banner image and its source. Used for link previews / social cards (those don't animate). |
 | `poster.gif` / `poster-anim.html` | An **animated** 1000×525 banner (looping radar sweep, an intercept, and the F2T2EA chain lighting) and its source scene. Live at `https://azjester.github.io/work/poster.gif`. |
-| `.github/workflows/pages.yml` | Publishes the site to GitHub Pages on push to `main`. |
+| `.github/workflows/pages.yml` | Tests, publishes and smoke-tests the site on push to `main`. |
+| `.github/workflows/browser-suite.yml` | Nightly run of every browser spec against `main`. The deploy reads its result. |
+| `scripts/select-browser-tests.mjs` | Chooses the browser specs a push needs. Holds the map from pages to specs. |
 | `.github/workflows/supabase-ping.yml` | Daily scheduled job that pings the Supabase REST API (public publishable key) so the free project doesn't pause from inactivity. |
 | `embed-snippet.html` | Optional `<a><img></a>` if you ever want to link to the site from elsewhere. |
 

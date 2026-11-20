@@ -14,6 +14,7 @@ const read = path => readFileSync(resolve(root, path), "utf8");
 const pagesWorkflow = read(".github/workflows/pages.yml");
 const suiteWorkflow = read(`.github/workflows/${FULL_SUITE_WORKFLOW}`);
 const packageJson = JSON.parse(read("package.json"));
+const readme = read("README.md");
 const specFiles = readdirSync(resolve(root, SPEC_DIR)).filter(name => name.endsWith(".spec.mjs")).sort();
 const always = [...ALWAYS].sort();
 const select = (...files) => selectBrowserSpecs(files);
@@ -275,4 +276,23 @@ test("the nightly workflow runs every spec against main and publishes nothing", 
   assert.match(jobs, /run: timeout \d+m npm run test:browser\n/, "every spec, with no file names, and a hang ends as a failure");
   assert.doesNotMatch(jobs, /select-browser-tests|BROWSER_SPECS|deploy-pages|upload-pages-artifact|supabase|continue-on-error/);
   assert.match(suiteWorkflow, /^concurrency:\n {2}group: browser-suite-/m, "it must never hold up or cancel a deploy, which waits in the pages group");
+});
+
+test("the README says which specs a push runs and how to run them all", () => {
+  const section = readme.slice(readme.indexOf("## How it's deployed"), readme.indexOf("## Build notes"));
+  assert.ok(section.length > 1_000, "the deploy section holds the rules");
+  assert.match(section, /\[`scripts\/select-browser-tests\.mjs`\]\(scripts\/select-browser-tests\.mjs\)/, "it points at the map");
+  for (const spec of ALWAYS) assert.ok(section.includes(`\`${spec}\``), `it names ${spec}, which always runs`);
+  for (const shared of ["assets/", "scripts/", "package.json", "playwright.config.mjs", ".github/", "apps.html", "sw.js", "manifest.webmanifest", "supabase/"]) {
+    assert.ok(SHARED.includes(shared) && section.includes(`\`${shared}\``), `it lists ${shared} as shared`);
+  }
+  assert.match(section, /A path the map has no rule for \| Every spec \|/);
+  assert.match(section, /compared with the last deploy that passed/);
+  assert.match(section, /```bash\nnpm run test:browser:select\n```/, "it shows how to ask before pushing");
+  assert.ok(section.includes(`\`.github/workflows/${FULL_SUITE_WORKFLOW}\``), "it names the nightly workflow");
+  assert.match(section, new RegExp(`has not run for ${["zero", "one", "two", "three", "four", "five"][FULL_SUITE_MAX_AGE_DAYS]} days`), "it gives the age limit the script uses");
+  assert.match(section, /Actions → Full browser suite → Run workflow/);
+  assert.match(section, /Actions → Deploy to GitHub Pages → Run workflow/);
+  assert.match(readme, new RegExp(`\\| \`\\.github/workflows/${FULL_SUITE_WORKFLOW.replace(".", "\\.")}\` \\|`), "the file table lists the nightly workflow");
+  assert.match(readme, /\| `scripts\/select-browser-tests\.mjs` \|/, "the file table lists the script");
 });
