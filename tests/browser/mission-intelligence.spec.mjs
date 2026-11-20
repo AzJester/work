@@ -113,13 +113,14 @@ test("scrolling the pinned stage zooms the globe to its horizon and lights the s
     lit: document.querySelectorAll("#build .sw.lit").length, words: document.querySelectorAll("#build .sw").length,
   }));
   const start = await read();
-  expect(start).toEqual({ hx: 0, so: 0, top: 0, lit: 0, words: 11 });
+  expect(start).toMatchObject({ hx: 0, so: 0, top: 0, lit: 0 });
+  expect(start.words).toBeGreaterThan(8);
   await expect(page.locator("#build")).toHaveCSS("opacity", "0");
   await expect.poll(() => page.evaluate(() => window.astrion.globe.R)).toBeGreaterThan(300);
   const wholeGlobe = await page.evaluate(() => window.astrion.globe.R);
 
   await scrollTo(page, 720 * 1.78);
-  expect(await read()).toEqual({ hx: 1, so: 1, top: 0, lit: 11, words: 11 });
+  expect(await read()).toEqual({ hx: 1, so: 1, top: 0, lit: start.words, words: start.words });
   await expect(page.locator("#build")).toHaveCSS("opacity", "1");
   await expect(page.locator(".lockup .lk-a")).toHaveCSS("opacity", "0");
   await expect(page.locator(".scroll-cue")).toHaveCSS("opacity", "0");
@@ -229,7 +230,8 @@ test("the Bone band flips the chrome, and the film waits for its band and obeys 
   await expect(page.locator("body")).toHaveAttribute("data-chrome", "dark");
   await expect(page.locator("#film source[src]")).toHaveCount(2);
   await expect(page.locator('#proof [data-count="38000"]')).toHaveText("38,000+");
-  await expect(page.locator('#proof [data-count="71"]')).toHaveText("71%");
+  await expect(page.locator('#proof [data-count="6000"]')).toHaveText("6,000+");
+  await expect(page.locator('#proof [data-count="1.2"]')).toHaveText("1.2B");
 
   await scrollTo(page, await page.evaluate(() => document.documentElement.scrollHeight));
   const frames = () => page.evaluate(() => window.astrion.endGlobe.frames);

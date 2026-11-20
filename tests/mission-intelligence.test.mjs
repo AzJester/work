@@ -52,7 +52,7 @@ test("the page is one hero and seven numbered chapters, in order", () => {
   for (const label of ["01 / What we build", "02 / How every agent works", "03 / The agents", "04 / Where they work", "05 / The rule", "06 / Proof", "07 / Contact"]) assert.ok(page.includes(`>${label}</p>`), `chapter label: ${label}`);
   assert.equal(count(/<h1\b/g), 1, "one h1");
   assert.match(page, /<h1 id="hero-title" class="lockup">\s*<span class="sr-only">Agentic AI for the mission<\/span>/);
-  for (const heading of ["Every agent works the same way</h2>", "Four agents at work</h2>", "From seabed to orbit</h2>", "Agents recommend, people decide</span>", "Field-proven</h2>", "Bring one question</span>"]) assert.ok(page.includes(heading), `heading: ${heading}`);
+  for (const heading of ["Every agent works the same way</h2>", "Four agents at work</h2>", "From seabed to orbit</h2>", "Agents recommend, people decide</span>", "Technology grounded in the field</h2>", "Bring one question</span>"]) assert.ok(page.includes(heading), `heading: ${heading}`);
   // The giant fitted lines are decoration for sighted readers; each one has a plain-text twin for everyone else.
   const fitted = count(/<span class="lk(?: [^"]*)?" aria-hidden="true">/g);
   assert.equal(fitted, 5, "five fitted display lines");
@@ -94,6 +94,19 @@ test("titles and subtitles carry no closing period", () => {
   assert.match(css, /\.tagline span \{ display: block; \}/);
   assert.doesNotMatch(all, /Guaranteed Excellence|Astrion EDGE|Engineering Delivered/i);
   assert.match(page, /<p class="row-d">[^<]+\.<\/p>/);
+});
+
+test("the brand lines, calls to action and figures are the ones astrion.us carries", () => {
+  // Reviewed against astrion.us on 2026-11-20. See CLAUDE.md, "Astrion pages follow astrion.us".
+  assert.match(page, /<h2 class="statement-text" id="statement-text" data-words>Missions are won <em>at the seams<\/em><sup>&trade;<\/sup><\/h2>/, "the company line, with its trademark sign");
+  assert.match(page, /<p class="statement-text" data-words>That is where our agents work<\/p>/, "the page stays about agents");
+  assert.match(page, /<h1 id="hero-title" class="lockup">\s*<span class="sr-only">Agentic AI for the mission<\/span>/, "the page stays about agentic AI");
+  assert.deepEqual([...page.matchAll(/<a class="btn[^"]*"[^>]*><span>([^<]+)<\/span>/g)].map(match => match[1]), ["Contact Us", "Build The Mission", "Contact Us"], "calls to action");
+  assert.deepEqual([...page.matchAll(/<span class="d-n">0\d<\/span><h3>([^<]+)<\/h3>/g)].map(match => match[1]), ["Terrain", "Atmosphere", "Maritime", "Subsea", "Orbital", "Cyber"], "domain names");
+  const figures = [...page.matchAll(/<div class="reveal"><dt>([^<]+)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g)].map(match => `${match[2].replace(/<[^>]+>/g, "")} ${match[1]}`);
+  assert.deepEqual(figures, ["38,000+ Nautical miles of autonomous operations at sea", "6,000+ Employees", "~5,500 Engineers, operators and professionals embedded with mission teams", "~$1.2B FY26 revenue"]);
+  assert.match(page, /<p>Operators retain execution authority<\/p>/);
+  for (const retired of ["bridge between innovation", "field-ready", "mission-informed", "Field-proven", "Scope a pilot", "Cleared workforce", "plus the Netherlands", "Programs across", "same engineers"]) assert.ok(!page.includes(retired), `older wording is gone: ${retired}`);
 });
 
 test("the copy names no competitor, avoids the banned vocabulary and has no em dashes", () => {
