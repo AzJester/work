@@ -31,5 +31,5 @@ Standing instruction from the repository owner, given 2026-11-20: the slogan is 
 Interpretation, not stated by the owner:
 
 - Set as a title or subtitle, the slogan follows the no-closing-period rule above: two lines, "Defend this world" and "Build the next", with no periods.
-- `astrion-film/` sets a trademark sign after "next". `mission-intelligence/` does the same.
-- Only `mission-intelligence/` was changed on that day. A search found the older line still in `LDAWIF/astrion-division-landing.html`, which was left as it was.
+- `astrion-film/` sets a trademark sign after "next". `mission-intelligence/` and `LDAWIF/astrion-division-landing.html` do the same.
+- `mission-intelligence/` was changed first. `LDAWIF/astrion-division-landing.html` still carried the older line and was changed later the same day, at the owner's request. `tests/astrion-division-landing.test.mjs` keeps it from returning there. No page carries the older line now.
