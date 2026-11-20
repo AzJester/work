@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Astrion · Twin · AI-assisted mission engineering</title>
+<meta name="description" content="Twin is AI-assisted mission engineering that a new analyst can use on day one, and that a program office can brief with confidence.">
+<meta name="theme-color" content="#050607">
+<!-- Team review build: keep it out of search indexes until the content is cleared. -->
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="canonical" href="https://azjester.github.io/work/mission-engineering/">
+<link rel="preload" href="assets/fonts/archivo-web-03.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Astrion">
+<meta property="og:title" content="Astrion · Twin · AI-assisted mission engineering">
+<meta property="og:description" content="From tool mastery to domain judgment: AI authors the scenario, a gate certifies it and physics decides the result.">
+<meta property="og:url" content="https://azjester.github.io/work/mission-engineering/">
+<meta property="og:image" content="https://azjester.github.io/work/mission-engineering/assets/media/orbit.webp">
+<script>(function(){var h=document.documentElement,rm=false;h.classList.remove('no-js');h.classList.add('js');try{rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}h.classList.add(rm?'rm':'fx');})();</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body id="top">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="loader" id="loader" aria-hidden="true">
+  <img src="assets/media/wordmark-light.svg" alt="" width="300" height="44">
+  <div class="loader-bar"><i id="loader-bar"></i></div>
+  <div class="loader-meta"><span class="wordmark-text">Twin</span><span id="loader-count">000</span></div>
+</div>
+<div class="grain" id="grain" aria-hidden="true"></div>
+<div class="progress" aria-hidden="true"><i id="progress"></i></div>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+
+<header class="site-header" id="site-header">
+  <div class="bar">
+    <a class="brand" href="#top" aria-label="Astrion home">
+      <img class="wm wm-light" src="assets/media/wordmark-light.svg" alt="Astrion" width="300" height="44">
+      <img class="wm wm-dark" src="assets/media/wordmark-dark.svg" alt="" width="300" height="44">
+      <span class="brand-sub wordmark-text" aria-hidden="true">Twin</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#provenance">Provenance</a>
+      <a href="#gate">The gate</a>
+      <a href="#status">Status</a>
+    </nav>
+    <div class="tools">
+      <span class="clock" aria-hidden="true"><b id="clock">00:00:00</b> UTC</span>
+      <button class="motion" id="motion" type="button" aria-pressed="false" aria-label="Pause motion" data-motion-toggle><i aria-hidden="true"></i></button>
+      <a class="btn btn-line" href="#contact"><span>Contact Us</span></a>
+    </div>
+  </div>
+</header>
+
+<nav class="index" id="index" aria-label="Sections">
+  <ol>
+    <li><a href="#idea"><span class="i-n">01</span><span class="i-t">The idea</span></a></li>
+    <li><a href="#method"><span class="i-n">02</span><span class="i-t">How a study runs</span></a></li>
+    <li><a href="#provenance"><span class="i-n">03</span><span class="i-t">Provenance</span></a></li>
+    <li><a href="#gate"><span class="i-n">04</span><span class="i-t">The gate</span></a></li>
+    <li><a href="#rule"><span class="i-n">05</span><span class="i-t">The rule</span></a></li>
+    <li><a href="#status"><span class="i-n">06</span><span class="i-t">Where Twin stands</span></a></li>
+    <li><a href="#contact"><span class="i-n">07</span><span class="i-t">Contact</span></a></li>
+  </ol>
+</nav>
+
+<main id="main">
+
+  <!-- 00 Hero and 01 The idea share one pinned stage and one globe -->
+  <section class="stage" id="stage" aria-labelledby="hero-title">
+    <div class="stage-pin" id="stage-pin">
+      <canvas class="stars" id="stars" aria-hidden="true"></canvas>
+      <canvas class="orb" id="orb" aria-hidden="true"></canvas>
+
+      <div class="hero" id="hero">
+        <h1 id="hero-title" class="lockup">
+          <span class="sr-only">From tool mastery to domain judgment</span>
+          <span class="lk lk-a" aria-hidden="true"><span class="lk-clip"><span class="lk-in" data-fit="wide"><span class="seg" data-fit="narrow">From tool</span> <span class="seg" data-fit="narrow">mastery</span></span></span></span>
+          <span class="lk lk-b" aria-hidden="true"><span class="lk-clip"><span class="lk-in" data-fit="wide"><span class="seg" data-fit="narrow">To domain</span> <span class="seg" data-fit="narrow">judgment</span></span></span></span>
+        </h1>
+        <div class="hero-copy">
+          <p class="label">Twin / Mission engineering</p>
+          <p class="hero-sub">AI-assisted mission engineering that a new analyst can use on day one, and that a program office can brief with confidence</p>
+          <div class="actions">
+            <a class="btn btn-ion magnetic" href="#contact"><span>Build The Mission</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 10 10 2M4 2h6v6"/></svg></a>
+            <a class="link" href="#method">See how a study runs</a>
+          </div>
+        </div>
+        <p class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></p>
+      </div>
+
+      <div class="statement" id="idea">
+        <div class="wrap">
+          <p class="label">01 / The idea</p>
+          <h2 class="statement-text" id="statement-text" data-words>Make new analysts productive <em>without making them wrong</em></h2>
+          <p class="statement-text" data-words>Speed alone is a liability</p>
+          <p class="statement-note">Describe a study in plain language and get back a scenario, a run and a result to inspect on the globe</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 How a study runs -->
+  <section class="band loop" id="method" aria-labelledby="method-title">
+    <div class="wrap">
+      <header class="band-head">
+        <p class="label reveal">02 / How a study runs</p>
+        <h2 id="method-title" class="h2" data-split>Every study takes the same path</h2>
+      </header>
+      <ol class="moves" id="moves">
+        <li class="move">
+          <span class="move-n">01</span>
+          <h3 class="word"><span class="word-o" aria-hidden="true">Describe</span><span class="word-f">Describe</span></h3>
+          <p>The analyst says what to study in plain language, or drags it on the map.</p>
+        </li>
+        <li class="move">
+          <span class="move-n">02</span>
+          <h3 class="word"><span class="word-o" aria-hidden="true">Certify</span><span class="word-f">Certify</span></h3>
+          <p>Every scenario the AI writes passes a deterministic gate before it can run. The gate never relaxes a rule to get a pass.</p>
+        </li>
+        <li class="move">
+          <span class="move-n">03</span>
+          <h3 class="word"><span class="word-o" aria-hidden="true">Replay</span><span class="word-f">Replay</span></h3>
+          <p>Physics decides what happens. Every run can be reproduced from its fingerprint, so a replay returns the same result.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 03 What provenance makes possible -->
+  <section class="band agents" id="provenance" aria-labelledby="provenance-title">
+    <div class="wrap">
+      <header class="band-head">
+        <p class="label reveal">03 / Provenance</p>
+        <h2 id="provenance-title" class="h2" data-split>What a run ledger makes possible</h2>
+      </header>
+      <ul class="rows" id="rows">
+        <li class="row reveal">
+          <span class="row-n">01</span>
+          <h3 class="row-t">Living analyses</h3>
+          <p class="row-d">Each conclusion is stored as a testable claim, tied to the runs and model versions behind it. When a model changes, Twin tests the claim again and flags any brief that cites a reversed finding.</p>
+          <span class="row-m">Top priority</span>
+          <img class="row-img" src="assets/media/integration-lab.webp" alt="Test instrumentation wired to equipment in a systems integration lab" loading="lazy" width="1448" height="1086">
+        </li>
+        <li class="row reveal">
+          <span class="row-n">02</span>
+          <h3 class="row-t">Brief to evidence</h3>
+          <p class="row-d">An analysis becomes a decision brief in which every number links back to its run, its assumptions and its certificate.</p>
+          <span class="row-m">Decision briefs</span>
+          <img class="row-img" src="assets/media/field-test.webp" alt="An engineer reviews instrument readings at a field test site" loading="lazy" width="1916" height="821">
+        </li>
+        <li class="row reveal">
+          <span class="row-n">03</span>
+          <h3 class="row-t">Guided mission engineering</h3>
+          <p class="row-d">The steps of the DoD Mission Engineering Guide become conversational workflows, so new staff follow a proven method without knowing it by name.</p>
+          <span class="row-m">DoD ME Guide</span>
+          <img class="row-img" src="assets/media/coastal-unit.webp" alt="Rugged computing equipment at a coastal field station" loading="lazy" width="1448" height="1086">
+        </li>
+        <li class="row reveal">
+          <span class="row-n">04</span>
+          <h3 class="row-t">Experts that cite their sources</h3>
+          <p class="row-d">Domain experts compute with physics tools rather than recall, and ship only after passing an evaluation suite owned by a named expert.</p>
+          <span class="row-m">Evaluation suites</span>
+          <img class="row-img" src="assets/media/coastal-trial.webp" alt="An uncrewed surface vessel under way near a shore station" loading="lazy" width="1672" height="941">
+        </li>
+      </ul>
+    </div>
+    <div class="preview" id="preview" aria-hidden="true"><img id="preview-img" alt="" width="1448" height="1086"></div>
+  </section>
+
+  <!-- 04 The gate: official domain artwork, shown whole and never cropped -->
+  <section class="domains" id="gate" aria-labelledby="gate-title">
+    <div class="domains-pin" id="domains-pin">
+      <div class="domains-track" id="domains-track">
+        <header class="domains-head">
+          <p class="label">04 / The gate</p>
+          <h2 id="gate-title" class="h2">Five checks before a run</h2>
+          <p class="lede">Cheapest first, and the first failure stops the run</p>
+        </header>
+        <figure class="domain">
+          <div class="domain-art"><img src="assets/media/cyber-480.webp" srcset="assets/media/cyber-480.webp 480w, assets/media/cyber.webp 1122w" sizes="(max-width: 56em) 72vw, max(32vw, 49vh)" alt="A field of glowing particles joined into a network" loading="lazy" decoding="async" width="1122" height="1402"></div>
+          <figcaption><span class="d-n">01</span><h3>Structural</h3><p class="d-a">Schema and catalog</p><p class="d-d">The scenario matches the schema, and every platform resolves to a catalog entry.</p></figcaption>
+        </figure>
+        <figure class="domain">
+          <div class="domain-art"><img src="assets/media/atmosphere-480.webp" srcset="assets/media/atmosphere-480.webp 480w, assets/media/atmosphere.webp 1122w" sizes="(max-width: 56em) 72vw, max(32vw, 49vh)" alt="A delta-wing aircraft banking above the cloud tops" loading="lazy" decoding="async" width="1122" height="1402"></div>
+          <figcaption><span class="d-n">02</span><h3>Semantic</h3><p class="d-a">Validated envelopes</p><p class="d-d">Conditions sit inside each model's validated envelope. Frames and epochs agree.</p></figcaption>
+        </figure>
+        <figure class="domain">
+          <div class="domain-art"><img src="assets/media/orbit-480.webp" srcset="assets/media/orbit-480.webp 480w, assets/media/orbit.webp 1122w" sizes="(max-width: 56em) 72vw, max(32vw, 49vh)" alt="A satellite's solar array above Earth at night" loading="lazy" decoding="async" width="1122" height="1402"></div>
+          <figcaption><span class="d-n">03</span><h3>Physical</h3><p class="d-a">Feasibility</p><p class="d-d">Kinematics, fuel, range, line of sight and orbits are feasible.</p></figcaption>
+        </figure>
+        <figure class="domain">
+          <div class="domain-art"><img src="assets/media/maritime-480.webp" srcset="assets/media/maritime-480.webp 480w, assets/media/maritime.webp 1122w" sizes="(max-width: 56em) 72vw, max(32vw, 49vh)" alt="A ship's bow cutting through heavy seas" loading="lazy" decoding="async" width="1122" height="1402"></div>
+          <figcaption><span class="d-n">04</span><h3>Doctrinal</h3><p class="d-a">Rules and timeline</p><p class="d-d">Rules of engagement, order of battle and timeline logic hold.</p></figcaption>
+        </figure>
+        <figure class="domain">
+          <div class="domain-art"><img src="assets/media/terrain-480.webp" srcset="assets/media/terrain-480.webp 480w, assets/media/terrain.webp 1122w" sizes="(max-width: 56em) 72vw, max(32vw, 49vh)" alt="A relay mast on a mountain ridge under breaking cloud" loading="lazy" decoding="async" width="1122" height="1402"></div>
+          <figcaption><span class="d-n">05</span><h3>Expert review</h3><p class="d-a">A person decides</p><p class="d-d">A person reviews what changed against the baseline when stakes are high or the case is new.</p></figcaption>
+        </figure>
+        <p class="domains-end"><span>The only path into execution</span></p>
+      </div>
+      <p class="domains-hud" aria-hidden="true"><span>04 / The gate</span><b id="domain-n">01</b><span>/ 05</span><i><u id="domain-bar"></u></i></p>
+    </div>
+  </section>
+
+  <!-- 05 The rule -->
+  <section class="band rule light" id="rule" aria-labelledby="rule-title">
+    <div class="wrap">
+      <p class="label reveal">05 / The rule</p>
+      <h2 id="rule-title" class="rule-title">
+        <span class="sr-only">The AI proposes, physics disposes</span>
+        <span class="lk outline" aria-hidden="true"><span class="lk-clip"><span class="lk-in" data-fit="wide"><span class="seg" data-fit="narrow">The AI</span> <span class="seg" data-fit="narrow">proposes</span></span></span></span>
+        <span class="lk solid" aria-hidden="true"><span class="lk-clip"><span class="lk-in" data-fit="wide"><span class="seg" data-fit="narrow">Physics</span> <span class="seg" data-fit="narrow">disposes</span></span></span></span>
+      </h2>
+      <ol class="rules">
+        <li class="reveal"><span>01</span><p>A language model never decides whether an engagement succeeds</p></li>
+        <li class="reveal"><span>02</span><p>Rules are data the AI cannot edit</p></li>
+        <li class="reveal"><span>03</span><p>Provenance is an output</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 06 Where Twin stands: the official hero motion, full bleed -->
+  <section class="proof" id="status" aria-labelledby="status-title">
+    <div class="proof-media" aria-hidden="true">
+      <img src="assets/media/field-poster.webp" alt="" loading="lazy" decoding="async" width="1600" height="896">
+      <video id="film" muted loop playsinline preload="none" poster="assets/media/field-poster.webp">
+        <source data-src="assets/media/field-loop.webm" type="video/webm">
+        <source data-src="assets/media/field-loop.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="wrap proof-in">
+      <header class="proof-head">
+        <p class="label reveal">06 / Where Twin stands</p>
+        <h2 id="status-title" class="h2" data-split>The foundation already exists</h2>
+      </header>
+      <div class="proof-foot">
+        <dl class="stats">
+          <div class="reveal"><dt>Platforms in the validated catalog today</dt><dd>~<span data-count="1090">1,090</span></dd></div>
+          <div class="reveal"><dt>Domains in one synchronized run today</dt><dd><span data-count="6">6</span></dd></div>
+          <div class="reveal"><dt>Checks in the gate design</dt><dd><span data-count="5">5</span></dd></div>
+          <div class="reveal"><dt>Pieces left to build: the gate, a run ledger and fast surrogate models</dt><dd><span data-count="3">3</span></dd></div>
+        </dl>
+        <p class="proof-note reveal">Built today: a validated platform catalog, a multi-domain engine with high-fidelity radar physics, and review and replay on the globe. The assistant already authors scenarios and explains runs.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee" id="marquee" aria-hidden="true">
+    <div class="marquee-track" id="marquee-track">
+      <span>Defend this world</span><i></i><span class="solid">Build the next<sup>&trade;</sup></span><i></i><span>Defend this world</span><i></i><span class="solid">Build the next<sup>&trade;</sup></span><i></i>
+      <span>Defend this world</span><i></i><span class="solid">Build the next<sup>&trade;</sup></span><i></i><span>Defend this world</span><i></i><span class="solid">Build the next<sup>&trade;</sup></span><i></i>
+    </div>
+  </div>
+
+  <!-- 07 Contact -->
+  <section class="contact" id="contact" aria-labelledby="contact-title">
+    <canvas class="orb orb-end" id="orb-end" aria-hidden="true"></canvas>
+    <div class="wrap contact-in">
+      <p class="label reveal">07 / Contact</p>
+      <h2 id="contact-title" class="closer">
+        <span class="sr-only">One thin slice, end to end</span>
+        <span class="lk" aria-hidden="true"><span class="lk-clip"><span class="lk-in" data-fit="wide"><span class="seg" data-fit="narrow">One thin slice,</span> <span class="seg" data-fit="narrow">end to end</span></span></span></span>
+      </h2>
+      <div class="contact-foot">
+        <p class="lede reveal">The first slice is a single scenario type, and each increment ends in a test, not a demo</p>
+        <div class="actions reveal">
+          <a class="btn btn-ion btn-xl magnetic" href="mailto:communications@astrion.us?subject=Twin%20mission%20engineering%20inquiry"><span>Contact Us</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 10 10 2M4 2h6v6"/></svg></a>
+          <a class="link" href="mailto:communications@astrion.us">communications@astrion.us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-top">
+      <p class="tagline"><span>Defend this world</span> <span>Build the next<sup>&trade;</sup></span></p>
+      <nav aria-label="Footer">
+        <a href="https://astrion.us/">Astrion.us</a>
+        <a href="https://astrion.us/careers">Careers</a>
+        <a href="https://astrion.us/privacy-policy">Privacy</a>
+        <a href="#top">Back to top</a>
+      </nav>
+    </div>
+    <img class="foot-mark" src="assets/media/wordmark-light.svg" alt="Astrion" width="300" height="44" loading="lazy">
+    <div class="foot-bottom">
+      <small>© 2026 Astrion</small>
+      <small>White paper, October 2026 · Team review build</small>
+      <button type="button" class="foot-motion" data-motion-toggle aria-pressed="false">Pause motion</button>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

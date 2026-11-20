@@ -705,6 +705,35 @@ fitted headlines still fit. Tests: `tests/mission-intelligence.test.mjs` and
 
 ### → https://azjester.github.io/work/mission-intelligence/
 
+## Astrion Twin mission engineering page (team review build)
+
+`mission-engineering/` is a one-page site for the Twin white paper, "From tool mastery to
+domain judgment". It is the same kind of site as `mission-intelligence/`: the same data globe,
+the same pinned and scroll-driven chapters, the same Astrion Brand Kit 1.0 palette and fonts.
+
+One hero and seven chapters:
+
+- **Hero and 01 The idea** share a pinned stage. The headline parts, the globe zooms to its
+  horizon, and the statement lights up word by word.
+- **02 How a study runs**: three giant words (describe, certify, replay) fill as they pass.
+- **03 Provenance**: the four things a run ledger makes possible.
+- **04 The gate**: a pinned sideways gallery of the five checks, cheapest first.
+- **05 The rule**: a Bone band. The AI proposes. Physics disposes.
+- **06 Where Twin stands**: what is built today and what is left to build.
+- **07 Contact**: one thin slice, end to end.
+
+The page says what the white paper says about the idea, the design and the current state. The
+paper was prepared for company leadership and this site is public, so the details meant for
+that audience are left out: cost, staffing, hardware, schedule, named programs, named
+competitors and the author. A source test keeps them out.
+
+`app.js` is the same file as `mission-intelligence/app.js`, and `styles.css` differs only in
+the block marked `page:fit`, which holds the fallback sizes for this page's fitted headlines.
+`tests/astrion-scroll-engine.test.mjs` fails if the two copies drift apart. Other tests:
+`tests/mission-engineering.test.mjs` and `tests/browser/mission-engineering.spec.mjs`.
+
+### → https://azjester.github.io/work/mission-engineering/
+
 ## Astrion Company Site (team review build)
 
 `astrion-site/` is a second, independent company page built to match the reference
@@ -955,6 +984,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | File | Purpose |
 |------|---------|
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
+| `mission-engineering/` | The **Astrion Twin mission engineering** site (team review build): the Twin white paper as one hero and seven numbered chapters, on the same scroll engine, data globe and brand as `mission-intelligence/`. |
 | `mission-intelligence/` | The **Astrion Agentic AI** site (team review build): one hero and seven numbered chapters with a scroll-driven data globe, a pinned domain gallery and short copy about agentic AI at Astrion, on the Brand Kit 1.0 palette and fonts. |
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |

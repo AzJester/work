@@ -191,13 +191,13 @@ test("the domain gallery pins and travels sideways with the artwork shown whole"
 
   await scrollTo(page, gallery.top + 2);
   await expect(page.locator("#domain-n")).toHaveText("01");
-  expect(await page.locator("#domains-pin").evaluate(pin => Math.round(pin.getBoundingClientRect().top))).toBe(0);
+  expect(await page.locator("#domains-pin").evaluate(pin => Math.abs(Math.round(pin.getBoundingClientRect().top)))).toBe(0);
   await expect(page.locator("#domains-title")).toBeInViewport();
 
   await scrollTo(page, gallery.top + gallery.travel);
   await expect(page.locator("#domain-n")).toHaveText("06");
   expect(Math.abs(Number(await page.locator("#domains-track").evaluate(track => track.style.getPropertyValue("--x"))) - gallery.over)).toBeLessThan(2);
-  expect(await page.locator("#domains-pin").evaluate(pin => Math.round(pin.getBoundingClientRect().top))).toBe(0);
+  expect(await page.locator("#domains-pin").evaluate(pin => Math.abs(Math.round(pin.getBoundingClientRect().top)))).toBe(0);
   await expect(page.locator(".domain").last()).toBeInViewport({ ratio: 0.99 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(1280);
 
