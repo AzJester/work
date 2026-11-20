@@ -52,7 +52,7 @@ test("the page is one hero and seven numbered chapters, in order", () => {
   for (const label of ["01 / What we build", "02 / How every agent works", "03 / The agents", "04 / Where they work", "05 / The rule", "06 / Proof", "07 / Contact"]) assert.ok(page.includes(`>${label}</p>`), `chapter label: ${label}`);
   assert.equal(count(/<h1\b/g), 1, "one h1");
   assert.match(page, /<h1 id="hero-title" class="lockup">\s*<span class="sr-only">Agentic AI for the mission<\/span>/);
-  for (const heading of ["Every agent works the same way.", "Four agents at work.", "From seabed to orbit.", "Agents recommend. People decide.", "Field-proven.", "Bring one question."]) assert.ok(page.includes(heading), `heading: ${heading}`);
+  for (const heading of ["Every agent works the same way</h2>", "Four agents at work</h2>", "From seabed to orbit</h2>", "Agents recommend, people decide</span>", "Field-proven</h2>", "Bring one question</span>"]) assert.ok(page.includes(heading), `heading: ${heading}`);
   // The giant fitted lines are decoration for sighted readers; each one has a plain-text twin for everyone else.
   const fitted = count(/<span class="lk(?: [^"]*)?" aria-hidden="true">/g);
   assert.equal(fitted, 5, "five fitted display lines");
@@ -71,6 +71,25 @@ test("the copy stays short and is about agentic AI", () => {
   assert.match(text, /agentic AI/i);
   assert.doesNotMatch(page, /<dialog|<details|<form|<select|<textarea|<iframe|<input/, "no demos, forms or embeds");
   assert.match(page, /<p class="domains-end"><span>Illustrative applications<\/span><\/p>/, "the domain examples are labelled as illustrative");
+});
+
+test("titles and subtitles carry no closing period", () => {
+  const strip = html => html.replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/g, " ").replace(/\s+/g, " ").trim();
+  const grab = pattern => [...page.matchAll(pattern)].map(match => strip(match[1]));
+  const titles = [
+    ...grab(/<h[123]\b[^>]*>([\s\S]*?)<\/h[123]>/g),
+    ...grab(/<p class="(?:hero-sub|statement-text|statement-note|lede|lede reveal|label|label reveal|d-a|tagline|domains-end)"[^>]*>([\s\S]*?)<\/p>/g),
+    ...grab(/<li class="reveal"><span>\d\d<\/span><p>([\s\S]*?)<\/p><\/li>/g),
+    ...grab(/<span class="(?:seg|word-f|sr-only|i-t|row-m|brand-sub wordmark-text)"[^>]*>([^<]*)<\/span>/g),
+    ...grab(/<dt>([^<]*)<\/dt>/g),
+    ...page.match(/<div class="marquee-track" id="marquee-track">([\s\S]*?)<\/div>/)[1].split("<i></i>").map(strip).filter(Boolean),
+  ];
+  assert.ok(titles.length >= 60, `expected every title and subtitle on the page (${titles.length})`);
+  for (const title of titles) assert.doesNotMatch(title, /[.]$/, `a title or subtitle ends with a period: ${title}`);
+  // Section subtitles are one phrase each. Item descriptions are sentences and keep their periods.
+  assert.match(page, /<p class="hero-sub">AI agents that read the records, do the work and leave the decision to a person<\/p>/);
+  assert.match(page, /<p class="lede">Six domains, one agent in each<\/p>/);
+  assert.match(page, /<p class="row-d">[^<]+\.<\/p>/);
 });
 
 test("the copy names no competitor, avoids the banned vocabulary and has no em dashes", () => {
