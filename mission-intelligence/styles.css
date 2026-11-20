@@ -25,7 +25,7 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --grotesk: "Space Grotesk", Archivo, Arial, sans-serif;
   --edge: clamp(1.25rem, 5vw, 6rem);
-  --orb: min(88vw, 58rem);
+  --orb: min(94vw, 66rem);
   --header-h: 4.25rem;
 }
 
