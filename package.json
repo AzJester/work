@@ -6,6 +6,7 @@
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test --grep-invert @production",
     "test:browser:production": "playwright test --grep @production",
+    "test:browser:select": "node scripts/select-browser-tests.mjs",
     "test:roadmap": "node --test tests/roadmap-hardening.test.mjs",
     "build:vendor": "node scripts/build-vendor.mjs",
     "build:relief": "node relief-map/build.mjs",
