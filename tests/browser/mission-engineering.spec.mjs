@@ -31,11 +31,11 @@ const fittedLines = () => {
 const containment = () => {
   const found = [];
   if (document.documentElement.scrollWidth > innerWidth + 1) found.push(`page scrolls horizontally (${document.documentElement.scrollWidth} > ${innerWidth})`);
-  for (const element of document.querySelectorAll(".bar, .hero-copy, .statement .wrap, .band-head, .moves, .row, .domains-pin, .rules, .stats, .proof-note, .contact-foot, .foot-top, .foot-mark, .foot-bottom")) {
+  for (const element of document.querySelectorAll(".bar, .hero-copy, .statement .wrap, .band-head, .moves, .row, .domains-pin, .rules, .points, .scenes, .scenes-note, .stats, .proof-note, .contact-foot, .foot-top, .foot-mark, .foot-bottom")) {
     const box = element.getBoundingClientRect();
     if (box.width && (box.left < -1 || box.right > innerWidth + 1)) found.push(`${element.className} leaves the viewport: ${Math.round(box.left)} to ${Math.round(box.right)}`);
   }
-  for (const element of document.querySelectorAll(".h2, .row-t, .domain h3, .rules p, .stats dd, .word")) {
+  for (const element of document.querySelectorAll(".h2, .row-t, .domain h3, .rules p, .points h3, .scene h3, .stats dd, .word")) {
     const box = element.getBoundingClientRect();
     if (element.closest(".domains-track")) continue;
     if (box.right > innerWidth + 1) found.push(`text runs off the edge: ${element.textContent.trim().slice(0, 30)}`);
@@ -183,7 +183,7 @@ test("the side index and the navigation reach every chapter", async ({ page, bas
   await expect(page.locator("body")).toHaveAttribute("data-index", "light");
   await expect(page.locator("#rule")).toBeFocused();
 
-  for (const id of ["status", "contact"]) {
+  for (const id of ["data", "world", "status", "contact"]) {
     await index.locator(`a[href="#${id}"]`).click();
     await expect(page).toHaveURL(new RegExp(`#${id}$`));
     await expect(page.locator(`#${id}-title`)).toBeInViewport();
@@ -232,6 +232,7 @@ test("the Bone band flips the chrome, and the film waits for its band and obeys 
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page, baseURL);
   await expect(page.locator("#film source[src]")).toHaveCount(0);
+  await expect(page.locator(".scene source[src]")).toHaveCount(0);
   await expect(page.locator("body")).toHaveAttribute("data-chrome", "dark");
 
   await scrollTo(page, await docTop(page, "rule"));
@@ -239,6 +240,13 @@ test("the Bone band flips the chrome, and the film waits for its band and obeys 
   await expect(page.locator(".wm-dark")).toHaveCSS("display", "block");
   await expect(page.locator(".wm-light")).toHaveCSS("display", "none");
   await expect(page.locator(".rule-title .lk.in")).toHaveCount(2);
+
+  // The four reference scenes wait on their posters until their band is near, then each one plays.
+  await scrollTo(page, (await docTop(page, "world")) + 300);
+  await expect(page.locator("body")).toHaveAttribute("data-chrome", "dark");
+  await expect(page.locator(".scene source[src]")).toHaveCount(8);
+  await expect(page.locator(".scene video.on")).toHaveCount(4, { timeout: 20_000 });
+  expect(await page.locator(".scene video").evaluateAll(videos => videos.every(video => video.muted && video.loop && !video.controls))).toBe(true);
 
   await scrollTo(page, await docTop(page, "status"));
   await expect(page.locator("body")).toHaveAttribute("data-chrome", "dark");
@@ -257,7 +265,7 @@ test("the Bone band flips the chrome, and the film waits for its band and obeys 
   await expect(toggle).toHaveText("Play motion");
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#motion")).toHaveAttribute("aria-label", "Play motion");
-  expect(await page.locator("#film").evaluate(film => film.paused)).toBe(true);
+  expect(await page.locator("video").evaluateAll(videos => videos.every(video => video.paused))).toBe(true);
   await page.waitForTimeout(250);
   const held = await frames();
   await page.waitForTimeout(350);
@@ -290,6 +298,9 @@ test("with reduced motion nothing pins or animates and every chapter is readable
   // The gallery becomes an ordinary sideways scroller and the film stays on its poster.
   await expect(page.locator("#gate")).not.toHaveClass(/\bpinned\b/);
   expect(await page.locator("#domains-pin").evaluate(pin => pin.scrollWidth > pin.clientWidth + 500)).toBe(true);
+  await scrollTo(page, (await docTop(page, "world")) + 300);
+  await expect(page.locator(".scene source[src]")).toHaveCount(0);
+  await expect(page.locator(".scene-media img").first()).toBeVisible();
   await scrollTo(page, await docTop(page, "status"));
   await expect(page.locator("#film source[src]")).toHaveCount(0);
   await expect(page.locator('#status [data-count="1090"]')).toHaveText("1,090");
@@ -313,7 +324,7 @@ test.describe("on a phone", () => {
     await expect(page.locator('.tools a[href="#contact"]')).toBeVisible();
     await expect(page.locator(".hero-copy .btn")).toBeInViewport();
 
-    for (const id of ["method", "provenance", "gate", "rule", "status", "contact"]) {
+    for (const id of ["method", "provenance", "gate", "rule", "data", "world", "status", "contact"]) {
       await scrollTo(page, await docTop(page, id));
       expect(await page.evaluate(containment), `at #${id}`).toEqual([]);
     }
@@ -348,4 +359,31 @@ test.describe("without JavaScript", () => {
       await expect(page.locator('#contact a.btn[href^="mailto:communications@astrion.us"]')).toBeVisible();
     });
   }
+});
+
+test("the footage credits page loads on its own, names every source and leads back", async ({ page, baseURL }) => {
+  const problems = [];
+  const origin = new URL(baseURL).origin;
+  page.on("pageerror", error => problems.push(`pageerror: ${error.message}`));
+  page.on("console", message => { if (message.type() === "error") problems.push(`console: ${message.text()}`); });
+  page.on("response", response => { if (response.status() >= 400) problems.push(`${response.status()} ${response.url()}`); });
+  page.on("request", request => { const url = request.url(); if (!/^(?:data|blob):/.test(url) && new URL(url).origin !== origin) problems.push(`off-origin request: ${url}`); });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, baseURL);
+  await page.locator('.site-footer a[href="credits.html"]').click();
+  await expect(page).toHaveURL(/\/mission-engineering\/credits\.html$/);
+  await expect(page).toHaveTitle("Astrion · Twin · Footage credits");
+  await expect(page.getByRole("heading", { level: 1, name: "Where the footage comes from" })).toBeVisible();
+  await expect(page.locator(".credit-list li")).toHaveCount(4);
+  await expect(page.locator('.credit-list a[href^="https://"]')).toHaveCount(4);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  for (const width of [768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
+  await page.locator('a.btn[href="./#world"]').click();
+  await expect(page).toHaveURL(/\/mission-engineering\/#world$/);
+  await expect(page.locator("#world-title")).toBeInViewport();
+  expect(problems).toEqual([]);
 });

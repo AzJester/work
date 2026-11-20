@@ -707,11 +707,13 @@ fitted headlines still fit. Tests: `tests/mission-intelligence.test.mjs` and
 
 ## Astrion Twin mission engineering page (team review build)
 
-`mission-engineering/` is a one-page site for the Twin white paper, "From tool mastery to
-domain judgment". It is the same kind of site as `mission-intelligence/`: the same data globe,
-the same pinned and scroll-driven chapters, the same Astrion Brand Kit 1.0 palette and fonts.
+`mission-engineering/` is a one-page site for Twin, Astrion's AI-assisted mission engineering.
+It began as the Twin white paper, "From tool mastery to domain judgment", and now also says how
+certified runs become mission data. It is the same kind of site as `mission-intelligence/`: the
+same data globe, the same pinned and scroll-driven chapters, the same Astrion Brand Kit 1.0
+palette and fonts.
 
-One hero and seven chapters:
+One hero and nine chapters:
 
 - **Hero and 01 The idea** share a pinned stage. The headline parts, the globe zooms to its
   horizon, and the statement lights up word by word.
@@ -719,13 +721,20 @@ One hero and seven chapters:
 - **03 Provenance**: the four things a run ledger makes possible.
 - **04 The gate**: a pinned sideways gallery of the five checks, cheapest first.
 - **05 The rule**: a Bone band. The AI proposes. Physics disposes.
-- **06 Where Twin stands**: what is built today and what is left to build.
-- **07 Contact**: one thin slice, end to end.
+- **06 Mission data**: six points on how certified runs become training data.
+- **07 The real world**: four looping reference scenes of land, sea, seafloor and space.
+- **08 Where Twin stands**: what is built today and what comes next.
+- **09 Contact**: one thin slice, end to end.
 
-The page says what the white paper says about the idea, the design and the current state. The
+The words come from three places: the white paper, the public astrion.us site, and the owner's
+direction on mission data of 2026-11-20. The page names no company other than Astrion. The
 paper was prepared for company leadership and this site is public, so the details meant for
-that audience are left out: cost, staffing, hardware, schedule, named programs, named
-competitors and the author. A source test keeps them out.
+that audience stay out: cost, staffing, hardware, schedule, named programs, named competitors
+and the author. Source tests hold each of those lines.
+
+The reference scenes are eight-second loops cut from footage that two United States government
+agencies release for reuse. Each film waits on its poster until its band is near, and
+`credits.html` names every source with the credit line it asks for.
 
 `app.js` is the same file as `mission-intelligence/app.js`, and `styles.css` differs only in
 the block marked `page:fit`, which holds the fallback sizes for this page's fitted headlines.
@@ -984,7 +993,7 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 | File | Purpose |
 |------|---------|
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
-| `mission-engineering/` | The **Astrion Twin mission engineering** site (team review build): the Twin white paper as one hero and seven numbered chapters, on the same scroll engine, data globe and brand as `mission-intelligence/`. |
+| `mission-engineering/` | The **Astrion Twin mission engineering** site (team review build): Twin, Astrion's AI-assisted mission engineering, as one hero and nine numbered chapters with a footage credits page, on the same scroll engine, data globe and brand as `mission-intelligence/`. |
 | `mission-intelligence/` | The **Astrion Agentic AI** site (team review build): one hero and seven numbered chapters with a scroll-driven data globe, a pinned domain gallery and short copy about agentic AI at Astrion, on the Brand Kit 1.0 palette and fonts. |
 | `astrion-site/` | The **Astrion company site** (team review build): full-screen hero, mission segments, orchestration to edge, proof, and contact on the reference near-black Archivo and JetBrains Mono design. |
 | `astrion/` | The **Astrion company landing page** (team review build): the six company mission segments in the division HUD design on the 2026 brand, with self-hosted Archivo fonts and local assets. |

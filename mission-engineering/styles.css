@@ -321,6 +321,45 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
 .stats dt { font: 500 .66rem/1.45 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); max-width: 24ch; }
 .proof-note { margin-top: clamp(1.6rem, 3vw, 2.4rem); font-size: 1.02rem; color: var(--muted); max-width: 58ch; }
 
+/* A band title with a subtitle under it */
+.band-title .lede { margin-top: clamp(1.1rem, 1.8vw, 1.6rem); max-width: 46ch; }
+
+/* Points: a numbered grid of short statements */
+.points { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line-strong); }
+.points li { padding: 1.5rem 1.6rem 2.6rem 0; border-bottom: 1px solid var(--line); }
+.points li:not(:nth-child(3n+1)) { padding-left: 1.6rem; border-left: 1px solid var(--line); }
+.points li:nth-child(3n+2) { --d: 1; } .points li:nth-child(3n) { --d: 2; }
+.points span { font: 500 .7rem/1 var(--mono); letter-spacing: .16em; color: var(--ion); }
+.points h3 { margin-top: 1.1rem; font-size: clamp(1.25rem, 1.9vw, 1.85rem); font-weight: 600; line-height: 1.1; letter-spacing: -.028em; text-wrap: balance; }
+.points p { margin-top: .8rem; color: var(--muted); max-width: 36ch; }
+
+/* Scenes: one wide film and a row of smaller ones. Each film waits on its poster until its band is near. */
+.scenes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.4rem, 2.4vw, 2.4rem) clamp(.8rem, 1.3vw, 1.3rem); }
+.scene-wide { grid-column: 1 / -1; }
+.scene-media { position: relative; overflow: hidden; border-radius: 2px; background: var(--carbon); aspect-ratio: 16 / 9; }
+.scene-wide .scene-media { aspect-ratio: 1600 / 686; }
+.scene-media img, .scene-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scene-media video { opacity: 0; transition: opacity 1s; }
+.scene-media video.on { opacity: 1; }
+.scene figcaption { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: .35rem .9rem; padding-top: .95rem; }
+.scene-n { font: 500 .66rem/1 var(--mono); letter-spacing: .16em; color: var(--ion); }
+.scene h3 { font-size: clamp(1.1rem, 1.5vw, 1.5rem); font-weight: 600; line-height: 1.1; letter-spacing: -.02em; }
+.scene-d { grid-column: 2; font-size: .92rem; line-height: 1.4; color: var(--muted); max-width: 44ch; }
+.scenes-note { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .8rem 2rem; margin-top: clamp(1.8rem, 3vw, 2.8rem); padding-top: 1.1rem; border-top: 1px solid var(--line); font: 500 .66rem/1.5 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--steel); }
+.scenes-note .link { font: inherit; letter-spacing: inherit; color: var(--bone); }
+
+/* A plain page with no script: the footage credits */
+.plain-head { padding: 1.3rem 0; border-bottom: 1px solid var(--line); }
+.credits { padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(4rem, 9vw, 8rem); }
+.credits .h2 { margin-top: 1.4rem; }
+.credits .lede { margin-top: 1.4rem; max-width: 46ch; }
+.credit-list { margin-top: clamp(2.4rem, 5vw, 4rem); border-top: 1px solid var(--line-strong); }
+.credit-list li { display: grid; grid-template-columns: 2.6rem minmax(0, 12rem) minmax(0, 1fr) auto; gap: .6rem 1.5rem; align-items: baseline; padding: 1.4rem 0; border-bottom: 1px solid var(--line); }
+.credit-list span { font: 500 .7rem/1 var(--mono); letter-spacing: .16em; color: var(--ion); }
+.credit-list h2 { font-size: clamp(1.2rem, 1.8vw, 1.6rem); font-weight: 600; letter-spacing: -.02em; }
+.credit-list p { color: var(--muted); max-width: 62ch; }
+.credits-note { margin: clamp(1.6rem, 3vw, 2.4rem) 0; color: var(--muted); max-width: 70ch; }
+
 /* Marquee */
 .marquee { overflow: clip; padding: clamp(1.8rem, 4vw, 3.4rem) 0; background: var(--void); border-block: 1px solid var(--line); }
 .marquee-track { display: flex; align-items: center; gap: clamp(1.4rem, 3vw, 3rem); width: max-content; transform: translate3d(var(--mq, 0px), 0, 0); will-change: transform; }
@@ -383,6 +422,18 @@ body[data-chrome="light"] .btn-line:hover, body[data-chrome="light"] .btn-line:f
   .stats > div:nth-child(3) { padding-left: 0; border-left: 0; }
   .stats > div:nth-child(n+3) { margin-top: 1.4rem; border-top: 1px solid var(--line); }
   .contact-in { padding-bottom: 38vh; }
+  .points { grid-template-columns: 1fr; }
+  .points li, .points li:not(:nth-child(3n+1)) { padding: 1.3rem 0 1.7rem; border-left: 0; }
+  .points p { max-width: 52ch; }
+  .scenes { grid-template-columns: 1fr; }
+  .scene-wide .scene-media { aspect-ratio: 16 / 9; }
+  .credit-list li { grid-template-columns: 2.6rem minmax(0, 1fr); }
+  .credit-list p, .credit-list .link { grid-column: 2; justify-self: start; }
+  @media (min-width: 40em) {
+    .points { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .points li:nth-child(odd) { padding-right: 1.6rem; }
+    .points li:nth-child(even) { padding-left: 1.6rem; border-left: 1px solid var(--line); }
+  }
 }
 @media (max-width: 56.25em) {
   .site-nav, .clock { display: none; }
