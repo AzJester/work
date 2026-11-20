@@ -362,6 +362,14 @@
       let size = width > 0 ? 100 * avail / width * 0.994 : 0;
       if (MODE === "split" && line.closest(".lockup")) size = Math.min(size, innerHeight * (line.classList.contains("lk-a") ? 0.3 : 0.19));
       if (size > 0) el.style.setProperty("--fs", size.toFixed(2) + "px"); else el.style.removeProperty("--fs");
+      // A width does not always scale evenly with its size: some browsers round glyph advances to whole pixels.
+      // So measure the line at the size just set, and shrink it while it is still wider than its column.
+      for (let pass = 0; size > 0 && pass < 3; pass++) {
+        const actual = el.getBoundingClientRect().width;
+        if (actual <= avail) break;
+        size *= avail * 0.994 / actual;
+        el.style.setProperty("--fs", size.toFixed(2) + "px");
+      }
     }
   }
   function sizeGallery() {
