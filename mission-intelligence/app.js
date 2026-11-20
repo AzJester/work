@@ -1,4 +1,5 @@
-/* Astrion · Agentic AI. Scroll choreography, the data globe and small interactions. No network requests. */
+/* Astrion scroll site engine: scroll choreography, the data globe and small interactions. No network requests.
+   mission-intelligence/ and mission-engineering/ ship this file unchanged. tests/astrion-scroll-engine.test.mjs keeps the two copies identical. */
 (() => {
   "use strict";
   const doc = document, root = doc.documentElement, body = doc.body;
@@ -309,8 +310,10 @@
   const stage = $("#stage"), pin = $("#stage-pin"), hero = $("#hero");
   const lkA = $(".lockup .lk-a"), lkB = $(".lockup .lk-b");
   const header = $("#site-header"), progressBar = $("#progress");
-  const moves = $$(".move"), domains = $("#domains"), track = $("#domains-track"), domainEls = $$(".domain");
-  const proof = $("#proof"), contact = $("#contact");
+  const moves = $$(".move"), domains = $(".domains"), track = $(".domains-track"), domainEls = $$(".domain");
+  const proof = $(".proof"), contact = $(".contact");
+  // The statement lives inside the pinned stage, so its anchor is a scroll distance into the stage, not an element top.
+  const statement = $(".statement"), statementId = statement ? statement.id : "";
   const indexLinks = $$("#index a"), navLinks = $$(".site-nav a");
 
   /* ---------- Text preparation ---------- */
@@ -372,7 +375,7 @@
   }
   function targetY(id) {
     if (id === "top") return 0;
-    if (id === "build" && PIN) return M.stageTop + Math.round(VH * 1.78);
+    if (statementId && id === statementId && PIN) return M.stageTop + Math.round(VH * 1.78);
     const el = doc.getElementById(id);
     return el ? Math.max(0, Math.round(el.getBoundingClientRect().top + scrollY)) : 0;
   }
@@ -387,7 +390,7 @@
     M.moves = moves.map(el => ({ el, word: $(".word-f", el), top: top(el), fill: -1 }));
     M.sections = indexLinks.map(a => {
       const id = a.getAttribute("href").slice(1), y = targetY(id);
-      return { a, id, on: id === "build" && PIN ? M.stageTop + VH * 0.62 : y - innerHeight * 0.45 };
+      return { a, id, on: statementId && id === statementId && PIN ? M.stageTop + VH * 0.62 : y - innerHeight * 0.45 };
     });
     M.lights = $$(".light").map(el => [top(el), top(el) + el.offsetHeight]);
     M.galTop = top(domains) + domains.clientTop; M.galH = domains.offsetHeight; M.footTop = top($(".site-footer"));
@@ -526,7 +529,7 @@
     const target = id === "top" ? $("#main") : doc.getElementById(id);
     if (target) { if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1"); target.focus({ preventScroll: true }); }
   });
-  if (location.hash === "#build" && PIN) go("build", false);
+  if (statementId && location.hash === "#" + statementId && PIN) go(statementId, false);
 
   /* ---------- Reveals, counters, film ---------- */
   const revealTargets = $$(".reveal, [data-split], .rule-title .lk, .closer .lk");

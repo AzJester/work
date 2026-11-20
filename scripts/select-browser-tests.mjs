@@ -36,6 +36,7 @@ export const AREAS = {
       "project-history.spec.mjs", "responsive-accessibility.spec.mjs", "sidebar-pins.spec.mjs", "workspace.spec.mjs",
     ],
   },
+  "mission-engineering": { paths: ["mission-engineering/"], specs: ["mission-engineering.spec.mjs"] },
   "mission-intelligence": { paths: ["mission-intelligence/"], specs: ["mission-intelligence.spec.mjs"] },
   "relief-map": { paths: ["relief-map.html", "relief-map/"], specs: ["relief-map.spec.mjs"] },
   roadmap: {

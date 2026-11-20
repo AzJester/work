@@ -65,3 +65,20 @@ How the deploy works since that day. A session built this to meet the goal, and 
 - A new page, folder or spec needs a rule in the map at the top of `scripts/select-browser-tests.mjs`. `tests/browser-test-selection.test.mjs` fails until it has one.
 - The "Full browser suite" workflow runs every spec each night. After it fails, the next deploy runs every spec and names that failure as the reason. Fix or report the failing spec as part of the work in hand.
 - README.md, "How it's deployed", has the full rules.
+
+## The Astrion scroll sites share one engine
+
+`mission-intelligence/` and `mission-engineering/` are the same kind of site. The repository owner asked on 2026-11-20 for the second to be "exactly the same type of site" as the first: same globe, same actions, same scrolling, Astrion brand.
+
+How that is kept true. A session built this, and the owner did not dictate the details:
+
+- Both folders ship the same `app.js`. Their `styles.css` files differ only in the block marked `page:fit` at the end, which holds the fallback sizes for that page's fitted headlines.
+- `tests/astrion-scroll-engine.test.mjs` fails when the two copies drift apart. Change the engine in one folder, copy it to the other, and keep each page's own `page:fit` block.
+- The script finds its sections by class (`.statement`, `.loop`, `.agents`, `.domains`, `.rule`, `.proof`, `.contact`), so each page names its own chapter ids.
+- When a fitted headline's words change, measure the new sizes and update that page's `page:fit` block. The browser tests fail without script if the fallback sizes no longer fit.
+
+## The Twin white paper site leaves out leadership-only details
+
+`mission-engineering/` presents the Twin white paper of October 2026. The paper was prepared for Astrion leadership, and the site is on a public address.
+
+Interpretation, not stated by the owner: the site says what the paper says about the idea, the design and the current state, and leaves out what was written for leadership only. That is cost and the day rate, staffing and hardware asks, the schedule, named internal programs, named competitors, the author's name, and the internal wiki pointer. The test "the white paper's leadership-only details are not published" in `tests/mission-engineering.test.mjs` holds that line. Add any of them only when the owner asks for it by name.
