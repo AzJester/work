@@ -1,0 +1,8 @@
+src/
+out/
+fonts/
+audio/music.wav
+audio/mix.wav
+audio/_*.wav
+audio/words.json
+credits_*.json
