@@ -98,3 +98,17 @@ Interpretation, not stated by the owner:
 ## When the deploy job fails after its tests pass
 
 Seen on 2026-11-20 in deploy run 44766481574: the publish step asked for the site upload 0.3 seconds after its own job made it, was told there was none, and the re-run then failed on two uploads with one name. The task that fixed it the same day set the outline, and a session chose the layout: `build` uploads the site as `github-pages-<attempt>`, and `deploy` only publishes the upload `build` names. When `deploy` fails now, use "Re-run failed jobs" on the newest run. It publishes the earlier attempt's upload, which GitHub keeps for one day, and after that "Re-run all jobs" builds again. A manual run and any edit to `.github/workflows/pages.yml` redeploy the Supabase backend, and so does "Re-run all jobs" on a run that redeployed it: ask the owner before a manual run, and weigh the redeploy before editing the workflow. `tests/pages-deploy.test.mjs` holds the layout, and README.md, "Running a failed deploy again", has the rules.
+
+## The weekly Defense AI Brief also ships an HTML edition
+
+Standing instruction from the repository owner, given 2026-11-24 after the first brief was delivered: also create an HTML document of the brief in the same Google Drive folder every week, with the `shane-turner-branding` skill. The owner asked the same day for the instruction to be recorded here.
+
+How it fits: a scheduled routine runs in this repository's environment each week and saves the brief to the owner's Drive folder "Defense AI Brief". The routine's stored prompt sets the window, the sources, the sections and the inclusion rules. This section adds one deliverable and changes nothing else. Where the two differ, the stored prompt wins.
+
+Interpretation, not stated by the owner:
+
+- The file is "Defense AI Brief YYYY-MM-DD.html", named like that week's Google Doc with the window's Monday date. It is uploaded as HTML and is not converted to a Google Doc.
+- It carries the same five sections, wording and links as the Google Doc. Both are built from one content file, so they cannot drift apart.
+- The skill is loaded on every run and its rules win over this note. The first run used the skill's default palette, its web typefaces and its white badge file, unchanged, on the dark masthead.
+- The Drive folder holds the routine's own notes and tools. "Ledger: standing instructions" says how the first run built the page and what it learned. "Routine tools" holds the builders for the page and the Google Doc. Read the first before each run.
+- Nothing from a brief is committed here. This repository is public, and the brief, its sources and the names in it stay in Drive.
