@@ -177,7 +177,7 @@ jobs:
         if: steps.backend_changes.outputs.required == 'true'
         shell: bash
         run: |
-          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary solution-assist; do
+          for function_name in weekly-summary extract-tasks task-actions plan-day build-roadmap roadmap-summary solution-assist proposal-assist; do
             supabase functions deploy "$function_name" --project-ref "$PROJECT_ID" --no-verify-jwt --use-api
           done
 
@@ -220,6 +220,10 @@ jobs:
           # PHX digital twin: ship the page, modules and data, not the preprocessing scripts.
           mkdir -p _site/phx-digital-twin
           cp -R phx-digital-twin/index.html phx-digital-twin/app.js phx-digital-twin/adsb.js phx-digital-twin/data _site/phx-digital-twin/
+          # Proposal War Room: ship the built application, not its sources. The build in dist/ is committed, and
+          # tests/proposal-war-room-brand.test.mjs fails when it no longer matches the sources.
+          mkdir -p _site/proposal-war-room
+          cp -R proposal-war-room/dist/. _site/proposal-war-room/
           # Astrion capabilities film: one self-contained file, served as its folder's index.
           mkdir -p _site/astrion-film
           cp astrion-film/astrion-capabilities-film.html _site/astrion-film/index.html

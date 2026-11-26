@@ -77,6 +77,41 @@ Start locally from the repository root with `python -m http.server 8000`, then o
 [deployment guide](solutions-architect/docs/DEPLOYMENT.md), and
 [security guide](solutions-architect/docs/SECURITY.md).
 
+## Proposal War Room
+
+One place to run a proposal from RFP release to submission, on the Astrion 2026 brand:
+
+### [Open Proposal War Room](https://azjester.github.io/work/proposal-war-room/)
+
+- enter the due date and the review schedule is planned back from it in business days, skipping weekends, United
+  States federal holidays with their observed dates, and company blackout days
+- ten milestones from kickoff through storyboards, Pink, Red and Gold team to internal submit and the due date, in a
+  proportional mode or at fixed offsets, on a timeline with a today marker, as a list, and as `.ics` and CSV
+- a window too short for the minimum review, recovery and production times raises a warning and offers compressed
+  plans that list exactly what they drop, shorten or move; nothing is squeezed silently
+- changing a date locks that milestone; a new due date is an amendment with a before-and-after view of every date,
+  confirmed and recorded in a change log
+- outline by volume, section and subsection with Section L and M references, owner, reviewer, page allocation,
+  status and due date; a roster; a view of each person's assignments
+- page budget against each Section L limit, by hand or from a word count, with exclusions and the format rules as a
+  checklist; a volume over its limit raises the alert at the top of every screen
+- compliance matrix with unmapped and untraced items flagged, coverage by volume, an L-to-M crosswalk, a Gold team
+  readiness gate, and `.xlsx` and CSV export
+- a Section L/M parser: Claude returns volumes, page limits, format rules, requirements, evaluation factors, dates,
+  conflicts and questions for the contracting officer as JSON, each with its paragraph reference and a quote, and
+  every item is reviewed before anything is written
+- a dashboard with countdowns, a computed list of what needs attention today, and a drafted status email
+
+Signed-in pursuits save to this repository's Supabase project, one row per pursuit, readable only by the account
+that owns it. Without an account the app works on the device alone and the two Claude features are off. Claude is
+called from the `proposal-assist` Edge Function, which holds the Anthropic key; the key never reaches the browser.
+The site is on a public address: keep to released solicitation text and planning data, and enter nothing classified,
+controlled unclassified, export controlled or proprietary.
+
+It is a React, Vite and TypeScript application. The deploy copies its committed build from `proposal-war-room/dist/`
+and runs no build of its own. Rules, storage, development and tests are in
+[`proposal-war-room/README.md`](proposal-war-room/README.md).
+
 ## Map Builder
 
 A browser application for building a branded geographic U.S. location map and exporting it as PNG or SVG. Version **4.0.0**, created by **Dr. Shane Turner**:
@@ -1012,6 +1047,8 @@ page above. Frequencies, sample rates, and the range estimate are illustrative/e
 
 | File | Purpose |
 |------|---------|
+| `proposal-war-room/` | The **Proposal War Room**: backward schedule in business days, outline and owners, page budget, compliance matrix, Section L/M parser and dashboard, on the Astrion 2026 brand. React, Vite and TypeScript sources with the committed build in `dist/`, which is what the deploy publishes. |
+| `supabase/functions/proposal-assist/` | The server-side route the Proposal War Room calls for Claude. It holds the prompts and the Anthropic key. |
 | `solutions-architect/` | Browser-local **Solution Architect Workbench** with company mission-segment alignment, Quick Capture and a reviewed inbox, bounded local document/image intake, traceable requirements, Technology Assessment, architecture views, win themes, transition planning, decision-package export, a compact theme toggle, and optional reviewed AI assistance. |
 | `mission-engineering/` | The **Astrion Twin mission engineering** site (team review build): Twin, Astrion's AI-assisted mission engineering, as one hero and nine numbered chapters with a footage credits page, on the same scroll engine, data globe and brand as `mission-intelligence/`. |
 | `mission-intelligence/` | The **Astrion Agentic AI** site (team review build): one hero and seven numbered chapters with a scroll-driven data globe, a pinned domain gallery and short copy about agentic AI at Astrion, on the Brand Kit 1.0 palette and fonts. |

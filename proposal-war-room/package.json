@@ -1,0 +1,29 @@
+{
+  "name": "proposal-war-room",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Astrion Proposal War Room: backward scheduler, outline, page budget, compliance matrix and Section L/M parser.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build && node scripts/stamp-build.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2",
+    "pdfjs-dist": "6.5.438",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.3",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.4.0"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

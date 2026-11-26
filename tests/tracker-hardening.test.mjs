@@ -11,9 +11,10 @@ const tracker = readFileSync(resolve(rootDir, "tracker.html"), "utf8");
 const dashboard = readFileSync(resolve(rootDir, "dashboard.html"), "utf8");
 const serviceWorker = readFileSync(resolve(rootDir, "sw.js"), "utf8");
 const migration = readFileSync(resolve(rootDir, "supabase/migrations/20260711060000_tracker_hardening.sql"), "utf8");
-const quotaMigrations = `${migration}\n${readFileSync(resolve(rootDir, "supabase/migrations/20260831010000_solution_assist_quota.sql"), "utf8")}`;
+const quotaMigrations = [migration, "20260831010000_solution_assist_quota.sql", "20261126190100_proposal_assist_quota.sql"]
+  .map((entry, index) => (index === 0 ? entry : readFileSync(resolve(rootDir, "supabase/migrations", entry), "utf8"))).join("\n");
 const pagesWorkflow = readFileSync(resolve(rootDir, ".github/workflows/pages.yml"), "utf8");
-const edgeNames = ["weekly-summary", "extract-tasks", "task-actions", "plan-day", "build-roadmap", "roadmap-summary", "solution-assist"];
+const edgeNames = ["weekly-summary", "extract-tasks", "task-actions", "plan-day", "build-roadmap", "roadmap-summary", "solution-assist", "proposal-assist"];
 const edgeSources = Object.fromEntries(edgeNames.map((name) => [
   name,
   readFileSync(resolve(rootDir, `supabase/functions/${name}/index.ts`), "utf8"),

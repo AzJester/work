@@ -112,3 +112,26 @@ Interpretation, not stated by the owner:
 - The skill is loaded on every run and its rules win over this note. The first run used the skill's default palette, its web typefaces and its white badge file, unchanged, on the dark masthead.
 - The Drive folder holds the routine's own notes and tools. "Ledger: standing instructions" says how the first run built the page and what it learned. "Routine tools" holds the builders for the page and the Google Doc. Read the first before each run.
 - Nothing from a brief is committed here. This repository is public, and the brief, its sources and the names in it stay in Drive.
+
+## The Proposal War Room follows the Astrion 2026 brand skills
+
+Standing instruction from the repository owner, given 2026-11-26 with the build specification for `proposal-war-room/`: two skills govern every screen, export and line of copy. `astrion-brand-2026` is the only brand authority. `astrion-icons` is the only icon source, for glyph geometry and icon choice only. No other brand, theme or style skill is loaded or applied, and no component library theme or second icon set is used.
+
+What the owner set out that day:
+
+- Where the two skills disagree, `astrion-brand-2026` wins. The ink table in `astrion-icons` lists values the 2026 kit retired, and that skill's pointer to `astrion-brand-official-2026` is ignored. Icons draw in `currentColor` and take the 2026 tokens.
+- Astrion has no status colors, so the app uses none: no red, amber or green, and nothing tinted pink, red or gold for the color teams. Every status is a word plus an icon.
+- One Ion element in each screen region: the top alert, the Gantt today marker, the next-milestone countdown, or that region's primary button. A volume over its page limit raises the alert, and on the dashboard that alert is the only Ion element.
+- Table text is 8 to 10 pt, set in pt. No title or header ends in a period. No em dashes, exclamation points or hype words in the copy.
+- Icons stay inside the app, with none in exports or the status email, and Settings says "Icons: provisional Astrion set".
+- The Anthropic key never appears in browser code. Claude is called from a server-side route.
+
+Interpretation, not stated by the owner:
+
+- The owner left both platform options in the specification. The session built the Claude Code option here: React, Vite and TypeScript, this repository's Supabase project for storage and sign-in, and the Edge Function `proposal-assist` as the server-side route.
+- The build is committed in `proposal-war-room/dist/` because the deploy copies folders and runs no build. After any change under `proposal-war-room/`, run `npm run build` there and commit `dist/`. The test "the build in dist/ was made from the sources beside it" fails otherwise.
+- The app also works with no account, on the device alone, with the two Claude features off. Sign-in follows the tracker: accounts are issued by the owner, and there is no public sign-up.
+- The kit's tokens are OKLCH values. The build must not add hex fallbacks for them, because the tool's rounding is not the kit's. `cssTarget` in `vite.config.ts` holds that.
+- The parser prompt was tried against Claude on the specification's sample excerpt, and the reply is recorded in `proposal-war-room/fixtures/`. Tests use that recording. Change the prompt in `supabase/functions/proposal-assist/contract.mjs` only with a new trial and a new recording.
+- `tests/proposal-war-room-brand.test.mjs` holds the brand rules in the sources, and `tests/browser/proposal-war-room.spec.mjs` reads them from computed styles on every screen in both themes.
+- The site is on a public address. The app says so where text is entered: released solicitation text and planning data only.

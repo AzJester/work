@@ -457,6 +457,8 @@ export async function callAnthropic(
   apiKey: string,
   body: JsonRecord,
   timeoutMs: number,
+  // Extra request headers, such as an anthropic-beta flag. The three headers below always win.
+  extraHeaders: Record<string, string> = {},
 ): Promise<AnthropicResult> {
   const startedAt = Date.now();
   let response: Response;
@@ -464,6 +466,7 @@ export async function callAnthropic(
     response = await fetchWithTimeout(ANTHROPIC_URL, {
       method: "POST",
       headers: {
+        ...extraHeaders,
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",

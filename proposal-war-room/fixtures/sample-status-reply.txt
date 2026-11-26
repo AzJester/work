@@ -1,0 +1,17 @@
+Subject: Sentinel Range Modernization is off track for internal submit
+
+Team,
+
+Sentinel Range Modernization is not on track. Internal submit is in 2 business days, on Fri 15 Jan 2027. The proposal is due to Army Contracting Command on Tue 19 Jan 2027 at 2:00 PM Eastern Time.
+
+Needs attention today:
+- Volume I, Technical is 2 pages over its 25-page limit.
+- Priya Raman has 2 overdue sections: Technical Approach to SOW Tasks 3.1 through 3.4, and Identifying and Mitigating Technical and Schedule Risk. Both were due Wed 16 Dec 2026.
+- Marcus Bell has 1 overdue section: Organizational Chart and Key Personnel Resumes, due Wed 16 Dec 2026.
+- Compliance coverage is 13 percent. 1 item is a Gap. 5 Section L requirements map to no section. 1 Section M factor or subfactor traces to no section. The proposal is not Gold Team ready.
+- 1 conflict in the solicitation is unresolved.
+- The Q&A deadline passed on Fri 11 Dec 2026 with 5 questions still open.
+
+Next: cut Volume I to its limit, close the overdue sections and map the open compliance items before internal submit on Fri 15 Jan 2027.
+
+Luis Ortega
