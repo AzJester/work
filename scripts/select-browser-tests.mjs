@@ -38,6 +38,7 @@ export const AREAS = {
   },
   "mission-engineering": { paths: ["mission-engineering/"], specs: ["mission-engineering.spec.mjs"] },
   "mission-intelligence": { paths: ["mission-intelligence/"], specs: ["mission-intelligence.spec.mjs"] },
+  "proposal-war-room": { paths: ["proposal-war-room/"], specs: ["proposal-war-room.spec.mjs"] },
   "relief-map": { paths: ["relief-map.html", "relief-map/"], specs: ["relief-map.spec.mjs"] },
   roadmap: {
     paths: ["roadmap.html"],

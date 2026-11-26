@@ -19,6 +19,7 @@ const requiredLiveUrls = [
   "https://azjester.github.io/work/relief-map.html",
   "https://azjester.github.io/Black_Hat_Agent/",
   "https://azjester.github.io/work/solutions-architect/",
+  "https://azjester.github.io/work/proposal-war-room/",
   "https://azjester.github.io/work/dashboard.html",
   "https://azjester.github.io/work/geopresence/",
   "https://azjester.github.io/work/radar-signal-chain.html",
@@ -100,6 +101,7 @@ const workApplications = [
   "Map Builder",
   "PHX Sky Harbor Twin",
   "Passive Acoustic UAS Sensor",
+  "Proposal War Room",
   "Radar Signal Chain",
   "Roadmap Builder",
   "Roadmap Builder Lite",
@@ -116,7 +118,7 @@ const workApplications = [
   "Weekly Task Tracker",
 ];
 
-test("curated catalog lists exactly the 33 work applications", () => {
+test("curated catalog lists exactly the 34 work applications", () => {
   const catalogBlock = hub.match(/const catalog = \[([\s\S]*?)\n\s*\];/)?.[1] || "";
   const titles = [...catalogBlock.matchAll(/\n\s{10}title: "([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual([...titles].sort(), [...workApplications].sort(),

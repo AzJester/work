@@ -1,0 +1,10 @@
+/* Current Astrion website tokens */
+:root {
+  --astrion-void: oklch(0.121 0.0039 245.47); /* #050607; rgb(5, 6, 7) */
+  --astrion-carbon: oklch(0.1582 0.0072 258.37); /* #0B0D10; rgb(11, 13, 16) */
+  --astrion-gunmetal: oklch(0.2212 0.015 261.62); /* #171B22; rgb(23, 27, 34) */
+  --astrion-bone: oklch(0.9452 0.0081 98.88); /* #EEEDE7; rgb(238, 237, 231) */
+  --astrion-steel: oklch(0.6491 0.016 264.46); /* #8A8F99; rgb(138, 143, 153) */
+  --astrion-ion: oklch(0.7856 0.1345 216.5); /* #23CEF0; rgb(35, 206, 240) */
+  --astrion-flare: oklch(0.9757 0.0288 205.5); /* #E2FDFF; rgb(226, 253, 255) */
+}

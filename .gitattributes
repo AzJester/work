@@ -2,3 +2,4 @@ assets/vendor/*.js -whitespace
 relief-map.html -diff linguist-generated
 relief-map/data/*.bin binary
 relief-map/data/*.webp binary
+proposal-war-room/dist/** -diff linguist-generated

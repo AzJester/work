@@ -1,0 +1,707 @@
+{
+  "app": "astrion-proposal-war-room",
+  "schema": 1,
+  "id": "5e2f8c1a-7b3d-4e6f-9a10-2b4c6d8e0f12",
+  "name": "Sentinel Range Modernization",
+  "agency": "Army Contracting Command",
+  "solicitationNumber": "W91CRB-27-R-0007",
+  "rfpReleaseDate": "2026-12-01",
+  "dueDate": "2027-01-19",
+  "dueTime": "14:00",
+  "timeZone": "America/New_York",
+  "submissionMethod": "portal",
+  "qaDeadline": "2026-12-11",
+  "captureManager": "Dana Whitfield",
+  "proposalManager": "Luis Ortega",
+  "volumes": [
+    {
+      "id": "81fe2b3d-7a44-44e7-bfd3-0e8e83f41f2f",
+      "name": "Volume I, Technical",
+      "pageLimit": 25,
+      "exclusions": [
+        "cover",
+        "table of contents",
+        "acronym list"
+      ],
+      "sourceRef": "L.3.1",
+      "quote": "Volume I, Technical, shall not exceed 25 pages.",
+      "formatChecks": {},
+      "manualPages": null
+    },
+    {
+      "id": "a94932ce-ef00-4788-b1f4-08c40818bff9",
+      "name": "Volume II, Management",
+      "pageLimit": 15,
+      "exclusions": [
+        "cover",
+        "table of contents",
+        "acronym list",
+        "Resumes"
+      ],
+      "sourceRef": "L.3.1",
+      "quote": "Volume II, Management, shall not exceed 15 pages.",
+      "formatChecks": {},
+      "manualPages": null
+    },
+    {
+      "id": "95e3c8c3-c69e-45d4-b2e3-a8cd4a01b7b0",
+      "name": "Volume III, Price",
+      "pageLimit": null,
+      "exclusions": [
+        "cover",
+        "table of contents",
+        "acronym list"
+      ],
+      "sourceRef": "L.3.1",
+      "quote": "Volume III, Price, has no page limit.",
+      "formatChecks": {},
+      "manualPages": null
+    }
+  ],
+  "formatRules": [
+    {
+      "id": "5abf98ee-383f-47c6-94f0-740166a6cfa4",
+      "category": "Margins",
+      "rule": "Page size 8.5 x 11 inches",
+      "sourceRef": "L.3.2",
+      "quote": "Pages shall be 8.5 x 11 inches with 1-inch margins."
+    },
+    {
+      "id": "362eb14b-20ac-43c5-8076-b392d91bf9aa",
+      "category": "Margins",
+      "rule": "1-inch margins",
+      "sourceRef": "L.3.2",
+      "quote": "Pages shall be 8.5 x 11 inches with 1-inch margins."
+    },
+    {
+      "id": "5ee6fa19-26bd-43cf-a701-e500950750f7",
+      "category": "Font",
+      "rule": "Text in Times New Roman 12 point",
+      "sourceRef": "L.3.2",
+      "quote": "Text shall be Times New Roman 12 point."
+    },
+    {
+      "id": "9868b00d-188d-482c-a66d-aa118c50e21b",
+      "category": "Graphics text",
+      "rule": "Text in tables and graphics no smaller than 10 point",
+      "sourceRef": "L.3.2",
+      "quote": "Text in tables and graphics shall be no smaller than 10 point."
+    },
+    {
+      "id": "a2f9b56c-c7db-4af2-9a37-0122c5c5c6e5",
+      "category": "Other",
+      "rule": "Resumes shall not exceed two pages each",
+      "sourceRef": "L.5.1",
+      "quote": "Resumes are excluded from the page count and shall not exceed two pages each."
+    }
+  ],
+  "outline": [
+    {
+      "id": "28152ead-24f5-41f9-af3c-3edab3c5b692",
+      "volumeId": "81fe2b3d-7a44-44e7-bfd3-0e8e83f41f2f",
+      "parentId": null,
+      "title": "Technical Approach to SOW Tasks 3.1 through 3.4",
+      "lRef": "L.4.1",
+      "mRef": "M.2, Subfactor 1a Technical Approach",
+      "ownerId": "00000000-0000-4000-8000-000000000102",
+      "reviewerId": "00000000-0000-4000-8000-000000000101",
+      "pages": 16,
+      "status": "Drafting",
+      "dueDate": "",
+      "dueMilestone": "pink",
+      "notes": "",
+      "excluded": false,
+      "countMode": "manual",
+      "currentPages": 15,
+      "wordCount": null,
+      "graphicsPages": null
+    },
+    {
+      "id": "10688935-44c7-4aa5-b811-3d4f244d171b",
+      "volumeId": "81fe2b3d-7a44-44e7-bfd3-0e8e83f41f2f",
+      "parentId": null,
+      "title": "Identifying and Mitigating Technical and Schedule Risk",
+      "lRef": "L.4.2",
+      "mRef": "M.2, Subfactor 1b Risk Management",
+      "ownerId": "00000000-0000-4000-8000-000000000102",
+      "reviewerId": "00000000-0000-4000-8000-000000000100",
+      "pages": 9,
+      "status": "Outlining",
+      "dueDate": "",
+      "dueMilestone": "pink",
+      "notes": "",
+      "excluded": false,
+      "countMode": "manual",
+      "currentPages": 8,
+      "wordCount": null,
+      "graphicsPages": null
+    },
+    {
+      "id": "94e3331b-bb1b-4a84-9a5d-614df7078e8b",
+      "volumeId": "a94932ce-ef00-4788-b1f4-08c40818bff9",
+      "parentId": null,
+      "title": "Organizational Chart and Key Personnel Resumes",
+      "lRef": "L.5.1",
+      "mRef": "M.2, Factor 2 Management",
+      "ownerId": "00000000-0000-4000-8000-000000000103",
+      "reviewerId": "00000000-0000-4000-8000-000000000101",
+      "pages": 12,
+      "status": "Drafting",
+      "dueDate": "",
+      "dueMilestone": "pink",
+      "notes": "",
+      "excluded": false,
+      "countMode": "manual",
+      "currentPages": 6,
+      "wordCount": null,
+      "graphicsPages": null
+    }
+  ],
+  "roster": [
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
+      "name": "Dana Whitfield",
+      "email": "dana.whitfield@example.com",
+      "role": "Capture manager"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "name": "Luis Ortega",
+      "email": "luis.ortega@example.com",
+      "role": "Proposal manager"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000102",
+      "name": "Priya Raman",
+      "email": "priya.raman@example.com",
+      "role": "Technical volume lead"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000103",
+      "name": "Marcus Bell",
+      "email": "marcus.bell@example.com",
+      "role": "Management volume lead"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "9e412f45-395f-4fc1-959f-73fd59eab4f0",
+      "reqId": "L-001",
+      "source": "L",
+      "ref": "L.3.1",
+      "text": "Volume I, Technical, shall not exceed 25 pages.",
+      "type": "shall",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "57d0a1e1-c303-4682-9cda-05e0ec20a2b9",
+      "reqId": "L-002",
+      "source": "L",
+      "ref": "L.3.1",
+      "text": "Volume II, Management, shall not exceed 15 pages.",
+      "type": "shall",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "52262a8c-6508-45f6-a99c-44fd5b1a83d8",
+      "reqId": "L-003",
+      "source": "L",
+      "ref": "L.3.2",
+      "text": "Pages shall be 8.5 x 11 inches with 1-inch margins.",
+      "type": "shall",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "4326d200-0f7b-48c0-8b52-d344f4650ccc",
+      "reqId": "L-004",
+      "source": "L",
+      "ref": "L.3.2",
+      "text": "Text shall be Times New Roman 12 point.",
+      "type": "shall",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "b66e3b5c-802a-42d3-9064-95788d2f1940",
+      "reqId": "L-005",
+      "source": "L",
+      "ref": "L.3.2",
+      "text": "Text in tables and graphics shall be no smaller than 10 point.",
+      "type": "shall",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "e21bad69-1ce0-4b92-bf3e-29695569baa8",
+      "reqId": "L-006",
+      "source": "L",
+      "ref": "L.4.1",
+      "text": "The offeror shall describe its technical approach to SOW tasks 3.1 through 3.4.",
+      "type": "shall",
+      "sectionIds": [
+        "28152ead-24f5-41f9-af3c-3edab3c5b692"
+      ],
+      "ownerId": "00000000-0000-4000-8000-000000000102",
+      "status": "Addressed",
+      "naReason": "",
+      "pageRef": "I-3",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "94ca2be7-e739-4dd7-8f92-7e1fc1874f2b",
+      "reqId": "L-007",
+      "source": "L",
+      "ref": "L.4.2",
+      "text": "The offeror shall describe its approach to identifying and mitigating technical and schedule risk.",
+      "type": "shall",
+      "sectionIds": [
+        "10688935-44c7-4aa5-b811-3d4f244d171b"
+      ],
+      "ownerId": "00000000-0000-4000-8000-000000000102",
+      "status": "Gap",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "No mitigation owner named for schedule risk.",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "9ccec5c9-f69c-4c9c-a3d7-faf1cd6e7023",
+      "reqId": "L-008",
+      "source": "L",
+      "ref": "L.5.1",
+      "text": "The offeror shall provide an organizational chart and resumes for key personnel.",
+      "type": "shall",
+      "sectionIds": [
+        "94e3331b-bb1b-4a84-9a5d-614df7078e8b"
+      ],
+      "ownerId": "00000000-0000-4000-8000-000000000103",
+      "status": "Addressed",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "e80e7850-ee2a-4c6e-bea8-6ad51f1a2e39",
+      "reqId": "L-009",
+      "source": "L",
+      "ref": "L.5.1",
+      "text": "Resumes are excluded from the page count and shall not exceed two pages each.",
+      "type": "shall",
+      "sectionIds": [
+        "94e3331b-bb1b-4a84-9a5d-614df7078e8b"
+      ],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "a9cbe1b5-336b-43ab-b638-2edfc902de2e",
+      "reqId": "M-001",
+      "source": "M",
+      "ref": "M.3",
+      "text": "The Government will evaluate the 30-page technical volume for understanding of the requirement and feasibility of approach.",
+      "type": "will",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "ec3b55a5-9662-4809-902c-10cb097c45ef",
+      "reqId": "M-002",
+      "source": "M",
+      "ref": "M.2",
+      "text": "Factor 1, Technical",
+      "type": "evaluation factor",
+      "sectionIds": [
+        "28152ead-24f5-41f9-af3c-3edab3c5b692",
+        "10688935-44c7-4aa5-b811-3d4f244d171b"
+      ],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "Relative importance: significantly more important than Factor 2, Management",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "671b4119-249e-4d7e-bd2c-b4a1f0ce4dcd",
+      "reqId": "M-003",
+      "source": "M",
+      "ref": "M.2",
+      "text": "1a Technical Approach",
+      "type": "subfactor",
+      "sectionIds": [
+        "28152ead-24f5-41f9-af3c-3edab3c5b692"
+      ],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": "ec3b55a5-9662-4809-902c-10cb097c45ef"
+    },
+    {
+      "id": "ae322423-ec64-4f5a-bc57-c4759af88606",
+      "reqId": "M-004",
+      "source": "M",
+      "ref": "M.2",
+      "text": "1b Risk Management",
+      "type": "subfactor",
+      "sectionIds": [
+        "10688935-44c7-4aa5-b811-3d4f244d171b"
+      ],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "",
+      "confidence": "high",
+      "parentId": "ec3b55a5-9662-4809-902c-10cb097c45ef"
+    },
+    {
+      "id": "eb535a5d-9e99-46a8-8db9-f018e6e4fa77",
+      "reqId": "M-005",
+      "source": "M",
+      "ref": "M.2",
+      "text": "Factor 2, Management",
+      "type": "evaluation factor",
+      "sectionIds": [
+        "94e3331b-bb1b-4a84-9a5d-614df7078e8b"
+      ],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "Relative importance: Factor 1, Technical, is significantly more important than Factor 2, Management",
+      "confidence": "high",
+      "parentId": ""
+    },
+    {
+      "id": "f5d0d856-b333-4c4b-8965-693aaef005a8",
+      "reqId": "M-006",
+      "source": "M",
+      "ref": "M.2",
+      "text": "Price",
+      "type": "evaluation factor",
+      "sectionIds": [],
+      "ownerId": "",
+      "status": "Open",
+      "naReason": "",
+      "pageRef": "",
+      "comment": "Relative importance: Non-price factors combined are significantly more important than price.",
+      "confidence": "high",
+      "parentId": ""
+    }
+  ],
+  "questions": [
+    {
+      "id": "d81629f5-ff68-471a-8b77-3c6a437357f2",
+      "question": "L.3.1 limits Volume I, Technical, to 25 pages, while M.3 refers to a 30-page technical volume. Which page limit applies to Volume I?",
+      "ref": "L.3.1, M.3",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "4d804be0-14ac-4c87-af4d-0357e14c2f14",
+      "question": "L.5.1 does not state which volume the organizational chart and key personnel resumes belong in. Should they be submitted in Volume II, Management?",
+      "ref": "L.5.1",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "10857a5c-dfdb-4a03-98e5-4b4bcc64f870",
+      "question": "Is the L.5.1 exclusion of resumes from the page count limited to the volume containing them, and does it apply to the organizational chart?",
+      "ref": "L.5.1",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "a62cf698-9e06-4d32-8205-e2a77dc07621",
+      "question": "Does M.3's evaluation for understanding of the requirement and feasibility of approach apply to both Subfactor 1a and Subfactor 1b, and what criteria apply to Factor 2, Management, and Price?",
+      "ref": "M.2, M.3",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "26e3664f-7809-4cfc-b961-2860bbfe090b",
+      "question": "L.2 refers to a designated portal. Please identify the portal and any registration requirements.",
+      "ref": "L.2",
+      "status": "Open",
+      "answer": ""
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "4e33ec7c-f6bb-414b-a0c7-94736bce2cae",
+      "description": "L.3.1 limits Volume I, Technical, to 25 pages, but M.3 says the Government will evaluate the 30-page technical volume.",
+      "refs": [
+        "L.3.1",
+        "M.3"
+      ],
+      "resolved": false
+    }
+  ],
+  "keyDates": [
+    {
+      "id": "092882d5-57ac-4dec-a957-385440106a76",
+      "label": "Proposals due via the designated portal",
+      "date": "2027-01-19",
+      "time": "14:00",
+      "timeZone": "Eastern Time",
+      "sourceRef": "L.2"
+    }
+  ],
+  "schedule": {
+    "settings": {
+      "mode": "proportional",
+      "bufferEnabled": true,
+      "bufferDays": 1,
+      "percents": {
+        "storyboards": 15,
+        "pink": 35,
+        "red": 65,
+        "gold": 85
+      },
+      "offsets": {
+        "storyboards": 22,
+        "pink": 16,
+        "red": 8,
+        "gold": 3
+      },
+      "reviewDays": {
+        "pink": 1,
+        "red": 1,
+        "gold": 1
+      },
+      "blackouts": []
+    },
+    "milestones": [
+      {
+        "id": "kickoff",
+        "start": "2026-12-01",
+        "end": "2026-12-01",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "storyboards",
+        "start": "2026-12-08",
+        "end": "2026-12-08",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "pink",
+        "start": "2026-12-16",
+        "end": "2026-12-16",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "pinkRecovery",
+        "start": "2026-12-17",
+        "end": "2026-12-29",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "red",
+        "start": "2026-12-30",
+        "end": "2026-12-30",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "redRecovery",
+        "start": "2026-12-31",
+        "end": "2027-01-07",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "gold",
+        "start": "2027-01-08",
+        "end": "2027-01-08",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "production",
+        "start": "2027-01-11",
+        "end": "2027-01-14",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "internalSubmit",
+        "start": "2027-01-15",
+        "end": "2027-01-15",
+        "locked": false,
+        "dropped": false
+      },
+      {
+        "id": "due",
+        "start": "2027-01-19",
+        "end": "2027-01-19",
+        "locked": false,
+        "dropped": false
+      }
+    ],
+    "compression": null
+  },
+  "changeLog": [
+    {
+      "id": "03d0bab1-df07-4e93-ad00-79689d1a1922",
+      "at": "2026-12-01T15:00:00.000Z",
+      "kind": "schedule",
+      "title": "Schedule planned",
+      "detail": "Planned back from the due date, Tue 19 Jan 2027.",
+      "amendmentNumber": "",
+      "amendmentDate": "",
+      "rows": [
+        {
+          "id": "kickoff",
+          "label": "Kickoff",
+          "before": "Not planned",
+          "after": "Tue 1 Dec 2026",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "storyboards",
+          "label": "Storyboards / annotated outline due",
+          "before": "Not planned",
+          "after": "Tue 8 Dec 2026",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "pink",
+          "label": "Pink team review",
+          "before": "Not planned",
+          "after": "Wed 16 Dec 2026",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "pinkRecovery",
+          "label": "Pink recovery",
+          "before": "Not planned",
+          "after": "Thu 17 Dec 2026 to Tue 29 Dec 2026",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "red",
+          "label": "Red team review",
+          "before": "Not planned",
+          "after": "Wed 30 Dec 2026",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "redRecovery",
+          "label": "Red recovery",
+          "before": "Not planned",
+          "after": "Thu 31 Dec 2026 to Thu 7 Jan 2027",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "gold",
+          "label": "Gold team review",
+          "before": "Not planned",
+          "after": "Fri 8 Jan 2027",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "production",
+          "label": "Final production",
+          "before": "Not planned",
+          "after": "Mon 11 Jan 2027 to Thu 14 Jan 2027",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "internalSubmit",
+          "label": "Internal submit",
+          "before": "Not planned",
+          "after": "Fri 15 Jan 2027",
+          "changed": true,
+          "locked": false
+        },
+        {
+          "id": "due",
+          "label": "Due",
+          "before": "Not planned",
+          "after": "Tue 19 Jan 2027",
+          "changed": true,
+          "locked": false
+        }
+      ]
+    },
+    {
+      "id": "696fbb71-c497-4534-ae33-f2a149347067",
+      "at": "2026-12-01T15:00:00.000Z",
+      "kind": "parser",
+      "title": "Parser results applied",
+      "detail": "33 items added, 0 already present, 0 of 0 changes to existing values confirmed.",
+      "amendmentNumber": "",
+      "amendmentDate": "",
+      "rows": []
+    }
+  ],
+  "wordsPerPage": 500,
+  "createdAt": "2026-12-01T15:00:00.000Z",
+  "updatedAt": "2026-12-01T15:00:00.000Z"
+}
